@@ -1,0 +1,54 @@
+# Git files
+.git
+.gitignore
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Python virtual environment
+.venv
+venv
+ENV
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Secrets and local environment configuration (if not managed by Docker secrets/configs)
+.env
+.env.*
+! .env.example
+
+# Test files and coverage reports (optional, depending on strategy)
+# tests/
+# .pytest_cache/
+# .coverage
+# htmlcov/
+
+# Build artifacts
+# dist/
+# build/
+# *.egg-info/
+
+# Log files
+*.log
+logs/
+
+# Node.js (if any frontend build steps)
+# node_modules/
+# npm-debug.log
+# yarn-error.log

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ super() }}{% endblock %}
+
+{% block content %}
+<h2>Your Spotify Playlists</h2>
+
+{% if playlists %}
+    <div class="playlists-container">
+        {% for playlist in playlists %}
+            <div class="playlist-card">
+                {% if playlist.image_url %}
+                    <img src="{{ playlist.image_url }}" alt="{{ playlist.name }} cover" width="100">
+                {% else %}
+                    <div class="playlist-placeholder-image">No Image</div>
+                {% endif %}
+                <h3>{{ playlist.name }}</h3>
+                <p>Tracks: {{ playlist.track_count }}</p>
+                <p>Score: {{ playlist.score if playlist.score is not none else 'N/A' }}</p>
+                <a href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id) }}" class="btn btn-secondary btn-sm">View Details</a>
+                
+                {# Whitelist/Blacklist Actions #}
+                <div class="playlist-actions mt-2">
+                    <form action="{{ url_for('main.whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-success btn-sm">Whitelist</button>
+                    </form>
+                    <form action="{{ url_for('main.blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-danger btn-sm">Blacklist</button>
+                    </form>
+                    <form action="{{ url_for('main.remove_whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-outline-success btn-sm">Remove WL</button>
+                    </form>
+                    <form action="{{ url_for('main.remove_blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Remove BL</button>
+                    </form>
+                </div>
+
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    {# Display specific error message if provided by the route #}
+    {% if error_message %}
+        <p class="error-message">{{ error_message }}</p>
+    {% else %}
+        {# Generic message if no playlists and no specific error #}
+        <p>No playlists found, or there was an error fetching them. Try logging out and back in, or check your Spotify account.</p>
+    {% endif %}
+{% endif %}
+{% endblock %}

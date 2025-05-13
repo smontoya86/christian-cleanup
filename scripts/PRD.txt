@@ -1,0 +1,154 @@
+# Product Requirements Document (PRD): Christian Music Curation App
+
+## 1. Overview
+
+The Christian Music Curation App aims to help Christians align their Spotify music listening habits with their values. Many Christians find it challenging to ensure the music they and their families listen to on platforms like Spotify does not contain explicit content or themes contrary to their beliefs. This application solves this problem by providing a tool to analyze Spotify playlists, score songs based on lyrical content using AI and a Christian values framework, link lyrical themes to relevant Bible verses for discernment, and manage playlist content accordingly. The target audience is Christians who use Spotify and desire greater control over the content they consume. The value lies in offering peace of mind, facilitating discernment, and simplifying the process of curating value-aligned playlists.
+
+## 2. Core Features (MVP)
+
+These features constitute the Minimum Viable Product (MVP):
+
+1.  **User Authentication via Spotify**
+    *   **What:** Allows users to securely sign up and log in using their Spotify account.
+    *   **Why:** Essential for accessing user-specific playlists and performing actions on their behalf.
+    *   **How:** Implements the Spotify OAuth2 Authorization Code Flow within the Flask application. User credentials (tokens) are securely fetched and stored persistently in the PostgreSQL database. User sessions are managed by Flask.
+
+2.  **Playlist Dashboard**
+    *   **What:** Displays a list of the logged-in user's Spotify playlists.
+    *   **Why:** Provides the primary interface for users to see their content and access analysis features.
+    *   **How:** Fetches user playlists via the Spotify API (Spotipy). Renders a web page showing playlist names, cover art, and an aggregate Christian alignment score (calculated from stored individual song analyses). Provides links to view detailed analysis for each playlist.
+
+3.  **Playlist Detail View**
+    *   **What:** Shows the individual songs within a selected playlist, along with their analysis results.
+    *   **Why:** Allows users to see the specific content analysis for each song, including scores and biblical context.
+    *   **How:** Fetches tracks for the specific playlist via Spotipy. Retrieves stored analysis results (score, themes, Bible verse references) for each song from the PostgreSQL database. Renders a page displaying song details, analysis results, and provides options for management actions (whitelist/remove).
+
+4.  **AI-Powered Song Analysis & Rating (with Bible Linking)**
+    *   **What:** Analyzes song lyrics for content alignment, identifies themes, links themes to Bible verses, generates a score, and stores results.
+    *   **Why:** This is the core value proposition, providing the automated analysis and discernment aid.
+    *   **How:** For a given song, checks PostgreSQL for existing analysis. If not found, fetches lyrics (e.g., via Genius API). Analyzes lyrics using a pre-trained RoBERTa model (via Hugging Face Transformers) for sensitivity. Extracts relevant themes using NLP techniques. Looks up relevant Bible verses based on identified themes (via Bible API). Calculates an alignment score. Stores song details, lyrics source, score, themes, and Bible verse references permanently in PostgreSQL.
+
+5.  **Song & Playlist Management Actions**
+    *   **What:** Allows users to remove songs from playlists or whitelist songs/playlists.
+    *   **Why:** Enables users to act on the analysis results and curate their playlists.
+    *   **How:** Implements Flask routes triggered by user actions in the UI. Uses Spotipy to modify the user's Spotify playlists (e.g., remove tracks). Updates a whitelist status in the PostgreSQL database.
+
+6.  **Basic UI & Threshold Display**
+    *   **What:** Provides a simple, functional web interface and displays analysis context.
+    *   **Why:** Makes the application usable and understandable.
+    *   **How:** Uses Flask with Jinja2 templates for server-side rendering of HTML/CSS. Includes basic styling. Displays explanations of the scoring system and shows identified themes/linked Bible verses in the playlist detail view.
+
+## 3. User Experience
+
+*   **User Personas:** (Implicit) Christians using Spotify who are concerned about lyrical content.
+*   **Key User Flows:**
+    1.  **Login:** User visits app -> Clicks "Login with Spotify" -> Authorizes on Spotify -> Redirected back to app dashboard.
+    2.  **Playlist Review:** User views dashboard -> Sees list of playlists with scores -> Clicks on a playlist.
+    3.  **Song Review & Action:** User views playlist details -> Sees songs with scores, themes, Bible verses -> Clicks "Remove" or "Whitelist" for a song.
+    4.  **Logout:** User clicks "Logout" -> Session cleared -> Redirected to home page.
+*   **UI/UX Considerations:** The interface should be simple, clean, and intuitive. Focus on clarity of information (scores, themes, verses). Use server-side rendering (Flask/Jinja2) for simplicity in the MVP. Basic CSS for readability.
+
+## 4. Technical Architecture
+
+*   **System Components:**
+    *   **Web Application:** Monolithic Flask application (Python).
+    *   **Web Server (Development):** Flask development server.
+    *   **Web Server (Production):** Production WSGI server (e.g., Gunicorn) behind a reverse proxy (e.g., Nginx).
+    *   **Database:** PostgreSQL.
+    *   **External APIs:** Spotify API, Genius API, Bible API.
+    *   **AI Model Service:** Hugging Face Transformers library running within the Flask application process (or potentially a background worker for heavy analysis).
+*   **Data Models (PostgreSQL using SQLAlchemy):**
+    *   `User`: Stores Spotify ID, access/refresh tokens, token expiry.
+    *   `Playlist`: Stores Spotify Playlist ID, name, last sync time, potentially cached aggregate score.
+    *   `Song`: Stores Spotify Track ID, title, artist, album.
+    *   `AnalysisResult`: Stores foreign key to Song, analysis score, identified themes (e.g., JSON or separate table), Bible verse references (e.g., JSON or separate table), analysis timestamp, lyrics source.
+    *   `Whitelist`: Stores user ID and Spotify ID (for song or playlist) to mark items as whitelisted.
+*   **APIs and Integrations:**
+    *   Spotify API: Handled via `spotipy` library for auth, playlist/track fetching, playlist modification.
+    *   Genius API: Handled via `lyricsgenius` library for lyric fetching.
+    *   Bible API: Handled via direct HTTP requests or a specific Python library (e.g., `python-bible`) for verse lookup based on themes.
+    *   Hugging Face Models: Loaded and run via `transformers` library.
+*   **Infrastructure Requirements:**
+    *   **Local Development:** Python 3.10+, Docker Desktop (for PostgreSQL via Docker Compose).
+    *   **Production:** Docker-compatible hosting platform (e.g., Render, Fly.io, Heroku with Docker, AWS ECS/Fargate) with PostgreSQL database service.
+
+## 5. Development Roadmap
+
+*   **MVP Requirements:** (As detailed in Section 2: Core Features)
+    1.  User Authentication via Spotify
+    2.  Playlist Dashboard (Fetch & Display)
+    3.  Playlist Detail View (Fetch & Display Tracks)
+    4.  AI-Powered Song Analysis & Rating (Core logic, placeholder scoring acceptable initially, Bible linking)
+    5.  Permanent Storage of Analysis Results (PostgreSQL)
+    6.  Song & Playlist Management Actions (Remove/Whitelist)
+    7.  Basic UI & Threshold Display
+*   **Future Enhancements (Post-MVP):**
+    1.  Stripe Payment Integration (Subscription tiers)
+    2.  Advanced Filtering and Sorting (Playlists/Songs)
+    3.  Customizable Analysis Parameters (User settings)
+    4.  Improved Background Task Handling (Celery/Redis for scaling analysis)
+    5.  Basic Admin Interface (Usage stats, user management)
+    6.  More Sophisticated Theme Extraction & Bible Linking
+    7.  UI/UX Improvements (e.g., client-side interactions with JavaScript)
+
+## 6. Logical Dependency Chain
+
+1.  **Foundation:**
+    *   Set up Flask project structure.
+    *   Configure Docker Compose for PostgreSQL.
+    *   Establish basic database models (User) and migrations (Flask-Migrate).
+    *   Implement basic Flask app (`__init__.py`, `config.py`, `run.py`).
+2.  **Core User Flow:**
+    *   Implement Spotify OAuth2 Authentication (`auth.py`, routes, token storage in DB).
+    *   Create basic UI templates (`base.html`, `index.html`).
+3.  **Playlist Display:**
+    *   Implement Playlist Dashboard route: Fetch playlists via Spotipy, display in `dashboard.html`.
+    *   Implement Playlist Detail route: Fetch tracks via Spotipy, display in `playlist_detail.html`.
+4.  **Analysis Engine & Storage:**
+    *   Implement lyric fetching (Genius API).
+    *   Integrate Hugging Face model loading and basic inference.
+    *   Implement theme extraction logic (placeholder ok).
+    *   Integrate Bible API lookup (placeholder ok).
+    *   Define `AnalysisResult` model.
+    *   Implement logic to run analysis (on-demand initially) and store results in PostgreSQL.
+5.  **Integration & Management:**
+    *   Display stored analysis results (scores, themes, verses) in `playlist_detail.html`.
+    *   Implement "Remove" song functionality (Flask route + Spotipy call).
+    *   Implement "Whitelist" functionality (Flask route + DB update).
+6.  **Refinement:**
+    *   Improve UI styling (`style.css`).
+    *   Add explanations and context to the UI.
+    *   Refine scoring/theme/Bible linking logic.
+
+## 7. Risks and Mitigations
+
+*   **Technical Challenges:**
+    *   *Spotify/Genius/Bible API Rate Limits/Changes:* May impact performance or break functionality. **Mitigation:** Implement caching (especially for analysis results, lyrics), use APIs efficiently, monitor for changes, have fallback strategies (e.g., for lyrics).
+    *   *AI Model Performance/Accuracy:* Pre-trained models might not perfectly align with desired Christian values framework. **Mitigation:** Start with suitable pre-trained models, clearly communicate limitations, plan for potential fine-tuning or model switching post-MVP.
+    *   *Lyric Fetching Reliability:* Genius API or alternatives may not find all lyrics or may have inaccuracies. **Mitigation:** Implement robust error handling, potentially use multiple lyric sources as fallbacks, handle instrumental tracks gracefully.
+    *   *Analysis Performance:* Running AI models can be resource-intensive. **Mitigation:** Perform analysis on-demand initially, optimize model loading, plan for background task queues (Celery) post-MVP if needed.
+*   **MVP Scope Definition:**
+    *   *Scope Creep:* Adding too many features delays MVP. **Mitigation:** Strictly adhere to the defined MVP features in Section 2 & 5.
+*   **Deployment Complexity:**
+    *   *Environment Differences:* Discrepancies between local dev and production. **Mitigation:** Use Docker (Docker Compose) for local development from the start to ensure parity with production Docker deployments. Use PostgreSQL locally.
+*   **External Dependencies:**
+    *   *API Key Management:* Secure handling of multiple API keys. **Mitigation:** Use environment variables (`.env` file loaded by `python-dotenv`) and ensure `.env` is not committed to version control.
+
+## 8. Appendix
+
+*   **API Credentials (Placeholder - Use Environment Variables):**
+    *   `SPOTIPY_CLIENT_ID`: (From Spotify Developer Dashboard)
+    *   `SPOTIPY_CLIENT_SECRET`: (From Spotify Developer Dashboard)
+    *   `SPOTIPY_REDIRECT_URI`: (e.g., `http://localhost:5000/auth/callback` for local, adjust for deployment)
+    *   `GENIUS_ACCESS_TOKEN`: (From Genius Developer Dashboard)
+    *   `BIBLE_API_KEY`: (From Bible API Provider)
+    *   `SECRET_KEY`: (Flask secret key - generate a random one)
+    *   `DATABASE_URL`: (PostgreSQL connection string, e.g., `postgresql://app_user:password@localhost:5432/mydatabase` for local Docker)
+*   **Spotify Scopes Required:** `playlist-read-private playlist-modify-public playlist-modify-private user-library-read`
+*   **Potential Hugging Face Models:**
+    *   `cardiffnlp/twitter-roberta-base-sensitive-multilabel`
+    *   `TostAI/nsfw-text-detection-large`
+    *   `michellejieli/inappropriate_text_classifier`
+*   **Implementation Guidelines:** Refer to `implementation_guidelines_rev4.md` for detailed setup and coding steps.
+*   **Architecture Diagram:** Refer to `simplified_system_diagram_basic.png`.
+
