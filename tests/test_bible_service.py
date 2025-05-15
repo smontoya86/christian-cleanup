@@ -24,13 +24,12 @@ else:
 MOCK_API_KEY = "test-api-key"
 VALID_PASSAGE_ID = "JHN.3.16"
 INVALID_PASSAGE_ID = "XYZ.1.1" # Assuming this doesn't exist
-DEFAULT_BIBLE_ID = "de4e12af7f28f599-01"
 
 # Mock successful API response
 MOCK_SUCCESS_RESPONSE = {
     "data": {
         "id": "JHN.3.16",
-        "bibleId": DEFAULT_BIBLE_ID,
+        "bibleId": BibleService.DEFAULT_BIBLE_ID,
         "bookId": "JHN",
         "chapterId": "JHN.3",
         "content": "<p class=\"p\">[16] For God so loved the world, that he gave his only Son, that whoever believes in him should not perish but have eternal life.</p>",
@@ -46,7 +45,7 @@ MOCK_SUCCESS_RESPONSE = {
 MOCK_NOT_FOUND_CONTENT_RESPONSE = {
     "data": {
         "id": INVALID_PASSAGE_ID,
-        "bibleId": DEFAULT_BIBLE_ID,
+        "bibleId": BibleService.DEFAULT_BIBLE_ID,
         "bookId": "XYZ", # Fictional book
         "content": "", # Empty content
         # other fields might be present or absent
@@ -93,7 +92,7 @@ class TestBibleService(unittest.TestCase):
         self.assertIn("For God so loved the world", text) # Check for expected content
         self.assertNotIn("<p", text) # Check basic HTML stripping
         # Verify the correct URL and headers were used
-        expected_url = f"{BibleService.BASE_URL}/bibles/{DEFAULT_BIBLE_ID}/passages/{VALID_PASSAGE_ID}"
+        expected_url = f"{BibleService.BASE_URL}/bibles/{BibleService.DEFAULT_BIBLE_ID}/passages/{VALID_PASSAGE_ID}"
         mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
         self.assertEqual(args[0], expected_url)

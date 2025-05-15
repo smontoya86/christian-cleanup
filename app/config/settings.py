@@ -4,7 +4,8 @@ import logging
 from datetime import timedelta
 
 # Load environment variables from .env file
-basedir = os.path.abspath(os.path.dirname(__file__))
+# Corrected basedir for when this file is in app/config/
+basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 load_dotenv(os.path.join(basedir, '..', '.env')) # Load .env from project root
 
 class Config:
@@ -38,8 +39,9 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
+    # Corrected basedir for when this file is in app/config/
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'app_dev.db') # Default to SQLite if DATABASE_URL not set
+        'sqlite:///' + os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)), 'app_dev.db')
     LOG_LEVEL = logging.DEBUG
 
 class TestingConfig(Config):

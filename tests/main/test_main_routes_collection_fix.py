@@ -7,7 +7,9 @@ from app.services.whitelist_service import ITEM_ADDED, ITEM_ALREADY_EXISTS as WL
 from app.services.blacklist_service import ITEM_ADDED as BL_ITEM_ADDED, ITEM_ALREADY_EXISTS as BL_ITEM_ALREADY_EXISTS, ITEM_MOVED_FROM_WHITELIST, ERROR_OCCURRED as BL_ERROR_OCCURRED
 import spotipy
 from sqlalchemy.exc import SQLAlchemyError
-from app.services.analysis_service import SongAnalyzer
+from app.utils.analysis import SongAnalyzer
+from app.services.spotify_service import SpotifyService
+# from app.services.cache_service import CacheService # Module not found, temporarily commented out
 
 # Mock Spotify API responses (assuming these are defined elsewhere or similar structure)
 MOCK_SPOTIFY_PLAYLISTS = {

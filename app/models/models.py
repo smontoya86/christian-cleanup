@@ -227,7 +227,9 @@ class AnalysisResult(db.Model):
     song_id = db.Column(db.Integer, db.ForeignKey('songs.id'), nullable=False)
     themes = db.Column(db.JSON, nullable=True)  
     problematic_content = db.Column(db.JSON, nullable=True) 
-    alignment_score = db.Column(db.Float, nullable=True)
+    alignment_score = db.Column(db.Float, nullable=True) # Existing field, might be legacy or repurposed later
+    raw_score = db.Column(db.Integer, nullable=True)  # New field for Christian framework score (0-100)
+    concern_level = db.Column(db.String(50), nullable=True) # New field for High/Medium/Low concern
     explanation = db.Column(db.Text, nullable=True)
     analyzed_at = db.Column(db.DateTime, default=datetime.utcnow)
     # Foreign key to bible_verses if we link themes directly to specific verses
