@@ -4,6 +4,8 @@ from .extensions import db, login_manager, scheduler
 from .config import config, setup_logging
 import os
 from .jobs import sync_all_playlists_job
+from .utils import format_ms_filter
+import datetime
 
 # Initialize extensions
 migrate = Migrate()
@@ -37,7 +39,16 @@ def create_app(config_name=None):
 
     app = Flask(__name__)
     app_config = config[config_name]
+    print(f"[create_app PRE-FROM_OBJECT] Type of app_config: {type(app_config)}")
+    print(f"[create_app PRE-FROM_OBJECT] SPOTIPY_CLIENT_ID on app_config class: {getattr(app_config, 'SPOTIPY_CLIENT_ID', 'NOT_FOUND_ON_CONFIG_OBJ_DIRECTLY')}")
+    
     app.config.from_object(app_config)
+
+    print(f"[create_app POST-FROM_OBJECT] SPOTIPY_CLIENT_ID in app.config: {app.config.get('SPOTIPY_CLIENT_ID', 'NOT_FOUND_IN_APP_CONFIG')}")
+    print(f"[create_app POST-FROM_OBJECT] All app.config keys: {list(app.config.keys())}")
+
+    # Register custom Jinja filters
+    app.jinja_env.filters['format_ms'] = format_ms_filter
 
     # If in testing mode, explicitly override Spotify config from environment variables
     # This ensures that os.environ.setdefault in conftest.py takes effect for these keys
@@ -92,31 +103,37 @@ def create_app(config_name=None):
     app.register_blueprint(main_blueprint)
     app.logger.info("Main blueprint registered.")
 
-    # Register API blueprint
-    from .api import api_bp
-    app.register_blueprint(api_bp)
-    app.logger.info("API blueprint registered.")
+    # Context processor to inject current year
+    @app.context_processor
+    def inject_current_year():
+        return {'current_year': datetime.datetime.now().year}
 
-    # Schedule the background sync job
-    # Ensure the job doesn't run when importing for migrations or other non-server tasks
-    # Or handle this within the job itself if needed.
-    if not app.config.get('TESTING', False) and os.environ.get('WERKZEUG_RUN_MAIN') == 'true': 
-        # Check WERKZEUG_RUN_MAIN prevents duplicate jobs with Flask reloader
-        # Check not TESTING to avoid running scheduler during tests
-        job_id = 'sync_all_playlists'
-        if not scheduler.get_job(job_id):
-            scheduler.add_job(
-                id=job_id,
-                func=sync_all_playlists_job,
-                trigger='interval',
-                hours=1, # Run every hour
-                # next_run_time=datetime.now() + timedelta(seconds=10) # Optionally delay first run
-            )
-            app.logger.info(f"Scheduled job '{job_id}' to run every 1 hour.")
-        else:
-            app.logger.info(f"Job '{job_id}' already scheduled.")
+    with app.app_context():
+        # Register API blueprint
+        from .api import api_bp
+        app.register_blueprint(api_bp, url_prefix='/api')
+        current_app.logger.info("API blueprint registered.")
 
-    app.logger.info("Application models imported/registered.")
+        # Schedule the background sync job
+        # Ensure the job doesn't run when importing for migrations or other non-server tasks
+        # Or handle this within the job itself if needed.
+        if not app.config.get('TESTING', False) and os.environ.get('WERKZEUG_RUN_MAIN') == 'true': 
+            # Check WERKZEUG_RUN_MAIN prevents duplicate jobs with Flask reloader
+            # Check not TESTING to avoid running scheduler during tests
+            job_id = 'sync_all_playlists'
+            if not scheduler.get_job(job_id):
+                scheduler.add_job(
+                    id=job_id,
+                    func=sync_all_playlists_job,
+                    trigger='interval',
+                    hours=1, # Run every hour
+                    # next_run_time=datetime.now() + timedelta(seconds=10) # Optionally delay first run
+                )
+                app.logger.info(f"Scheduled job '{job_id}' to run every 1 hour.")
+            else:
+                app.logger.info(f"Job '{job_id}' already scheduled.")
+
+        app.logger.info("Application models imported/registered.")
 
     app.logger.info("Flask application created successfully.")
     return app

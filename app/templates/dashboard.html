@@ -3,48 +3,124 @@
 {% block title %}Dashboard - {{ super() }}{% endblock %}
 
 {% block content %}
-<h2>Your Spotify Playlists</h2>
-
-{% if playlists %}
-    <div class="playlists-container">
-        {% for playlist in playlists %}
-            <div class="playlist-card">
-                {% if playlist.image_url %}
-                    <img src="{{ playlist.image_url }}" alt="{{ playlist.name }} cover" width="100">
-                {% else %}
-                    <div class="playlist-placeholder-image">No Image</div>
-                {% endif %}
-                <h3>{{ playlist.name }}</h3>
-                <p>Tracks: {{ playlist.track_count }}</p>
-                <p>Score: {{ playlist.score if playlist.score is not none else 'N/A' }}</p>
-                <a href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id) }}" class="btn btn-secondary btn-sm">View Details</a>
-                
-                {# Whitelist/Blacklist Actions #}
-                <div class="playlist-actions mt-2">
-                    <form action="{{ url_for('main.whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" style="display: inline;">
-                        <button type="submit" class="btn btn-success btn-sm">Whitelist</button>
-                    </form>
-                    <form action="{{ url_for('main.blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" style="display: inline;">
-                        <button type="submit" class="btn btn-danger btn-sm">Blacklist</button>
-                    </form>
-                    <form action="{{ url_for('main.remove_whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" style="display: inline;">
-                        <button type="submit" class="btn btn-outline-success btn-sm">Remove WL</button>
-                    </form>
-                    <form action="{{ url_for('main.remove_blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" style="display: inline;">
-                        <button type="submit" class="btn btn-outline-danger btn-sm">Remove BL</button>
-                    </form>
-                </div>
-
-            </div>
-        {% endfor %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Dashboard</h1>
+        {# Optional: Add a primary action button here if needed, e.g., "Scan New Playlists" #}
     </div>
-{% else %}
-    {# Display specific error message if provided by the route #}
-    {% if error_message %}
-        <p class="error-message">{{ error_message }}</p>
-    {% else %}
-        {# Generic message if no playlists and no specific error #}
-        <p>No playlists found, or there was an error fetching them. Try logging out and back in, or check your Spotify account.</p>
+
+    {% if current_user and current_user.is_authenticated %}
+        <p class="lead mb-4">Welcome back, {{ current_user.display_name | default('User') }}!</p>
     {% endif %}
-{% endif %}
+
+    {% if error_message %}
+        <div class="alert alert-danger" role="alert">
+            {{ error_message }}
+        </div>
+    {% endif %}
+
+    {% if sync_message %}
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-spinner fa-spin me-2"></i> {{ sync_message }}
+        </div>
+    {% endif %}
+
+    <!-- Quick Stats Section -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-4">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-list-music me-2"></i>Total Playlists</h5>
+                    <p class="card-text fs-4 fw-bold">{{ playlists|length if playlists else '0' }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-music me-2"></i>Songs Analyzed</h5>
+                    <p class="card-text fs-4 fw-bold">N/A</p> {# Placeholder #}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-check-circle me-2"></i>Clean Playlists</h5>
+                    <p class="card-text fs-4 fw-bold">N/A</p> {# Placeholder #}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="mb-3">Your Spotify Playlists</h2>
+
+    <!-- Search/Filter Bar -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <form class="d-flex">
+                <input class="form-control me-2" type="search" placeholder="Search playlists..." aria-label="Search">
+                <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search me-1"></i>Search</button>
+            </form>
+        </div>
+    </div>
+
+    {% if playlists %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for playlist in playlists %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm playlist-card-custom">
+                        {% if playlist.image_url %}
+                            <img src="{{ playlist.image_url }}" class="card-img-top" alt="{{ playlist.name }} cover">
+                        {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-music text-muted fa-3x"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ playlist.name }}</h5>
+                            <p class="card-text text-muted small">
+                                {{ playlist.description | truncate(100) if playlist.description else 'No description available.' }}
+                            </p>
+                            <ul class="list-unstyled mt-auto mb-3 text-muted small">
+                                <li>Tracks: {{ playlist.track_count }}</li>
+                                <li>Score: {{ playlist.score if playlist.score is not none else 'N/A' }}</li>
+                            </ul>
+                            <a href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id) }}" class="btn btn-primary btn-sm mb-2">View Details</a>
+                            <div class="playlist-actions btn-group w-100" role="group" aria-label="Playlist actions">
+                                <form action="{{ url_for('main.whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="d-inline-block flex-fill">
+                                    <button type="submit" class="btn btn-outline-success btn-sm w-100">Whitelist</button>
+                                </form>
+                                <form action="{{ url_for('main.blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="d-inline-block flex-fill">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">Blacklist</button>
+                                </form>
+                            </div>
+                             <div class="playlist-actions-remove btn-group w-100 mt-1" role="group">
+                                <form action="{{ url_for('main.remove_whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="d-inline-block flex-fill">
+                                    <button type="submit" class="btn btn-link btn-sm text-success p-1 w-100">Remove WL</button>
+                                </form>
+                                <form action="{{ url_for('main.remove_blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="d-inline-block flex-fill">
+                                    <button type="submit" class="btn btn-link btn-sm text-danger p-1 w-100">Remove BL</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+            <h4>No Playlists Found</h4>
+            {% if error_message %}
+                {# Error message is now displayed at the top, so we can remove or simplify it here #}
+                {# <p class="text-danger">{{ error_message }}</p> #}
+            {% else %}
+                <p class="text-muted">It looks like you haven't connected any playlists yet, or there was an issue fetching them.</p>
+                <p class="text-muted">Try logging out and back in, or ensure your Spotify account is correctly linked.</p>
+            {% endif %}
+            {# Optional: Add a button to refresh or guide to connect Spotify #}
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

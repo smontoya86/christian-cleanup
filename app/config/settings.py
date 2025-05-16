@@ -3,10 +3,25 @@ from dotenv import load_dotenv
 import logging
 from datetime import timedelta
 
-# Load environment variables from .env file
-# Corrected basedir for when this file is in app/config/
-basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-load_dotenv(os.path.join(basedir, '..', '.env')) # Load .env from project root
+# Load .env before Config class definition
+# Determine the base directory of the project
+# __file__ is app/config/settings.py
+# os.path.dirname(__file__) is app/config
+# os.path.dirname(os.path.dirname(__file__)) is app
+# os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) is project root
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+dotenv_path = os.path.join(project_root, '.env')
+
+print(f"[settings.py TOP] Attempting to load .env from: {dotenv_path}")
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path=dotenv_path, override=True) 
+    print(f"[settings.py TOP] .env file loaded successfully from {dotenv_path}")
+    # Debug print values immediately after loading
+    print(f"[settings.py TOP] After load_dotenv - SPOTIPY_CLIENT_ID: {os.environ.get('SPOTIPY_CLIENT_ID')}")
+    print(f"[settings.py TOP] After load_dotenv - SPOTIPY_CLIENT_SECRET: {'*' * 5 + os.environ.get('SPOTIPY_CLIENT_SECRET')[-5:] if os.environ.get('SPOTIPY_CLIENT_SECRET') else 'None'}")
+    print(f"[settings.py TOP] After load_dotenv - SPOTIPY_REDIRECT_URI: {os.environ.get('SPOTIPY_REDIRECT_URI')}")
+else:
+    print(f"[settings.py TOP] .env file not found at {dotenv_path}. Relying on system environment variables.")
 
 class Config:
     """Base configuration class."""
@@ -82,7 +97,12 @@ config = {
     'default': DevelopmentConfig
 }
 
+# Debug prints for class attributes
+print(f"[settings.py POST-CLASS-DEF] Config.SPOTIPY_CLIENT_ID: {getattr(Config, 'SPOTIPY_CLIENT_ID', 'NOT_FOUND_ON_CONFIG_CLASS')}")
+print(f"[settings.py POST-CLASS-DEF] DevelopmentConfig.SPOTIPY_CLIENT_ID: {getattr(DevelopmentConfig, 'SPOTIPY_CLIENT_ID', 'NOT_FOUND_ON_DEVCONFIG_CLASS')}")
+
 def setup_logging(app_config):
     """Sets up basic logging for the application."""
     logging.basicConfig(level=app_config.LOG_LEVEL,
-                        format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
+                        format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]',
+                        datefmt='%Y-%m-%d %H:%M:%S')

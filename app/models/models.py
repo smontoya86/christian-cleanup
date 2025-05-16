@@ -51,11 +51,11 @@ class User(UserMixin, db.Model):
             'grant_type': 'refresh_token',
             'refresh_token': self.refresh_token,
         }
-        client_id = current_app.config.get('SPOTIFY_CLIENT_ID')
-        client_secret = current_app.config.get('SPOTIFY_CLIENT_SECRET')
+        client_id = current_app.config.get('SPOTIPY_CLIENT_ID')
+        client_secret = current_app.config.get('SPOTIPY_CLIENT_SECRET')
         
         if not client_id or not client_secret:
-             current_app.logger.error("SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET not configured.")
+             current_app.logger.error("SPOTIPY_CLIENT_ID or SPOTIPY_CLIENT_SECRET not configured.")
              return False
 
         try:
@@ -207,6 +207,7 @@ class Song(db.Model):
     title = db.Column(db.String(255), nullable=False)
     artist = db.Column(db.String(255), nullable=False)
     album = db.Column(db.String(255), nullable=True)
+    duration_ms = db.Column(db.Integer, nullable=True) # Added duration_ms
     lyrics = db.Column(db.Text, nullable=True)
     album_art_url = db.Column(db.String(512), nullable=True) # Add album art URL field
     explicit = db.Column(db.Boolean, default=False)

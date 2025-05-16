@@ -15,6 +15,12 @@ def get_spotify_oauth():
     redirect_uri = current_app.config.get('SPOTIPY_REDIRECT_URI')
     scopes = current_app.config.get('SPOTIFY_SCOPES')
 
+    # Debugging: Log the values
+    current_app.logger.debug(f"SPOTIPY_CLIENT_ID: {client_id}")
+    current_app.logger.debug(f"SPOTIPY_CLIENT_SECRET: {'*' * 5 + client_secret[-5:] if client_secret else None}") # Mask most of secret
+    current_app.logger.debug(f"SPOTIPY_REDIRECT_URI: {redirect_uri}")
+    current_app.logger.debug(f"SPOTIFY_SCOPES: {scopes}")
+
     if not all([client_id, client_secret, redirect_uri, scopes]):
         current_app.logger.error("Spotify API credentials, redirect URI, or scopes not configured.")
         return None
@@ -42,8 +48,17 @@ def login():
     # Generate and store state for CSRF protection
     state = os.urandom(16).hex()
     session['spotify_auth_state'] = state
+
+    # Enhanced Debugging for OAuth object
+    current_app.logger.debug(f"[AUTH LOGIN] SpotifyOAuth object state before get_authorize_url:")
+    current_app.logger.debug(f"[AUTH LOGIN]   Client ID: {getattr(sp_oauth, 'client_id', 'N/A')}")
+    current_app.logger.debug(f"[AUTH LOGIN]   Client Secret: {'SET' if getattr(sp_oauth, 'client_secret', None) else 'NOT SET'}") # Don't log secret itself
+    current_app.logger.debug(f"[AUTH LOGIN]   Redirect URI: {getattr(sp_oauth, 'redirect_uri', 'N/A')}")
+    current_app.logger.debug(f"[AUTH LOGIN]   Scope: {getattr(sp_oauth, 'scope', 'N/A')}")
+    current_app.logger.debug(f"[AUTH LOGIN]   State being sent: {state}")
+
     auth_url = sp_oauth.get_authorize_url(state=state)
-    current_app.logger.info(f"Redirecting to Spotify for authorization (state: {state})")
+    current_app.logger.info(f"Redirecting to Spotify for authorization (state: {state}, url: {auth_url})")
     return redirect(auth_url)
 
 @auth.route('/callback')
