@@ -52,8 +52,8 @@
                         <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Purity Score & Concern</h5>
                     </div>
                     <div class="card-body text-center">
-                        <h2 class="display-4 fw-bold {{ analysis_results.concern_level_class | default('text-muted') }}">{{ analysis_results.final_score | default('N/A') }}</h2>
-                        <p class="lead mb-0 {{ analysis_results.concern_level_class | default('text-muted') }}">Concern Level: <span class="fw-bold">{{ analysis_results.concern_level | default('Not Analyzed') }}</span></p>
+                        <h2 class="display-4 fw-bold {{ concern_level_class | default('text-muted') }}">{{ analysis.score | default('N/A') }}</h2>
+                        <p class="lead mb-0 {{ concern_level_class | default('text-muted') }}">Concern Level: <span class="fw-bold">{{ analysis.concern_level | default('Not Analyzed') }}</span></p>
                     </div>
                 </div>
 
@@ -65,10 +65,10 @@
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item">
                                 <strong>Purity Flags Triggered:</strong>
-                                {% if analysis_results.purity_flags_triggered %}
+                                {% if purity_flags_triggered %}
                                     <ul class="mt-1 mb-0 ps-3">
-                                    {% for flag, details in analysis_results.purity_flags_triggered.items() %}
-                                        <li>{{ flag }}: {{ details.penalty }} points</li>
+                                    {% for flag, details in purity_flags_triggered.items() %}
+                                        <li>{{ flag }} ({{details.level | default('N/A')}}): {{ details.penalty }} points</li>
                                     {% endfor %}
                                     </ul>
                                 {% else %}
@@ -77,9 +77,9 @@
                             </li>
                             <li class="list-group-item">
                                 <strong>Positive Themes:</strong>
-                                {% if analysis_results.positive_themes %}
+                                {% if positive_themes %}
                                     <ul class="mt-1 mb-0 ps-3">
-                                    {% for theme, details in analysis_results.positive_themes.items() %}
+                                    {% for theme, details in positive_themes.items() %}
                                         <li>{{ theme }}: +{{ details.points }} points</li>
                                     {% endfor %}
                                     </ul>
@@ -89,10 +89,10 @@
                             </li>
                             <li class="list-group-item">
                                 <strong>Negative Themes:</strong>
-                                {% if analysis_results.negative_themes %}
+                                {% if negative_themes %}
                                     <ul class="mt-1 mb-0 ps-3">
-                                    {% for theme, details in analysis_results.negative_themes.items() %}
-                                        <li>{{ theme }}: {{ details.penalty }} points</li>
+                                    {% for theme, details in negative_themes.items() %}
+                                        <li>{{ theme }}: {{ details.points }} points</li> {# Assuming details.points for consistency, adjust if penalty #}
                                     {% endfor %}
                                     </ul>
                                 {% else %}
@@ -110,13 +110,13 @@
                     <div class="card-body" style="max-height: 300px; overflow-y: auto;">
                         {% if scriptures and scriptures|length > 0 %}
                             <ul class="list-group list-group-flush">
-                              {% for scripture in scriptures %}
+                              {% for scripture_item in scriptures %}
                                 <li class="list-group-item">
-                                  <strong>{{ scripture.reference }} ({{ scripture.theme_or_flag }})</strong>:
-                                  {% if scripture.text_bsb %}
-                                    {{ scripture.text_bsb }} <span class="badge bg-info text-dark">BSB</span>
-                                  {% elif scripture.text_kjv %}
-                                    {{ scripture.text_kjv }} <span class="badge bg-secondary">KJV</span>
+                                  <strong>{{ scripture_item.reference }} ({{ scripture_item.theme_or_flag }})</strong>:
+                                  {% if scripture_item.text_bsb %}
+                                    {{ scripture_item.text_bsb }} <span class="badge bg-info text-dark">BSB</span>
+                                  {% elif scripture_item.text_kjv %}
+                                    {{ scripture_item.text_kjv }} <span class="badge bg-secondary">KJV</span>
                                   {% else %}
                                     <span class="text-muted">Text not available for this reference.</span>
                                   {% endif %}
@@ -132,19 +132,19 @@
                 {# Song Whitelist/Blacklist Actions #}
                 <div class="mt-3 text-center">
                     <div class="btn-group">
-                        <form action="{{ url_for('main.whitelist_song', playlist_id=playlist_spotify_id, track_id=song.spotify_id) }}" method="POST" class="d-inline">
+                        <form action="{{ url_for('main.whitelist_song', playlist_id=playlist_spotify_id if playlist_spotify_id else 'UNKNOWN_PLAYLIST', track_id=song.spotify_id) }}" method="POST" class="d-inline">
                             <button type="submit" class="btn btn-outline-success" title="Whitelist Song"><i class="fas fa-check me-1"></i>Whitelist</button>
                         </form>
-                        <form action="{{ url_for('main.blacklist_song', playlist_id=playlist_spotify_id, track_id=song.spotify_id) }}" method="POST" class="d-inline">
+                        <form action="{{ url_for('main.blacklist_song', playlist_id=playlist_spotify_id if playlist_spotify_id else 'UNKNOWN_PLAYLIST', track_id=song.spotify_id) }}" method="POST" class="d-inline">
                             <button type="submit" class="btn btn-outline-danger" title="Blacklist Song"><i class="fas fa-times me-1"></i>Blacklist</button>
                         </form>
                     </div>
                     <div class="mt-1">
-                         <form action="{{ url_for('main.remove_whitelist_song', playlist_id=playlist_spotify_id, track_id=song.spotify_id) }}" method="POST" class="d-inline">
+                         <form action="{{ url_for('main.remove_whitelist_song', playlist_id=playlist_spotify_id if playlist_spotify_id else 'UNKNOWN_PLAYLIST', track_id=song.spotify_id) }}" method="POST" class="d-inline">
                             <button type="submit" class="btn btn-link text-success p-0" title="Remove from Whitelist" style="font-size: 0.9em;">Remove Whitelist</button>
                         </form>
                         <span class="mx-1 text-muted">|</span>
-                        <form action="{{ url_for('main.remove_blacklist_song', playlist_id=playlist_spotify_id, track_id=song.spotify_id) }}" method="POST" class="d-inline">
+                        <form action="{{ url_for('main.remove_blacklist_song', playlist_id=playlist_spotify_id if playlist_spotify_id else 'UNKNOWN_PLAYLIST', track_id=song.spotify_id) }}" method="POST" class="d-inline">
                             <button type="submit" class="btn btn-link text-danger p-0" title="Remove from Blacklist" style="font-size: 0.9em;">Remove Blacklist</button>
                         </form>
                     </div>

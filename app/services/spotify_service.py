@@ -11,6 +11,7 @@ from dateutil import parser # Added for timestamp parsing
 # Added imports for DB interaction
 from .. import db
 from ..models import User, Playlist, Song, PlaylistSong, Whitelist, Blacklist
+from .analysis_service import perform_christian_song_analysis_and_store # Added import
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 import requests
@@ -289,7 +290,13 @@ class SpotifyService:
                                     )
                                     db.session.add(song)
                                     db.session.flush() # Assigns ID to song object if new
-                                    self.logger.info(f"Successfully created and added new song: {song.title} (ID: {song.id}) with Spotify ID {song.spotify_id}")
+                                    self.logger.info(f"Successfully created new song: {song.title} (ID: {song.id}) with Spotify ID {song.spotify_id}")
+                                    # Enqueue analysis for the new song
+                                    analysis_job = perform_christian_song_analysis_and_store(song.id)
+                                    if analysis_job:
+                                        self.logger.info(f"Analysis task for new song '{song.title}' (ID: {song.id}) enqueued. Job ID: {analysis_job.id}")
+                                    else:
+                                        self.logger.error(f"Failed to enqueue analysis task for new song '{song.title}' (ID: {song.id}).")
                                     songs_successfully_added_to_db += 1
                                 except Exception as e_song_create:
                                     self.logger.error(f"Error creating song {track_details['name']} (Spotify ID: {song_spotify_id}): {e_song_create}")
@@ -341,8 +348,8 @@ class SpotifyService:
                             playlist_song = PlaylistSong(
                                 playlist_id=playlist_in_db.id,
                                 song_id=song.id,
-                                position=current_position,
-                                added_at=self._parse_spotify_datetime(track_item_data.get('added_at')),
+                                track_position=current_position,
+                                added_at_spotify=self._parse_spotify_datetime(track_item_data.get('added_at')),
                                 added_by_spotify_user_id=track_item_data.get('added_by', {}).get('id')
                             )
                             db.session.add(playlist_song)

@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, redirect, url_for, current_app
 from flask_migrate import Migrate
-from .extensions import db, login_manager, scheduler
+from .extensions import db, login_manager, scheduler, bootstrap, rq
 from .config import config, setup_logging
 import os
 from .jobs import sync_all_playlists_job
@@ -73,6 +73,9 @@ def create_app(config_name=None):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     scheduler.init_app(app)
+    bootstrap.init_app(app) 
+    rq.init_app(app) 
+
     # Only start the scheduler if it's not already running AND we are not in testing mode.
     # For testing, we typically don't want background jobs running.
     if not scheduler.running and not app.config.get('TESTING', False):

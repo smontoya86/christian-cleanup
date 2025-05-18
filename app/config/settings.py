@@ -47,6 +47,11 @@ class Config:
     # Bible API Configuration (Optional)
     BIBLE_API_KEY = os.environ.get('BIBLE_API_KEY')
 
+    # RQ (Redis Queue) Configuration
+    RQ_REDIS_URL = os.environ.get('RQ_REDIS_URL', 'redis://redis:6379/0')
+    RQ_QUEUES = ['default']  # We only need the default queue for now
+    RQ_CONNECTION_CLASS = 'redis.Redis'  # Use the Redis client directly
+
     @staticmethod
     def init_app(app):
         pass
@@ -65,6 +70,7 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:' # Force in-memory SQLite for tests
     WTF_CSRF_ENABLED = False # Disable CSRF for tests
     LOG_LEVEL = logging.DEBUG
+    RQ_REDIS_URL = os.environ.get('RQ_TEST_REDIS_URL') or 'redis://localhost:6379/1' # Use a different Redis DB for tests
 
     # Spotify credentials will be inherited from Config (os.environ)
     # and should be set by test setup (e.g., conftest.py)

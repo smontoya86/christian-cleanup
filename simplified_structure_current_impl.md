@@ -24,6 +24,7 @@ This approach avoids the complexity of microservices while providing a productio
 
 - **Web Framework**: Flask (Python)
 - **Database**: **PostgreSQL** (using `SQLAlchemy` and `psycopg2`)
+- **Task Queuing**: Flask-RQ2 with Redis
 - **Local DB Management**: **Docker Compose**
 - **Spotify Integration**: Spotipy library
 - **Lyrics Retrieval**: `app/utils/lyrics.LyricsFetcher` (The underlying library used by this fetcher, e.g., `lyricsgenius`, is encapsulated within this class).

@@ -1,0 +1,30 @@
+{
+  "name": "christian-cleanup-windsurf",
+  "version": "1.0.0",
+  "description": "This application analyzes Spotify playlists to determine their alignment with Christian values. It fetches song lyrics, uses AI to identify themes and potentially problematic content, links themes to Bible verses, and provides an overall alignment score.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smontoya86/christian-cleanup.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/smontoya86/christian-cleanup/issues"
+  },
+  "homepage": "https://github.com/smontoya86/christian-cleanup#readme",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jsdom": "^26.1.0"
+  }
+}

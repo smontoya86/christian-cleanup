@@ -5,7 +5,7 @@ import spotipy
 from .. import db
 from ..models import User, Whitelist, Blacklist, Song, AnalysisResult, PlaylistSong, Playlist
 from ..services.spotify_service import SpotifyService
-from ..services.analysis_service import analyze_playlist_content, get_playlist_analysis_results
+from ..services.analysis_service import analyze_playlist_content, get_playlist_analysis_results, perform_christian_song_analysis_and_store # Added import
 from app.auth.decorators import spotify_token_required
 from app.services.whitelist_service import (
     add_to_whitelist,
@@ -31,7 +31,8 @@ from . import main_bp
 import json
 import os
 import requests
-from app.services.song_status_service import SongStatus # UPDATE THIS IMPORT
+from app.services.song_status_service import SongStatus 
+from sqlalchemy.orm import joinedload
 
 # Load Scripture Mappings
 SCRIPTURE_MAPPINGS_PATH = os.path.join(os.path.dirname(__file__), 'scripture_mappings.json')
@@ -281,6 +282,12 @@ def playlist_detail(playlist_id):
                     db.session.add(song_in_db)
                     db.session.flush() # Ensure song_in_db.id is populated for AnalysisResult query
                     current_app.logger.debug(f"Item {idx+1}: New song created with ID {song_in_db.id} (pending commit).")
+                    # Enqueue analysis for the new song
+                    analysis_job = perform_christian_song_analysis_and_store(song_in_db.id)
+                    if analysis_job:
+                        current_app.logger.info(f"Item {idx+1}: Analysis task enqueued for new song ID {song_in_db.id}. Job ID: {analysis_job.id}")
+                    else:
+                        current_app.logger.error(f"Item {idx+1}: Failed to enqueue analysis task for new song ID {song_in_db.id}.")
                 else:
                     current_app.logger.debug(f"Item {idx+1}: Found song in DB with ID {song_in_db.id}. Current DB album_art_url: '{song_in_db.album_art_url}'")
                     album_data = track_data.get('album')
@@ -319,6 +326,18 @@ def playlist_detail(playlist_id):
                              current_app.logger.debug(f"Item {idx+1}: DB duration_ms for song ID {song_in_db.id} is already correct ({song_in_db.duration_ms} ms). No update needed for duration.")
                     else:
                         current_app.logger.debug(f"Item {idx+1}: No duration_ms found in Spotify track_data for song ID {song_in_db.id}.")
+
+                    # For existing songs, check if analysis is missing and perform it.
+                    # The perform_christian_song_analysis_and_store function handles its own commit.
+                    # This ensures that even if a song was in DB but never analyzed, it gets analyzed now.
+                    # We query for analysis_result again in the common block below this 'if/else song_in_db'.
+                    if not AnalysisResult.query.filter_by(song_id=song_in_db.id).first():
+                        current_app.logger.info(f"Item {idx+1}: Existing song ID {song_in_db.id} has no AnalysisResult. Enqueuing analysis now.")
+                        analysis_job_existing = perform_christian_song_analysis_and_store(song_in_db.id)
+                        if analysis_job_existing:
+                            current_app.logger.info(f"Item {idx+1}: Analysis task enqueued for existing song ID {song_in_db.id}. Job ID: {analysis_job_existing.id}")
+                        else:
+                            current_app.logger.error(f"Item {idx+1}: Failed to enqueue analysis task for existing song ID {song_in_db.id}.")
 
                     if needs_db_update:
                         db.session.add(song_in_db) # Mark as dirty for commit
@@ -394,126 +413,6 @@ def playlist_detail(playlist_id):
         return redirect(url_for('main.dashboard'))
 
     return render_template('playlist_detail.html', playlist=playlist_details, songs_with_status=songs_with_status, pagination=pagination)
-
-@main_bp.route('/playlist/<string:playlist_spotify_id>/song/<string:track_spotify_id>')
-@login_required
-@spotify_token_required
-def song_detail(playlist_spotify_id, track_spotify_id):
-    song = Song.query.filter_by(spotify_id=track_spotify_id).first()
-
-    if not song:
-        flash('Song not found in the database.', 'danger')
-        return redirect(url_for('main.playlist_detail', playlist_id=playlist_spotify_id))
-
-    lyrics = song.lyrics_cleaned or song.lyrics
-    analysis_results_data = {
-        'final_score': None,
-        'concern_level': 'Not Analyzed',
-        'concern_level_class': 'text-muted',
-        'purity_flags_triggered': {},
-        'positive_themes': {},
-        'negative_themes': {}
-    }
-
-    analysis_record = AnalysisResult.query.filter_by(song_id=song.id).first()
-
-    if analysis_record:
-        analysis_results_data['final_score'] = analysis_record.alignment_score # This is the overall score from SongAnalyzer
-
-        # Process Purity Flags
-        # Assumes analysis_record.problematic_content is a list of detected canonical flag names (strings)
-        if analysis_record.problematic_content and isinstance(analysis_record.problematic_content, (list, set)):
-            for flag_name in analysis_record.problematic_content:
-                if flag_name in PURITY_FLAGS_SCORING:
-                    analysis_results_data['purity_flags_triggered'][flag_name] = \
-                        {'penalty': PURITY_FLAGS_SCORING[flag_name]}
-        elif isinstance(analysis_record.problematic_content, dict):
-            # Fallback for older dict structure, preferring canonical scores
-            current_app.logger.warning(f"Problematic content for song {song.id} is a dict, processing keys.")
-            for flag_name in analysis_record.problematic_content.keys():
-                 if flag_name in PURITY_FLAGS_SCORING:
-                    analysis_results_data['purity_flags_triggered'][flag_name] = \
-                        {'penalty': PURITY_FLAGS_SCORING[flag_name]}
-
-        # Process Themes
-        # Assumes analysis_record.themes is a list of detected canonical theme names (strings)
-        if analysis_record.themes and isinstance(analysis_record.themes, (list, set)):
-            for theme_name in analysis_record.themes:
-                if theme_name in POSITIVE_THEMES_SCORING:
-                    analysis_results_data['positive_themes'][theme_name] = \
-                        {'points': POSITIVE_THEMES_SCORING[theme_name]}
-                elif theme_name in NEGATIVE_THEMES_SCORING:
-                    analysis_results_data['negative_themes'][theme_name] = \
-                        {'penalty': NEGATIVE_THEMES_SCORING[theme_name]}
-        elif isinstance(analysis_record.themes, dict):
-            # Fallback for older dict structure, preferring canonical scores
-            current_app.logger.warning(f"Themes for song {song.id} is a dict, processing keys.")
-            for theme_name in analysis_record.themes.keys():
-                if theme_name in POSITIVE_THEMES_SCORING:
-                    analysis_results_data['positive_themes'][theme_name] = \
-                        {'points': POSITIVE_THEMES_SCORING[theme_name]}
-                elif theme_name in NEGATIVE_THEMES_SCORING:
-                    analysis_results_data['negative_themes'][theme_name] = \
-                        {'penalty': NEGATIVE_THEMES_SCORING[theme_name]}
-
-        purity_flags_count = len(analysis_results_data['purity_flags_triggered'])
-        concern_level, concern_class = _get_concern_level_details(analysis_results_data['final_score'], purity_flags_count)
-        analysis_results_data['concern_level'] = concern_level
-        analysis_results_data['concern_level_class'] = concern_class
-    
-    scriptures = []
-    # Fetch scriptures for all identified themes and flags
-    items_for_scripture_lookup = list(analysis_results_data['positive_themes'].keys()) + \
-                                 list(analysis_results_data['negative_themes'].keys()) + \
-                                 list(analysis_results_data['purity_flags_triggered'].keys())
-
-    for item_name in items_for_scripture_lookup:
-        if item_name in SCRIPTURE_MAPPINGS:
-            for ref_string in SCRIPTURE_MAPPINGS[item_name]:
-                bsb_text = get_bible_verse_text(ref_string, 'bsb')
-                kjv_text = None
-                if bsb_text is None: # Fallback to KJV if BSB fails or returns nothing
-                    current_app.logger.info(f"BSB text not found for '{ref_string}', trying KJV.")
-                    kjv_text = get_bible_verse_text(ref_string, 'kjv')
-                
-                # Only add if at least one translation was successful
-                if bsb_text or kjv_text:
-                    scriptures.append({
-                        'reference': ref_string,
-                        'theme_or_flag': item_name,
-                        'text_bsb': bsb_text,
-                        'text_kjv': kjv_text
-                    })
-                else:
-                    current_app.logger.warning(f"Could not fetch scripture for '{ref_string}' (Theme/Flag: {item_name}) in BSB or KJV.")
-
-    return render_template('song_detail.html', 
-                           song=song, 
-                           lyrics=lyrics, 
-                           analysis_results=analysis_results_data, 
-                           scriptures=scriptures, 
-                           playlist_spotify_id=playlist_spotify_id)
-
-
-def _get_concern_level_details(score, purity_flags_triggered_count):
-    """Helper function to determine concern level and CSS class based on score and purity flags."""
-    concern_level = "Not Analyzed"
-    concern_level_class = "text-muted"
-
-    if score is not None:
-        if purity_flags_triggered_count > 0:
-            concern_level = "High"
-            concern_level_class = "text-danger"
-        elif 40 <= score <= 69:
-            concern_level = "Medium"
-            concern_level_class = "text-warning"
-        elif score >= 70:
-            concern_level = "Low"
-            concern_level_class = "text-success"
-        else: # Score < 40 and no purity flags
-            concern_level = "Medium" # Or potentially another category like 'Low - Needs Review'
-            concern_level_class = "text-warning"
-    return concern_level, concern_level_class
 
 @main_bp.route('/playlist/<string:playlist_id>/update', methods=['POST'])
 @login_required
@@ -782,107 +681,132 @@ def api_blacklist_song(song_db_id):
 
     return jsonify({'success': success, 'message': message, 'new_status': new_status_for_ui, 'spotify_id': song.spotify_id})
 
-@main_bp.route('/api/playlist/<string:playlist_spotify_id>/analyze', methods=['POST'])
+@main_bp.route('/song/<string:song_id>')
+@login_required
+def song_detail(song_id):
+    current_app.logger.info(f"Accessing song detail page for song_id: {song_id}")
+    # Using generic song_id now. Could be Spotify ID or local DB ID depending on how you link to this page.
+    # For consistency, let's assume song_id IS the Spotify ID for now.
+    song = Song.query.filter_by(spotify_id=song_id).first()
+
+    if not song:
+        flash('Song not found.', 'danger')
+        current_app.logger.warning(f"Song with spotify_id '{song_id}' not found.")
+        return redirect(url_for('main.dashboard')) # Or some other appropriate page
+
+    analysis_result_db = AnalysisResult.query.filter_by(song_id=song.id).first()
+    
+    prepared_analysis_data = {}
+    lyrics_to_render = song.lyrics # Assuming Song model has a lyrics field, fallback later
+    concern_level_class = "text-muted"
+    scriptures_to_render = []
+    positive_themes_to_render = {}
+    negative_themes_to_render = {} # Placeholder for now
+    purity_flags_triggered_to_render = {}
+
+    if analysis_result_db:
+        try:
+            raw_analysis = json.loads(analysis_result_db.raw_analysis) if analysis_result_db.raw_analysis else {}
+            lyrics_to_render = raw_analysis.get('lyrics_used_for_analysis', song.lyrics)
+            
+            parsed_themes = json.loads(analysis_result_db.themes) if analysis_result_db.themes else []
+            parsed_purity_flags = json.loads(analysis_result_db.purity_flags_details) if analysis_result_db.purity_flags_details else []
+
+            prepared_analysis_data = {
+                "score": analysis_result_db.score,
+                "concern_level": analysis_result_db.concern_level,
+                "analyzed_at": analysis_result_db.analyzed_at,
+                # Raw fields for potential direct use or debugging in template
+                "raw_themes_list": parsed_themes,
+                "raw_purity_flags_list": parsed_purity_flags,
+                "raw_full_analysis_blob": raw_analysis
+            }
+
+            # Determine concern_level_class
+            if analysis_result_db.concern_level:
+                level_lower = analysis_result_db.concern_level.lower()
+                if level_lower == "high": concern_level_class = "text-danger"
+                elif level_lower == "medium": concern_level_class = "text-warning"
+                elif level_lower == "low": concern_level_class = "text-success"
+                else: concern_level_class = "text-info" # For 'None' or other
+
+            # Transform purity_flags_details (list of dicts) to dict for template
+            # Original template: {% for flag, details in purity_flags_triggered.items() %}
+            # where details might be like {'penalty': X}
+            # Assuming parsed_purity_flags is like [{'category': 'Profanity', 'level': 'Low', 'penalty': 5, 'details': '...'}, ...]
+            for flag_detail in parsed_purity_flags:
+                purity_flags_triggered_to_render[flag_detail.get('category', 'Unknown Flag')] = {
+                    'penalty': flag_detail.get('penalty', 0),
+                    'level': flag_detail.get('level', 'N/A'),
+                    'details': flag_detail.get('details', '')
+                }
+
+            # Transform themes (list of dicts) to dicts for template
+            # Original template expects: positive_themes = {theme_name: {points: Y}}, negative_themes = ...
+            # Assuming parsed_themes is like [{'theme': 'Faith', 'score_impact': 5, 'keywords': [], 'scriptures': [REF1,...]}, ...]
+            # For now, consider all themes in parsed_themes as positive.
+            for theme_detail in parsed_themes:
+                theme_name = theme_detail.get('theme', 'Unknown Theme')
+                positive_themes_to_render[theme_name] = {
+                    'points': theme_detail.get('score_impact', 0), # or some other field representing points
+                    'keywords': theme_detail.get('keywords', [])
+                    # Scriptures for this theme will be handled in the scripture_to_render loop
+                }
+                # Populate scriptures_to_render
+                for ref in theme_detail.get('scriptures', []):
+                    scripture_info = SCRIPTURE_MAPPINGS.get(ref, {})
+                    scriptures_to_render.append({
+                        'reference': ref,
+                        'theme_or_flag': theme_name,
+                        'text_bsb': scripture_info.get('text_bsb'),
+                        'text_kjv': scripture_info.get('text_kjv'),
+                        'full_mapping': scripture_info # For more detailed display if needed
+                    })
+
+        except json.JSONDecodeError as e:
+            current_app.logger.error(f"Error decoding JSON for analysis of song {song.id}: {e}")
+            prepared_analysis_data = {"error": "Could not parse analysis data."}
+        except Exception as e:
+            current_app.logger.error(f"Unexpected error processing analysis for song {song.id}: {e}")
+            prepared_analysis_data = {"error": "An unexpected error occurred while processing analysis data."}
+    else:
+        current_app.logger.info(f"No analysis found for song '{song.title}' (ID: {song.id}).")
+        # Provide default empty structures if no analysis
+        prepared_analysis_data = {"score": "N/A", "concern_level": "Not Analyzed"}
+
+    # Get playlist_id from request arguments for 'back' links
+    playlist_spotify_id_from_request = request.args.get('playlist_id')
+
+    return render_template('song_detail.html', 
+                           song=song, 
+                           analysis=prepared_analysis_data, 
+                           lyrics=lyrics_to_render,
+                           concern_level_class=concern_level_class,
+                           purity_flags_triggered=purity_flags_triggered_to_render,
+                           positive_themes=positive_themes_to_render,
+                           negative_themes=negative_themes_to_render, # Still empty for now
+                           scriptures=scriptures_to_render,
+                           playlist_spotify_id=playlist_spotify_id_from_request)
+
+@main_bp.route('/analyze_playlist_api/<string:playlist_id>', methods=['POST'])
 @login_required
 @spotify_token_required
-def api_analyze_playlist(playlist_spotify_id):
-    user_id = flask_login_current_user.id
-    playlist = Playlist.query.filter_by(spotify_id=playlist_spotify_id, user_id=user_id).first()
-
-    if not playlist:
-        current_app.logger.warn(f"Attempt to analyze non-existent or unauthorized playlist {playlist_spotify_id} by user {user_id}")
-        return jsonify({'success': False, 'message': 'Playlist not found or not authorized.'}), 404
-
-    # Get all song database IDs and Spotify IDs from the playlist
-    songs_in_playlist_query = db.session.query(Song.id, Song.spotify_id, Song.title)\
-                                  .join(PlaylistSong, Song.id == PlaylistSong.song_id)\
-                                  .filter(PlaylistSong.playlist_id == playlist.id)\
-                                  .all()
-
-    if not songs_in_playlist_query:
-        current_app.logger.info(f"Playlist {playlist_spotify_id} (DB ID: {playlist.id}) has no songs to analyze for user {user_id}.")
-        return jsonify({'success': True, 'message': 'Playlist has no songs to analyze.'}), 200
-
-    song_spotify_ids_to_fetch = [s.spotify_id for s in songs_in_playlist_query if s.spotify_id]
-    if not song_spotify_ids_to_fetch:
-        current_app.logger.info(f"Playlist {playlist_spotify_id} has songs, but none with Spotify IDs. Analysis skipped.")
-        return jsonify({'success': True, 'message': 'No songs with Spotify IDs in the playlist to analyze.'}), 200
-
-    analyzer = SongAnalyzer()
-    spotify_service = SpotifyService(flask_login_current_user.access_token)
-
-    analyzed_count = 0
-    error_count = 0
-    errors_details = []
-    already_analyzed_count = 0
-
+def analyze_playlist_api(playlist_id):
+    current_app.logger.info(f"analyze_playlist_api called for playlist_id: {playlist_id}")
     try:
-        detailed_spotify_tracks_info_list = spotify_service.get_tracks_details(song_spotify_ids_to_fetch)
-        spotify_tracks_map = {track['id']: track for track in detailed_spotify_tracks_info_list if track and track.get('id')}
+        # Call the service function to analyze the playlist
+        analysis_summary = analyze_playlist_content(playlist_id, flask_login_current_user.id)
+
+        if analysis_summary.get("error"):
+            current_app.logger.error(f"Error analyzing playlist {playlist_id}: {analysis_summary['error']}")
+            return jsonify({"success": False, "message": analysis_summary["error"]}), 500
+
+        current_app.logger.info(f"Playlist {playlist_id} analysis triggered successfully. Summary: {analysis_summary}")
+        return jsonify({
+            "success": True, 
+            "message": f"Analysis for playlist {playlist_id} initiated.", 
+            "analysis_summary": analysis_summary
+        })
     except Exception as e:
-        current_app.logger.error(f"Failed to fetch batch track details from Spotify for playlist {playlist_spotify_id}: {e}")
-        return jsonify({'success': False, 'message': f'Error fetching track details from Spotify: {str(e)}'}), 500
-
-    for song_record in songs_in_playlist_query:
-        song_db_id = song_record.id
-        song_spotify_id_val = song_record.spotify_id
-        song_title = song_record.title
-
-        if not song_spotify_id_val:
-            current_app.logger.warning(f"Song '{song_title}' (DB ID {song_db_id}) in playlist {playlist_spotify_id} has no Spotify ID. Skipping analysis.")
-            continue
-
-        track_info = spotify_tracks_map.get(song_spotify_id_val)
-        if not track_info:
-            current_app.logger.warning(f"Could not retrieve Spotify details for track '{song_title}' ({song_spotify_id_val}). Skipping analysis.")
-            error_count += 1
-            errors_details.append(f"Spotify details missing for '{song_title}' ({song_spotify_id_val})")
-            continue
-        
-        try:
-            # Check if already analyzed to avoid re-processing if not needed, or if SongAnalyzer handles this idempotently
-            # For now, we assume analyze_song_for_user is idempotent or we always want to re-trigger.
-            # It returns (analysis_result, was_analyzed_now)
-            analysis_result, was_analyzed_now = analyzer.analyze_song_for_user(
-                song_db_id=song_db_id,
-                user_id=user_id,
-                spotify_track_info=track_info
-            )
-            
-            if analysis_result:
-                if was_analyzed_now:
-                    analyzed_count += 1
-                else:
-                    already_analyzed_count +=1 # Count as processed, but not newly analyzed
-            else:
-                error_count += 1
-                errors_details.append(f"Analysis failed for song '{song_title}' ({song_spotify_id_val})")
-
-        except Exception as e:
-            current_app.logger.error(f"Error analyzing song '{song_title}' ({song_spotify_id_val}) in playlist {playlist_spotify_id}: {e}", exc_info=True)
-            error_count += 1
-            errors_details.append(f"Error during analysis for '{song_title}' ({song_spotify_id_val}): An unexpected error occurred.")
-    
-    total_processed = analyzed_count + already_analyzed_count
-    message = f"Playlist analysis processed. Newly analyzed: {analyzed_count} songs. Already analyzed: {already_analyzed_count} songs. Total processed: {total_processed}."
-    if error_count > 0:
-        message += f" Errors encountered for {error_count} songs."
-    
-    current_app.logger.info(message + f" For playlist: {playlist_spotify_id}, User: {user_id}")
-
-    # Note: SongAnalyzer.analyze_song_for_user commits its own AnalysisResult changes.
-    # If playlist-level aggregates were updated (e.g. playlist score), a commit might be needed here.
-    # For now, assuming only song analyses are performed and committed individually.
-
-    return jsonify({
-        'success': True, 
-        'message': message,
-        'newly_analyzed_count': analyzed_count,
-        'already_analyzed_count': already_analyzed_count,
-        'total_processed_count': total_processed,
-        'error_count': error_count,
-        'errors_details': errors_details if error_count > 0 else []
-    }), 200
-
-# Note: Ensure scripture_mappings.json is correctly loaded and handled if its path changes or if it's critical for startup.
-# The SCRIPTURE_MAPPINGS loading block appears at the top of this file.
+        current_app.logger.error(f"Exception in analyze_playlist_api for playlist {playlist_id}: {e}", exc_info=True)
+        return jsonify({"success": False, "message": "An unexpected error occurred during playlist analysis."}), 500

@@ -9,5 +9,9 @@ This application analyzes Spotify playlists to determine their alignment with Ch
 1.  Clone the repository.
 2.  Ensure Docker and Docker Compose are installed.
 3.  Create a `.env` file based on `.env.example` (to be created in a later task) and populate the necessary API keys and configurations.
-4.  Build and run the application using Docker Compose: `docker-compose up --build` (Docker setup will be part of a later task).
-5.  Access the application at `http://localhost:5000` (or as configured).
+4.  **Install and Run Redis (for macOS with Homebrew):**
+    - Install Redis: `brew install redis`
+    - Start Redis service: `brew services start redis`
+    - To check status: `brew services list`
+5.  Build and run the application using Docker Compose: `docker-compose up --build` (Docker setup will be part of a later task).
+6.  Access the application at `http://localhost:5000` (or as configured).

@@ -1,377 +1,127 @@
 {% extends "base.html" %}
-
-{% block title %}{{ playlist.name }} - Playlist Details - {{ super() }}{% endblock %}
+{% import "bootstrap5/form.html" as wtf %}
 
 {% block content %}
-<div class="container py-4">
-    <!-- Playlist Header -->
-    <div class="row mb-4">
-        <div class="col-md-3 text-center text-md-start mb-3 mb-md-0">
-            {% if playlist.image_url %}
-                <img src="{{ playlist.image_url }}" alt="{{ playlist.name }} cover" class="img-fluid rounded shadow-sm" style="max-width: 200px; max-height: 200px;">
+    <div class="container mt-4">
+        <h1>{{ playlist.name if playlist else "NO PLAYLIST OBJECT" }}</h1>
+
+        <p>If you see this, the template is loading and the playlist object is somewhat accessible.</p>
+        <p>The error might be in the commented out section below.</p>
+
+        <p class="lead">Curated by: {{ playlist.owner_name if playlist and playlist.owner_name else "Unknown Creator" }}</p>
+        <div class="mb-3">
+            <img src="{{ playlist.image_url if playlist and playlist.image_url else url_for('static', filename='images/default_playlist_image.png') }}" alt="{{ playlist.name if playlist else 'Playlist' }}" class="img-fluid rounded shadow-sm playlist-cover-img-detail">
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <a href="{{ url_for('main.analyze_playlist_api', playlist_id=playlist.id) }}" class="btn btn-outline-primary analyze-playlist-btn-api">
+                <i class="fas fa-sync-alt"></i> Analyze/Re-analyze Playlist (API)
+            </a>
+            <button id="toggle-view-btn" class="btn btn-outline-secondary">Switch to Grid View</button>
+        </div>
+        
+        <div class="progress mb-3" style="display: none;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div id="analysis-status" class="mt-2 mb-3"></div>
+        <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+
+        <!-- DEBUG: Raw songs_with_status -->
+        <div class="debug-output">
+            <h4>DEBUG: Raw songs_with_status variable:</h4>
+            <p>{{ songs_with_status }}</p>
+        </div>
+
+        <!-- DEBUG: Simple list of song titles -->
+        <div class="debug-output mt-3">
+            <h4>DEBUG: Simple song title list (count: {{ songs_with_status|length }}):</h4>
+            {% if songs_with_status %}
+                <ul>
+                    {% for item in songs_with_status %}
+                        <li>{{ item.song.title }} by {{ item.song.artist }} - Status: {{ item.status.display_message if item.status else 'N/A' }}</li>
+                    {% endfor %}
+                </ul>
             {% else %}
-                <div class="bg-light d-flex align-items-center justify-content-center rounded shadow-sm" style="width: 200px; height: 200px;">
-                    <i class="fas fa-music text-muted fa-5x"></i>
-                </div>
+                <p>songs_with_status is empty or not defined.</p>
             {% endif %}
         </div>
-        <div class="col-md-9">
-            <h1 class="display-5">{{ playlist.name }}</h1>
-            <p class="lead text-muted">{{ playlist.description | default('No description available.') }}</p>
-            <p class="mb-1">
-                <small class="text-muted">
-                    Owner: {{ playlist.owner_name | default('N/A') }} | 
-                    Tracks: {{ songs_with_status|length if songs_with_status else playlist.track_count | default('N/A') }} | 
-                    Score: <span class="fw-bold">{{ playlist.score if playlist.score is not none else 'N/A' }}</span>
-                </small>
-            </p>
-            <div class="mt-3">
-                <button id="analyzePlaylistBtn" class="btn btn-primary me-2" data-playlist-id="{{ playlist.spotify_id }}"><i class="fas fa-wand-magic-sparkles me-1"></i> Analyze Entire Playlist</button>
-                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Back to Dashboard</a>
+
+        <div id="song-list-view">
+            <h3>Songs</h3>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width: 5%;">#</th>
+                            <th scope="col" style="width: 10%;">Art</th>
+                            <th scope="col" style="width: 30%;">Title</th>
+                            <th scope="col" style="width: 25%;">Artist</th>
+                            <th scope="col" style="width: 15%;">Album</th>
+                            <th scope="col" style="width: 15%;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if songs_with_status %}
+                            {% for item in songs_with_status %}
+                            <tr class="{{ 'table-info' if item.is_preferred else '' }}">
+                                <th scope="row">{{ loop.index }}</th>
+                                <td>
+                                    <a href="{{ url_for('main.song_detail', song_id=item.song.id) }}">
+                                        <img src="{{ item.song.album_art_url or url_for('static', filename='images/default_album_art.png') }}" alt="{{ item.song.title }}" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
+                                    </a>
+                                </td>
+                                <td><a href="{{ url_for('main.song_detail', song_id=item.song.id) }}">{{ item.song.title }}</a></td>
+                                <td>{{ item.song.artist }}</td>
+                                <td>{{ item.song.album }}</td>
+                                
+                                <td class="status-cell {% if item.status and item.status.color_class %}{{ item.status.color_class }}{% else %}bg-light{% endif %}">
+
+                                    <p>DEBUG TEMPLATE: Accessing status for song: {{ item.song.title }}</p>
+                                    <p>DEBUG TEMPLATE: item.status object: {{ item.status }}</p>
+                                    <p>DEBUG TEMPLATE: Type of item.status: {{ item.status.__class__.__name__ if item.status else 'NoneType' }}</p>
+
+                                    {% if item.status %}
+                                        <p>DEBUG TEMPLATE: item.status.color_class is truthy: {{ True if item.status.color_class else False }}</p>
+                                        {% if item.status.color_class %}
+                                            <p>DEBUG TEMPLATE: color_class value: {{ item.status.color_class }}</p>
+                                        {% else %}
+                                            <p>DEBUG TEMPLATE: color_class is FALSY or None on item.status. Value: '{{ item.status.color_class }}'</p>
+                                        {% endif %}
+                                        
+                                        <p>DEBUG TEMPLATE: hasattr display_message: {{ item.status.display_message is defined }}</p>
+                                        {% if item.status.display_message is defined %}
+                                            <p>DEBUG TEMPLATE: display_message value: {{ item.status.display_message }}</p>
+                                            {{ item.status.display_message }}
+                                        {% else %}
+                                            <p>DEBUG TEMPLATE: display_message is UNDEFINED on item.status</p>
+                                            N/A (display_message missing)
+                                        {% endif %}
+                                    {% else %}
+                                        <p>DEBUG TEMPLATE: item.status IS NONE.</p>
+                                        N/A (status object missing)
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">No songs found in this playlist or an error occurred.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
+        </div>
+
+        <div id="song-grid-view" style="display: none;">
         </div>
     </div>
 
-    <hr class="my-4">
-
-    <h3>Tracks</h3>
-    {# Future: Add filter/sort options here #}
-    {% if songs_with_status %}
-        <div class="card-body">
-          <h5 class="card-title">Songs (Page {{ pagination.page }} of {{ pagination.total_pages }})</h5>
-          <p class="card-text text-muted">Total songs in playlist: {{ pagination.total_items }}</p>
-
-          <!-- Filter Input -->
-          <div class="mb-3">
-            <input type="text" id="songFilterInput" class="form-control" placeholder="Filter songs by title, artist, album...">
-          </div>
-
-          <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col" style="width: 5%;">#</th>
-                        <th scope="col" style="width: 70px;">Album Art</th>
-                        <th scope="col" style="width: 25%;">Album Name</th>
-                        <th scope="col" style="width: 30%;">Song Title</th>
-                        <th scope="col" style="width: 25%;">Artist(s)</th>
-                        <th scope="col" style="width: 10%;">Duration</th>
-                        <th scope="col" style="width: 10%;">Status</th>
-                        <th scope="col" style="width: 10%;">Alignment Score</th>
-                        <th scope="col" style="width: 15%;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="songTableBody">
-                    {% for item_data in songs_with_status %}
-                    <tr>
-                        <th scope="row">{{ loop.index + (pagination.page - 1) * pagination.per_page if pagination else loop.index }}</th>
-                        <td>
-                            {# ALBUM ART #}
-                            {% if item_data.song and item_data.song.album_art_url and item_data.song.album_art_url != 'None' %}
-                                <img src="{{ item_data.song.album_art_url }}" alt="Album art for {{ item_data.song.album | default('') }}" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
-                            {% else %}
-                                <div class="img-thumbnail d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #f8f9fa;">
-                                    <i class="fas fa-compact-disc text-muted"></i>
-                                </div>
-                            {% endif %}
-                        </td>
-                        <td>{# ALBUM NAME #}
-                            {{ item_data.song.album | default('N/A') if item_data.song else 'N/A' }}
-                        </td>
-                        <td>{# SONG TITLE #}
-                            <strong class="song-title">{{ item_data.song.title | default('N/A') if item_data.song else 'N/A' }}</strong>
-                        </td>
-                        <td>{# ARTIST(S) #}
-                            {{ item_data.song.artist | default('N/A') if item_data.song else 'N/A' }}
-                        </td>
-                        <td>{# DURATION #}
-                            {{ (item_data.song.duration_ms | format_ms) if item_data.song and item_data.song.duration_ms is not none else 'N/A' }}
-                        </td>
-                        <!-- Status Column -->
-                        <td class="px-6 py-4 whitespace-nowrap text-sm {{ item_data.status.color_class }}">
-                            {{ item_data.status.display_message }}
-                        </td>
-                        <!-- Alignment Score Column -->
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {# Show score only if analysis_result and overall_score exist AND status is not one that inherently hides score #}
-                            {% if item_data.analysis_result and item_data.analysis_result.overall_score is not none and item_data.status.display_message not in ['Whitelisted', 'Blacklisted', 'User Preferred', 'Not Analyzed', 'Pending Score', 'High Concern (Flag)'] %}
-                                {{ "%.2f"|format(item_data.analysis_result.overall_score * 100) }}%
-                            {% else %}
-                                N/A
-                            {% endif %}
-                        </td>
-                        <td> {# ACTIONS #}
-                            {% if item_data.song %}
-                            <a href="{{ url_for('main.song_detail', playlist_spotify_id=playlist.spotify_id, track_spotify_id=item_data.song.spotify_id) }}" class="btn btn-sm btn-outline-primary me-1" title="View Song Details">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <button class="btn btn-sm btn-info analyze-btn me-1" data-song-id="{{ item_data.song.id }}" data-playlist-id="{{ playlist.spotify_id }}" title="Re-Analyze Song">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                            <button class="btn btn-sm btn-secondary view-lyrics-btn" data-song-id="{{ item_data.song.id }}" data-song-title="{{ item_data.song.title | e }}" data-artist-name="{{ (item_data.song.artist.split(',')[0].strip() if item_data.song.artist else '') | e }}" title="View Lyrics">
-                                <i class="fas fa-file-alt"></i>
-                            </button>
-                            {% else %}
-                            N/A
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {% if pagination and pagination.total_pages > 1 %}
-            <nav aria-label="Song navigation">
-              <ul class="pagination justify-content-center mt-4">
-                {# Previous Page Link #}
-                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                  <a class="page-link" href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id, page=pagination.prev_num) if pagination.has_prev else '#' }}" aria-label="Previous">
-                    <span aria-hidden="true">&laquo;</span>
-                  </a>
-                </li>
-
-                {# Page Number Links #}
-                {% set window = 2 %}
-                {% for p_num in range(1, pagination.total_pages + 1) %}
-                  {% if p_num == 1 or p_num == pagination.total_pages or (p_num >= pagination.page - window and p_num <= pagination.page + window) %}
-                    {% if p_num == pagination.page %}
-                      <li class="page-item active" aria-current="page"><span class="page-link">{{ p_num }}</span></li>
-                    {% else %}
-                      <li class="page-item"><a class="page-link" href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id, page=p_num) }}">{{ p_num }}</a></li>
-                    {% endif %}
-                  {% elif p_num == pagination.page - window - 1 or p_num == pagination.page + window + 1 %}
-                     {% if p_num > 1 and p_num < pagination.total_pages %}
-                        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
-                     {% endif %}
-                  {% endif %}
-                {% endfor %}
-
-                {# Next Page Link #}
-                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                  <a class="page-link" href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id, page=pagination.next_num) if pagination.has_next else '#' }}" aria-label="Next">
-                    <span aria-hidden="true">&raquo;</span>
-                  </a>
-                </li>
-              </ul>
-            </nav>
-        {% endif %}
-
-    {% else %}
-        <div class="text-center py-5">
-            <i class="fas fa-compact-disc fa-3x text-muted mb-3"></i>
-            <h4>No Songs Found</h4>
-            <p class="text-muted">This playlist appears to be empty, or we couldn't retrieve its songs.</p>
-        </div>
-    {% endif %}
-</div>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
 <script>
-// JavaScript for table sorting will go here
-document.addEventListener('DOMContentLoaded', function() {
-    // Function to show a Bootstrap toast
-    function showToast(message, type = 'info') {
-        const toastContainer = document.querySelector('.toast-container');
-        if (!toastContainer) return;
-
-        const toastId = 'toast-' + Math.random().toString(36).substr(2, 9);
-        const toastHTML = `
-            <div class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true" id="${toastId}">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        ${message}
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-            </div>
-        `;
-        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-        const toastElement = document.getElementById(toastId);
-        const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
-        toast.show();
-        toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
-    }
-
-    const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
-
-    const comparer = (idx, asc, sortType) => (a, b) => ((v1, v2) => {
-        if (sortType === 'number') {
-            v1 = parseFloat(v1) || 0; // Default to 0 if not a number (e.g., 'N/A')
-            v2 = parseFloat(v2) || 0;
-        }
-        return v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2);
-    })(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
-
-    document.querySelectorAll('[data-sortable="true"]').forEach(th => th.addEventListener('click', (() => {
-        const table = th.closest('table');
-        const tbody = table.querySelector('tbody');
-        const columnIndex = parseInt(th.dataset.columnIndex);
-        const sortType = th.dataset.sortType || 'string'; // Default to string sort
-        
-        // Reset sort indicators for other columns
-        th.closest('thead').querySelectorAll('th[data-sortable="true"]').forEach(otherTh => {
-            if (otherTh !== th) {
-                otherTh.querySelector('.sort-indicator').textContent = '';
-                delete otherTh.dataset.sortDir;
-            }
-        });
-
-        let currentSortDir = th.dataset.sortDir;
-        const newSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
-        th.dataset.sortDir = newSortDir;
-        th.querySelector('.sort-indicator').textContent = newSortDir === 'asc' ? ' \u25B2' : ' \u25BC'; // Up/Down arrow
-
-        Array.from(tbody.querySelectorAll('tr'))
-            .sort(comparer(columnIndex, newSortDir === 'asc', sortType))
-            .forEach(tr => tbody.appendChild(tr));
-    })));
-
-    // JavaScript for quick whitelist/blacklist actions
-    document.querySelectorAll('.quick-action-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const songId = this.dataset.songId;
-            const action = this.dataset.action;
-            const playlistId = this.dataset.playlistId; // Though not used by current API, good to have
-            const row = this.closest('tr');
-            const actionCell = this.closest('td');
-
-            // Retrieve CSRF token from meta tag
-            const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
-            const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : null;
-
-            if (!csrfToken) {
-                console.error('CSRF token not found. Aborting API call.');
-                // Optionally, display an error to the user
-                // showToast('Critical error: CSRF token missing. Please refresh.', 'danger');
-                return; // Prevent the API call if token is missing
-            }
-
-            fetch(`/api/song/${songId}/${action}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken // Add CSRF token to headers
-                },
-                // body: JSON.stringify({ playlist_id: playlistId }) // If API needed playlist_id in body
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update UI
-                    const newStatus = data.new_status;
-                    actionCell.innerHTML = ''; // Clear existing buttons
-
-                    if (newStatus === 'whitelisted') {
-                        actionCell.innerHTML = `
-                            <button class="btn btn-sm btn-outline-secondary disabled" title="Song is whitelisted">
-                                <i class="bi bi-check-circle-fill"></i> <span class="d-none d-md-inline">Whitelisted</span>
-                            </button>
-                        `;
-                    } else if (newStatus === 'blacklisted') {
-                        actionCell.innerHTML = `
-                            <button class="btn btn-sm btn-outline-secondary disabled" title="Song is blacklisted">
-                                <i class="bi bi-x-octagon-fill"></i> <span class="d-none d-md-inline">Blacklisted</span>
-                            </button>
-                        `;
-                    } else {
-                        // Fallback or error: re-render original buttons (or show error)
-                        // For now, just log error and keep it simple.
-                        console.error('Failed to update status to an unknown state:', newStatus);
-                        // Potentially re-add original buttons or a generic error message
-                        actionCell.innerHTML = '<span class="text-danger">Error</span>';
-                    }
-                    showToast(data.message, data.success ? 'success' : 'danger');
-                } else {
-                    console.error('API Error:', data.message);
-                    showToast(data.message || 'An unknown API error occurred.', 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Fetch Error:', error);
-                showToast('Network error. Please try again.', 'danger');
-            });
-        });
-    });
-
-    // JavaScript for client-side table filtering
-    const filterInput = document.getElementById('songFilterInput');
-    const tableBody = document.getElementById('songTableBody');
-    const tableRows = tableBody ? Array.from(tableBody.querySelectorAll('tr')) : [];
-
-    if (filterInput && tableBody) {
-        filterInput.addEventListener('input', function() {
-            const filterText = this.value.toLowerCase().trim();
-
-            tableRows.forEach(row => {
-                // New column order: # (0), Album Art (1), Album Name (2), Song Title (3), Artist(s) (4), Duration (5), Status (6), Alignment Score (7), Actions (8)
-                const albumNameCell = row.children[2] ? row.children[2].textContent || row.children[2].innerText : '';
-                const songTitleCell = row.children[3] ? row.children[3].textContent || row.children[3].innerText : '';
-                const artistCell = row.children[4] ? row.children[4].textContent || row.children[4].innerText : '';
-
-                const rowText = (albumNameCell + ' ' + songTitleCell + ' ' + artistCell).toLowerCase();
-
-                if (rowText.includes(filterText)) {
-                    row.style.display = ''; // Show row
-                } else {
-                    row.style.display = 'none'; // Hide row
-                }
-            });
-        });
-    }
-
-    // JavaScript for 'Analyze Entire Playlist' button
-    const analyzeButton = document.getElementById('analyzePlaylistBtn');
-    if (analyzeButton) {
-        analyzeButton.addEventListener('click', function() {
-            const playlistId = this.dataset.playlistId;
-            const originalButtonText = this.innerHTML;
-            const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
-            const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : null;
-
-            if (!csrfToken) {
-                showToast('CSRF token not found. Cannot proceed.', 'danger');
-                return;
-            }
-
-            this.disabled = true;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...';
-
-            fetch(`/api/playlist/${playlistId}/analyze`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                showToast(data.message, data.success ? 'success' : 'danger');
-                if (data.success) {
-                    // Reload the page to reflect any updated analysis data
-                    // Give a slight delay for the toast to be read
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000); // 2 seconds delay
-                }
-            })
-            .catch(error => {
-                console.error('Error analyzing playlist:', error);
-                showToast('An error occurred while starting playlist analysis. Please try again.', 'danger');
-            })
-            .finally(() => {
-                // Re-enable the button only if not reloading, or after a delay if issues with immediate reload
-                // Since we reload on success, this might only run fully on error or if reload is delayed/conditional.
-                if (! (this.disabled && this.innerHTML.includes('spinner'))) { // Avoid resetting if already changed by success reload logic
-                    this.disabled = false;
-                    this.innerHTML = originalButtonText;
-                }
-            });
-        });
-    }
-
-});
+// Javascript will be commented out for now to simplify
 </script>
 {% endblock %}

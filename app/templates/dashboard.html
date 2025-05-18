@@ -58,9 +58,9 @@
     <!-- Search/Filter Bar -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <form class="d-flex">
-                <input class="form-control me-2" type="search" placeholder="Search playlists..." aria-label="Search">
-                <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search me-1"></i>Search</button>
+            <form class="d-flex" onsubmit="return false;">
+                <input class="form-control me-2" type="search" id="playlistSearchInput" placeholder="Search playlists..." aria-label="Search">
+                <button class="btn btn-outline-primary" type="button"><i class="fas fa-search me-1"></i>Search</button>
             </form>
         </div>
     </div>
@@ -68,7 +68,7 @@
     {% if playlists %}
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             {% for playlist in playlists %}
-                <div class="col">
+                <div class="col playlist-item">
                     <div class="card h-100 shadow-sm playlist-card-custom">
                         {% if playlist.image_url %}
                             <img src="{{ playlist.image_url }}" class="card-img-top" alt="{{ playlist.name }} cover">
@@ -123,4 +123,32 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('playlistSearchInput');
+    const playlistItems = document.querySelectorAll('.playlist-item');
+
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function () {
+            const searchTerm = searchInput.value.toLowerCase();
+
+            playlistItems.forEach(function (item) {
+                const playlistNameElement = item.querySelector('.card-title');
+                const playlistName = playlistNameElement ? playlistNameElement.textContent.toLowerCase() : '';
+                
+                const playlistDescriptionElement = item.querySelector('.card-text');
+                const playlistDescription = playlistDescriptionElement ? playlistDescriptionElement.textContent.toLowerCase() : '';
+                
+                if (playlistName.includes(searchTerm) || playlistDescription.includes(searchTerm)) {
+                    item.style.display = ''; 
+                } else {
+                    item.style.display = 'none'; 
+                }
+            });
+        });
+    }
+});
+</script>
+
 {% endblock %}
