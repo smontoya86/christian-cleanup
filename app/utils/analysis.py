@@ -43,8 +43,17 @@ except ImportError:
             return []
 
 class SongAnalyzer:
-    def __init__(self, device: Optional[str] = None):
+    def __init__(self, device: Optional[str] = None, user_id: Optional[int] = None):
+        """
+        Initialize the SongAnalyzer.
+        
+        Args:
+            device: The device to use for model inference (e.g., 'cuda' or 'cpu').
+                   If None, will use CUDA if available, otherwise CPU.
+            user_id: Optional ID of the user who requested the analysis.
+        """
         self.device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+        self.user_id = user_id
         logger.info(f"SongAnalyzer using device: {self.device}")
 
         self.christian_rubric = get_christian_rubric()
@@ -83,10 +92,36 @@ class SongAnalyzer:
         
         self._load_models() # Load all necessary models
 
-        self.lyrics_fetcher = LyricsFetcher()
-        self.bible_client = BibleClient()
-        self.bsb_bible_id = BibleClient.BSB_ID
-        self.kjv_bible_id = BibleClient.KJV_ID
+        # Initialize services with proper configuration
+        try:
+            # Try to get the API keys from the environment or Flask config
+            genius_token = os.environ.get('LYRICSGENIUS_API_KEY')
+            bible_api_key = os.environ.get('BIBLE_API_KEY')
+            
+            # If we're in a Flask app context, try to get from config
+            try:
+                from flask import current_app
+                if current_app:
+                    if not genius_token and 'LYRICSGENIUS_API_KEY' in current_app.config:
+                        genius_token = current_app.config['LYRICSGENIUS_API_KEY']
+                    if not bible_api_key and 'BIBLE_API_KEY' in current_app.config:
+                        bible_api_key = current_app.config['BIBLE_API_KEY']
+            except (RuntimeError, ImportError):  # Not in Flask app context or Flask not available
+                pass
+            
+            # Initialize services with the API keys
+            self.lyrics_fetcher = LyricsFetcher(genius_token=genius_token)
+            self.bible_client = BibleClient()  # It will use the environment variable we set
+            self.bsb_bible_id = BibleClient.BSB_ID
+            self.kjv_bible_id = BibleClient.KJV_ID
+            
+        except Exception as e:
+            logger.error(f"Error initializing SongAnalyzer services: {e}", exc_info=True)
+            # Initialize with None values if there's an error
+            self.lyrics_fetcher = None
+            self.bible_client = None
+            self.bsb_bible_id = None
+            self.kjv_bible_id = None
         
     def _load_models(self):
         logger.info("Loading NLP models...")
@@ -137,33 +172,60 @@ class SongAnalyzer:
         processed_lyrics = re.sub(r'\s+', ' ', processed_lyrics).strip()
         return processed_lyrics
 
-    def _get_cardiffnlp_predictions(self, text: str) -> List[Dict[str, Any]]:
+    def _get_cardiffnlp_predictions(self, text: str, chunk_size: int = 500) -> List[Dict[str, Any]]:
         logger.debug("Executing full _get_cardiffnlp_predictions")
         if not self.cardiffnlp_offensive_classifier or not text:
             logger.warning("CardiffNLP offensive classifier not loaded or empty text, returning empty predictions.")
             return []
         
         try:
-            # The pipeline handles tokenization, truncation to model's max_length, and prediction.
-            # It returns a list of dictionaries, even for single input.
-            # e.g., [{'label': 'hate', 'score': 0.88}] or [{'label': 'LABEL_2', 'score': 0.88}]
-            # The default max_length for roberta-base is 512 tokens.
-            predictions = self.cardiffnlp_offensive_classifier(text, truncation=True) # max_length is often implicit
+            # Split the text into sentences first
+            sentences = re.split(r'(?<=[.!?])\s+', text)
+            current_chunk = []
+            chunks = []
+            current_length = 0
             
-            logger.debug(f"CardiffNLP raw predictions from pipeline: {predictions}")
+            # Create chunks of text that are roughly chunk_size tokens
+            for sentence in sentences:
+                sentence_length = len(sentence.split())
+                if current_length + sentence_length > chunk_size and current_chunk:
+                    chunks.append(' '.join(current_chunk))
+                    current_chunk = []
+                    current_length = 0
+                current_chunk.append(sentence)
+                current_length += sentence_length
             
-            # The 'text-classification' pipeline for models like cardiffnlp/twitter-roberta-base-offensive
-            # uses the model's config.id2label to return human-readable labels (e.g., 'offensive', 'hate').
-            # So, no explicit mapping from 'LABEL_X' should be needed here if model config is standard.
+            if current_chunk:
+                chunks.append(' '.join(current_chunk))
             
-            # We are interested in 'offensive' and 'hate' labels.
-            relevant_predictions = []
-            for pred in predictions: # predictions is a list e.g. [{'label': 'offensive', 'score': 0.9}]
-                label = pred.get('label', '').lower() # Ensure lowercase for consistent matching
+            # Process each chunk and collect results
+            all_predictions = []
+            for chunk in chunks:
+                try:
+                    chunk_predictions = self.cardiffnlp_offensive_classifier(chunk, truncation=True, max_length=512)
+                    if isinstance(chunk_predictions, dict):
+                        chunk_predictions = [chunk_predictions]
+                    all_predictions.extend(chunk_predictions)
+                except Exception as chunk_error:
+                    logger.warning(f"Error processing chunk: {chunk_error}")
+                    continue
+            
+            if not all_predictions:
+                return []
+                
+            logger.debug(f"CardiffNLP raw predictions from pipeline: {all_predictions}")
+            
+            # Process and deduplicate predictions
+            relevant_predictions = {}
+            for pred in all_predictions:
+                label = pred.get('label', '').lower()
+                score = pred.get('score', 0)
                 if label in ["offensive", "hate"]:
-                    relevant_predictions.append({'label': label, 'score': pred.get('score')})
+                    # Keep the highest score for each label
+                    if label not in relevant_predictions or score > relevant_predictions[label]['score']:
+                        relevant_predictions[label] = {'label': label, 'score': score}
             
-            return relevant_predictions
+            return list(relevant_predictions.values())
             
         except Exception as e:
             logger.error(f"Error getting CardiffNLP predictions: {e}", exc_info=True)
@@ -286,11 +348,15 @@ class SongAnalyzer:
         return {}
 
     def analyze_song(self, title: str, artist: str, lyrics_text: Optional[str] = None, fetch_lyrics_if_missing: bool = True) -> Dict[str, Any]:
-        logger.info(f"--- Starting Song Analysis for '{title}' by '{artist}' ---")
+        # Log the start of analysis with user context if available
+        log_prefix = f"[User {self.user_id}] " if self.user_id else ""
+        logger.info(f"{log_prefix}--- Starting Song Analysis for '{title}' by '{artist}' ---")
         
+        # Default analysis results with safe defaults
         analysis_results = {
             "title": title,
             "artist": artist,
+            "analyzed_by_user_id": self.user_id,
             "lyrics_provided": lyrics_text is not None,
             "lyrics_fetched_successfully": False,
             "lyrics_used_for_analysis": "",
@@ -300,8 +366,9 @@ class SongAnalyzer:
             "christian_positive_themes_detected": [],
             "christian_negative_themes_detected": [],
             "christian_score": self.christian_rubric.get("baseline_score", 100),
-            "christian_concern_level": "Low", # Default, will be updated
+            "christian_concern_level": "Low",  # Default, will be updated
             "christian_supporting_scripture": {},
+            "warnings": [],
             "errors": []
         }
 
@@ -316,69 +383,133 @@ class SongAnalyzer:
                         analysis_results["lyrics_fetched_successfully"] = True
                     else:
                         logger.warning(f"Could not fetch lyrics for '{title}'.")
-                        analysis_results["errors"].append("Failed to fetch lyrics.")
+                        analysis_results["warnings"].append("Failed to fetch lyrics. Analysis will be limited.")
                 except Exception as e:
                     logger.error(f"Error fetching lyrics for '{title}': {e}", exc_info=True)
-                    analysis_results["errors"].append(f"Exception during lyrics fetching: {str(e)}")
+                    error_msg = f"Error fetching lyrics: {str(e)}"
+                    analysis_results["warnings"].append(error_msg)
+                    analysis_results["errors"].append(error_msg)
             
             if not lyrics_text:
+                error_msg = "No lyrics available for analysis. Using default scoring."
                 logger.warning(f"No lyrics available for '{title}' by '{artist}'. Analysis will be limited.")
-                analysis_results["errors"].append("No lyrics available for analysis.")
-                # Still return results, but score might be baseline, concern low, etc.
-                # Or decide on a specific handling for no-lyrics cases (e.g. specific score/concern)
-                # For now, it will proceed with empty lyrics_text if none found/provided.
+                analysis_results["warnings"].append(error_msg)
+                analysis_results["errors"].append(error_msg)
+                # Set default values for required fields
+                analysis_results.update({
+                    "christian_score": self.christian_rubric.get("baseline_score", 100),
+                    "christian_concern_level": "Low",
+                    "christian_purity_flags_details": [],
+                    "christian_positive_themes_detected": [],
+                    "christian_negative_themes_detected": [],
+                    "christian_supporting_scripture": {}
+                })
+                return analysis_results
 
             # 2. Preprocess Lyrics
-            processed_lyrics = self._preprocess_lyrics(lyrics_text if lyrics_text else "")
-            analysis_results["lyrics_used_for_analysis"] = processed_lyrics
+            try:
+                processed_lyrics = self._preprocess_lyrics(lyrics_text)
+                analysis_results["lyrics_used_for_analysis"] = processed_lyrics
+            except Exception as e:
+                logger.error(f"Error preprocessing lyrics: {e}", exc_info=True)
+                analysis_results["errors"].append(f"Error preprocessing lyrics: {str(e)}")
+                return analysis_results
 
             # 3. Sensitive Content Detection (CardiffNLP)
-            # Only run if there are lyrics to analyze
             cardiffnlp_predictions = []
-            if processed_lyrics:
-                cardiffnlp_predictions = self._get_cardiffnlp_predictions(processed_lyrics)
-            analysis_results["cardiffnlp_raw_predictions"] = cardiffnlp_predictions
+            try:
+                if processed_lyrics:
+                    cardiffnlp_predictions = self._get_cardiffnlp_predictions(processed_lyrics)
+                    analysis_results["cardiffnlp_raw_predictions"] = cardiffnlp_predictions
+            except Exception as e:
+                logger.error(f"Error in CardiffNLP analysis: {e}", exc_info=True)
+                analysis_results["warnings"].append("Content analysis may be incomplete due to processing error.")
+                # Continue with empty predictions rather than failing completely
 
-            # 4. Alternative/Additional Sensitive Content Models (if any)
-            # N/A for now with current stubs, but structure is here.
-            # alternative_model_predictions = self._get_alternative_model_predictions(processed_lyrics)
-            # analysis_results["alternative_model_raw_predictions"] = alternative_model_predictions
+            # 4. Detect Christian Purity Flags (based on model outputs)
+            try:
+                purity_flags_details, total_purity_penalty = self._detect_christian_purity_flags(
+                    cardiffnlp_predictions, processed_lyrics
+                )
+                analysis_results["christian_purity_flags_details"] = purity_flags_details
+                
+                # Log the flags for user context
+                if purity_flags_details and self.user_id:
+                    flag_names = ", ".join([f.get("flag", "Unknown") for f in purity_flags_details])
+                    logger.info(f"User {self.user_id}: Detected purity flags: {flag_names}")
+                    
+            except Exception as e:
+                logger.error(f"Error detecting purity flags: {e}", exc_info=True)
+                analysis_results["warnings"].append("Error during purity flag detection. Using default flags.")
+                purity_flags_details = []
+                total_purity_penalty = 0
 
-            # 5. Detect Christian Purity Flags (based on model outputs)
-            purity_flags_details, total_purity_penalty = self._detect_christian_purity_flags(cardiffnlp_predictions, processed_lyrics)
-            analysis_results["christian_purity_flags_details"] = purity_flags_details
+            # 5. Detect Christian Themes (Positive and Negative)
+            positive_themes = []
+            negative_themes = []
+            try:
+                positive_themes, negative_themes = self._detect_christian_themes(processed_lyrics)
+                analysis_results["christian_positive_themes_detected"] = positive_themes
+                analysis_results["christian_negative_themes_detected"] = negative_themes
+                
+                # Log theme detection results with user context
+                if positive_themes and self.user_id:
+                    theme_names = ", ".join([t.get("theme", "Unknown") for t in positive_themes])
+                    logger.info(f"{log_prefix}Detected positive themes: {theme_names}")
+                if negative_themes and self.user_id:
+                    theme_names = ", ".join([t.get("theme", "Unknown") for t in negative_themes])
+                    logger.info(f"{log_prefix}Detected negative themes: {theme_names}")
+                    
+            except Exception as e:
+                logger.error(f"{log_prefix}Error detecting themes: {e}", exc_info=True)
+                analysis_results["warnings"].append("Error during theme detection. Using default themes.")
+                # Use empty lists as defaults
+                positive_themes = []
+                negative_themes = []
 
-            # 6. Detect Christian Themes (Positive and Negative)
-            # This is still a stub and will return empty lists
-            positive_themes, negative_themes = self._detect_christian_themes(processed_lyrics)
-            analysis_results["christian_positive_themes_detected"] = positive_themes
-            analysis_results["christian_negative_themes_detected"] = negative_themes
+            # 6. Calculate Christian Score and Concern Level
+            try:
+                christian_score, concern_level = self._calculate_christian_score_and_concern(
+                    purity_flags_details, total_purity_penalty, positive_themes, negative_themes
+                )
+                analysis_results["christian_score"] = christian_score
+                analysis_results["christian_concern_level"] = concern_level
+            except Exception as e:
+                logger.error(f"Error calculating score: {e}", exc_info=True)
+                analysis_results["warnings"].append("Error calculating score. Using default scoring.")
+                # Use baseline score from rubric if calculation fails
+                analysis_results["christian_score"] = self.christian_rubric.get("baseline_score", 100)
+                analysis_results["christian_concern_level"] = "Low"
 
-            # 7. Calculate Christian Score and Concern Level
-            score, concern_level = self._calculate_christian_score_and_concern(
-                purity_flags_details, total_purity_penalty, positive_themes, negative_themes
-            )
-            analysis_results["christian_score"] = score
-            analysis_results["christian_concern_level"] = concern_level
-
-            # 8. Get Supporting Scripture (based on triggered flags/themes)
-            # This is still a stub
-            # First, compile what was triggered:
-            # triggered_components_for_scripture = {
-            #     "purity_flags": [flag['flag'] for flag in purity_flags_details],
-            #     "positive_themes": [theme['theme_name'] for theme in positive_themes],
-            #     "negative_themes": [theme['theme_name'] for theme in negative_themes]
-            # }
-            # supporting_scripture = self._get_christian_supporting_scripture(triggered_components_for_scripture)
-            # analysis_results["christian_supporting_scripture"] = supporting_scripture
-
+            # 7. Get Supporting Scripture (if any flags or themes were detected)
+            try:
+                if purity_flags_details or positive_themes or negative_themes:
+                    triggered_components = {
+                        "purity_flags": [flag.get("flag", "") for flag in purity_flags_details],
+                        "positive_themes": [theme.get("theme", "") for theme in positive_themes],
+                        "negative_themes": [theme.get("theme", "") for theme in negative_themes]
+                    }
+                    supporting_scripture = self._get_christian_supporting_scripture(triggered_components)
+                    analysis_results["christian_supporting_scripture"] = supporting_scripture
+            except Exception as e:
+                logger.error(f"Error getting supporting scripture: {e}", exc_info=True)
+                analysis_results["warnings"].append("Error retrieving supporting scripture references.")
         except Exception as e:
-            logger.error(f"Critical error during song analysis for '{title}': {e}", exc_info=True)
-            analysis_results["errors"].append(f"Overall analysis error: {str(e)}")
-            # Ensure score/concern reflect an error state if desired, or use defaults
-            analysis_results["christian_score"] = 0 # Example error score
-            analysis_results["christian_concern_level"] = "Error"
+            logger.error(f"{log_prefix}Unexpected error during song analysis: {e}", exc_info=True)
+            analysis_results["errors"].append(f"Unexpected error during analysis: {str(e)}")
 
+        # Ensure we always have required fields even in case of error
+        analysis_results.setdefault("christian_score", self.christian_rubric.get("baseline_score", 100))
+        analysis_results.setdefault("christian_concern_level", "Medium")
+            
+        # Ensure errors key is always present (empty list if no errors)
+        if "errors" not in analysis_results:
+            analysis_results["errors"] = []
+            
+        # Clean up warnings list if empty (but keep the key if it exists with an empty list)
+        if not analysis_results.get("warnings"):
+            analysis_results["warnings"] = []
+            
         logger.info(f"--- Completed Song Analysis for '{title}' by '{artist}' ---")
         return analysis_results
 

@@ -245,3 +245,27 @@ class TestSongAnalyzer:
     #     sentiment_score, sentiment_label = analyzer._analyze_sentiment_basic("This is a neutral song.")
     #     assert sentiment_score == 0
     #     assert sentiment_label == "Neutral"
+    
+    def test_analyze_song_theme_detection_error(self, analyzer, mock_hf_transformers, mock_vader):
+        """Test that analyze_song handles exceptions during theme detection gracefully."""
+        # Setup test data
+        test_lyrics = "This is a test song with lyrics"
+        analyzer.lyrics_fetcher.fetch_lyrics.return_value = test_lyrics
+        
+        # Mock the _detect_christian_themes method to raise an exception
+        with patch.object(analyzer, '_detect_christian_themes') as mock_detect_themes:
+            # Setup the mock to raise an exception
+            mock_detect_themes.side_effect = Exception("Theme detection failed")
+            
+            # Call the method under test
+            result = analyzer.analyze_song("Test Song", "Test Artist")
+        
+        # Verify the results
+        assert not result['errors']  # No top-level errors
+        assert "Error during theme detection" in '\n'.join(result['warnings'])
+        assert result['christian_positive_themes_detected'] == []
+        assert result['christian_negative_themes_detected'] == []
+        # Verify the analysis still completed with default values
+        assert 'christian_score' in result
+        assert 'christian_concern_level' in result
+        assert result['lyrics_used_for_analysis'] == analyzer._preprocess_lyrics(test_lyrics)

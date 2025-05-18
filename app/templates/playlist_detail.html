@@ -1,111 +1,238 @@
 {% extends "base.html" %}
 {% import "bootstrap5/form.html" as wtf %}
 
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/playlist_detail.css') }}">
+<style>
+    .analysis-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-pending {
+        background-color: #e5e7eb;
+        color: #4b5563;
+    }
+    .status-in-progress {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+    .status-completed {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+    .status-failed {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+    .progress {
+        height: 1.5rem;
+        border-radius: 0.75rem;
+        overflow: hidden;
+    }
+    .progress-bar {
+        transition: width 0.3s ease;
+    }
+    #analysis-status {
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block title %}{{ playlist['name'] if playlist else 'Playlist' }} - Christian Music Curator{% endblock %}
+
 {% block content %}
-    <div class="container mt-4">
-        <h1>{{ playlist.name if playlist else "NO PLAYLIST OBJECT" }}</h1>
-
-        <p>If you see this, the template is loading and the playlist object is somewhat accessible.</p>
-        <p>The error might be in the commented out section below.</p>
-
-        <p class="lead">Curated by: {{ playlist.owner_name if playlist and playlist.owner_name else "Unknown Creator" }}</p>
-        <div class="mb-3">
-            <img src="{{ playlist.image_url if playlist and playlist.image_url else url_for('static', filename='images/default_playlist_image.png') }}" alt="{{ playlist.name if playlist else 'Playlist' }}" class="img-fluid rounded shadow-sm playlist-cover-img-detail">
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <a href="{{ url_for('main.analyze_playlist_api', playlist_id=playlist.id) }}" class="btn btn-outline-primary analyze-playlist-btn-api">
-                <i class="fas fa-sync-alt"></i> Analyze/Re-analyze Playlist (API)
-            </a>
-            <button id="toggle-view-btn" class="btn btn-outline-secondary">Switch to Grid View</button>
+    <div class="container mt-4 playlist-container" 
+         data-playlist-id="{{ playlist.spotify_id if playlist.spotify_id else '' }}"
+         data-playlist-name="{{ playlist.name|e if playlist.name else '' }}">
+    
+    <script>
+        // Make playlist ID available globally for debugging
+        window.currentPlaylistId = '{{ playlist.spotify_id if playlist.spotify_id else '' }}';
+    </script>
+        
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h2 mb-1">{{ playlist.get('name', 'Untitled Playlist') }}</h1>
+                        <p class="text-muted mb-2">{{ playlist.get('description', 'No description') }}</p>
+                        <div class="d-flex flex-wrap gap-3 text-muted small">
+                            <span><i class="fas fa-user me-1"></i> {{ playlist['owner_name'] or 'Unknown' }}</span>
+                            <span><i class="fas fa-music me-1"></i> {{ playlist['total_tracks'] }} tracks</span>
+                            <span><i class="far fa-clock me-1"></i> N/A</span>
+                            <span><i class="fas fa-sync-alt me-1"></i> Never</span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        {% set spotify_id = playlist.get('spotify_id') %}
+                        {% if spotify_id %}
+                        <a href="https://open.spotify.com/playlist/{{ spotify_id }}" 
+                           target="_blank" 
+                           class="btn btn-outline-success"
+                           data-bs-toggle="tooltip" 
+                           title="Open in Spotify"
+                           rel="noopener noreferrer">
+                            <i class="fab fa-spotify me-1"></i> Open in Spotify
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <div class="progress mb-3" style="display: none;">
-            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-        </div>
-        <div id="analysis-status" class="mt-2 mb-3"></div>
-        <div id="error-message" class="alert alert-danger" style="display: none;"></div>
-
-        <!-- DEBUG: Raw songs_with_status -->
-        <div class="debug-output">
-            <h4>DEBUG: Raw songs_with_status variable:</h4>
-            <p>{{ songs_with_status }}</p>
+        <div class="mb-4 text-center">
+            <img src="{{ playlist['image_url'] if playlist and playlist['image_url'] else url_for('static', filename='images/default_playlist_image.png') }}" 
+                 alt="{{ playlist.get('name', 'Playlist') }}" 
+                 class="img-fluid rounded shadow-sm playlist-cover-img-detail"
+                 style="max-height: 300px; width: auto;">
         </div>
 
-        <!-- DEBUG: Simple list of song titles -->
-        <div class="debug-output mt-3">
-            <h4>DEBUG: Simple song title list (count: {{ songs_with_status|length }}):</h4>
-            {% if songs_with_status %}
-                <ul>
-                    {% for item in songs_with_status %}
-                        <li>{{ item.song.title }} by {{ item.song.artist }} - Status: {{ item.status.display_message if item.status else 'N/A' }}</li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>songs_with_status is empty or not defined.</p>
-            {% endif %}
+        <!-- Analysis Controls -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Song Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-3 align-items-center mb-3">
+                            <button id="analyzeUnanalyzedBtn" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i> Analyze New Songs
+                            </button>
+                            <button id="analyzePlaylistBtn" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo me-1"></i> Re-analyze All
+                            </button>
+                            <div class="ms-auto">
+                                <a href="#analysisResults" class="btn btn-sm btn-link text-decoration-none">
+                                    <i class="fas fa-chart-bar me-1"></i> View Analysis
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div id="analysisProgress" class="mt-3" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small id="progressText" class="text-muted">Starting analysis...</small>
+                                <small id="progressPercent" class="text-muted">0%</small>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div id="analysisProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%" 
+                                     aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Messages -->
+                        <div id="analysisStatus" class="mt-3 small" style="display: none;"></div>
+                        <div id="errorMessage" class="alert alert-danger mt-3" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div id="song-list-view">
-            <h3>Songs</h3>
+        <!-- Song List View -->
+        <div id="song-list-view" class="mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">Songs</h3>
+                <div class="d-flex gap-2">
+                    <button id="toggleViewBtn" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-th-large me-1"></i> Switch to Grid View
+                    </button>
+                </div>
+            </div>
+            
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
                         <tr>
-                            <th scope="col" style="width: 5%;">#</th>
+                            <th scope="col" style="width: 5%;" class="text-center">#</th>
                             <th scope="col" style="width: 10%;">Art</th>
-                            <th scope="col" style="width: 30%;">Title</th>
-                            <th scope="col" style="width: 25%;">Artist</th>
-                            <th scope="col" style="width: 15%;">Album</th>
-                            <th scope="col" style="width: 15%;">Status</th>
+                            <th scope="col" style="width: 25%;">Title</th>
+                            <th scope="col" style="width: 20%;">Artist</th>
+                            <th scope="col" style="width: 20%;">Album</th>
+                            <th scope="col" style="width: 20%;">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if songs_with_status %}
                             {% for item in songs_with_status %}
-                            <tr class="{{ 'table-info' if item.is_preferred else '' }}">
-                                <th scope="row">{{ loop.index }}</th>
+                            <tr class="song-row {{ 'table-info' if item.is_preferred else '' }}" data-song-id="{{ item.song.id }}">
+                                <th scope="row" class="text-center">{{ loop.index }}</th>
                                 <td>
-                                    <a href="{{ url_for('main.song_detail', song_id=item.song.id) }}">
-                                        <img src="{{ item.song.album_art_url or url_for('static', filename='images/default_album_art.png') }}" alt="{{ item.song.title }}" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
+                                    <a href="{{ url_for('main.song_detail', song_id=item.song.id) }}" class="text-decoration-none">
+                                        <img src="{{ item.song.album_art_url or url_for('static', filename='images/default_album_art.png') }}" 
+                                             alt="Album Art" class="img-thumbnail album-art" style="width: 50px; height: 50px; object-fit: cover;">
                                     </a>
                                 </td>
-                                <td><a href="{{ url_for('main.song_detail', song_id=item.song.id) }}">{{ item.song.title }}</a></td>
-                                <td>{{ item.song.artist }}</td>
-                                <td>{{ item.song.album }}</td>
-                                
-                                <td class="status-cell {% if item.status and item.status.color_class %}{{ item.status.color_class }}{% else %}bg-light{% endif %}">
-
-                                    <p>DEBUG TEMPLATE: Accessing status for song: {{ item.song.title }}</p>
-                                    <p>DEBUG TEMPLATE: item.status object: {{ item.status }}</p>
-                                    <p>DEBUG TEMPLATE: Type of item.status: {{ item.status.__class__.__name__ if item.status else 'NoneType' }}</p>
-
-                                    {% if item.status %}
-                                        <p>DEBUG TEMPLATE: item.status.color_class is truthy: {{ True if item.status.color_class else False }}</p>
-                                        {% if item.status.color_class %}
-                                            <p>DEBUG TEMPLATE: color_class value: {{ item.status.color_class }}</p>
-                                        {% else %}
-                                            <p>DEBUG TEMPLATE: color_class is FALSY or None on item.status. Value: '{{ item.status.color_class }}'</p>
-                                        {% endif %}
-                                        
-                                        <p>DEBUG TEMPLATE: hasattr display_message: {{ item.status.display_message is defined }}</p>
-                                        {% if item.status.display_message is defined %}
-                                            <p>DEBUG TEMPLATE: display_message value: {{ item.status.display_message }}</p>
-                                            {{ item.status.display_message }}
-                                        {% else %}
-                                            <p>DEBUG TEMPLATE: display_message is UNDEFINED on item.status</p>
-                                            N/A (display_message missing)
-                                        {% endif %}
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <a href="{{ url_for('main.song_detail', song_id=item.song.id) }}" class="text-decoration-none text-dark fw-bold">
+                                            {{ item.song.title }}
+                                        </a>
+                                        <span class="text-muted small">{{ item.song.artist }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('main.album_detail', album_id=item.song.album_id) if item.song.album_id else '#' }}" class="text-decoration-none text-dark">
+                                        {{ item.song.album or 'Unknown Album' }}
+                                    </a>
+                                </td>
+                                <td>{{ item.song.id }}</td>
+                                <td class="song-score">
+                                    {% if item.song.score is not none %}
+                                        <span class="badge {% if item.song.concern_level == 'high' %}bg-danger{% elif item.song.concern_level == 'medium' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                            {{ "%.0f"|format(item.song.score) }}
+                                        </span>
                                     {% else %}
-                                        <p>DEBUG TEMPLATE: item.status IS NONE.</p>
-                                        N/A (status object missing)
+                                        <span class="text-muted">Not Analyzed</span>
                                     {% endif %}
+                                </td>
+                                <td class="song-status">
+                                    {% if item.song.analysis_status == 'completed' %}
+                                        <span class="badge bg-success">Analyzed</span>
+                                    {% elif item.song.analysis_status == 'failed' %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Not Analyzed</span>
+                                    {% endif %}
+                                    
+                                    {% if item.song.analysis_concerns %}
+                                        <div class="mt-1">
+                                            {% for concern in item.song.analysis_concerns %}
+                                                <span class="badge bg-danger bg-opacity-10 text-danger small me-1">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ concern }}
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td class="song-actions">
+                                    <button class="btn btn-sm btn-outline-primary analyze-song-btn" 
+                                            data-song-id="{{ item.song.id }}"
+                                            data-song-title="{{ item.song.title }}"
+                                            data-song-artist="{{ item.song.artist }}">
+                                        <span class="analyze-btn-text">Analyze</span>
+                                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="6" class="text-center">No songs found in this playlist or an error occurred.</td>
+                                <td colspan="7" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="fas fa-music fa-2x mb-2"></i>
+                                        <p class="mb-0">No songs found in this playlist</p>
+                                    </div>
+                                </td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -115,13 +242,309 @@
 
         <div id="song-grid-view" style="display: none;">
         </div>
+
+        <!-- Analysis Results Section -->
+        <div id="analysisResults" class="mt-5">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Analysis Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <!-- Overall Score -->
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <div class="display-4 fw-bold text-primary mb-2" id="overallScore">--</div>
+                                    <h6 class="text-uppercase text-muted mb-0">Overall Score</h6>
+                                    <div class="small mt-2">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary">Based on {{ songs_with_status|length }} songs</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Purity Flags -->
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h6 class="text-uppercase text-muted mb-3">Purity Flags</h6>
+                                    <div id="purityFlags">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="badge bg-danger bg-opacity-10 text-danger rounded-pill p-2 me-2">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-medium">No major concerns detected</div>
+                                                <small class="text-muted">Your playlist is clean</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Theme Analysis -->
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h6 class="text-uppercase text-muted mb-3">Top Themes</h6>
+                                    <div id="topThemes">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="badge bg-success bg-opacity-10 text-success rounded-pill p-2 me-2">
+                                                <i class="fas fa-heart"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-medium">Love & Compassion</div>
+                                                <small class="text-muted">Present in 12 songs</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- JavaScript for Analysis -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const playlistId = '{{ playlist['id'] }}';
+            const analyzeUnanalyzedBtn = document.getElementById('analyzeUnanalyzedBtn');
+            const analyzePlaylistBtn = document.getElementById('analyzePlaylistBtn');
+            const analysisProgress = document.getElementById('analysisProgress');
+            const progressBar = document.getElementById('analysisProgressBar');
+            const progressText = document.getElementById('progressText');
+            const progressPercent = document.getElementById('progressPercent');
+            const analysisStatus = document.getElementById('analysisStatus');
+            const errorMessage = document.getElementById('errorMessage');
+            const songListView = document.getElementById('song-list-view');
+            const gridView = document.getElementById('song-grid-view');
+            const toggleViewBtn = document.getElementById('toggleViewBtn');
+            
+            // Toggle between list and grid view
+            if (toggleViewBtn) {
+                toggleViewBtn.addEventListener('click', function() {
+                    songListView.classList.toggle('d-none');
+                    gridView.style.display = songListView.classList.contains('d-none') ? 'block' : 'none';
+                    
+                    const isGridView = gridView.style.display === 'block';
+                    this.innerHTML = isGridView 
+                        ? '<i class="fas fa-list me-1"></i> Switch to List View'
+                        : '<i class="fas fa-th-large me-1"></i> Switch to Grid View';
+                });
+            }
+            
+            // Handle analyze unanalyzed songs
+            if (analyzeUnanalyzedBtn) {
+                analyzeUnanalyzedBtn.addEventListener('click', function() {
+                    startAnalysis('unanalyzed');
+                });
+            }
+            
+            // Handle analyze all songs
+            if (analyzePlaylistBtn) {
+                analyzePlaylistBtn.addEventListener('click', function() {
+                    if (confirm('This will re-analyze all songs in the playlist. Are you sure?')) {
+                        startAnalysis('all');
+                    }
+                });
+            }
+            
+            // Start the analysis process
+            function startAnalysis(analysisType) {
+                // Reset UI
+                analysisProgress.style.display = 'block';
+                analysisStatus.style.display = 'none';
+                errorMessage.style.display = 'none';
+                updateProgress(0, 'Starting analysis...');
+                
+                // Disable buttons during analysis
+                if (analyzeUnanalyzedBtn) analyzeUnanalyzedBtn.disabled = true;
+                if (analyzePlaylistBtn) analyzePlaylistBtn.disabled = true;
+                
+                // Determine the endpoint based on analysis type
+                const endpoint = analysisType === 'all' 
+                    ? `/api/playlists/${playlistId}/analyze`
+                    : `/api/playlists/${playlistId}/analyze-unanalyzed`;
+                
+                // Start the analysis
+                fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.task_id) {
+                        // Poll for progress updates
+                        pollAnalysisProgress(data.task_id);
+                    } else {
+                        throw new Error('No task ID received');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error starting analysis:', error);
+                    showError('Failed to start analysis. Please try again.');
+                    resetUI();
+                });
+            }
+            
+            // Poll for analysis progress
+            function pollAnalysisProgress(taskId) {
+                const checkInterval = 2000; // Check every 2 seconds
+                let attempts = 0;
+                const maxAttempts = 300; // 10 minutes max (300 * 2000ms = 600,000ms = 10 minutes)
+                
+                const poll = setInterval(() => {
+                    fetch(`/api/tasks/${taskId}/status`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        attempts++;
+                        
+                        // Update progress
+                        if (data.progress) {
+                            updateProgress(
+                                data.progress.percent_complete || 0,
+                                data.progress.status || 'Processing...',
+                                data.progress.current_song
+                            );
+                        }
+                        
+                        // Check if analysis is complete
+                        if (data.state === 'SUCCESS') {
+                            clearInterval(poll);
+                            updateProgress(100, 'Analysis complete!');
+                            showSuccess('Analysis completed successfully!');
+                            // Reload the page to show updated analysis
+                            setTimeout(() => window.location.reload(), 1500);
+                        } else if (data.state === 'FAILURE' || attempts >= maxAttempts) {
+                            clearInterval(poll);
+                            throw new Error(data.error || 'Analysis timed out');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking analysis status:', error);
+                        clearInterval(poll);
+                        showError('Error checking analysis status. Please refresh the page.');
+                        resetUI();
+                    });
+                }, checkInterval);
+            }
+            
+            // Update progress bar and text
+            function updateProgress(percent, message, currentSong = '') {
+                // Ensure percent is between 0 and 100
+                percent = Math.max(0, Math.min(100, percent));
+                
+                // Update progress bar
+                progressBar.style.width = `${percent}%`;
+                progressBar.setAttribute('aria-valuenow', percent);
+                progressPercent.textContent = `${Math.round(percent)}%`;
+                
+                // Update status text
+                if (currentSong) {
+                    progressText.textContent = `${message}: ${currentSong}`;
+                } else {
+                    progressText.textContent = message;
+                }
+                
+                // Show completion state
+                if (percent >= 100) {
+                    progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+                    progressBar.classList.add('bg-success');
+                }
+            }
+            
+            // Show success message
+            function showSuccess(message) {
+                analysisStatus.innerHTML = `
+                    <div class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle me-2"></i> ${message}
+                    </div>
+                `;
+                analysisStatus.style.display = 'block';
+            }
+            
+            // Show error message
+            function showError(message) {
+                errorMessage.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i> ${message}
+                    <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                errorMessage.style.display = 'block';
+                
+                // Add click handler for the close button
+                const closeBtn = errorMessage.querySelector('.btn-close');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => {
+                        errorMessage.style.display = 'none';
+                    });
+                }
+            }
+            
+            // Reset UI to initial state
+            function resetUI() {
+                if (analyzeUnanalyzedBtn) analyzeUnanalyzedBtn.disabled = false;
+                if (analyzePlaylistBtn) analyzePlaylistBtn.disabled = false;
+                
+                // Keep progress bar visible but reset animation
+                progressBar.classList.add('progress-bar-animated', 'progress-bar-striped');
+                progressBar.classList.remove('bg-success');
+            }
+            
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Calculate and display overall score
+            updateOverallScore();
+            
+            // Function to calculate and update the overall score
+            function updateOverallScore() {
+                const scoredSongs = Array.from(document.querySelectorAll('.status-cell')).filter(cell => {
+                    const badge = cell.querySelector('.badge');
+                    return badge && !badge.classList.contains('bg-secondary');
+                });
+                
+                if (scoredSongs.length === 0) {
+                    document.getElementById('overallScore').textContent = '--';
+                    return;
+                }
+                
+                const totalScore = scoredSongs.reduce((sum, cell) => {
+                    const badge = cell.querySelector('.badge');
+                    const scoreText = badge.textContent.replace('%', '');
+                    return sum + parseInt(scoreText, 10);
+                }, 0);
+                
+                const averageScore = Math.round(totalScore / scoredSongs.length);
+                const overallScoreElement = document.getElementById('overallScore');
+                overallScoreElement.textContent = `${averageScore}%`;
+                
+                // Update color based on score
+                overallScoreElement.className = 'display-4 fw-bold mb-2 ' + 
+                    (averageScore >= 70 ? 'text-success' : averageScore >= 40 ? 'text-warning' : 'text-danger');
+            }
+        });
+    </script>
 {% endblock %}
 
-{% block scripts %}
-{{ super() }}
-<script>
-// Javascript will be commented out for now to simplify
-</script>
-{% endblock %}

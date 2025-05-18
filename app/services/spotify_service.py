@@ -344,17 +344,37 @@ class SpotifyService:
                                 self.logger.error(f"Song object is invalid or has no ID after find/create for Spotify ID {song_spotify_id}. Skipping PlaylistSong creation.")
                                 songs_failed_to_add_or_find += 1
                                 continue
-
-                            playlist_song = PlaylistSong(
+                            # Check if this song is already in the playlist
+                            existing_assoc = PlaylistSong.query.filter_by(
                                 playlist_id=playlist_in_db.id,
-                                song_id=song.id,
-                                track_position=current_position,
-                                added_at_spotify=self._parse_spotify_datetime(track_item_data.get('added_at')),
-                                added_by_spotify_user_id=track_item_data.get('added_by', {}).get('id')
-                            )
-                            db.session.add(playlist_song)
-                            current_position += 1
-                            processed_tracks_count_for_this_playlist += 1
+                                song_id=song.id
+                            ).first()
+                            
+                            if not existing_assoc:
+                                # Create new association if it doesn't exist
+                                playlist_song = PlaylistSong(
+                                    playlist_id=playlist_in_db.id,
+                                    song_id=song.id,
+                                    track_position=current_position,
+                                    added_at_spotify=self._parse_spotify_datetime(track_item_data.get('added_at')),
+                                    added_by_spotify_user_id=track_item_data.get('added_by', {}).get('id')
+                                )
+                                db.session.add(playlist_song)
+                                current_position += 1
+                                processed_tracks_count_for_this_playlist += 1
+                            else:
+                                # Update existing association if needed
+                                if (existing_assoc.track_position != current_position or
+                                    existing_assoc.added_at_spotify != self._parse_spotify_datetime(track_item_data.get('added_at')) or
+                                    existing_assoc.added_by_spotify_user_id != track_item_data.get('added_by', {}).get('id')):
+                                    
+                                    existing_assoc.track_position = current_position
+                                    existing_assoc.added_at_spotify = self._parse_spotify_datetime(track_item_data.get('added_at'))
+                                    existing_assoc.added_by_spotify_user_id = track_item_data.get('added_by', {}).get('id')
+                                    db.session.add(existing_assoc)
+                                    self.logger.debug(f"Updated existing playlist_song association for playlist {playlist_in_db.id}, song {song.id}")
+                                current_position += 1
+                                processed_tracks_count_for_this_playlist += 1
                         
                         self.logger.debug(f"Processed {len(track_items)} tracks from page for '{playlist_name_for_logging}'. Total for this playlist so far: {processed_tracks_count_for_this_playlist}")
                         if tracks_response.get('next'):
@@ -363,16 +383,9 @@ class SpotifyService:
                             break # No more tracks for this playlist
                     self.logger.info(f"Finished track sync for playlist '{playlist_name_for_logging}'. Added {processed_tracks_count_for_this_playlist} tracks.")
                 
-                # Add to display data after successful processing of this playlist
-                user_playlists_display_data.append({
-                    'spotify_id': playlist_in_db.spotify_id,
-                    'name': playlist_in_db.name,
-                    'description': playlist_in_db.description,
-                    'image_url': playlist_in_db.image_url,
-                    'track_count': PlaylistSong.query.filter_by(playlist_id=playlist_in_db.id).count(), # Get current count from DB
-                    'score': getattr(playlist_in_db, 'overall_score', None), # Safely get score, default to None if not present
-                    'last_synced': playlist_in_db.last_synced_from_spotify.isoformat() if playlist_in_db.last_synced_from_spotify else None
-                })
+                # Add the playlist object to the list to return
+                # The template will access songs through the songs relationship
+                user_playlists_display_data.append(playlist_in_db)
                 successfully_processed_count += 1
 
             except spotipy.SpotifyException as spe_playlist_item:
@@ -412,7 +425,14 @@ class SpotifyService:
             # Depending on severity, might re-raise or return an error indicator to the route
             raise # Re-raise for now, as a failed commit is a significant problem.
 
-        return user_playlists_display_data
+        # Refresh the playlists to ensure we have all the latest data
+        synced_playlists = (
+            db.session.query(Playlist)
+            .filter(Playlist.owner_id == user_id)
+            .all()
+        )
+        
+        return synced_playlists
 
     def add_tracks_to_spotify_playlist(self, user, spotify_playlist_id, track_uris):
         """

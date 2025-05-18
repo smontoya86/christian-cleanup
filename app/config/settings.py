@@ -67,10 +67,20 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     """Testing configuration."""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:' # Force in-memory SQLite for tests
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or 'postgresql://localhost/test_christian_music_curation_test'
     WTF_CSRF_ENABLED = False # Disable CSRF for tests
     LOG_LEVEL = logging.DEBUG
     RQ_REDIS_URL = os.environ.get('RQ_TEST_REDIS_URL') or 'redis://localhost:6379/1' # Use a different Redis DB for tests
+
+    @classmethod
+    def init_app(cls, app):
+        Config.init_app(app)
+        # Ensure the database is clean before each test
+        if app.config.get('SQLALCHEMY_DATABASE_URI'):
+            from app.extensions import db
+            # Drop and recreate all tables
+            db.drop_all()
+            db.create_all()
 
     # Spotify credentials will be inherited from Config (os.environ)
     # and should be set by test setup (e.g., conftest.py)

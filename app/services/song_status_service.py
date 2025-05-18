@@ -56,13 +56,14 @@ class SongStatus:
             self._color_class = purity_color
             return # High purity concern is a definitive status
 
-        # 4. Analysis Result exists, no high purity flags, check overall_score
-        if self.analysis_result.overall_score is None:
+        # 4. Analysis Result exists, no high purity flags, check score
+        if self.analysis_result.score is None:
             self._message = "Pending Score"
             self._color_class = "bg-info text-dark"
             return
 
-        score = self.analysis_result.overall_score
+        # Convert the score to a 0-1 scale if needed (assuming score is 0-100)
+        score = self.analysis_result.score / 100.0 if self.analysis_result.score > 1 else self.analysis_result.score
         # Score is not None here
         if score >= 0.75:
             self._message = "Low Concern"

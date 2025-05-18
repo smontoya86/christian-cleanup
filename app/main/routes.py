@@ -1,5 +1,5 @@
-from flask import render_template, flash, redirect, url_for, request, current_app, jsonify
-from flask_login import login_required, current_user as flask_login_current_user
+from flask import render_template, flash, redirect, url_for, request, current_app, jsonify, has_request_context
+from flask_login import login_required, current_user, current_user as flask_login_current_user
 import spotipy
 
 from .. import db
@@ -33,6 +33,8 @@ import os
 import requests
 from app.services.song_status_service import SongStatus 
 from sqlalchemy.orm import joinedload
+from datetime import datetime, timezone
+from ..utils.analysis import SongAnalyzer  # For analyzing song lyrics
 
 # Load Scripture Mappings
 SCRIPTURE_MAPPINGS_PATH = os.path.join(os.path.dirname(__file__), 'scripture_mappings.json')
@@ -347,7 +349,13 @@ def playlist_detail(playlist_id):
 
                 analysis_result = AnalysisResult.query.filter_by(song_id=song_in_db.id).first()
                 current_app.logger.debug(f"Item {idx+1}: AnalysisResult query for song_id {song_in_db.id} found: {analysis_result}")
-
+                
+                # Add analysis status and concerns to the song object
+                song_in_db.analysis_status = analysis_result.status if analysis_result else 'pending'
+                song_in_db.score = analysis_result.score if analysis_result else None
+                song_in_db.concern_level = analysis_result.concern_level if analysis_result else None
+                song_in_db.analysis_concerns = analysis_result.concerns if analysis_result and analysis_result.concerns else []
+                
                 # Create SongStatus object
                 status_obj = SongStatus(
                     song=song_in_db,
@@ -412,7 +420,7 @@ def playlist_detail(playlist_id):
         flash(f'An unexpected error occurred. Type: {type(e).__name__}, Details: {str(e)}', 'danger')
         return redirect(url_for('main.dashboard'))
 
-    return render_template('playlist_detail.html', playlist=playlist_details, songs_with_status=songs_with_status, pagination=pagination)
+    return render_template('playlist_detail_scripts.html', playlist=playlist_details, songs_with_status=songs_with_status, pagination=pagination)
 
 @main_bp.route('/playlist/<string:playlist_id>/update', methods=['POST'])
 @login_required
@@ -792,21 +800,499 @@ def song_detail(song_id):
 @login_required
 @spotify_token_required
 def analyze_playlist_api(playlist_id):
+    """
+    API endpoint to analyze all songs in a playlist.
+    This endpoint can be called via AJAX or regular form submission.
+    """
     current_app.logger.info(f"analyze_playlist_api called for playlist_id: {playlist_id}")
+    
+    # Check if the playlist exists and belongs to the current user
+    playlist = Playlist.query.filter_by(spotify_id=playlist_id, owner_id=current_user.id).first()
+    if not playlist:
+        error_msg = "Playlist not found or you don't have permission to access it."
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({"success": False, "message": error_msg}), 404
+        flash(error_msg, 'error')
+        return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+    
     try:
         # Call the service function to analyze the playlist
-        analysis_summary = analyze_playlist_content(playlist_id, flask_login_current_user.id)
+        analysis_summary = analyze_playlist_content(playlist_id, current_user.id)
 
         if analysis_summary.get("error"):
-            current_app.logger.error(f"Error analyzing playlist {playlist_id}: {analysis_summary['error']}")
-            return jsonify({"success": False, "message": analysis_summary["error"]}), 500
+            error_msg = analysis_summary["error"]
+            current_app.logger.error(f"Error analyzing playlist {playlist_id}: {error_msg}")
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({"success": False, "message": error_msg}), 400
+                
+            flash(error_msg, 'error')
+            return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
 
-        current_app.logger.info(f"Playlist {playlist_id} analysis triggered successfully. Summary: {analysis_summary}")
-        return jsonify({
+        # Prepare success response
+        success_msg = f"Analysis for playlist '{playlist.name}' initiated successfully."
+        response_data = {
             "success": True, 
-            "message": f"Analysis for playlist {playlist_id} initiated.", 
-            "analysis_summary": analysis_summary
-        })
+            "message": success_msg,
+            "analysis_summary": analysis_summary,
+            "playlist_id": playlist_id,
+            "playlist_name": playlist.name
+        }
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify(response_data)
+            
+        flash(success_msg, 'success')
+        return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+        
     except Exception as e:
+        error_msg = f"An unexpected error occurred during playlist analysis: {str(e)}"
         current_app.logger.error(f"Exception in analyze_playlist_api for playlist {playlist_id}: {e}", exc_info=True)
-        return jsonify({"success": False, "message": "An unexpected error occurred during playlist analysis."}), 500
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({"success": False, "message": error_msg}), 500
+            
+        flash(error_msg, 'error')
+        return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+
+@main_bp.route('/api/songs/<int:song_id>/analysis-status', methods=['GET'])
+@login_required
+def get_song_analysis_status(song_id):
+    """
+    Endpoint to check the status of a song analysis.
+    
+    Query Parameters:
+        task_id: Optional task ID to check job status
+    """
+    try:
+        # Get the song with proper ownership check
+        song = Song.query.filter_by(id=song_id).first()
+        if not song:
+            return jsonify({
+                'success': False,
+                'error': 'song_not_found',
+                'message': 'Song not found'
+            }), 404
+            
+        # Check if the song belongs to a playlist owned by the current user
+        user_playlist_ids = [p.id for p in current_user.playlists]
+        song_playlist_ids = [p.id for p in song.playlists]
+        
+        if not any(pid in user_playlist_ids for pid in song_playlist_ids):
+            return jsonify({
+                'success': False,
+                'error': 'unauthorized',
+                'message': 'You do not have permission to view this song'
+            }), 403
+            
+        task_id = request.args.get('task_id')
+        if task_id:
+            job = current_app.task_queue.fetch_job(task_id)
+            if job:
+                if job.is_failed:
+                    return jsonify({
+                        'success': False,
+                        'error': 'analysis_failed',
+                        'message': f'Analysis failed: {str(job.exc_info)}',
+                        'song_id': song_id
+                    })
+                elif job.is_finished:
+                    # Refresh the song to get updated analysis
+                    db.session.refresh(song)
+                    return jsonify({
+                        'success': True,
+                        'completed': True,
+                        'song_id': song_id,
+                        'analysis': {
+                            'score': song.score,
+                            'concern_level': song.concern_level,
+                            'updated_at': song.updated_at.isoformat() if song.updated_at else None
+                        }
+                    })
+                else:
+                    # Job is still running
+                    return jsonify({
+                        'success': True,
+                        'in_progress': True,
+                        'message': 'Analysis in progress...',
+                        'song_id': song_id
+                    })
+        
+        # If no task_id or job not found, return current song analysis status
+        return jsonify({
+            'success': True,
+            'song_id': song_id,
+            'has_analysis': song.score is not None,
+            'analysis': {
+                'score': song.score,
+                'concern_level': song.concern_level,
+                'updated_at': song.updated_at.isoformat() if song.updated_at else None
+            } if song.score is not None else None
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in get_song_analysis_status: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'status_check_error',
+            'message': f'Failed to check analysis status: {str(e)}'
+        }), 500
+
+@main_bp.route('/api/playlists/<string:playlist_id>/analysis-status/', methods=['GET'])
+@main_bp.route('/api/playlists/<string:playlist_id>/analysis-status', methods=['GET'])  # For backward compatibility
+@login_required
+def get_analysis_status(playlist_id):
+    """
+    Endpoint to check the status of playlist analysis.
+    Returns detailed information about the analysis progress.
+    
+    Query Parameters:
+        task_id: Optional task ID to check job status
+    """
+    try:
+        if not playlist_id:
+            current_app.logger.error("Missing playlist_id in get_analysis_status")
+            return jsonify({
+                'success': False,
+                'error': 'missing_playlist_id',
+                'message': 'Playlist ID is required'
+            }), 400
+            
+        task_id = request.args.get('task_id')
+        current_app.logger.info(f"Checking analysis status for playlist {playlist_id}, task_id: {task_id}")
+        
+        # If task_id is provided, check the job status first
+        if task_id:
+            try:
+                job = current_app.task_queue.fetch_job(task_id)
+                if job:
+                    if job.is_failed:
+                        error_msg = f'Analysis failed: {str(job.exc_info)}'
+                        current_app.logger.error(f"Job {task_id} failed: {error_msg}")
+                        return jsonify({
+                            'success': False,
+                            'error': 'analysis_failed',
+                            'message': error_msg,
+                            'playlist_id': playlist_id
+                        }), 500
+                    elif job.is_finished:
+                        current_app.logger.info(f"Job {task_id} finished successfully")
+                        # Job is done, continue with status check
+                        pass
+                    else:
+                        # Job is still running
+                        progress = job.meta.get('progress', 0) if job.meta else 0
+                        current_song = job.meta.get('current_song', '') if job.meta else ''
+                        current_app.logger.debug(f"Job {task_id} in progress: {progress}%, current_song: {current_song}")
+                        
+                        return jsonify({
+                            'success': True,
+                            'in_progress': True,
+                            'message': 'Analysis in progress...',
+                            'progress': progress,
+                            'current_song': current_song,
+                            'playlist_id': playlist_id,
+                            'task_id': task_id
+                        })
+            except Exception as e:
+                error_msg = f"Error checking job status for task {task_id}: {str(e)}"
+                current_app.logger.error(error_msg, exc_info=True)
+                # Continue with regular status check if job check fails
+        
+        # Get the playlist with proper ownership check
+        playlist = Playlist.query.filter_by(spotify_id=playlist_id, owner_id=current_user.id).first()
+        if not playlist:
+            return jsonify({
+                'success': False,
+                'error': 'Playlist not found or access denied',
+                'message': 'The requested playlist could not be found or you do not have permission to access it.'
+            }), 404
+        
+        # Get all songs in the playlist
+        songs = Song.query.join(playlist_songs).filter(playlist_songs.c.playlist_id == playlist.id).all()
+        
+        if not songs:
+            return jsonify({
+                'success': True,
+                'completed': True,
+                'message': 'No songs found in this playlist.',
+                'progress': 100,
+                'analyzed': 0,
+                'total': 0,
+                'playlist_id': playlist_id,
+                'playlist_name': playlist.name
+            })
+        
+        # Count analyzed songs and gather analysis details
+        analyzed_count = 0
+        analysis_details = []
+        
+        for song in songs:
+            if song.analysis_result:
+                analyzed_count += 1
+                analysis_details.append({
+                    'song_id': song.id,
+                    'title': song.title,
+                    'artist': song.artist,
+                    'analyzed': True,
+                    'concern_level': song.analysis_result[0].concern_level if song.analysis_result else None,
+                    'score': song.analysis_result[0].raw_score if song.analysis_result else None,
+                    'last_analyzed': song.last_analyzed.isoformat() if song.last_analyzed else None
+                })
+            else:
+                analysis_details.append({
+                    'song_id': song.id,
+                    'title': song.title,
+                    'artist': song.artist,
+                    'analyzed': False
+                })
+        
+        total_songs = len(songs)
+        progress = int((analyzed_count / total_songs) * 100) if total_songs > 0 else 0
+        completed = analyzed_count == total_songs
+        
+        # Get the most recent analysis timestamp
+        last_analyzed = max(
+            (song.last_analyzed for song in songs if song.last_analyzed is not None),
+            default=None
+        )
+        
+        response_data = {
+            'success': True,
+            'completed': completed,
+            'in_progress': not completed and analyzed_count > 0,
+            'progress': progress,
+            'analyzed': analyzed_count,
+            'total': total_songs,
+            'message': f'Analyzed {analyzed_count} of {total_songs} songs ({progress}%)',
+            'playlist_id': playlist_id,
+            'playlist_name': playlist.name,
+            'last_analyzed': last_analyzed.isoformat() if last_analyzed else None,
+            'analysis_details': analysis_details
+        }
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting analysis status for playlist {playlist_id}: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'failed_to_get_status',
+            'message': f'Failed to get analysis status: {str(e)}',
+            'playlist_id': playlist_id
+        }), 500
+
+@main_bp.route('/api/songs/<int:song_id>/analyze', methods=['POST'])
+@login_required
+@spotify_token_required
+def analyze_song_route(song_id):
+    """Analyze a single song by ID."""
+    try:
+        # Get the song with proper ownership check
+        song = Song.query.filter_by(id=song_id).first()
+        if not song:
+            return jsonify({
+                'success': False,
+                'error': 'song_not_found',
+                'message': 'Song not found'
+            }), 404
+            
+        # Check if the song belongs to a playlist owned by the current user
+        user_playlist_ids = [p.id for p in current_user.playlists]
+        song_playlist_ids = [p.id for p in song.playlists]
+        
+        if not any(pid in user_playlist_ids for pid in song_playlist_ids):
+            return jsonify({
+                'success': False,
+                'error': 'unauthorized',
+                'message': 'You do not have permission to analyze this song'
+            }), 403
+            
+        # Queue the analysis job
+        job = current_app.task_queue.enqueue(
+            'app.services.analysis_service.perform_christian_song_analysis_and_store',
+            song_id=song_id,
+            user_id=current_user.id,
+            job_timeout='5m',
+            result_ttl='24h'
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Song analysis started',
+            'task_id': job.get_id(),
+            'song_id': song_id,
+            'song_title': song.title,
+            'song_artist': song.artist
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in analyze_song_route: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'analysis_error',
+            'message': f'Failed to start song analysis: {str(e)}'
+        }), 500
+
+@main_bp.route('/api/playlists/<string:playlist_id>/analyze-unanalyzed/', methods=['POST'])
+@main_bp.route('/api/playlists/<string:playlist_id>/analyze-unanalyzed', methods=['POST'])  # For backward compatibility
+@login_required
+@spotify_token_required
+def analyze_unanalyzed_songs_route(playlist_id):
+    """Route handler for analyzing unanalyzed songs in a playlist."""
+    if not playlist_id:
+        current_app.logger.error("Missing playlist_id in analyze_unanalyzed_songs_route")
+        return jsonify({
+            'success': False,
+            'error': 'missing_playlist_id',
+            'message': 'Playlist ID is required'
+        }), 400
+        
+    current_app.logger.info(f"Starting analysis for unanalyzed songs in playlist {playlist_id}")
+    try:
+        # Get the user ID from the current user and pass it explicitly
+        user_id = flask_login_current_user.id
+        return analyze_unanalyzed_songs(playlist_id, user_id=user_id)
+    except Exception as e:
+        current_app.logger.error(f"Error in analyze_unanalyzed_songs_route: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'analysis_error',
+            'message': f'Failed to start analysis: {str(e)}'
+        }), 500
+
+def analyze_unanalyzed_songs(playlist_id, user_id=None):
+    """Analyze only the unanalyzed songs in a playlist.
+    
+    Args:
+        playlist_id (str): The Spotify ID of the playlist to analyze
+        user_id (int, optional): The ID of the user who owns the playlist. 
+                              Required when called from a background job.
+    """
+    current_app.logger.info(f"analyze_unanalyzed_songs called for playlist_id: {playlist_id}, user_id: {user_id}")
+    
+    try:
+        # Get the user ID from the current user if not provided
+        if user_id is None:
+            if not has_request_context() or not hasattr(flask_login_current_user, 'id') or not flask_login_current_user.is_authenticated:
+                current_app.logger.error("No user_id provided and no authenticated current_user available")
+                if has_request_context() and request and hasattr(request, 'is_json') and request.is_json:
+                    return jsonify({"error": "User authentication required"}), 401
+                return "User authentication required", 401
+            user_id = flask_login_current_user.id
+            
+        # Get the playlist from the database
+        playlist = Playlist.query.filter_by(spotify_id=playlist_id, owner_id=user_id).first()
+        if not playlist:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({"success": False, "message": "Playlist not found or access denied"}), 404
+            flash("Playlist not found or access denied", 'error')
+            return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+            
+        # Get all songs in the playlist that don't have analysis results
+        unanalyzed_songs = Song.query.join(
+            PlaylistSong, 
+            Song.id == PlaylistSong.song_id
+        ).filter(
+            PlaylistSong.playlist_id == playlist.id,
+            ~Song.analysis_results.any()
+        ).all()
+        
+        total_songs = len(unanalyzed_songs)
+        analyzed_count = 0
+        
+        if total_songs == 0:
+            response_data = {
+                "success": True, 
+                "message": "No unanalyzed songs found in the playlist.",
+                "analyzed_count": 0,
+                "total_songs": 0
+            }
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify(response_data)
+            flash(response_data["message"], 'info')
+            return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+        
+        # Generate a unique task ID for this batch of analyses
+        import uuid
+        batch_id = str(uuid.uuid4())
+        current_app.logger.info(f"Starting batch analysis with ID: {batch_id}")
+        
+        # Process each unanalyzed song
+        for i, song in enumerate(unanalyzed_songs, 1):
+            current_app.logger.info(f"Starting analysis for song {song.id} for user {user_id}")
+            
+            try:
+                # Call the analysis service using the background task
+                job = perform_christian_song_analysis_and_store(song.id, user_id=user_id)
+                if job:
+                    # The analysis is happening in the background
+                    analyzed_count += 1
+                    job_id = job.get_id() if hasattr(job, 'get_id') else str(job.id) if hasattr(job, 'id') else 'unknown'
+                    current_app.logger.info(f"Started analysis job {job_id} for song {song.id}")
+                    
+                    # Update the song's last_analyzed timestamp
+                    song.last_analyzed = datetime.utcnow()
+                    db.session.add(song)
+                    
+                    # Commit every 5 songs to avoid long transactions
+                    if i % 5 == 0 or i == len(unanalyzed_songs):
+                        db.session.commit()
+                        current_app.logger.debug(f"Committed database changes after song {i}")
+                else:
+                    current_app.logger.warning(f"Analysis job for song {song.id} was not created")
+                    
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Error analyzing song {song.id if song else 'unknown'}: {e}", exc_info=True)
+                # Continue with the next song even if one fails
+                continue
+        
+        # Update the playlist's last analyzed timestamp
+        try:
+            playlist.last_analyzed_at = datetime.utcnow()
+            db.session.commit()
+            
+            response_data = {
+                "success": True,
+                "message": f"Successfully started analysis for {analyzed_count} out of {total_songs} unanalyzed songs.",
+                "analyzed_count": analyzed_count,
+                "total_songs": total_songs,
+                "status": "started",
+                "task_id": batch_id,  # Return the batch ID as task_id
+                "progress": 0,
+                "current_song": "Starting analysis..."
+            }
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify(response_data)
+                
+            flash(response_data["message"], 'success' if analyzed_count > 0 else 'info')
+            return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error updating playlist status: {e}", exc_info=True)
+            error_message = f"Analysis completed with {analyzed_count} songs analyzed, but failed to update playlist status."
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    "success": analyzed_count > 0,
+                    "message": error_message,
+                    "analyzed_count": analyzed_count,
+                    "total_songs": total_songs
+                }), 207  # 207 Multi-Status
+                
+            flash(error_message, 'warning' if analyzed_count > 0 else 'error')
+            return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error in analyze_unanalyzed_songs for playlist {playlist_id}: {e}", exc_info=True)
+        error_message = f"An error occurred while analyzing songs: {str(e)}"
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({"success": False, "message": error_message}), 500
+            
+        flash(error_message, 'error')
+        return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))

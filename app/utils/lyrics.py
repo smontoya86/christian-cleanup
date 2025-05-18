@@ -11,28 +11,30 @@ logger = logging.getLogger(__name__)
 class LyricsFetcher:
     def __init__(self, genius_token=None):
         self.genius_token = genius_token
-        if not self.genius_token:
-            try:
-                # Try to get from Flask app config first if in app context
-                if current_app:
-                    self.genius_token = current_app.config.get('LYRICSGENIUS_API_KEY')
-                    logger.info("LyricsFetcher: Using LYRICSGENIUS_API_KEY from Flask app config.")
-            except RuntimeError: # Not in Flask app context
-                logger.info("LyricsFetcher: Not in Flask app context, trying environment variable for LYRICSGENIUS_API_KEY.")
-                pass # current_app is not available, proceed to environment variable
         
+        # Try to get the token from the environment first
         if not self.genius_token:
-            # Fallback to environment variable if not found in app_config or not in app context
             self.genius_token = os.environ.get('LYRICSGENIUS_API_KEY')
             if self.genius_token:
                 logger.info("LyricsFetcher: Using LYRICSGENIUS_API_KEY from environment variable.")
+        
+        # Then try to get from Flask app config if available
+        if not self.genius_token:
+            try:
+                from flask import current_app
+                if current_app and 'LYRICSGENIUS_API_KEY' in current_app.config:
+                    self.genius_token = current_app.config['LYRICSGENIUS_API_KEY']
+                    logger.info("LyricsFetcher: Using LYRICSGENIUS_API_KEY from Flask app config.")
+            except (RuntimeError, ImportError):  # Not in Flask app context or Flask not available
+                pass  # current_app is not available, proceed with what we have
 
         if not self.genius_token:
             logger.warning(
-                "LyricsFetcher: LYRICSGENIUS_API_KEY not found in Flask config or environment. "
-                "Lyrics fetching via Genius API will likely fail."
+                "LyricsFetcher: LYRICSGENIUS_API_KEY not found. "
+                "Lyrics fetching via Genius API will likely fail. "
+                "Set the LYRICSGENIUS_API_KEY environment variable or configure it in Flask's config."
             )
-            self.genius = None # Avoid initializing genius if no token
+            self.genius = None  # Avoid initializing genius if no token
             return
 
         try:

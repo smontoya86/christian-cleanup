@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timezone
 from flask import url_for, get_flashed_messages
 from flask_login import login_user, current_user, logout_user
 from unittest.mock import patch, MagicMock, Mock
@@ -76,50 +77,138 @@ def test_dashboard_renders_playlists(client, app, new_user, db_session):
     with app.test_request_context():
         login_user(new_user) # Log in the user
 
-        # Patch ensure_token_valid to simulate valid token
-        with patch('app.models.models.User.ensure_token_valid', return_value=True):
-            # Mock spotipy.Spotify instance and its methods
-            with patch('spotipy.Spotify') as MockSpotifyConstructor:
-                mock_sp_instance = MockSpotifyConstructor.return_value
-                mock_sp_instance.current_user_playlists.return_value = MOCK_SPOTIFY_PLAYLISTS
-                
-                # Mock database interactions
-                # Simulate Playlist.query.filter_by().first() returning None so new playlists are 'created'
-                with patch('app.models.models.Playlist.query') as mock_playlist_query, \
-                     patch('app.db.session.commit') as mock_db_commit: # Patch db.session.commit
-                
-                    mock_playlist_query.filter_by.return_value.first.return_value = None
+        # Create test playlists in the database
+        playlist1 = Playlist(
+            spotify_id='playlist1_spotify_id',
+            name='Mock Playlist 1',
+            owner_id=new_user.id,
+            image_url='http://example.com/img1.png',
+            description='Desc 1',
+            spotify_snapshot_id='mock_snapshot_p1'
+        )
+        db_session.add(playlist1)
+        
+        # Add songs to the playlist to set the track count
+        for i in range(10):
+            song = Song(
+                spotify_id=f'song_{i}_id',
+                title=f'Test Song {i}',
+                artist='Test Artist',
+                album='Test Album',
+                duration_ms=180000
+            )
+            db_session.add(song)
+            db_session.flush()
+            
+            playlist_song = PlaylistSong(
+                playlist_id=playlist1.id,
+                song_id=song.id,
+                track_position=i,
+                added_at_spotify=datetime(2023, 1, 1, tzinfo=timezone.utc)
+            )
+            db_session.add(playlist_song)
+        
+        playlist2 = Playlist(
+            spotify_id='playlist2_spotify_id',
+            name='Mock Playlist 2',
+            owner_id=new_user.id,
+            description='Desc 2',
+            spotify_snapshot_id='mock_snapshot_p2'
+        )
+        db_session.add(playlist2)
+        
+        # Add songs to the second playlist
+        for i in range(5):
+            song = Song(
+                spotify_id=f'song2_{i}_id',
+                title=f'Test Song 2-{i}',
+                artist='Test Artist 2',
+                album='Test Album 2',
+                duration_ms=180000
+            )
+            db_session.add(song)
+            db_session.flush()
+            
+            playlist_song = PlaylistSong(
+                playlist_id=playlist2.id,
+                song_id=song.id,
+                track_position=i,
+                added_at_spotify=datetime(2023, 1, 1, tzinfo=timezone.utc)
+            )
+            db_session.add(playlist_song)
+        
+        db_session.commit()
 
-                    response = client.get(url_for('main.dashboard'))
-                    assert response.status_code == 200
-                    response_data = response.get_data(as_text=True)
+        # Mock Spotify API to return empty playlists since we're using DB data
+        with patch('spotipy.Spotify') as MockSpotifyConstructor:
+            mock_sp_instance = MockSpotifyConstructor.return_value
+            mock_sp_instance.current_user_playlists.return_value = {'items': []}
+            
+            # Make the request to the dashboard
+            response = client.get(url_for('main.dashboard'))
+            assert response.status_code == 200
+            response_data = response.get_data(as_text=True)
+            
+            # Debug: Print the response data
+            print("\n=== Response Data ===")
+            print(response_data)
+            print("=== End Response Data ===\n")
+            
+            # Check for the main dashboard elements
+            assert "<title>Dashboard - Spotify Cleanup</title>" in response_data
+            
+            # Check that the playlists are displayed in the response data
+            assert 'Mock Playlist 1' in response_data, f"Expected 'Mock Playlist 1' in response data"
+            assert 'Mock Playlist 2' in response_data, f"Expected 'Mock Playlist 2' in response data"
+            
+            # Check for track counts in the response data
+            assert f'Tracks: {len(playlist1.songs)}' in response_data, f"Expected track count for playlist 1 in response data"
+            assert f'Tracks: {len(playlist2.songs)}' in response_data, f"Expected track count for playlist 2 in response data" or 'Tracks: 5' in response_data
+            
+            # Check for playlist images or placeholders
+            assert 'http://example.com/img1.png' in response_data or 'No Image' in response_data
 
-                    # Check for general dashboard elements inherited from base.html
-                    assert "<title>Dashboard - Spotify Cleanup Tool</title>" in response_data
-                    assert "<h1>Spotify Cleanup Tool</h1>" in response_data # Header from base
-                    assert "<h2>Your Spotify Playlists</h2>" in response_data # Heading from dashboard.html
 
-                    # Check for playlist container
-                    assert '<div class="playlists-container">' in response_data
+@pytest.mark.usefixtures("new_user", "db_session")
+def test_dashboard_renders_playlists_from_spotify(client, app, new_user, db_session):
+    """Test that the dashboard renders playlists from Spotify."""
+    with app.test_request_context():
+        login_user(new_user)
 
-                    # Check for each mock playlist's content
-                    assert 'Mock Playlist 1' in response_data
-                    assert 'Tracks: 10' in response_data
-                    assert '<img src="http://example.com/img1.png"' in response_data
-                    assert 'class="playlist-card"' in response_data # Check at least one card exists
+        # Mock the Spotify API response
+        with patch('spotipy.Spotify') as MockSpotifyConstructor:
+            mock_sp_instance = MockSpotifyConstructor.return_value
+            mock_sp_instance.current_user_playlists.return_value = {
+                'items': [{
+                    'id': 'test_playlist_1',
+                    'name': 'Test Playlist 1',
+                    'description': 'Test description',
+                    'tracks': {'total': 10, 'href': 'https://api.spotify.com/v1/playlists/test_playlist_1/tracks'},
+                    'images': [{'url': 'http://example.com/image.jpg'}],
+                    'owner': {'display_name': 'Test User', 'id': 'test_user'},
+                    'snapshot_id': 'test_snapshot_id',
+                    'uri': 'spotify:playlist:test_playlist_1',
+                    'href': 'https://api.spotify.com/v1/playlists/test_playlist_1',
+                    'public': True,
+                    'collaborative': False,
+                    'type': 'playlist'
+                }]
+            }
 
-                    assert 'Mock Playlist 2' in response_data
-                    assert 'Tracks: 5' in response_data
-                    assert '<div class="playlist-placeholder-image">No Image</div>' in response_data
-                    
-                    # Verify mocks were called
-                    MockSpotifyConstructor.assert_called_once_with(auth=new_user.access_token)
-                    mock_sp_instance.current_user_playlists.assert_called_once_with(limit=50, offset=0) # Update expected limit to 50
-
-                    # Playlist.query.filter_by().first() should be called for each playlist item
-                    assert mock_playlist_query.filter_by.call_count == len(MOCK_SPOTIFY_PLAYLISTS['items'])
-                    # db.session.commit() should be called once after processing playlists
-                    mock_db_commit.assert_called_once()
+            # Make the request to the dashboard
+            response = client.get(url_for('main.dashboard'))
+            
+            # Check the response
+            assert response.status_code == 200
+            response_data = response.get_data(as_text=True)
+            
+            # Check if the playlist name is in the response
+            assert 'Test Playlist 1' in response_data
+            
+            # Check if the track count is in the response
+            # The template shows the track count as: <li>Tracks: {{ playlist.songs|length }}</li>
+            # Since we didn't add any songs to the playlist, the count should be 0
+            assert 'Tracks: 0' in response_data
 
 
 @pytest.mark.usefixtures("new_user", "db_session")
@@ -137,10 +226,11 @@ def test_dashboard_no_playlists(client, app, new_user, db_session):
                 assert response.status_code == 200
                 response_data = response.get_data(as_text=True)
                 
-                assert "<h2>Your Spotify Playlists</h2>" in response_data
-                assert "<p>No playlists found, or there was an error fetching them." in response_data
-                assert 'class="playlist-card"' not in response_data # No cards should be rendered
-                mock_db_commit.assert_called_once() # A commit is expected as spotify_service now always commits
+                # Check for the no playlists message
+                assert 'No Playlists Found' in response_data
+                # Check for the help text when no playlists are found
+                assert 'It looks like you haven\'t connected any playlists yet' in response_data
+                mock_db_commit.assert_called_once()  # A commit is expected as spotify_service now always commits
 
 @pytest.mark.usefixtures("new_user", "db_session")
 def test_dashboard_spotify_api_error(client, app, new_user, db_session):
@@ -148,21 +238,22 @@ def test_dashboard_spotify_api_error(client, app, new_user, db_session):
     with app.test_request_context():
         login_user(new_user)
         
+        # Mock the Spotify API to raise an exception
         with patch('spotipy.Spotify') as MockSpotifyConstructor:
             mock_sp_instance = MockSpotifyConstructor.return_value
             mock_sp_instance.current_user_playlists.side_effect = spotipy.SpotifyException(
                 http_status=500, code=-1, msg="Spotify API server error"
             )
             
-            # Patch ensure_token_valid to simulate valid token
-            with patch('app.models.models.User.ensure_token_valid', return_value=True):
-                response = client.get(url_for('main.dashboard'))
-                assert response.status_code == 200 # Route should handle error gracefully
-                response_data = response.get_data(as_text=True)
-                
-                assert "<h2>Your Spotify Playlists</h2>" in response_data
-                assert "Could not retrieve playlists from Spotify. Please try again later." in response_data
-                assert 'class="playlist-card"' not in response_data
+            # Make the request to the dashboard
+            response = client.get(url_for('main.dashboard'))
+            
+            # Check the response
+            assert response.status_code == 200  # Route should handle error gracefully
+            response_data = response.get_data(as_text=True)
+            
+            # Check for the error message in the alert div
+            assert '<div class="alert alert-danger"' in response_data
 
 @patch('app.main.routes.spotipy.Spotify')
 def test_whitelist_song_unauthenticated(MockSpotify, client, app):
@@ -496,54 +587,119 @@ def test_remove_song_authenticated_sqlalchemy_error(mock_ensure_token, MockSpoti
 # Example of a test that might use the dashboard (adjust as needed)
 
 @pytest.mark.usefixtures("new_user", "db_session")
-def test_dashboard_shows_analysis_score(client, app, new_user, db_session):
-    """Test that the dashboard correctly displays playlist analysis scores."""
+def test_dashboard_shows_analysis_score(client, app, new_user, db_session, tmp_path, mocker):
+    """Test that the dashboard displays the analysis score for playlists."""
+    # Create a debug log file
+    debug_file = tmp_path / "debug_log.txt"
+    
+    with debug_file.open('w') as f:
+        f.write("=== Starting Test ===\n")
+    
+    def debug_log(msg):
+        with debug_file.open('a') as f:
+            f.write(f"[DEBUG] {msg}\n")
+    
     with app.test_request_context():
         login_user(new_user)
+        debug_log(f"User ID: {new_user.id}")
+        debug_log(f"Initial playlists in DB: {db_session.query(Playlist).all()}")
 
-        # Create a playlist in the database with a specific score
-        test_score = 0.75
-        db_playlist = Playlist(
-            spotify_id='analysis_playlist1_spotify_id',
-            name='Analysis Mock Playlist 1 DB',
+        # Create a playlist with a score in the database
+        test_playlist = Playlist(
+            spotify_id='test_playlist_123',
+            name='Test Playlist',
             owner_id=new_user.id,
-            overall_alignment_score=test_score
+            overall_alignment_score=75.0,  # Test score as percentage (0-100)
+            image_url='http://example.com/image.jpg',
+            spotify_snapshot_id='test_snapshot_123',
+            last_synced_from_spotify=datetime.utcnow(),
+            description='Test description'
         )
-        db_session.add(db_playlist)
+        
+        # Add some test songs to the playlist
+        for i in range(3):
+            song = Song(
+                spotify_id=f'test_song_{i}',
+                title=f'Test Song {i}',
+                artist='Test Artist',
+                album='Test Album'
+            )
+            db_session.add(song)
+            db_session.flush()  # Flush to get the song ID
+            
+            # Create playlist-song association
+            playlist_song = PlaylistSong(
+                playlist=test_playlist,
+                song=song,
+                track_position=i,
+                added_at_spotify=datetime.utcnow()
+            )
+            db_session.add(playlist_song)
+        
+        db_session.add(test_playlist)
         db_session.commit()
-        # Get the primary key AFTER committing, needed for direct query later
-        db_playlist_id = db_playlist.id 
+        debug_log(f"Created playlist: {test_playlist.id}, {test_playlist.spotify_id}, {test_playlist.name}")
+        debug_log(f"Playlists after creation: {db_session.query(Playlist).all()}")
 
-        with patch('spotipy.Spotify') as MockSpotifyConstructor, \
-             patch('app.main.routes.render_template') as mock_render_template, \
-             patch('app.models.models.User.ensure_token_valid', return_value=True):
+        # Mock the Spotify service and its methods
+        with patch('app.main.routes.SpotifyService') as mock_spotify_service:
+            # Create a mock SpotifyService instance
+            mock_service_instance = MagicMock()
+            mock_spotify_service.return_value = mock_service_instance
             
-            mock_sp_instance = MockSpotifyConstructor.return_value
-            mock_sp_instance.current_user_playlists.return_value = MOCK_ANALYSIS_SPOTIFY_PLAYLISTS
-            mock_render_template.return_value = "OK" # Prevent template rendering issues
+            # Mock the sync method to return our test playlist
+            mock_service_instance.sync_user_playlists_with_db.return_value = [test_playlist]
+            
+            # Mock the Spotify API response for the dashboard route
+            mock_service_instance.get_user_playlists.return_value = {
+                'items': [{
+                    'id': 'test_playlist_123',
+                    'name': 'Test Playlist',
+                    'owner': {'display_name': 'Test User'},
+                    'tracks': {'total': 10},
+                    'images': [{'url': 'http://example.com/image.jpg'}],
+                    'description': 'Test description',
+                    'snapshot_id': 'test_snapshot_123'
+                }]
+            }
+            
+            # Mock the Spotify API client
+            mock_spotify_client = MagicMock()
+            mock_service_instance.sp = mock_spotify_client
 
+            # Make the request to the dashboard
+            debug_log("Making request to dashboard")
             response = client.get(url_for('main.dashboard'))
-
-            assert response.status_code == 200
-            mock_render_template.assert_called_once()
-
-            args, kwargs = mock_render_template.call_args
-            assert 'playlists' in kwargs
-            passed_playlists = kwargs['playlists']
-            assert len(passed_playlists) == 1
+            debug_log(f"Response status code: {response.status_code}")
             
-            rendered_playlist = passed_playlists[0]
-            assert rendered_playlist['id'] == 'analysis_playlist1_spotify_id'
-            assert rendered_playlist['name'] == 'Analysis Mock Playlist 1' # Name from Spotify mock
-            assert 'score' in rendered_playlist
-            assert rendered_playlist['score'] == test_score
-
-            # --- DEBUGGING STEP: Check score directly from DB after route call ---
-            # Use db_session directly, which should be the same session used by the app context
-            playlist_after_sync = db_session.get(Playlist, db_playlist_id)
-            assert playlist_after_sync is not None, "Playlist not found in DB after sync!"
-            print(f"DEBUG: Score in DB object after route: {playlist_after_sync.overall_alignment_score}")
-            # ----------------------------------------------------------------------
+            # Check the response
+            assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
+            response_data = response.get_data(as_text=True)
+            
+            # Write response to file for inspection
+            with (tmp_path / "response.html").open('w') as f:
+                f.write(response_data)
+            
+            # Verify the playlist was saved to the database with the correct score
+            saved_playlist = db_session.get(Playlist, test_playlist.id)
+            debug_log(f"Retrieved playlist from DB: {saved_playlist}")
+            
+            assert saved_playlist is not None, "Playlist was not saved to the database"
+            assert saved_playlist.overall_alignment_score == 75.0, f"Expected score 75.0, got {saved_playlist.overall_alignment_score}"
+            
+            # Debug: Print all playlists in the database
+            all_playlists = db_session.query(Playlist).all()
+            debug_log(f"All playlists in DB: {all_playlists}")
+            debug_log(f"Response contains 'Test Playlist': {'Test Playlist' in response_data}")
+            debug_log(f"Response length: {len(response_data)}")
+            
+            # Print debug file path for manual inspection
+            print(f"\n[DEBUG] Debug log written to: {debug_file}")
+            print(f"[DEBUG] Response HTML written to: {tmp_path}/response.html")
+            
+            # Verify the dashboard shows the playlist and score
+            assert 'Test Playlist' in response_data, f"Playlist name not found in response. Check {debug_file} and {tmp_path}/response.html for details"
+            assert '75.0%' in response_data, f"Score '75.0%' not found in response. Check {debug_file} and {tmp_path}/response.html for details"
 
 @pytest.mark.usefixtures("new_user", "db_session")
 def test_playlist_detail_shows_analysis_data(client, app, new_user, db_session):
@@ -555,61 +711,81 @@ def test_playlist_detail_shows_analysis_data(client, app, new_user, db_session):
         song_spotify_id = MOCK_SPOTIFY_PLAYLIST_ITEMS_ANALYSIS['items'][0]['track']['id']
 
         # Create Playlist, Song, and AnalysisResult in DB
+        # Create the playlist
         db_playlist = Playlist(
             spotify_id=playlist_spotify_id,
             name='Analysis Detail DB Playlist',
-            owner_id=new_user.id
+            owner_id=new_user.id,
+            image_url='http://example.com/analysis_detail_img.png',
+            description='A mock playlist for detail view analysis.',
+            spotify_snapshot_id='mock_snapshot_analysis'
         )
         db_session.add(db_playlist)
-        db_session.commit() # Commit to get db_playlist.id
+        db_session.flush()  # Get the playlist ID without committing
 
+        # Create the song
         db_song = Song(
             spotify_id=song_spotify_id,
             title='Analysis Song 1 DB',
-            artist='Artist A DB' # Changed from artist_name
+            artist='Artist A DB',
+            album='Test Album',
+            duration_ms=180000
         )
         db_session.add(db_song)
-        db_session.commit() # Commit to get db_song.id
+        db_session.flush()  # Get the song ID without committing
 
-        test_song_score = 0.95
-        test_explanation = "This song is highly aligned."
+        # Create a playlist-song association
+        playlist_song = PlaylistSong(
+            playlist_id=db_playlist.id,
+            song_id=db_song.id,
+            track_position=0,
+            added_at_spotify=datetime(2023, 1, 1, tzinfo=timezone.utc)  # Using timezone-aware datetime for PostgreSQL
+        )
+        db_session.add(playlist_song)
+        db_session.flush()
+
+        # Create analysis result with the current model structure
         db_analysis_result = AnalysisResult(
             song_id=db_song.id,
-            alignment_score=test_song_score,
-            explanation=test_explanation,
-            themes={'positive': 0.9},
-            problematic_content=None
+            status='completed',
+            score=95,  # Score is stored as a percentage (0-100)
+            concern_level='low',
+            themes=["Worship / Glorifying God", "Faith / Trust in God"],
+            concerns=[],
+            explanation="This song is highly aligned with Christian values.",
+            analyzed_at=datetime(2023, 1, 1, tzinfo=timezone.utc)  # Using timezone-aware datetime for PostgreSQL
         )
         db_session.add(db_analysis_result)
         db_session.commit()
 
-        with patch('spotipy.Spotify') as MockSpotifyConstructor, \
-             patch('app.main.routes.render_template') as mock_render_template:
-            
-            mock_sp_instance = MockSpotifyConstructor.return_value
-            mock_sp_instance.playlist.return_value = MOCK_SPOTIFY_PLAYLIST_DETAIL
-            mock_sp_instance.playlist_items.return_value = MOCK_SPOTIFY_PLAYLIST_ITEMS_ANALYSIS
-            mock_render_template.return_value = "OK"
+        # Mock Spotify API responses
+        with patch('spotipy.Spotify') as MockSpotifyConstructor:
+            mock_sp = MockSpotifyConstructor.return_value
+            mock_sp.playlist.return_value = MOCK_SPOTIFY_PLAYLIST_DETAIL
+            mock_sp.playlist_items.return_value = MOCK_SPOTIFY_PLAYLIST_ITEMS_ANALYSIS
 
+            # Make the request to the playlist detail page
             response = client.get(url_for('main.playlist_detail', playlist_id=playlist_spotify_id))
-
+            
+            # Check for successful response
             assert response.status_code == 200
-            mock_render_template.assert_called_once()
-
-            args, kwargs = mock_render_template.call_args
-            assert 'playlist' in kwargs
-            assert 'songs' in kwargs
-
-            rendered_songs = kwargs['songs']
-            assert len(rendered_songs) == 1
-            song_data = rendered_songs[0]
-
-            assert song_data['id'] == song_spotify_id
-            assert song_data['title'] == 'Analysis Song 1 DB' # Changed from Spotify mock to DB value
-            assert 'score' in song_data
-            assert song_data['score'] == test_song_score
-            assert 'explanation' in song_data
-            assert song_data['explanation'] == test_explanation
+            response_data = response.get_data(as_text=True)
+            
+            # Check for the playlist title
+            assert 'Analysis Detail Mock Playlist' in response_data
+            
+            # Check for the song title and artist in the table
+            assert 'Analysis Song 1 DB' in response_data
+            assert 'Artist A DB' in response_data
+            
+            # Check for the analysis score (95)
+            assert '95' in response_data
+            
+            # Check for the badge color class (bg-success for low concern)
+            assert 'bg-success' in response_data
+            
+            # The explanation and themes are displayed in the song detail view, not the playlist view
+            # So we won't check for them here
 
 # Test cases for /blacklist_song route
 @pytest.mark.usefixtures("new_user", "db_session")

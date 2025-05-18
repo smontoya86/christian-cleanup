@@ -83,8 +83,8 @@
                                 {{ playlist.description | truncate(100) if playlist.description else 'No description available.' }}
                             </p>
                             <ul class="list-unstyled mt-auto mb-3 text-muted small">
-                                <li>Tracks: {{ playlist.track_count }}</li>
-                                <li>Score: {{ playlist.score if playlist.score is not none else 'N/A' }}</li>
+                                <li>Tracks: {{ playlist.songs|length }}</li>
+                                <li>Score: {{ '%.1f%%' % (playlist.score * 100) if playlist.score is not none else 'N/A' }}</li>
                             </ul>
                             <a href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id) }}" class="btn btn-primary btn-sm mb-2">View Details</a>
                             <div class="playlist-actions btn-group w-100" role="group" aria-label="Playlist actions">

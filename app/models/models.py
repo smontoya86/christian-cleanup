@@ -19,6 +19,9 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Admin flag
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
+
     # Relationships
     playlists = db.relationship('Playlist', back_populates='owner', lazy='dynamic', cascade="all, delete-orphan")
     whitelisted_artists = db.relationship('Whitelist', backref='user', lazy='dynamic', foreign_keys='Whitelist.user_id', cascade="all, delete-orphan")
@@ -196,6 +199,12 @@ class Playlist(db.Model):
     @property
     def songs(self):
         return [association.song for association in sorted(self.song_associations, key=lambda x: x.track_position)]
+        
+    @property
+    def score(self):
+        """Alias for overall_alignment_score for backward compatibility."""
+        # Return the raw score (0-100) without any multiplication
+        return self.overall_alignment_score / 100.0 if self.overall_alignment_score is not None else None
 
     def __repr__(self):
         return f'<Playlist {self.name}>'
@@ -217,24 +226,125 @@ class Song(db.Model):
 
     # Relationships
     playlist_associations = db.relationship('PlaylistSong', back_populates='song')
-    analysis_results = db.relationship('AnalysisResult', backref='song', lazy='dynamic', cascade="all, delete-orphan")
+    analysis_results = db.relationship('AnalysisResult', back_populates='song_rel', lazy='dynamic', cascade="all, delete-orphan")
 
+    # Analysis properties (not stored in DB, used for template rendering)
+    @property
+    def analysis_status(self):
+        result = self.analysis_results.first()
+        return result.status if result else 'pending'
+        
+    @analysis_status.setter
+    def analysis_status(self, value):
+        # This is a no-op setter to allow setting the property
+        pass
+        
+    @property
+    def score(self):
+        result = self.analysis_results.first()
+        return result.score if result else None
+        
+    @score.setter
+    def score(self, value):
+        # This is a no-op setter to allow setting the property
+        pass
+        
+    @property
+    def concern_level(self):
+        result = self.analysis_results.first()
+        return result.concern_level if result else None
+        
+    @concern_level.setter
+    def concern_level(self, value):
+        # This is a no-op setter to allow setting the property
+        pass
+        
+    @property
+    def analysis_concerns(self):
+        result = self.analysis_results.first()
+        return result.concerns if result and hasattr(result, 'concerns') else []
+        
+    @analysis_concerns.setter
+    def analysis_concerns(self, value):
+        # This is a no-op setter to allow setting the property
+        pass
+    
     def __repr__(self):
         return f'<Song {self.title} - {self.artist}>'
 
 class AnalysisResult(db.Model):
     __tablename__ = 'analysis_results'
+    
+    # Status constants
+    STATUS_PENDING = 'pending'
+    STATUS_PROCESSING = 'processing'
+    STATUS_COMPLETED = 'completed'
+    STATUS_FAILED = 'failed'
+    
     id = db.Column(db.Integer, primary_key=True)
     song_id = db.Column(db.Integer, db.ForeignKey('songs.id'), nullable=False)
+    status = db.Column(db.String(20), default=STATUS_PENDING, nullable=False)
     themes = db.Column(db.JSON, nullable=True)  
-    problematic_content = db.Column(db.JSON, nullable=True) 
-    alignment_score = db.Column(db.Float, nullable=True) # Existing field, might be legacy or repurposed later
-    raw_score = db.Column(db.Integer, nullable=True)  # New field for Christian framework score (0-100)
-    concern_level = db.Column(db.String(50), nullable=True) # New field for High/Medium/Low concern
+    problematic_content = db.Column(db.JSON, nullable=True)
+    concerns = db.Column(db.JSON, nullable=True)  # List of concern strings
+    alignment_score = db.Column(db.Float, nullable=True)  # Legacy field, might be repurposed
+    score = db.Column(db.Float, nullable=True)  # 0-100 score
+    concern_level = db.Column(db.String(50), nullable=True)  # High/Medium/Low concern
     explanation = db.Column(db.Text, nullable=True)
     analyzed_at = db.Column(db.DateTime, default=datetime.utcnow)
-    # Foreign key to bible_verses if we link themes directly to specific verses
-    # bible_verse_id = db.Column(db.Integer, db.ForeignKey('bible_verses.id'), nullable=True)
+    error_message = db.Column(db.Text, nullable=True)  # Store error message if analysis fails
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    song_rel = db.relationship('Song', back_populates='analysis_results')
+    
+    # Indexes
+    __table_args__ = (
+        db.Index('idx_analysis_song_id', 'song_id'),
+        db.Index('idx_analysis_status', 'status'),
+        db.Index('idx_analysis_concern_level', 'concern_level'),
+    )
+    
+    def mark_processing(self):
+        """Mark this analysis as processing."""
+        self.status = self.STATUS_PROCESSING
+        self.updated_at = datetime.utcnow()
+        
+    def mark_completed(self, score=None, concern_level=None, themes=None, concerns=None, explanation=None):
+        """Mark this analysis as completed with the given results."""
+        self.status = self.STATUS_COMPLETED
+        self.score = score
+        self.concern_level = concern_level
+        self.themes = themes
+        self.concerns = concerns
+        self.explanation = explanation
+        self.analyzed_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
+        
+    def mark_failed(self, error_message):
+        """Mark this analysis as failed with the given error message."""
+        self.status = self.STATUS_FAILED
+        self.error_message = error_message
+        self.updated_at = datetime.utcnow()
+    
+    def to_dict(self):
+        """Convert the analysis result to a dictionary."""
+        return {
+            'id': self.id,
+            'song_id': self.song_id,
+            'status': self.status,
+            'score': self.score,
+            'concern_level': self.concern_level,
+            'themes': self.themes,
+            'concerns': self.concerns,
+            'explanation': self.explanation,
+            'analyzed_at': self.analyzed_at.isoformat() if self.analyzed_at else None,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
 
     def __repr__(self):
         return f'<AnalysisResult for Song ID {self.song_id}>'

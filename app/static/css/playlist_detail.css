@@ -1,0 +1,276 @@
+/* Playlist Detail Page Styles */
+:root {
+    --primary-color: #4361ee;
+    --success-color: #2ecc71;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --light-bg: #f8f9fa;
+    --border-radius: 8px;
+    --box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    --transition: all 0.3s ease;
+}
+
+/* Base Styles */
+.playlist-container {
+    padding-bottom: 3rem;
+}
+
+/* Card Styles */
+.card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 1.5rem;
+    transition: var(--transition);
+}
+
+.card:hover {
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+}
+
+/* Status Cells */
+.status-cell {
+    min-width: 150px;
+    font-weight: 500;
+    vertical-align: middle;
+    padding: 0.75rem 1rem;
+}
+
+/* Animation for the analyzing state */
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.analyzing {
+    animation: pulse 1.5s infinite;
+    color: var(--primary-color);
+}
+
+/* Progress Bar */
+.progress {
+    height: 6px;
+    border-radius: 3px;
+    background-color: #e9ecef;
+    margin: 0.5rem 0;
+}
+
+.progress-bar {
+    transition: width 0.3s ease-in-out;
+    border-radius: 3px;
+}
+
+/* Song Table */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    border-top: none;
+    padding: 1rem;
+}
+
+.table td {
+    vertical-align: middle;
+    padding: 1rem;
+    border-color: #f1f3f7;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(67, 97, 238, 0.04);
+}
+
+/* Buttons */
+.btn {
+    font-weight: 500;
+    padding: 0.5rem 1.25rem;
+    border-radius: 6px;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn i {
+    margin-right: 0.5rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-secondary {
+    color: #495057;
+    border-color: #dee2e6;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #495057;
+}
+
+/* Album Art */
+.playlist-cover-img-detail {
+    max-height: 300px;
+    width: auto;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: var(--transition);
+}
+
+.playlist-cover-img-detail:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    border-radius: 50rem;
+}
+
+.badge.bg-success {
+    background-color: var(--success-color) !important;
+}
+
+.badge.bg-warning {
+    background-color: var(--warning-color) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--danger-color) !important;
+}
+
+/* Analysis Summary Cards */
+#analysisResults .card {
+    border: none;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+#analysisResults .card:hover {
+    transform: translateY(-3px);
+}
+
+#overallScore {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+/* Purity Flags */
+#purityFlags .badge {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .status-cell {
+        min-width: 100%;
+        text-align: left;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .table-responsive {
+        border: none;
+    }
+    
+    .table th, 
+    .table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    #analysisResults .card {
+        margin-bottom: 1rem;
+    }
+    
+    #overallScore {
+        font-size: 2.5rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #1a1a1a;
+        color: #e0e0e0;
+    }
+    
+    .card {
+        background-color: #2d2d2d;
+        color: #e0e0e0;
+    }
+    
+    .card-header {
+        background-color: #2d2d2d;
+        border-bottom-color: #3d3d3d;
+    }
+    
+    .table {
+        color: #e0e0e0;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(67, 97, 238, 0.1);
+    }
+    
+    .table td, 
+    .table th {
+        border-color: #3d3d3d;
+    }
+    
+    .text-muted {
+        color: #9e9e9e !important;
+    }
+    
+    .btn-outline-secondary {
+        color: #e0e0e0;
+        border-color: #4d4d4d;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: #3d3d3d;
+        border-color: #5d5d5d;
+        color: #ffffff;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: none;
+    }
+    
+    .table {
+        border: 1px solid #dee2e6;
+    }
+}

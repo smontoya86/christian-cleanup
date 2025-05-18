@@ -9,9 +9,29 @@ class BibleClient:
 
     def __init__(self, preferred_bible_id=None):
         load_dotenv()
-        self.api_key = os.getenv("BIBLE_API_KEY")
+        
+        # Try to get the API key from the environment first
+        self.api_key = os.environ.get('BIBLE_API_KEY')
+        
+        # Then try to get from Flask app config if available
         if not self.api_key:
-            raise ValueError("BIBLE_API_KEY not found in .env file")
+            try:
+                from flask import current_app
+                if current_app and 'BIBLE_API_KEY' in current_app.config:
+                    self.api_key = current_app.config['BIBLE_API_KEY']
+            except (RuntimeError, ImportError):  # Not in Flask app context or Flask not available
+                pass
+        
+        if not self.api_key:
+            # Try to get from .env file as a last resort
+            self.api_key = os.getenv("BIBLE_API_KEY")
+            
+        if not self.api_key:
+            raise ValueError(
+                "BIBLE_API_KEY not found. Set the BIBLE_API_KEY environment variable "
+                "or configure it in Flask's config."
+            )
+            
         self.base_url = "https://api.scripture.api.bible/v1"
         self.default_bible_id = preferred_bible_id if preferred_bible_id else self.BSB_ID
         self.fallback_bible_id = self.KJV_ID
