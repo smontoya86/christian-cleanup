@@ -15,9 +15,11 @@ def get_christian_rubric():
         "positive_theme_points": 5,    # Points added per distinct positive theme
 
         "concern_thresholds": {
-            "low_starts_at": 70,    # Score >= 70 and no purity flags = Low
-            "medium_starts_at": 40, # Score 40-69 and no purity flags = Medium
-                                    # Score < 40 or any purity flag = High
+            "low_starts_at": 80,      # Score 80-100 = Low (Green)
+            "medium_starts_at": 60,   # Score 60-79 = Medium (Yellow)
+            "high_starts_at": 40,     # Score 40-59 = High (Orange)
+                                     # Score 0-39 = Extreme (Red)
+                                     # Any purity flag = High or Extreme
         },
 
         "purity_flag_definitions": {

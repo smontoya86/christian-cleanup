@@ -188,12 +188,17 @@
                                 <td>{{ item.song.id }}</td>
                                 <td class="song-score">
                                     {% if item.song.score is not none %}
-                                        <span class="badge {% if item.song.concern_level == 'high' %}bg-danger{% elif item.song.concern_level == 'medium' %}bg-warning text-dark{% else %}bg-success{% endif %}">
-                                            {{ "%.0f"|format(item.song.score) }}
-                                        </span>
+                                        <div class="d-flex align-items-center">
+                                            <span class="concern-badge {% if item.song.concern_level|lower == 'extreme' %}bg-extreme{% elif item.song.concern_level|lower == 'high' %}bg-high{% elif item.song.concern_level|lower == 'medium' %}bg-medium{% else %}bg-low{% endif %}">
+                                                <i class="fas {% if item.song.concern_level|lower == 'extreme' %}fa-exclamation-triangle{% elif item.song.concern_level|lower == 'high' %}fa-exclamation-circle{% elif item.song.concern_level|lower == 'medium' %}fa-info-circle{% else %}fa-check-circle{% endif %}"></i>
+                                                {{ "%.0f"|format(item.song.score) }}
+                                            </span>
+                                            <span class="small ms-2">{{ item.song.concern_level|default('Not Analyzed')|title }}</span>
+                                        </div>
                                     {% else %}
                                         <span class="text-muted">Not Analyzed</span>
                                     {% endif %}
+
                                 </td>
                                 <td class="song-status">
                                     {% if item.song.analysis_status == 'completed' %}
@@ -202,16 +207,6 @@
                                         <span class="badge bg-danger">Failed</span>
                                     {% else %}
                                         <span class="badge bg-secondary">Not Analyzed</span>
-                                    {% endif %}
-                                    
-                                    {% if item.song.analysis_concerns %}
-                                        <div class="mt-1">
-                                            {% for concern in item.song.analysis_concerns %}
-                                                <span class="badge bg-danger bg-opacity-10 text-danger small me-1">
-                                                    <i class="fas fa-exclamation-circle me-1"></i>{{ concern }}
-                                                </span>
-                                            {% endfor %}
-                                        </div>
                                     {% endif %}
                                 </td>
                                 <td class="song-actions">

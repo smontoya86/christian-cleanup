@@ -391,13 +391,63 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Loading grid view...');
     }
     
+    // Helper function to analyze songs one by one
+    function analyzeNextSong(songRows, index) {
+        if (index >= songRows.length) {
+            showSuccess('All songs have been processed!');
+            return;
+        }
+        
+        const row = songRows[index];
+        const songId = row.getAttribute('data-song-id');
+        const songTitle = row.querySelector('td:nth-child(3) a')?.textContent.trim() || 'Unknown Title';
+        const songArtist = row.querySelector('td:nth-child(3) .text-muted')?.textContent.trim() || 'Unknown Artist';
+        const analyzeBtn = row.querySelector('.analyze-song-btn') || document.createElement('button');
+        
+        // Update UI to show which song is being analyzed
+        const statusCell = row.querySelector('.song-status');
+        if (statusCell) {
+            statusCell.innerHTML = '<span class="badge bg-info">Analyzing...</span>';
+        }
+        
+        // Analyze the current song
+        analyzeSingleSong(songId, songTitle, songArtist, analyzeBtn, () => {
+            // After analysis is complete, move to the next song
+            analyzeNextSong(songRows, index + 1);
+        });
+    }
+    
     // Event Listeners
     if (analyzeUnanalyzedBtn) {
-        analyzeUnanalyzedBtn.addEventListener('click', () => startSongAnalysis('unanalyzed'));
+        analyzeUnanalyzedBtn.addEventListener('click', () => {
+            // Find all unanalyzed songs and analyze them one by one
+            const unanalyzedSongs = Array.from(document.querySelectorAll('.song-row')).filter(row => {
+                const statusBadge = row.querySelector('.song-status .badge');
+                return !statusBadge || !statusBadge.classList.contains('bg-success');
+            });
+            
+            if (unanalyzedSongs.length === 0) {
+                showSuccess('All songs have been analyzed!');
+                return;
+            }
+            
+            // Start with the first unanalyzed song
+            analyzeNextSong(unanalyzedSongs, 0);
+        });
     }
     
     if (analyzePlaylistBtn) {
-        analyzePlaylistBtn.addEventListener('click', () => startSongAnalysis('all'));
+        analyzePlaylistBtn.addEventListener('click', () => {
+            // Find all songs and analyze them one by one
+            const allSongs = document.querySelectorAll('.song-row');
+            if (allSongs.length === 0) {
+                showError('No songs found to analyze');
+                return;
+            }
+            
+            // Start with the first song
+            analyzeNextSong(Array.from(allSongs), 0);
+        });
     }
     
     // Add event listeners for individual song analysis buttons
@@ -413,11 +463,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Function to analyze a single song
-    function analyzeSingleSong(songId, songTitle, songArtist, button) {
+    function analyzeSingleSong(songId, songTitle, songArtist, button, onComplete = null) {
         if (!songId) {
             console.error('Song ID is missing');
             showError('Error: Could not determine song ID');
             return;
+        }
+        
+        // Show analyzing status in the UI if not already set
+        const songRowElement = document.querySelector(`tr[data-song-id="${songId}"]`);
+        if (songRowElement) {
+            const statusCell = songRowElement.querySelector('.song-status');
+            if (statusCell && !statusCell.innerHTML.includes('Analyzing')) {
+                statusCell.innerHTML = '<span class="badge bg-info">Analyzing...</span>';
+            }
         }
         
         const originalButtonHTML = button ? button.innerHTML : '';
@@ -503,6 +562,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (buttonText) buttonText.textContent = 'Re-analyze';
                             if (spinner) spinner.classList.add('d-none');
                         }
+                        
+                        // Call the completion callback if provided
+                        if (typeof onComplete === 'function') {
+                            onComplete();
+                        }
                     } else if (status.in_progress) {
                         // Still processing
                         if (songRow) {
@@ -547,19 +611,57 @@ document.addEventListener('DOMContentLoaded', function() {
         const songRow = document.querySelector(`tr[data-song-id="${songId}"]`);
         if (!songRow) return;
         
-        // Update score
+        // Update score and concern level
         const scoreCell = songRow.querySelector('.song-score');
         if (scoreCell && analysis && analysis.score !== undefined) {
+            const concernLevel = analysis.concern_level ? analysis.concern_level.toLowerCase() : '';
             let badgeClass = 'bg-secondary';
-            if (analysis.concern_level === 'high') {
-                badgeClass = 'bg-danger';
-            } else if (analysis.concern_level === 'medium') {
-                badgeClass = 'bg-warning text-dark';
-            } else if (analysis.concern_level === 'low') {
-                badgeClass = 'bg-success';
+            let iconClass = 'fa-question-circle';
+            
+            if (concernLevel === 'extreme') {
+                badgeClass = 'bg-extreme';
+                iconClass = 'fa-exclamation-triangle';
+            } else if (concernLevel === 'high') {
+                badgeClass = 'bg-high';
+                iconClass = 'fa-exclamation-circle';
+            } else if (concernLevel === 'medium') {
+                badgeClass = 'bg-medium';
+                iconClass = 'fa-info-circle';
+            } else if (concernLevel === 'low') {
+                badgeClass = 'bg-low';
+                iconClass = 'fa-check-circle';
             }
             
-            scoreCell.innerHTML = `<span class="badge ${badgeClass}">${Math.round(analysis.score)}</span>`;
+            // Update the score cell with the same structure as the initial template
+            scoreCell.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <span class="concern-badge ${badgeClass}">
+                        <i class="fas ${iconClass}"></i>
+                        ${Math.round(analysis.score)}
+                    </span>
+                    <span class="small ms-2">${analysis.concern_level || 'Not Analyzed'}</span>
+                </div>
+                <button class="btn btn-sm btn-outline-primary ms-2 analyze-song-btn" 
+                        data-song-id="${songId}"
+                        data-song-title="${songRow.dataset.songTitle || ''}"
+                        data-song-artist="${songRow.dataset.songArtist || ''}"
+                        title="Re-analyze Song">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            `;
+            
+            // Re-attach the event listener to the new analyze button
+            const newButton = scoreCell.querySelector('.analyze-song-btn');
+            if (newButton) {
+                newButton.addEventListener('click', function() {
+                    analyzeSingleSong(
+                        songId,
+                        this.dataset.songTitle,
+                        this.dataset.songArtist,
+                        this
+                    );
+                });
+            }
         }
         
         // Update status
@@ -567,6 +669,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (statusCell) {
             statusCell.innerHTML = '<span class="badge bg-success">Analyzed</span>';
         }
+        
+        // Update the overall score display
+        updateOverallScore();
     }
     
     // Initialize the page

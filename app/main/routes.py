@@ -730,13 +730,19 @@ def song_detail(song_id):
                 "raw_full_analysis_blob": raw_analysis
             }
 
-            # Determine concern_level_class
+            # Determine concern level class
             if analysis_result_db.concern_level:
                 level_lower = analysis_result_db.concern_level.lower()
-                if level_lower == "high": concern_level_class = "text-danger"
-                elif level_lower == "medium": concern_level_class = "text-warning"
-                elif level_lower == "low": concern_level_class = "text-success"
-                else: concern_level_class = "text-info" # For 'None' or other
+                if level_lower == "extreme": 
+                    concern_level_class = "text-bg-extreme"
+                elif level_lower == "high": 
+                    concern_level_class = "text-bg-high"
+                elif level_lower == "medium": 
+                    concern_level_class = "text-bg-medium"
+                elif level_lower == "low": 
+                    concern_level_class = "text-bg-low"
+                else: 
+                    concern_level_class = "text-muted" # For 'None' or other
 
             # Transform purity_flags_details (list of dicts) to dict for template
             # Original template: {% for flag, details in purity_flags_triggered.items() %}
@@ -876,9 +882,9 @@ def get_song_analysis_status(song_id):
             
         # Check if the song belongs to a playlist owned by the current user
         user_playlist_ids = [p.id for p in current_user.playlists]
-        song_playlist_ids = [p.id for p in song.playlists]
+        song_playlist_ids = [assoc.playlist_id for assoc in song.playlist_associations]
         
-        if not any(pid in user_playlist_ids for pid in song_playlist_ids):
+        if not song_playlist_ids or not any(pid in user_playlist_ids for pid in song_playlist_ids):
             return jsonify({
                 'success': False,
                 'error': 'unauthorized',
@@ -1099,21 +1105,22 @@ def analyze_song_route(song_id):
             
         # Check if the song belongs to a playlist owned by the current user
         user_playlist_ids = [p.id for p in current_user.playlists]
-        song_playlist_ids = [p.id for p in song.playlists]
+        song_playlist_ids = [assoc.playlist_id for assoc in song.playlist_associations]
         
-        if not any(pid in user_playlist_ids for pid in song_playlist_ids):
+        if not song_playlist_ids or not any(pid in user_playlist_ids for pid in song_playlist_ids):
             return jsonify({
                 'success': False,
                 'error': 'unauthorized',
                 'message': 'You do not have permission to analyze this song'
             }), 403
             
-        # Queue the analysis job
-        job = current_app.task_queue.enqueue(
+        # Queue the analysis job using RQ directly
+        from ..extensions import rq
+        job = rq.get_queue().enqueue(
             'app.services.analysis_service.perform_christian_song_analysis_and_store',
             song_id=song_id,
             user_id=current_user.id,
-            job_timeout='5m',
+            job_timeout=300,  # 5 minutes in seconds
             result_ttl='24h'
         )
         

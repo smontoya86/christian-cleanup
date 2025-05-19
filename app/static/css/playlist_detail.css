@@ -15,6 +15,11 @@
     padding-bottom: 3rem;
 }
 
+/* Remove hourglass from status badges */
+.badge::after {
+    display: none !important;
+}
+
 /* Card Styles */
 .card {
     border: none;

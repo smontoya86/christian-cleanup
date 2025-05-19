@@ -1,6 +1,7 @@
 from flask import current_app
 import logging
 import json
+from datetime import datetime
 from ..extensions import rq, db
 from ..models import Song, AnalysisResult
 from ..utils.analysis import SongAnalyzer
@@ -50,21 +51,46 @@ def _execute_song_analysis_impl(song_id: int, user_id: int = None):
 
         # Start a new transaction for storing results
         try:
+            # Extract relevant data from the analysis results
+            themes = christian_analysis_data.get('themes', {})
+            concerns = christian_analysis_data.get('concerns', [])
+            score = christian_analysis_data.get('christian_score')
+            concern_level = christian_analysis_data.get('christian_concern_level', 'Low')
+            
+            # Generate explanation
+            explanation = f"Analysis completed with score: {score} ({concern_level} concern)"
+            if concerns:
+                explanation += f"\nConcerns: {', '.join(concerns)}"
+            
+            # Check for existing analysis
             existing_analysis = AnalysisResult.query.filter_by(song_id=song.id).first()
+            
             if existing_analysis:
+                # Update existing analysis
                 task_logger.info(f"Updating existing analysis for song {song.id}")
-                existing_analysis.themes = json.dumps(christian_analysis_data)
-                existing_analysis.raw_score = christian_analysis_data.get('christian_score')
-                existing_analysis.concern_level = christian_analysis_data.get('christian_concern_level', 'Low')
+                existing_analysis.mark_completed(
+                    score=score,
+                    concern_level=concern_level,
+                    themes=themes,
+                    concerns=concerns,
+                    explanation=explanation
+                )
             else:
+                # Create new analysis
                 task_logger.info(f"Creating new analysis for song {song.id}")
                 analysis_result = AnalysisResult(
                     song_id=song.id,
-                    themes=json.dumps(christian_analysis_data),
-                    raw_score=christian_analysis_data.get('christian_score'),
-                    concern_level=christian_analysis_data.get('christian_concern_level', 'Low')
+                    status=AnalysisResult.STATUS_COMPLETED,
+                    themes=themes,
+                    concerns=concerns,
+                    score=score,
+                    concern_level=concern_level,
+                    explanation=explanation
                 )
                 db.session.add(analysis_result)
+            
+            # Update the song's last_analyzed timestamp
+            song.last_analyzed = datetime.utcnow()
             
             db.session.commit()
             task_logger.info(f"Analysis completed and saved for song: {song.title} (ID: {song.id})")

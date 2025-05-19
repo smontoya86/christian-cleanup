@@ -293,51 +293,125 @@ class SongAnalyzer:
         return triggered_flags_details, total_penalty
 
     def _detect_christian_themes(self, lyrics_text: str) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-        # Placeholder for theme detection logic (e.g., using keyword matching, topic modeling, or another LLM)
-        logger.debug("Stub: _detect_christian_themes called. Returning no themes.")
-        # For now, returns empty lists for positive and negative themes
-        # Actual implementation would populate these based on analysis
-        # Example structure for a theme: {"theme_name": "Faith / Trust in God", "details": "Keyword 'faith' found", "associated_scripture_keywords": ["faith", "trust"]}
-        identified_positive_themes = []
-        identified_negative_themes = [] 
-        return identified_positive_themes, identified_negative_themes
+        """
+        Detect Christian themes in the lyrics using keyword matching.
+        
+        Args:
+            lyrics_text: The preprocessed lyrics text to analyze
+            
+        Returns:
+            Tuple of (positive_themes, negative_themes) where each is a list of theme dicts
+        """
+        logger.debug("Detecting Christian themes in lyrics")
+        positive_themes = []
+        negative_themes = []
+        
+        if not lyrics_text:
+            return positive_themes, negative_themes
+            
+        # Convert to lowercase for case-insensitive matching
+        lyrics_lower = lyrics_text.lower()
+        
+        # Check positive themes
+        for theme_config in self.christian_rubric["positive_themes_config"]:
+            theme_name = theme_config["name"]
+            keywords = theme_config.get("keywords", [])
+            
+            # Check if any keyword is in the lyrics
+            matches = [kw for kw in keywords if kw.lower() in lyrics_lower]
+            if matches:
+                theme = {
+                    "theme": theme_name,
+                    "details": f"Keywords found: {', '.join(matches)}",
+                    "scripture_references": theme_config.get("scripture_keywords", []),
+                    "matched_keywords": matches
+                }
+                positive_themes.append(theme)
+                logger.debug(f"Detected positive theme: {theme_name}")
+        
+        # Check negative themes
+        for theme_config in self.christian_rubric["negative_themes_config"]:
+            theme_name = theme_config["name"]
+            keywords = theme_config.get("keywords", [])
+            
+            # Check if any keyword is in the lyrics
+            matches = [kw for kw in keywords if kw.lower() in lyrics_lower]
+            if matches:
+                theme = {
+                    "theme": theme_name,
+                    "details": f"Keywords found: {', '.join(matches)}",
+                    "scripture_references": theme_config.get("scripture_keywords", []),
+                    "matched_keywords": matches
+                }
+                negative_themes.append(theme)
+                logger.debug(f"Detected negative theme: {theme_name}")
+        
+        logger.info(f"Detected {len(positive_themes)} positive and {len(negative_themes)} negative themes")
+        return positive_themes, negative_themes
 
     def _calculate_christian_score_and_concern(self, purity_flags_details: List[Dict[str, Any]], total_purity_penalty: int, positive_themes: List[Dict[str, Any]], negative_themes: List[Dict[str, Any]]) -> Tuple[int, str]:
         logger.debug("Executing full _calculate_christian_score_and_concern")
 
         rubric = self.christian_rubric
         score = rubric.get("baseline_score", 100)
+        
+        # Log initial values
+        logger.info(f"Initial score: {score}")
+        logger.info(f"Purity flags: {[f['flag'] for f in purity_flags_details] if purity_flags_details else 'None'}")
+        logger.info(f"Positive themes: {[t['theme'] for t in positive_themes] if positive_themes else 'None'}")
+        logger.info(f"Negative themes: {[t['theme'] for t in negative_themes] if negative_themes else 'None'}")
 
         # Apply purity penalty (already calculated by _detect_christian_purity_flags)
         score -= total_purity_penalty
+        logger.info(f"After purity penalty (-{total_purity_penalty}): {score}")
 
         # Apply negative theme penalties
-        num_negative_themes = len(negative_themes) # Assumes negative_themes list contains unique identified themes
-        score -= num_negative_themes * rubric.get("negative_theme_penalty", 10)
+        num_negative_themes = len(negative_themes)
+        negative_penalty = num_negative_themes * rubric.get("negative_theme_penalty", 10)
+        score -= negative_penalty
+        logger.info(f"After negative themes (-{negative_penalty}): {score}")
 
-        # Apply positive theme points
-        num_positive_themes = len(positive_themes) # Assumes positive_themes list contains unique identified themes
-        score += num_positive_themes * rubric.get("positive_theme_points", 5)
+        # Apply positive theme points (capped at 20 points max to prevent gaming the system)
+        num_positive_themes = len(positive_themes)
+        positive_points = min(num_positive_themes * rubric.get("positive_theme_points", 5), 20)  # Cap at +20
+        score += positive_points
+        logger.info(f"After positive themes (+{positive_points}): {score}")
 
         # Cap the score
         score = max(rubric.get("score_min_cap", 0), min(score, rubric.get("score_max_cap", 100)))
+        logger.info(f"After capping: {score}")
 
-        # Determine concern level
-        concern_level = "Low" # Default
+        # Determine concern level based on score thresholds
         thresholds = rubric.get("concern_thresholds", {})
-        low_starts_at = thresholds.get("low_starts_at", 70)
-        medium_starts_at = thresholds.get("medium_starts_at", 40) # Corresponds to 40-69 for Medium
+        low_starts_at = thresholds.get("low_starts_at", 80)
+        medium_starts_at = thresholds.get("medium_starts_at", 60)
+        high_starts_at = thresholds.get("high_starts_at", 40)
 
-        if purity_flags_details: # Any purity flag automatically makes it High concern
-            concern_level = "High"
-        # If no purity flags, concern is based on score
-        elif score < medium_starts_at: # Score 0-39
-            concern_level = "High" 
-        elif score < low_starts_at: # Score 40-69
+        # Determine level based on score first
+        if score >= low_starts_at:  # 80-100
+            concern_level = "Low"
+            reason = f"Score ({score}) in Low concern range (80-100)"
+        elif score >= medium_starts_at:  # 60-79
             concern_level = "Medium"
-        # else: score >= 70, remains Low
+            reason = f"Score ({score}) in Medium concern range (60-79)"
+        elif score >= high_starts_at:  # 40-59
+            concern_level = "High"
+            reason = f"Score ({score}) in High concern range (40-59)"
+        else:  # 0-39
+            concern_level = "Extreme"
+            reason = f"Score ({score}) in Extreme concern range (0-39)"
+            
+        # Purity flags can only increase concern level, not decrease it
+        if purity_flags_details:
+            if concern_level == "Low":
+                concern_level = "High"
+                reason = "Purity flag detected, increasing concern level to High"
+            elif concern_level == "Medium" and concern_level != "High" and concern_level != "Extreme":
+                concern_level = "High"
+                reason = "Purity flag detected, increasing concern level to High"
+            # If already High or Extreme, keep it as is
         
-        logger.info(f"Calculated score: {score}, Concern level: {concern_level}")
+        logger.info(f"Final score: {score}, Concern level: {concern_level} - {reason}")
         return int(score), concern_level
 
     def _get_christian_supporting_scripture(self, triggered_components: Dict[str, List[str]]) -> Dict[str, Any]:

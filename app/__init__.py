@@ -74,7 +74,10 @@ def create_app(config_name=None):
     login_manager.init_app(app)
     scheduler.init_app(app)
     bootstrap.init_app(app) 
-    rq.init_app(app) 
+    rq.init_app(app)
+    
+    # Initialize task queue
+    app.task_queue = rq.get_queue()
 
     # Only start the scheduler if it's not already running AND we are not in testing mode.
     # For testing, we typically don't want background jobs running.
