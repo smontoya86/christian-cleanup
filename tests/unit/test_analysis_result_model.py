@@ -1,6 +1,7 @@
 import pytest
 from datetime import datetime, timezone
 from app.models import AnalysisResult, Song, db
+from app.utils.database import get_by_id  # Add SQLAlchemy 2.0 utility
 
 class TestAnalysisResultModel:
     """Test suite for the AnalysisResult model."""
@@ -63,8 +64,8 @@ class TestAnalysisResultModel:
     
     def test_analysis_result_relationships(self, db_session):
         """Test the relationship between AnalysisResult and Song."""
-        # Refresh the analysis result to ensure it's loaded with relationships
-        analysis = AnalysisResult.query.get(self.analysis_result.id)
+        # Refresh the analysis result using SQLAlchemy 2.0 pattern
+        analysis = get_by_id(AnalysisResult, self.analysis_result.id)
         
         assert analysis.song_rel is not None
         assert analysis.song_rel.id == self.song.id
@@ -78,8 +79,8 @@ class TestAnalysisResultModel:
     
     def test_analysis_result_update(self, db_session):
         """Test updating an analysis result."""
-        # Get the analysis result
-        analysis = AnalysisResult.query.get(self.analysis_result.id)
+        # Get the analysis result using SQLAlchemy 2.0 pattern
+        analysis = get_by_id(AnalysisResult, self.analysis_result.id)
         
         # Update fields
         analysis.status = AnalysisResult.STATUS_FAILED
@@ -87,14 +88,14 @@ class TestAnalysisResultModel:
         analysis.updated_at = datetime.now(timezone.utc)
         db.session.commit()
         
-        # Verify updates
-        updated = AnalysisResult.query.get(self.analysis_result.id)
+        # Verify updates using SQLAlchemy 2.0 pattern
+        updated = get_by_id(AnalysisResult, self.analysis_result.id)
         assert updated.status == AnalysisResult.STATUS_FAILED
         assert updated.error_message == "Analysis failed due to timeout"
     
     def test_analysis_result_json_serialization(self, db_session):
         """Test that the model can be serialized to JSON."""
-        analysis = AnalysisResult.query.get(self.analysis_result.id)
+        analysis = get_by_id(AnalysisResult, self.analysis_result.id)
         result = analysis.to_dict()
         
         assert 'id' in result

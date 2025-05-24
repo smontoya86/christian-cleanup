@@ -7,6 +7,7 @@ from app.services.whitelist_service import (
     remove_from_whitelist, ITEM_REMOVED, ITEM_NOT_FOUND, INVALID_INPUT,
     is_whitelisted, get_user_whitelist, get_whitelist_entry_by_id
 )
+from app.utils.database import get_by_filter, count_by_filter, get_all_by_filter  # Add SQLAlchemy 2.0 utilities
 
 def test_add_new_item_to_whitelist(db_session, new_user):
     """Test adding a completely new item to the whitelist."""
@@ -26,8 +27,8 @@ def test_add_new_item_to_whitelist(db_session, new_user):
     assert result.name == name
     assert result.reason == reason
 
-    # Verify in DB
-    entry_in_db = Whitelist.query.filter_by(user_id=user_id, spotify_id=spotify_id, item_type=item_type).first()
+    # Verify in DB using SQLAlchemy 2.0 pattern
+    entry_in_db = get_by_filter(Whitelist, user_id=user_id, spotify_id=spotify_id, item_type=item_type)
     assert entry_in_db is not None
     assert entry_in_db.id == result.id
 
@@ -52,8 +53,8 @@ def test_add_existing_item_to_whitelist(db_session, new_user):
     assert result.reason == new_reason # Reason should update
     assert result.name == "Initial Name" # Name should NOT update on existing add
 
-    # Verify count in DB (should still be 1)
-    count = Whitelist.query.filter_by(user_id=user_id, spotify_id=spotify_id, item_type=item_type).count()
+    # Verify count in DB using SQLAlchemy 2.0 pattern
+    count = count_by_filter(Whitelist, user_id=user_id, spotify_id=spotify_id, item_type=item_type)
     assert count == 1
 
 def test_add_blacklisted_item_to_whitelist(db_session, new_user):
@@ -66,8 +67,8 @@ def test_add_blacklisted_item_to_whitelist(db_session, new_user):
     blacklist_entry = Blacklist(user_id=user_id, spotify_id=spotify_id, item_type=item_type, name="Blacklisted Song")
     db.session.add(blacklist_entry)
     db.session.commit()
-    assert Blacklist.query.filter_by(user_id=user_id, spotify_id=spotify_id).count() == 1
-    assert Whitelist.query.filter_by(user_id=user_id, spotify_id=spotify_id).count() == 0
+    assert count_by_filter(Blacklist, user_id=user_id, spotify_id=spotify_id) == 1
+    assert count_by_filter(Whitelist, user_id=user_id, spotify_id=spotify_id) == 0
 
     # 2. Attempt to add to whitelist
     whitelist_reason = "Moving from blacklist"
@@ -80,9 +81,11 @@ def test_add_blacklisted_item_to_whitelist(db_session, new_user):
     assert result.name == "Whitelisted Name"
 
     # 3. Verify it's removed from blacklist and added to whitelist in DB
-    assert Blacklist.query.filter_by(user_id=user_id, spotify_id=spotify_id).count() == 0
-    assert Whitelist.query.filter_by(user_id=user_id, spotify_id=spotify_id).count() == 1
-    assert Whitelist.query.first().id == result.id
+    assert count_by_filter(Blacklist, user_id=user_id, spotify_id=spotify_id) == 0
+    assert count_by_filter(Whitelist, user_id=user_id, spotify_id=spotify_id) == 1
+    whitelist_entries = get_all_by_filter(Whitelist)
+    assert len(whitelist_entries) >= 1
+    assert any(entry.id == result.id for entry in whitelist_entries)
 
 # --- Tests for remove_from_whitelist --- #
 
@@ -95,7 +98,7 @@ def test_remove_item_by_id(db_session, new_user):
     # 1. Add item first
     status, added_item = add_to_whitelist(user_id, spotify_id, item_type, "Remove Me")
     assert status in [ITEM_ADDED, ITEM_ALREADY_EXISTS, REASON_UPDATED, ITEM_MOVED_FROM_BLACKLIST]
-    assert Whitelist.query.filter_by(id=added_item.id).count() == 1
+    assert count_by_filter(Whitelist, id=added_item.id) == 1
     entry_id_to_remove = added_item.id
 
     # 2. Remove by ID
@@ -105,7 +108,7 @@ def test_remove_item_by_id(db_session, new_user):
     assert result == "Item successfully removed from whitelist."
 
     # 3. Verify removed from DB
-    assert Whitelist.query.filter_by(id=entry_id_to_remove).count() == 0
+    assert count_by_filter(Whitelist, id=entry_id_to_remove) == 0
 
 def test_remove_item_by_spotify_id_and_type(db_session, new_user):
     """Test removing a whitelist item by its spotify_id and item_type."""
@@ -116,7 +119,7 @@ def test_remove_item_by_spotify_id_and_type(db_session, new_user):
     # 1. Add item first
     status, added_item = add_to_whitelist(user_id, spotify_id, item_type, "Remove Artist")
     assert status in [ITEM_ADDED, ITEM_ALREADY_EXISTS, REASON_UPDATED, ITEM_MOVED_FROM_BLACKLIST]
-    assert Whitelist.query.filter_by(user_id=user_id, spotify_id=spotify_id, item_type=item_type).count() == 1
+    assert count_by_filter(Whitelist, user_id=user_id, spotify_id=spotify_id, item_type=item_type) == 1
 
     # 2. Remove by spotify_id and item_type
     remove_status, result = remove_from_whitelist(user_id, spotify_id=spotify_id, item_type=item_type)
@@ -125,7 +128,7 @@ def test_remove_item_by_spotify_id_and_type(db_session, new_user):
     assert result == "Item successfully removed from whitelist."
 
     # 3. Verify removed from DB
-    assert Whitelist.query.filter_by(user_id=user_id, spotify_id=spotify_id, item_type=item_type).count() == 0
+    assert count_by_filter(Whitelist, user_id=user_id, spotify_id=spotify_id, item_type=item_type) == 0
 
 def test_remove_nonexistent_item_by_id(db_session, new_user):
     """Test attempting to remove a whitelist item by a non-existent ID."""
@@ -133,7 +136,7 @@ def test_remove_nonexistent_item_by_id(db_session, new_user):
     non_existent_id = 99999
 
     # Ensure the ID doesn't exist
-    assert Whitelist.query.filter_by(id=non_existent_id).count() == 0
+    assert count_by_filter(Whitelist, id=non_existent_id) == 0
 
     # Attempt to remove
     remove_status, result = remove_from_whitelist(user_id, whitelist_entry_id=non_existent_id)
@@ -148,7 +151,7 @@ def test_remove_nonexistent_item_by_spotify_id(db_session, new_user):
     item_type = "track"
 
     # Ensure the item doesn't exist
-    assert Whitelist.query.filter_by(user_id=user_id, spotify_id=non_existent_spotify_id, item_type=item_type).count() == 0
+    assert count_by_filter(Whitelist, user_id=user_id, spotify_id=non_existent_spotify_id, item_type=item_type) == 0
 
     # Attempt to remove
     remove_status, result = remove_from_whitelist(user_id, spotify_id=non_existent_spotify_id, item_type=item_type)
@@ -192,7 +195,7 @@ def test_is_whitelisted_false(db_session, new_user):
     item_type = "song"
 
     # Ensure not in whitelist (it shouldn't be by default)
-    assert Whitelist.query.filter_by(user_id=user_id, spotify_id=spotify_id, item_type=item_type).count() == 0
+    assert count_by_filter(Whitelist, user_id=user_id, spotify_id=spotify_id, item_type=item_type) == 0
 
     assert is_whitelisted(user_id, spotify_id, item_type) is False
 

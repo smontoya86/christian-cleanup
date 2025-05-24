@@ -2,7 +2,9 @@ import click
 from flask import current_app
 from flask.cli import with_appcontext
 from werkzeug.security import generate_password_hash
-from .models.models import User, db
+from . import db
+from .models import User
+from .utils.database import get_by_filter
 from datetime import datetime, timedelta
 import uuid
 
@@ -19,7 +21,7 @@ def create_user(email, password, admin):
         admin: Whether the user should have admin privileges
     """
     # Check if a user with this email already exists
-    existing_user = User.query.filter_by(email=email).first()
+    existing_user = get_by_filter(User, email=email)
     if existing_user:
         click.echo(f"User with email {email} already exists.")
         return

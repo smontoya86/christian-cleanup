@@ -1,4 +1,4 @@
-from flask import render_template, flash, redirect, url_for, request, current_app, jsonify, has_request_context, session
+from flask import render_template, flash, redirect, url_for, request, current_app, jsonify, has_request_context, session, abort
 from flask_login import login_required, current_user, current_user as flask_login_current_user
 import spotipy
 
@@ -25,7 +25,9 @@ from app.services.whitelist_service import (
     INVALID_INPUT
 )
 from app.utils.analysis import SongAnalyzer
+from app.utils.database import get_by_id, get_by_filter, get_all_by_filter, db_transaction  # SQLAlchemy 2.0 utilities
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import select  # SQLAlchemy 2.0 imports
 from ..services.list_management_service import ListManagementService
 from . import main_bp
 import json
@@ -84,8 +86,8 @@ def dashboard():
         # Check for sync message in session
         sync_message = session.pop('sync_message', None)
         
-        # Get user's playlists from database  
-        playlists = Playlist.query.filter_by(owner_id=user_id).all()
+        # Get user's playlists from database using SQLAlchemy 2.0 pattern
+        playlists = get_all_by_filter(Playlist, owner_id=user_id)
         
         # Calculate playlist scores for any playlists that need updating
         for playlist in playlists:
@@ -323,8 +325,8 @@ def playlist_detail(playlist_id):
     try:
         user_id = flask_login_current_user.id
         # Pre-fetch whitelist and blacklist for the current user
-        user_whitelisted_track_ids = {item.spotify_id for item in Whitelist.query.filter_by(user_id=user_id, item_type='track').all()}
-        user_blacklisted_track_ids = {item.spotify_id for item in Blacklist.query.filter_by(user_id=user_id, item_type='track').all()}
+        user_whitelisted_track_ids = {item.spotify_id for item in get_all_by_filter(Whitelist, user_id=user_id, item_type='track')}
+        user_blacklisted_track_ids = {item.spotify_id for item in get_all_by_filter(Blacklist, user_id=user_id, item_type='track')}
 
         # Fetch basic playlist details
         playlist_data = sp.sp.playlist(playlist_id, fields="id,name,description,images,owner(display_name),tracks(total)")
@@ -333,7 +335,7 @@ def playlist_detail(playlist_id):
             return redirect(url_for('main.dashboard'))
 
         # Check if playlist exists in DB or add it
-        playlist_in_db = Playlist.query.filter_by(spotify_id=playlist_id, owner_id=user_id).first()
+        playlist_in_db = get_by_filter(Playlist, spotify_id=playlist_id, owner_id=user_id)
         if not playlist_in_db:
             playlist_in_db = Playlist(
                 spotify_id=playlist_data['id'],
@@ -386,7 +388,7 @@ def playlist_detail(playlist_id):
                 song_spotify_id = track_data['id']
                 current_app.logger.debug(f"Item {idx+1}: song_spotify_id = {song_spotify_id}")
 
-                song_in_db = Song.query.filter_by(spotify_id=song_spotify_id).first()
+                song_in_db = get_by_filter(Song, spotify_id=song_spotify_id)
                 if not song_in_db:
                     current_app.logger.debug(f"Item {idx+1}: Song {song_spotify_id} not in DB, creating new entry.")
                     
@@ -809,7 +811,7 @@ def remove_blacklist_song(playlist_id, track_id):
 @login_required
 def api_whitelist_song(song_db_id):
     user_id = flask_login_current_user.id
-    song = Song.query.get(song_db_id)
+    song = get_by_id(Song, song_db_id)
 
     if not song:
         return jsonify({'success': False, 'message': 'Song not found.'}), 404
@@ -850,7 +852,7 @@ def api_whitelist_song(song_db_id):
 @login_required
 def api_blacklist_song(song_db_id):
     user_id = flask_login_current_user.id
-    song = Song.query.get(song_db_id)
+    song = get_by_id(Song, song_db_id)
 
     if not song:
         return jsonify({'success': False, 'message': 'Song not found.'}), 404
@@ -900,7 +902,9 @@ def song_detail(song_id):
     
     try:
         # Get the song
-        song = Song.query.get_or_404(song_id)
+        song = get_by_id(Song, song_id)
+        if not song:
+            abort(404)
         current_app.logger.info(f"Found song: {song.title} by {song.artist}")
         
         # Get the analysis result
@@ -1033,7 +1037,7 @@ def get_song_analysis_status(song_id):
     """
     try:
         # Get the song with proper ownership check
-        song = Song.query.filter_by(id=song_id).first()
+        song = get_by_id(Song, song_id)
         if not song:
             return jsonify({
                 'success': False,
@@ -1143,13 +1147,9 @@ def get_analysis_status(playlist_id):
         
         # If checking status for a specific song
         if song_id:
-            song = Song.query.filter_by(id=song_id).first()
+            song = get_by_id(Song, song_id)
             if not song:
-                return jsonify({
-                    'success': False,
-                    'error': 'song_not_found',
-                    'message': 'Song not found'
-                }), 404
+                abort(404)
                 
             # If song has a score, return it
             if song.score is not None:
@@ -1344,7 +1344,9 @@ def analyze_song_route(song_id):
     
     try:
         # Get the song
-        song = Song.query.get_or_404(song_id)
+        song = get_by_id(Song, song_id)
+        if not song:
+            abort(404)
         current_app.logger.info(f"Found song: {song.title} by {song.artist}")
         
         # Enqueue the analysis task

@@ -1,8 +1,10 @@
 # app/services/whitelist_service.py
 from app import db
 from app.models import Whitelist, Blacklist
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from flask import current_app
+from datetime import datetime
+from ..utils.database import get_by_filter, get_all_by_filter, safe_add_and_commit, safe_delete_and_commit, count_by_filter  # Add SQLAlchemy 2.0 utilities
 
 # Status Constants
 ITEM_ADDED = 1
@@ -33,11 +35,11 @@ def add_to_whitelist(user_id, spotify_id, item_type, name=None, reason=None):
     """
     try:
         # 1. Check if the item exists in the Whitelist first
-        existing_whitelist_entry = Whitelist.query.filter_by(
+        existing_whitelist_entry = get_by_filter(Whitelist,
             user_id=user_id,
             spotify_id=spotify_id,
             item_type=item_type
-        ).first()
+        )
 
         if existing_whitelist_entry:
             if reason and existing_whitelist_entry.reason != reason:
@@ -50,11 +52,11 @@ def add_to_whitelist(user_id, spotify_id, item_type, name=None, reason=None):
 
         # 2. If not in Whitelist, check if it exists in the Blacklist
         moved_from_blacklist = False
-        existing_blacklist_entry = Blacklist.query.filter_by(
+        existing_blacklist_entry = get_by_filter(Blacklist,
             user_id=user_id,
             spotify_id=spotify_id,
             item_type=item_type
-        ).first()
+        )
 
         if existing_blacklist_entry:
             db.session.delete(existing_blacklist_entry)
@@ -85,7 +87,7 @@ def add_to_whitelist(user_id, spotify_id, item_type, name=None, reason=None):
         db.session.rollback()
         current_app.logger.warning(f"Integrity error likely due to concurrent add for {item_type} ID {spotify_id}, user {user_id}.")
         # Re-query to return the existing entry
-        existing_entry = Whitelist.query.filter_by(user_id=user_id, spotify_id=spotify_id, item_type=item_type).first()
+        existing_entry = get_by_filter(Whitelist, user_id=user_id, spotify_id=spotify_id, item_type=item_type)
         if existing_entry: # Should exist if IntegrityError occurred
              # Decide if it's ALREADY_EXISTS or REASON_UPDATED based on if reason was provided and differs
              if reason and existing_entry.reason != reason:
@@ -107,13 +109,13 @@ def remove_from_whitelist(user_id, whitelist_entry_id=None, spotify_id=None, ite
     """
     try:
         if whitelist_entry_id:
-            entry = Whitelist.query.filter_by(id=whitelist_entry_id, user_id=user_id).first()
+            entry = get_by_filter(Whitelist, id=whitelist_entry_id, user_id=user_id)
         elif spotify_id and item_type:
-            entry = Whitelist.query.filter_by(
+            entry = get_by_filter(Whitelist,
                 user_id=user_id,
                 spotify_id=spotify_id,
                 item_type=item_type
-            ).first()
+            )
         else:
             return INVALID_INPUT, "Either whitelist_entry_id or both spotify_id and item_type must be provided."
 
@@ -132,22 +134,22 @@ def remove_from_whitelist(user_id, whitelist_entry_id=None, spotify_id=None, ite
 
 def is_whitelisted(user_id, spotify_id, item_type):
     """Checks if a specific item is whitelisted by the user."""
-    return Whitelist.query.filter_by(
+    return count_by_filter(Whitelist, 
         user_id=user_id, 
         spotify_id=spotify_id, 
         item_type=item_type
-    ).count() > 0
+    ) > 0
 
 def get_user_whitelist(user_id, item_type=None):
     """Retrieves all whitelist entries for a user, optionally filtered by item_type."""
-    query = Whitelist.query.filter_by(user_id=user_id)
     if item_type:
-        query = query.filter_by(item_type=item_type)
-    return query.all()
+        return get_all_by_filter(Whitelist, user_id=user_id, item_type=item_type)
+    else:
+        return get_all_by_filter(Whitelist, user_id=user_id)
 
 def get_whitelist_entry_by_id(whitelist_entry_id, user_id):
     """Retrieves a specific whitelist entry by its ID, ensuring it belongs to the user."""
-    return Whitelist.query.filter_by(id=whitelist_entry_id, user_id=user_id).first()
+    return get_by_filter(Whitelist, id=whitelist_entry_id, user_id=user_id)
 
 # --- Blacklist Functions ---
 
@@ -169,11 +171,11 @@ def add_to_blacklist(user_id, spotify_id, item_type, name=None, reason=None):
     """
     try:
         # 1. Check if the item exists in the Blacklist first
-        existing_blacklist_entry = Blacklist.query.filter_by(
+        existing_blacklist_entry = get_by_filter(Blacklist,
             user_id=user_id,
             spotify_id=spotify_id,
             item_type=item_type
-        ).first()
+        )
 
         if existing_blacklist_entry:
             if reason and existing_blacklist_entry.reason != reason:
@@ -186,11 +188,11 @@ def add_to_blacklist(user_id, spotify_id, item_type, name=None, reason=None):
 
         # 2. If not in Blacklist, check if it exists in the Whitelist
         moved_from_whitelist = False
-        existing_whitelist_entry = Whitelist.query.filter_by(
+        existing_whitelist_entry = get_by_filter(Whitelist,
             user_id=user_id,
             spotify_id=spotify_id,
             item_type=item_type
-        ).first()
+        )
 
         if existing_whitelist_entry:
             db.session.delete(existing_whitelist_entry)
@@ -221,7 +223,7 @@ def add_to_blacklist(user_id, spotify_id, item_type, name=None, reason=None):
         db.session.rollback()
         current_app.logger.warning(f"Integrity error likely due to concurrent blacklist add for {item_type} ID {spotify_id}, user {user_id}.")
         # Re-query to return the existing entry
-        existing_entry = Blacklist.query.filter_by(user_id=user_id, spotify_id=spotify_id, item_type=item_type).first()
+        existing_entry = get_by_filter(Blacklist, user_id=user_id, spotify_id=spotify_id, item_type=item_type)
         if existing_entry: # Should exist if IntegrityError occurred
              if reason and existing_entry.reason != reason:
                  return REASON_UPDATED, existing_entry # Reason likely updated by other process
@@ -242,13 +244,13 @@ def remove_from_blacklist(user_id, blacklist_entry_id=None, spotify_id=None, ite
     """
     try:
         if blacklist_entry_id:
-            entry = Blacklist.query.filter_by(id=blacklist_entry_id, user_id=user_id).first()
+            entry = get_by_filter(Blacklist, id=blacklist_entry_id, user_id=user_id)
         elif spotify_id and item_type:
-            entry = Blacklist.query.filter_by(
+            entry = get_by_filter(Blacklist,
                 user_id=user_id,
                 spotify_id=spotify_id,
                 item_type=item_type
-            ).first()
+            )
         else:
             return INVALID_INPUT, "Either blacklist_entry_id or both spotify_id and item_type must be provided."
 
@@ -267,19 +269,19 @@ def remove_from_blacklist(user_id, blacklist_entry_id=None, spotify_id=None, ite
 
 def is_blacklisted(user_id, spotify_id, item_type):
     """Checks if a specific item is blacklisted by the user."""
-    return Blacklist.query.filter_by(
+    return count_by_filter(Blacklist,
         user_id=user_id,
         spotify_id=spotify_id,
         item_type=item_type
-    ).count() > 0
+    ) > 0
 
 def get_user_blacklist(user_id, item_type=None):
     """Retrieves all blacklist entries for a user, optionally filtered by item_type."""
-    query = Blacklist.query.filter_by(user_id=user_id)
     if item_type:
-        query = query.filter_by(item_type=item_type)
-    return query.all()
+        return get_all_by_filter(Blacklist, user_id=user_id, item_type=item_type)
+    else:
+        return get_all_by_filter(Blacklist, user_id=user_id)
 
 def get_blacklist_entry_by_id(blacklist_entry_id, user_id):
     """Retrieves a specific blacklist entry by its ID, ensuring it belongs to the user."""
-    return Blacklist.query.filter_by(id=blacklist_entry_id, user_id=user_id).first()
+    return get_by_filter(Blacklist, id=blacklist_entry_id, user_id=user_id)

@@ -8,6 +8,7 @@ from app.models import User, Playlist, Song, PlaylistSong
 from app.services.spotify_service import SpotifyService
 from app.services.list_management_service import ListManagementService
 from app.extensions import scheduler
+from app.utils.database import get_by_filter, get_all_by_filter  # Add SQLAlchemy 2.0 utilities
 
 # Helper function to create a test user
 def create_test_user(spotify_id='testuser', email='test@example.com'):
@@ -126,8 +127,8 @@ class TestListManagementService(unittest.TestCase):
             self.test_user, [new_song_spotify_uri] 
         )
 
-        # 2. Check new Song object creation
-        created_song = Song.query.filter_by(spotify_id=new_song_spotify_id).first()
+        # 2. Check new Song object creation using SQLAlchemy 2.0 pattern
+        created_song = get_by_filter(Song, spotify_id=new_song_spotify_id)
         self.assertIsNotNone(created_song, "New song should be created in the database.")
         self.assertEqual(created_song.title, 'New Awesome Song')
         self.assertEqual(created_song.artist, 'Artist B')
@@ -136,7 +137,10 @@ class TestListManagementService(unittest.TestCase):
         updated_playlist = db.session.get(Playlist, self.test_playlist.id)
         self.assertIsNotNone(updated_playlist)
         
-        associations = PlaylistSong.query.filter_by(playlist_id=updated_playlist.id).order_by(PlaylistSong.track_position).all()
+        # Use SQLAlchemy 2.0 pattern for querying associations
+        associations = get_all_by_filter(PlaylistSong, playlist_id=updated_playlist.id)
+        # Sort by track_position for consistent ordering
+        associations.sort(key=lambda x: x.track_position)
         self.assertEqual(len(associations), 2, "Playlist should have 2 tracks after update.")
 
         self.assertEqual(associations[0].song_id, created_song.id)
@@ -182,10 +186,10 @@ class TestListManagementService(unittest.TestCase):
         )
         self.mock_spotify_service.get_multiple_track_details.assert_not_called()
 
-        # 2. Check Database state (should be unchanged)
+        # 2. Check Database state (should be unchanged) using SQLAlchemy 2.0 pattern
         updated_playlist = db.session.get(Playlist, self.test_playlist.id)
         self.assertEqual(updated_playlist.spotify_snapshot_id, 'initialsnapshot', "Snapshot ID should not change.")
-        associations = PlaylistSong.query.filter_by(playlist_id=updated_playlist.id).all()
+        associations = get_all_by_filter(PlaylistSong, playlist_id=updated_playlist.id)
         self.assertEqual(len(associations), 0, "PlaylistSong associations should not be created.")
 
         # 3. Check flash message
@@ -252,7 +256,7 @@ class TestListManagementService(unittest.TestCase):
         # 2. Check Database state (should be unchanged)
         updated_playlist = db.session.get(Playlist, self.test_playlist.id)
         self.assertEqual(updated_playlist.spotify_snapshot_id, 'initialsnapshot')
-        associations = PlaylistSong.query.filter_by(playlist_id=updated_playlist.id).all()
+        associations = get_all_by_filter(PlaylistSong, playlist_id=updated_playlist.id)
         self.assertEqual(len(associations), 0)
 
         # 3. Check flash message
@@ -287,7 +291,7 @@ class TestListManagementService(unittest.TestCase):
         # 2. Check Database state (should be unchanged)
         updated_playlist_db = db.session.get(Playlist, self.test_playlist.id)
         self.assertEqual(updated_playlist_db.spotify_snapshot_id, 'initialsnapshot')
-        associations = PlaylistSong.query.filter_by(playlist_id=updated_playlist_db.id).all()
+        associations = get_all_by_filter(PlaylistSong, playlist_id=updated_playlist_db.id)
         self.assertEqual(len(associations), 0)
 
         # 3. Service should not call flash directly

@@ -5,6 +5,7 @@ from datetime import datetime
 from ..extensions import rq, db
 from ..models import Song, AnalysisResult
 from ..utils.analysis_adapter import SongAnalyzer
+from ..utils.database import get_by_id  # Add SQLAlchemy 2.0 utility
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +21,8 @@ def _execute_song_analysis_impl(song_id: int, user_id: int = None):
     from app.utils.database import db
     
     try:
-        # Get song with explicit session handling
-        song = Song.query.get(song_id)
+        # Get song with explicit session handling using SQLAlchemy 2.0 pattern
+        song = get_by_id(Song, song_id)
         if not song:
             raise ValueError(f"Song with ID {song_id} not found")
         

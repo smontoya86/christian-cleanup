@@ -15,6 +15,8 @@ from .analysis_service import perform_christian_song_analysis_and_store # Added 
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 import requests
+from sqlalchemy import text
+from ..utils.database import get_by_filter, get_all_by_filter, execute_raw_sql  # Add SQLAlchemy 2.0 utilities
 
 SPOTIFY_API_URL = 'https://api.spotify.com/v1'
 
@@ -180,7 +182,7 @@ class SpotifyService:
                     error_processing_count += 1
                     continue
                 
-                playlist_in_db = Playlist.query.filter_by(spotify_id=spotify_id, owner_id=user_id).first()
+                playlist_in_db = get_by_filter(Playlist, spotify_id=spotify_id, owner_id=user_id)
                 needs_track_sync = False
                 is_new_playlist = False
 
@@ -271,7 +273,7 @@ class SpotifyService:
                                 continue # Skip track if essential details are missing
 
                             song_spotify_id = track_details['id']
-                            song = Song.query.filter_by(spotify_id=song_spotify_id).first()
+                            song = get_by_filter(Song, spotify_id=song_spotify_id)
 
                             if not song:
                                 self.logger.debug(f"Song with Spotify ID {song_spotify_id} not found in DB. Creating new song: {track_details.get('name', 'N/A')}.")
@@ -350,10 +352,10 @@ class SpotifyService:
                                 songs_failed_to_add_or_find += 1
                                 continue
                             # Check if this song is already in the playlist
-                            existing_assoc = PlaylistSong.query.filter_by(
+                            existing_assoc = get_by_filter(PlaylistSong,
                                 playlist_id=playlist_in_db.id,
                                 song_id=song.id
-                            ).first()
+                            )
                             
                             if not existing_assoc:
                                 # Create new association if it doesn't exist

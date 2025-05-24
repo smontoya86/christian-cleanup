@@ -1,4 +1,4 @@
-from flask import redirect, url_for, request, session, current_app, flash
+from flask import Blueprint, render_template, redirect, url_for, request, session, current_app, flash
 from . import auth 
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -8,6 +8,9 @@ import os
 from app.extensions import db
 from app.models.models import User, Playlist
 from flask_login import login_user, logout_user, login_required, current_user
+from ..utils.database import get_by_filter, count_by_filter  # Add SQLAlchemy 2.0 utilities
+
+auth = Blueprint('auth', __name__, url_prefix='/auth')
 
 def get_spotify_oauth():
     client_id = current_app.config.get('SPOTIPY_CLIENT_ID')
@@ -126,7 +129,7 @@ def callback():
     email = spotify_user_profile.get('email') 
     display_name = spotify_user_profile.get('display_name') or spotify_id
 
-    user = User.query.filter_by(spotify_id=spotify_id).first()
+    user = get_by_filter(User, spotify_id=spotify_id)
     is_new_user = user is None
 
     token_expiry_timestamp = token_info['expires_at']
@@ -170,7 +173,7 @@ def callback():
         current_app.logger.info(f"New user {user.id} - will auto-start playlist sync")
     else:
         # Check if existing user has any playlists
-        playlist_count = Playlist.query.filter_by(owner_id=user.id).count()
+        playlist_count = count_by_filter(Playlist, owner_id=user.id)
         if playlist_count == 0:
             should_auto_sync = True
             current_app.logger.info(f"Existing user {user.id} has no playlists - will auto-start playlist sync")

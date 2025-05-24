@@ -1,5 +1,6 @@
 from flask import current_app, flash
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import delete
 
 from .. import db
 from ..models import User, Playlist, Song, PlaylistSong, Whitelist, Blacklist
@@ -7,6 +8,7 @@ from .spotify_service import SpotifyService
 from datetime import datetime
 import spotipy
 from dateutil import parser
+from ..utils.database import get_by_filter  # Add SQLAlchemy 2.0 utility
 
 class ListManagementService:
     def __init__(self, spotify_service: SpotifyService):
@@ -42,7 +44,7 @@ class ListManagementService:
             
             # Check if song exists in DB
             # The variable name is spotify_track_id, but the keyword arg must match the model field 'spotify_id'
-            song = Song.query.filter_by(spotify_id=spotify_track_id).first()
+            song = get_by_filter(Song, spotify_id=spotify_track_id)
 
             if not song:
                 # If song doesn't exist, fetch details from Spotify and create it
@@ -168,7 +170,9 @@ class ListManagementService:
              return False, "Failed to update song details in the local database. Playlist may be out of sync.", 500
 
         try:
-            PlaylistSong.query.filter_by(playlist_id=local_playlist_id).delete()
+            # Use SQLAlchemy 2.0 compatible delete pattern
+            delete_stmt = delete(PlaylistSong).where(PlaylistSong.playlist_id == local_playlist_id)
+            db.session.execute(delete_stmt)
             current_app.logger.debug(f"Cleared existing tracks for local playlist {local_playlist_id}.")
 
             for idx, track_uri in enumerate(new_track_uris_ordered):
@@ -322,7 +326,9 @@ class ListManagementService:
         current_app.logger.debug(f"Song map by spotify_id (local song_id): { {k: v.id for k,v in song_map_by_spotify_id.items()} }")
 
         try:
-            PlaylistSong.query.filter_by(playlist_id=local_playlist_id).delete()
+            # Use SQLAlchemy 2.0 compatible delete pattern
+            delete_stmt = delete(PlaylistSong).where(PlaylistSong.playlist_id == local_playlist_id)
+            db.session.execute(delete_stmt)
             current_app.logger.debug(f"Cleared existing track associations for local playlist {local_playlist_id}.")
 
             new_associations = []
@@ -393,11 +399,11 @@ class ListManagementService:
             return False
 
         try:
-            item = model_to_query.query.filter_by(
+            item = get_by_filter(model_to_query,
                 user_id=user_id,
                 spotify_id=spotify_id,
                 item_type=item_type
-            ).first()
+            )
             
             if item:
                 current_app.logger.debug(f"Item {item_type} '{spotify_id}' IS on {list_type} for user {user_id}.")
