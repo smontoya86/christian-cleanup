@@ -147,12 +147,17 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateOverallScore(score) {
         const scoreElement = document.getElementById('overall-score');
         if (scoreElement) {
-            scoreElement.textContent = score !== null ? `${score}%` : 'N/A';
+            // If score is an object, try to extract the numeric value
+            const scoreValue = (typeof score === 'object' && score !== null) ? 
+                (score.christian_score || score.score || 0) : 
+                (score || 0);
+                
+            scoreElement.textContent = scoreValue !== null ? `${Math.round(scoreValue)}%` : 'N/A';
             
             // Update color based on score
-            if (score >= 70) {
+            if (scoreValue >= 70) {
                 scoreElement.className = 'text-success';
-            } else if (score >= 40) {
+            } else if (scoreValue >= 40) {
                 scoreElement.className = 'text-warning';
             } else {
                 scoreElement.className = 'text-danger';
@@ -499,7 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Start the analysis
+        // Start the analysis for a single song
         fetch(`/api/songs/${songId}/analyze`, {
             method: 'POST',
             headers: {
@@ -550,10 +555,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         throw new Error(status.message || 'Failed to check status');
                     }
                     
-                    if (status.completed) {
+                    // Check if analysis is complete (either explicitly marked as completed or has analysis data)
+                    const isComplete = status.completed || 
+                                     (status.analysis && status.analysis.score !== undefined) ||
+                                     (status.has_analysis && status.analysis !== null);
+                    
+                    if (isComplete) {
                         // Analysis complete
                         clearInterval(checkStatus);
-                        updateSongAnalysisUI(songId, status.analysis);
+                        
+                        // Update the UI with the analysis results
+                        updateSongAnalysisUI(songId, status);
                         showSuccess(`Analysis complete for "${songTitle}" by ${songArtist}`);
                         
                         // Reset button
@@ -605,75 +617,84 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+// Function to update the UI after song analysis
+function updateSongAnalysisUI(songId, response) {
+    const songRow = document.querySelector(`tr[data-song-id="${songId}"]`);
+    if (!songRow) return;
     
-    // Function to update the UI after song analysis
-    function updateSongAnalysisUI(songId, analysis) {
-        const songRow = document.querySelector(`tr[data-song-id="${songId}"]`);
-        if (!songRow) return;
+    // Extract analysis from response (it might be nested under 'analysis' property)
+    const analysis = response.analysis || response;
+    
+    // Update score and concern level - use christian_score and christian_concern_level
+    const scoreCell = songRow.querySelector('.song-score');
+    if (scoreCell && analysis && (analysis.christian_score !== undefined || analysis.score !== undefined)) {
+        // Use christian_score if available, otherwise fall back to score for backward compatibility
+        const score = analysis.christian_score !== undefined ? analysis.christian_score : analysis.score;
+        const concernLevel = (analysis.christian_concern_level || analysis.concern_level || '').toLowerCase();
         
-        // Update score and concern level
-        const scoreCell = songRow.querySelector('.song-score');
-        if (scoreCell && analysis && analysis.score !== undefined) {
-            const concernLevel = analysis.concern_level ? analysis.concern_level.toLowerCase() : '';
-            let badgeClass = 'bg-secondary';
-            let iconClass = 'fa-question-circle';
-            
-            if (concernLevel === 'extreme') {
-                badgeClass = 'bg-extreme';
-                iconClass = 'fa-exclamation-triangle';
-            } else if (concernLevel === 'high') {
-                badgeClass = 'bg-high';
-                iconClass = 'fa-exclamation-circle';
-            } else if (concernLevel === 'medium') {
-                badgeClass = 'bg-medium';
-                iconClass = 'fa-info-circle';
-            } else if (concernLevel === 'low') {
-                badgeClass = 'bg-low';
-                iconClass = 'fa-check-circle';
-            }
-            
-            // Update the score cell with the same structure as the initial template
-            scoreCell.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <span class="concern-badge ${badgeClass}">
-                        <i class="fas ${iconClass}"></i>
-                        ${Math.round(analysis.score)}
-                    </span>
-                    <span class="small ms-2">${analysis.concern_level || 'Not Analyzed'}</span>
-                </div>
-                <button class="btn btn-sm btn-outline-primary ms-2 analyze-song-btn" 
-                        data-song-id="${songId}"
-                        data-song-title="${songRow.dataset.songTitle || ''}"
-                        data-song-artist="${songRow.dataset.songArtist || ''}"
-                        title="Re-analyze Song">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            `;
-            
-            // Re-attach the event listener to the new analyze button
-            const newButton = scoreCell.querySelector('.analyze-song-btn');
-            if (newButton) {
-                newButton.addEventListener('click', function() {
-                    analyzeSingleSong(
-                        songId,
-                        this.dataset.songTitle,
-                        this.dataset.songArtist,
-                        this
-                    );
-                });
-            }
+        let badgeClass = 'bg-secondary';
+        let iconClass = 'fa-question-circle';
+        
+        if (concernLevel === 'extreme') {
+            badgeClass = 'bg-extreme';
+            iconClass = 'fa-exclamation-triangle';
+        } else if (concernLevel === 'high') {
+            badgeClass = 'bg-high';
+            iconClass = 'fa-exclamation-circle';
+        } else if (concernLevel === 'medium') {
+            badgeClass = 'bg-medium';
+            iconClass = 'fa-info-circle';
+        } else if (concernLevel === 'low') {
+            badgeClass = 'bg-low';
+            iconClass = 'fa-check-circle';
         }
         
-        // Update status
-        const statusCell = songRow.querySelector('.song-status');
-        if (statusCell) {
-            statusCell.innerHTML = '<span class="badge bg-success">Analyzed</span>';
-        }
+        // Get the display concern level (use the original case from the response)
+        const displayConcernLevel = analysis.christian_concern_level || analysis.concern_level || 'Not Analyzed';
         
-        // Update the overall score display
-        updateOverallScore();
+        // Update the score cell with the same structure as the initial template
+        scoreCell.innerHTML = `
+            <div class="d-flex align-items-center">
+                <span class="concern-badge ${badgeClass}">
+                    <i class="fas ${iconClass}"></i>
+                    ${Math.round(score)}
+                </span>
+                <span class="small ms-2">${displayConcernLevel}</span>
+            </div>
+            <button class="btn btn-sm btn-outline-primary ms-2 analyze-song-btn" 
+                    data-song-id="${songId}"
+                    data-song-title="${songRow.dataset.songTitle || ''}"
+                    data-song-artist="${songRow.dataset.songArtist || ''}"
+                    title="Re-analyze Song">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        `;
+        
+        // Re-attach the event listener to the new analyze button
+        const newButton = scoreCell.querySelector('.analyze-song-btn');
+        if (newButton) {
+            newButton.addEventListener('click', function() {
+                analyzeSingleSong(
+                    songId,
+                    this.dataset.songTitle,
+                    this.dataset.songArtist,
+                    this
+                );
+            });
+        }
     }
     
-    // Initialize the page
-    resetUI();
+    // Update status
+    const statusCell = songRow.querySelector('.song-status');
+    if (statusCell) {
+        statusCell.innerHTML = '<span class="badge bg-success">Analyzed</span>';
+    }
+    
+    // Update the overall score display with the correct score property
+    const scoreToUse = (analysis.christian_score !== undefined) ? analysis.christian_score : analysis.score;
+    updateOverallScore(scoreToUse);
+}
+
+// Initialize the page
+resetUI();
 });

@@ -6,72 +6,178 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h2">Dashboard</h1>
-        {# Optional: Add a primary action button here if needed, e.g., "Scan New Playlists" #}
+        <div class="btn-group" role="group">
+            {% if sync_status and sync_status.has_active_sync %}
+                <button class="btn btn-outline-secondary" disabled id="syncButton">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Syncing...
+                </button>
+            {% else %}
+                <form action="{{ url_for('main.sync_playlists') }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-outline-primary" id="syncButton">
+                        <i class="fas fa-sync-alt me-2"></i>Sync Playlists
+                    </button>
+                </form>
+            {% endif %}
+            <button class="btn btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-redo me-2"></i>Refresh
+            </button>
+        </div>
     </div>
 
     {% if current_user and current_user.is_authenticated %}
-        <p class="lead mb-4">Welcome back, {{ current_user.display_name | default('User') }}!</p>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <p class="lead mb-0">Welcome back, {{ current_user.display_name | default('User') }}!</p>
+            <div class="text-end">
+                {% if last_sync_info and last_sync_info.last_sync_at %}
+                    <small class="text-muted">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        Last sync: <span id="lastSync" data-timestamp="{{ last_sync_info.last_sync_at }}">{{ last_sync_info.last_sync_at }}</span><br>
+                    </small>
+                {% endif %}
+                {% if sync_status and sync_status.checked_at %}
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Status checked: <span id="lastChecked" data-timestamp="{{ sync_status.checked_at }}">{{ sync_status.checked_at }}</span>
+                    </small>
+                {% endif %}
+            </div>
+        </div>
     {% endif %}
 
     {% if error_message %}
         <div class="alert alert-danger" role="alert">
-            {{ error_message }}
+            <i class="fas fa-exclamation-triangle me-2"></i>{{ error_message }}
         </div>
     {% endif %}
 
-    {% if sync_message %}
-        <div class="alert alert-info" role="alert">
-            <i class="fas fa-spinner fa-spin me-2"></i> {{ sync_message }}
+    {% if sync_status and sync_status.has_active_sync %}
+        <div class="alert alert-info d-flex align-items-center" role="alert" id="syncAlert">
+            <i class="fas fa-spinner fa-spin me-2"></i> 
+            <div class="flex-grow-1">
+                <strong>Playlist Sync in Progress</strong><br>
+                <span id="syncMessage">{{ sync_message or "Synchronizing your playlists..." }}</span>
+                <div class="progress mt-2" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: 25%" 
+                         id="syncProgress">
+                        <span class="progress-text">Initializing...</span>
+                    </div>
+                </div>
+                <small class="text-muted">
+                    Job ID: {{ sync_status.active_jobs[0].job_id if sync_status.active_jobs else 'N/A' }}
+                    • Started: <span id="syncStarted">just now</span>
+                </small>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    <!-- Auto-sync notification for new users -->
+    {% if session.auto_sync_started %}
+        <div class="alert alert-primary d-flex align-items-center" role="alert" id="autoSyncAlert">
+            <i class="fas fa-magic me-2"></i> 
+            <div class="flex-grow-1">
+                <strong>Welcome to Spotify Cleanup!</strong><br>
+                We're automatically syncing your playlists to get you started. 
+                This process will analyze your music library and help you discover cleanup opportunities.
+                <div class="progress mt-2" style="height: 15px;">
+                    <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: 30%" 
+                         id="autoSyncProgress">
+                        <small>Getting started...</small>
+                    </div>
+                </div>
+            </div>
         </div>
     {% endif %}
 
     <!-- Quick Stats Section -->
     <div class="row mb-4 g-3">
         <div class="col-md-4">
-            <div class="card text-center h-100">
+            <div class="card text-center h-100 border-primary">
                 <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-list-music me-2"></i>Total Playlists</h5>
-                    <p class="card-text fs-4 fw-bold">{{ playlists|length if playlists else '0' }}</p>
+                    <h5 class="card-title text-primary"><i class="fas fa-list-music me-2"></i>Total Playlists</h5>
+                    <p class="card-text fs-2 fw-bold text-primary">{{ stats.total_playlists }}</p>
+                    <small class="text-muted">
+                        {% if stats.total_songs > 0 %}
+                            {{ stats.total_songs }} total songs
+                        {% else %}
+                            No playlists synced yet
+                        {% endif %}
+                    </small>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-center h-100">
+            <div class="card text-center h-100 border-info">
                 <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-music me-2"></i>Songs Analyzed</h5>
-                    <p class="card-text fs-4 fw-bold">N/A</p> {# Placeholder #}
+                    <h5 class="card-title text-info"><i class="fas fa-music me-2"></i>Songs Analyzed</h5>
+                    <p class="card-text fs-2 fw-bold text-info">{{ stats.analyzed_songs }}</p>
+                    <small class="text-muted">
+                        {% if stats.total_songs > 0 %}
+                            {{ '%.1f'|format((stats.analyzed_songs / stats.total_songs) * 100) }}% of total songs
+                        {% else %}
+                            Ready for analysis
+                        {% endif %}
+                    </small>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-center h-100">
+            <div class="card text-center h-100 border-success">
                 <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-check-circle me-2"></i>Clean Playlists</h5>
-                    <p class="card-text fs-4 fw-bold">N/A</p> {# Placeholder #}
+                    <h5 class="card-title text-success"><i class="fas fa-check-circle me-2"></i>Clean Playlists</h5>
+                    <p class="card-text fs-2 fw-bold text-success">{{ stats.clean_playlists }}</p>
+                    <small class="text-muted">
+                        {% if stats.total_playlists > 0 %}
+                            {{ '%.1f'|format((stats.clean_playlists / stats.total_playlists) * 100) }}% of playlists
+                        {% else %}
+                            Score ≥ 75%
+                        {% endif %}
+                    </small>
                 </div>
             </div>
         </div>
     </div>
 
-    <h2 class="mb-3">Your Spotify Playlists</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Your Spotify Playlists</h2>
+        {% if playlists %}
+            <small class="text-muted">{{ playlists|length }} playlists found</small>
+        {% endif %}
+    </div>
 
     <!-- Search/Filter Bar -->
     <div class="row mb-4">
-        <div class="col-md-12">
-            <form class="d-flex" onsubmit="return false;">
-                <input class="form-control me-2" type="search" id="playlistSearchInput" placeholder="Search playlists..." aria-label="Search">
-                <button class="btn btn-outline-primary" type="button"><i class="fas fa-search me-1"></i>Search</button>
-            </form>
+        <div class="col-md-8">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input class="form-control" type="search" id="playlistSearchInput" placeholder="Search playlists by name or description..." aria-label="Search">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select" id="scoreFilter">
+                <option value="">Filter by Score</option>
+                <option value="high">High Score (≥75%)</option>
+                <option value="medium">Medium Score (50-74%)</option>
+                <option value="low">Low Score (<50%)</option>
+                <option value="unanalyzed">Not Analyzed</option>
+            </select>
         </div>
     </div>
 
     {% if playlists %}
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="playlistGrid">
             {% for playlist in playlists %}
-                <div class="col playlist-item">
+                <div class="col playlist-item" 
+                     data-score="{{ playlist.score * 100 if playlist.score is not none else 'null' }}"
+                     data-name="{{ playlist.name|lower }}"
+                     data-description="{{ playlist.description|lower if playlist.description else '' }}">
                     <div class="card h-100 shadow-sm playlist-card-custom">
                         {% if playlist.image_url %}
-                            <img src="{{ playlist.image_url }}" class="card-img-top" alt="{{ playlist.name }} cover">
+                            <img src="{{ playlist.image_url }}" class="card-img-top" alt="{{ playlist.name }} cover" style="height: 200px; object-fit: cover;">
                         {% else %}
                             <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
                                 <i class="fas fa-music text-muted fa-3x"></i>
@@ -82,26 +188,51 @@
                             <p class="card-text text-muted small">
                                 {{ playlist.description | truncate(100) if playlist.description else 'No description available.' }}
                             </p>
-                            <ul class="list-unstyled mt-auto mb-3 text-muted small">
-                                <li>Tracks: {{ playlist.songs|length }}</li>
-                                <li>Score: {{ '%.1f%%' % (playlist.score * 100) if playlist.score is not none else 'N/A' }}</li>
-                            </ul>
-                            <a href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id) }}" class="btn btn-primary btn-sm mb-2">View Details</a>
-                            <div class="playlist-actions btn-group w-100" role="group" aria-label="Playlist actions">
-                                <form action="{{ url_for('main.whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="d-inline-block flex-fill">
-                                    <button type="submit" class="btn btn-outline-success btn-sm w-100">Whitelist</button>
-                                </form>
-                                <form action="{{ url_for('main.blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="d-inline-block flex-fill">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">Blacklist</button>
-                                </form>
-                            </div>
-                             <div class="playlist-actions-remove btn-group w-100 mt-1" role="group">
-                                <form action="{{ url_for('main.remove_whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="d-inline-block flex-fill">
-                                    <button type="submit" class="btn btn-link btn-sm text-success p-1 w-100">Remove WL</button>
-                                </form>
-                                <form action="{{ url_for('main.remove_blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="d-inline-block flex-fill">
-                                    <button type="submit" class="btn btn-link btn-sm text-danger p-1 w-100">Remove BL</button>
-                                </form>
+                            <div class="mt-auto">
+                                <ul class="list-unstyled mb-3 text-muted small">
+                                    <li class="d-flex justify-content-between">
+                                        <span><i class="fas fa-music me-1"></i>Tracks:</span>
+                                        <strong>{{ playlist.songs|length }}</strong>
+                                    </li>
+                                    <li class="d-flex justify-content-between">
+                                        <span><i class="fas fa-star me-1"></i>Score:</span>
+                                        {% if playlist.score is not none %}
+                                            {% set score_percent = playlist.score * 100 %}
+                                            <strong class="
+                                                {% if score_percent >= 75 %}text-success
+                                                {% elif score_percent >= 50 %}text-warning
+                                                {% else %}text-danger
+                                                {% endif %}
+                                            ">{{ '%.1f%%' % score_percent }}</strong>
+                                        {% else %}
+                                            <strong class="text-muted">Not Analyzed</strong>
+                                        {% endif %}
+                                    </li>
+                                </ul>
+                                <a href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id) }}" 
+                                   class="btn btn-primary btn-sm w-100 mb-2">
+                                    <i class="fas fa-eye me-1"></i>View Details
+                                </a>
+                                <div class="btn-group w-100 mb-1" role="group" aria-label="Playlist actions">
+                                    <form action="{{ url_for('main.whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
+                                        <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                                            <i class="fas fa-thumbs-up me-1"></i>Whitelist
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('main.blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                            <i class="fas fa-thumbs-down me-1"></i>Blacklist
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="btn-group w-100" role="group">
+                                    <form action="{{ url_for('main.remove_whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
+                                        <button type="submit" class="btn btn-link btn-sm text-success p-1 w-100 small">Remove WL</button>
+                                    </form>
+                                    <form action="{{ url_for('main.remove_blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
+                                        <button type="submit" class="btn btn-link btn-sm text-danger p-1 w-100 small">Remove BL</button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -110,44 +241,284 @@
         </div>
     {% else %}
         <div class="text-center py-5">
-            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+            <i class="fas fa-folder-open fa-4x text-muted mb-4"></i>
             <h4>No Playlists Found</h4>
             {% if error_message %}
-                {# Error message is now displayed at the top, so we can remove or simplify it here #}
-                {# <p class="text-danger">{{ error_message }}</p> #}
+                <p class="text-muted">There was an error loading your playlists. Please try refreshing the page.</p>
             {% else %}
                 <p class="text-muted">It looks like you haven't connected any playlists yet, or there was an issue fetching them.</p>
                 <p class="text-muted">Try logging out and back in, or ensure your Spotify account is correctly linked.</p>
             {% endif %}
-            {# Optional: Add a button to refresh or guide to connect Spotify #}
+            <button class="btn btn-primary mt-3" onclick="location.reload()">
+                <i class="fas fa-sync-alt me-2"></i>Try Again
+            </button>
         </div>
     {% endif %}
+</div>
+
+<!-- Toast container for notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="syncCompleteToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-check-circle text-success me-2"></i>
+            <strong class="me-auto">Playlist Sync</strong>
+            <small class="text-muted">just now</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Playlist synchronization completed successfully!
+        </div>
+    </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('playlistSearchInput');
+    const scoreFilter = document.getElementById('scoreFilter');
     const playlistItems = document.querySelectorAll('.playlist-item');
+    const syncButton = document.getElementById('syncButton');
+    const syncMessage = document.getElementById('syncMessage');
+    const syncProgress = document.getElementById('syncProgress');
+    const lastChecked = document.getElementById('lastChecked');
+    
+    let syncStartTime = null;
+    let syncCheckInterval = null;
 
-    if (searchInput) {
-        searchInput.addEventListener('keyup', function () {
-            const searchTerm = searchInput.value.toLowerCase();
+    function filterPlaylists() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const scoreFilterValue = scoreFilter.value;
 
-            playlistItems.forEach(function (item) {
-                const playlistNameElement = item.querySelector('.card-title');
-                const playlistName = playlistNameElement ? playlistNameElement.textContent.toLowerCase() : '';
+        playlistItems.forEach(function (item) {
+            let showItem = true;
+
+            // Search filter
+            if (searchTerm) {
+                const playlistName = item.getAttribute('data-name') || '';
+                const playlistDescription = item.getAttribute('data-description') || '';
                 
-                const playlistDescriptionElement = item.querySelector('.card-text');
-                const playlistDescription = playlistDescriptionElement ? playlistDescriptionElement.textContent.toLowerCase() : '';
-                
-                if (playlistName.includes(searchTerm) || playlistDescription.includes(searchTerm)) {
-                    item.style.display = ''; 
-                } else {
-                    item.style.display = 'none'; 
+                if (!playlistName.includes(searchTerm) && !playlistDescription.includes(searchTerm)) {
+                    showItem = false;
                 }
-            });
+            }
+
+            // Score filter
+            if (showItem && scoreFilterValue) {
+                const score = item.getAttribute('data-score');
+                const scoreValue = score === 'null' ? null : parseFloat(score);
+
+                switch (scoreFilterValue) {
+                    case 'high':
+                        if (scoreValue === null || scoreValue < 75) showItem = false;
+                        break;
+                    case 'medium':
+                        if (scoreValue === null || scoreValue < 50 || scoreValue >= 75) showItem = false;
+                        break;
+                    case 'low':
+                        if (scoreValue === null || scoreValue >= 50) showItem = false;
+                        break;
+                    case 'unanalyzed':
+                        if (scoreValue !== null) showItem = false;
+                        break;
+                }
+            }
+
+            item.style.display = showItem ? '' : 'none';
         });
     }
+
+    function updateLastCheckedTime() {
+        if (lastChecked) {
+            const now = new Date();
+            lastChecked.textContent = now.toLocaleTimeString();
+        }
+    }
+
+    function formatTimestamps() {
+        // Format last sync timestamp
+        const lastSyncElement = document.getElementById('lastSync');
+        if (lastSyncElement) {
+            const timestamp = lastSyncElement.getAttribute('data-timestamp');
+            if (timestamp) {
+                const date = new Date(timestamp);
+                lastSyncElement.textContent = date.toLocaleDateString() + ' at ' + date.toLocaleTimeString();
+            }
+        }
+        
+        // Format checked timestamp
+        if (lastChecked) {
+            const timestamp = lastChecked.getAttribute('data-timestamp');
+            if (timestamp) {
+                const date = new Date(timestamp);
+                lastChecked.textContent = date.toLocaleTimeString();
+            }
+        }
+    }
+
+    function updateSyncProgress(elapsedSeconds) {
+        if (!syncProgress) return;
+        
+        // Estimate progress based on time elapsed (rough estimation)
+        let progressPercent = Math.min(20 + (elapsedSeconds / 120) * 60, 90);
+        let progressText = '';
+        
+        if (elapsedSeconds < 30) {
+            progressText = 'Initializing...';
+        } else if (elapsedSeconds < 60) {
+            progressText = 'Fetching playlists...';
+        } else if (elapsedSeconds < 120) {
+            progressText = 'Processing playlists...';
+        } else {
+            progressText = 'Finalizing...';
+        }
+        
+        syncProgress.style.width = progressPercent + '%';
+        syncProgress.querySelector('.progress-text').textContent = progressText;
+    }
+
+    function showSyncCompleteToast() {
+        const toastElement = document.getElementById('syncCompleteToast');
+        if (toastElement) {
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        }
+    }
+
+    function checkSyncStatus() {
+        fetch('{{ url_for("main.api_sync_status") }}')
+            .then(response => response.json())
+            .then(data => {
+                updateLastCheckedTime();
+                
+                if (!data.has_active_sync) {
+                    // Sync is complete or not running
+                    if (syncCheckInterval) {
+                        clearInterval(syncCheckInterval);
+                        syncCheckInterval = null;
+                        
+                        // Hide auto-sync alert if it exists
+                        const autoSyncAlert = document.getElementById('autoSyncAlert');
+                        if (autoSyncAlert) {
+                            autoSyncAlert.style.display = 'none';
+                        }
+                        
+                        // Show completion notification
+                        if (data.summary && data.summary.recent_completed_count > 0) {
+                            showSyncCompleteToast();
+                        }
+                        
+                        // Wait a moment then refresh to show new data
+                        setTimeout(() => {
+                            // Remove auto_sync_started session flag and refresh
+                            fetch('{{ url_for("main.dashboard") }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                },
+                                body: 'clear_auto_sync=true'
+                            }).then(() => {
+                                location.reload();
+                            }).catch(() => {
+                                // Fallback - just reload
+                                location.reload();
+                            });
+                        }, 1500);
+                    }
+                } else {
+                    // Sync is still active - update progress
+                    if (syncStartTime) {
+                        const elapsedSeconds = Math.floor((Date.now() - syncStartTime) / 1000);
+                        updateSyncProgress(elapsedSeconds);
+                        
+                        // Update started time display
+                        const syncStartedElement = document.getElementById('syncStarted');
+                        if (syncStartedElement) {
+                            if (elapsedSeconds < 60) {
+                                syncStartedElement.textContent = `${elapsedSeconds}s ago`;
+                            } else {
+                                const minutes = Math.floor(elapsedSeconds / 60);
+                                syncStartedElement.textContent = `${minutes}m ago`;
+                            }
+                        }
+                        
+                        // Update auto-sync progress bar if present
+                        const autoSyncProgress = document.getElementById('autoSyncProgress');
+                        if (autoSyncProgress) {
+                            const autoProgressPercent = Math.min(30 + (elapsedSeconds / 180) * 50, 85);
+                            autoSyncProgress.style.width = autoProgressPercent + '%';
+                            
+                            if (elapsedSeconds < 45) {
+                                autoSyncProgress.querySelector('small').textContent = 'Connecting to Spotify...';
+                            } else if (elapsedSeconds < 90) {
+                                autoSyncProgress.querySelector('small').textContent = 'Discovering your playlists...';
+                            } else if (elapsedSeconds < 150) {
+                                autoSyncProgress.querySelector('small').textContent = 'Processing playlist data...';
+                            } else {
+                                autoSyncProgress.querySelector('small').textContent = 'Almost done...';
+                            }
+                        }
+                    }
+                    
+                    // Update sync message with job details if available
+                    if (data.jobs && data.jobs.active && data.jobs.active.length > 0) {
+                        const activeJob = data.jobs.active[0];
+                        const syncMessageEl = document.getElementById('syncMessage');
+                        if (syncMessageEl && activeJob.meta) {
+                            const meta = activeJob.meta;
+                            if (meta.current_attempt && meta.max_attempts) {
+                                syncMessageEl.textContent = `Processing playlists... (attempt ${meta.current_attempt}/${meta.max_attempts})`;
+                            }
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking sync status:', error);
+                updateLastCheckedTime();
+                
+                // If we're monitoring and there's an error, retry in a few seconds
+                if (syncCheckInterval) {
+                    // Don't spam errors, just continue monitoring
+                }
+            });
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('keyup', filterPlaylists);
+    }
+
+    if (scoreFilter) {
+        scoreFilter.addEventListener('change', filterPlaylists);
+    }
+
+    // Auto-refresh when sync is complete
+    {% if sync_status and sync_status.has_active_sync %}
+    syncStartTime = Date.now();
+    {% elif session.auto_sync_started %}
+    // Auto-sync was started, begin monitoring
+    syncStartTime = Date.now();
+    {% endif %}
+    
+    // Start monitoring if sync is active or was just started
+    {% if sync_status and sync_status.has_active_sync or session.auto_sync_started %}
+    // Check sync status every 2 seconds for more responsive feedback
+    syncCheckInterval = setInterval(checkSyncStatus, 2000);
+    
+    // Initial progress update
+    updateSyncProgress(0);
+    
+    // Clean up interval when page is unloaded
+    window.addEventListener('beforeunload', function() {
+        if (syncCheckInterval) {
+            clearInterval(syncCheckInterval);
+        }
+    });
+    {% endif %}
+
+    // Update checked time immediately
+    updateLastCheckedTime();
+    
+    // Format timestamps on page load
+    formatTimestamps();
 });
 </script>
 

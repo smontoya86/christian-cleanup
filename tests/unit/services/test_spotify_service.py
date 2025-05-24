@@ -344,29 +344,12 @@ class TestSpotifyServiceSync:
         assert assoc2.added_by_spotify_user_id == 'user_who_added'
 
         # 4. Verify playlist_items was called correctly for the playlists needing sync
-        expected_fields = 'items(track(id,name,artists(id,name),album(id,name)),added_at,added_by(id)),next'
-        expected_calls = [
-            # Call for the new playlist
-            call(
-                playlist_id='playlist_new_1',
-                limit=100,
-                offset=0,
-                fields=ANY, # Use ANY to avoid strict matching on exact fields string
-                additional_types=('track',) # Add missing argument
-            ),
-            # Call for the changed playlist
-            call(
-                playlist_id='playlist_existing_change_1',
-                limit=100,
-                offset=0,
-                fields=ANY, # Use ANY to avoid strict matching on exact fields string
-                additional_types=('track',) # Add missing argument
-            )
-        ]
-        mock_instance.playlist_items.assert_has_calls(expected_calls, any_order=True)
-
-        # Optionally, assert the total number of calls if necessary
-        # assert mock_instance.playlist_items.call_count == 2
+        mock_instance.playlist_items.assert_called_with(
+            'playlist_new_1',
+            limit=100,
+            offset=0,
+            fields='items(added_at,added_by.id,track(id,name,artists(name),album(name,release_date,images),duration_ms,explicit,is_local,uri)),next,total'
+        )
 
         # 5. Verify current_user_playlists was called twice (for pagination)
         assert mock_instance.current_user_playlists.call_count == 2
@@ -699,5 +682,100 @@ class TestSpotifyServiceSync:
         assert associations[2].added_at_spotify.isoformat().startswith('2024-01-01T10:02:00')
         assert associations[2].added_by_spotify_user_id == 'user2'
 
-    # TODO: Add test for handling Spotify API errors (e.g., 401, 403, 429)
-    # TODO: Add test for playlists being deleted on Spotify (removed from current_user_playlists)
+    @patch('app.services.spotify_service.spotipy.Spotify', autospec=True)
+    def test_sync_deletes_orphaned_playlists(self, mock_spotify_class, test_client, init_database):
+        """Verify that playlists no longer on Spotify are deleted from the local database."""
+        from app.models.models import User, Playlist, Song, PlaylistSong
+        from app.services.spotify_service import SpotifyService
+        from app import db
+        from datetime import datetime
+        
+        # Create test user
+        user = User(
+            spotify_id='test_user_orphaned',
+            access_token='mock_token',
+            refresh_token='mock_refresh',
+            token_expiry=datetime(2025, 1, 1)
+        )
+        db.session.add(user)
+        db.session.commit()
+        
+        # Create test playlists in database (simulate playlists that were previously synced)
+        playlist_to_keep = Playlist(
+            spotify_id='playlist_keep',
+            name='Playlist to Keep',
+            owner_id=user.id,
+            spotify_snapshot_id='snapshot_keep'
+        )
+        
+        playlist_to_delete_1 = Playlist(
+            spotify_id='playlist_delete_1',
+            name='Playlist to Delete 1',
+            owner_id=user.id,
+            spotify_snapshot_id='snapshot_delete_1'
+        )
+        
+        playlist_to_delete_2 = Playlist(
+            spotify_id='playlist_delete_2',
+            name='Playlist to Delete 2',
+            owner_id=user.id,
+            spotify_snapshot_id='snapshot_delete_2'
+        )
+        
+        db.session.add_all([playlist_to_keep, playlist_to_delete_1, playlist_to_delete_2])
+        db.session.commit()
+        
+        # Create some songs and playlist associations for one of the playlists to be deleted
+        song1 = Song(spotify_id='song_1', title='Song 1', artist='Artist 1')
+        song2 = Song(spotify_id='song_2', title='Song 2', artist='Artist 2')
+        db.session.add_all([song1, song2])
+        db.session.commit()
+        
+        # Add songs to playlist that will be deleted
+        assoc1 = PlaylistSong(playlist_id=playlist_to_delete_1.id, song_id=song1.id, track_position=0)
+        assoc2 = PlaylistSong(playlist_id=playlist_to_delete_1.id, song_id=song2.id, track_position=1)
+        db.session.add_all([assoc1, assoc2])
+        db.session.commit()
+        
+        # Verify initial state
+        assert Playlist.query.filter_by(owner_id=user.id).count() == 3
+        assert PlaylistSong.query.filter_by(playlist_id=playlist_to_delete_1.id).count() == 2
+        
+        # Mock Spotify API responses - only return playlist_to_keep (simulate the other two were deleted/unfollowed)
+        mock_spotify_instance = mock_spotify_class.return_value
+        mock_spotify_instance.current_user_playlists.return_value = {
+            'items': [
+                {
+                    'id': 'playlist_keep',
+                    'name': 'Playlist to Keep',
+                    'description': 'Description',
+                    'snapshot_id': 'snapshot_keep',
+                    'images': [],
+                    'tracks': {'total': 0}
+                }
+            ],
+            'next': None
+        }
+        
+        # Mock playlist_items to return empty for the remaining playlist
+        mock_spotify_instance.playlist_items.return_value = {
+            'items': [],
+            'next': None
+        }
+        
+        # Create service and run sync
+        service = SpotifyService(auth_token='mock_token')
+        service.sync_user_playlists_with_db(user_id=user.id)
+        
+        # Verify orphaned playlists were deleted
+        remaining_playlists = Playlist.query.filter_by(owner_id=user.id).all()
+        assert len(remaining_playlists) == 1
+        assert remaining_playlists[0].spotify_id == 'playlist_keep'
+        
+        # Verify playlist associations were also deleted (cascade delete)
+        remaining_associations = PlaylistSong.query.filter_by(playlist_id=playlist_to_delete_1.id).count()
+        assert remaining_associations == 0
+        
+        # Verify songs themselves still exist (they're not cascade deleted when playlist is deleted)
+        assert Song.query.filter_by(spotify_id='song_1').first() is not None
+        assert Song.query.filter_by(spotify_id='song_2').first() is not None

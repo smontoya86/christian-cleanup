@@ -4,143 +4,101 @@ import json
 from datetime import datetime
 from ..extensions import rq, db
 from ..models import Song, AnalysisResult
-from ..utils.analysis import SongAnalyzer
+from ..utils.analysis_adapter import SongAnalyzer
 
 logger = logging.getLogger(__name__)
 
 def _execute_song_analysis_impl(song_id: int, user_id: int = None):
     """
-    Core song analysis implementation.
-    This is called from within an application context by _execute_song_analysis_task.
+    Implementation function that performs the actual song analysis.
+    Fixed session management to avoid persistence errors.
     
     Args:
-        song_id: ID of the song to analyze
+        song_id: ID of the song to analyze  
         user_id: Optional ID of the user who requested the analysis
     """
-    from ..models import Song, AnalysisResult, User
-    from ..extensions import db
+    from app.utils.database import db
     
-    task_logger = current_app.logger
-    task_logger.info(f"Starting analysis for song ID: {song_id}")
-
     try:
-        # Start a new session for this job
-        song = db.session.get(Song, song_id)
+        # Get song with explicit session handling
+        song = Song.query.get(song_id)
         if not song:
-            task_logger.error(f"Song with ID {song_id} not found in database")
-            return None
-
-        task_logger.info(f"Analyzing song: {song.title} by {song.artist} (ID: {song_id}) for user_id: {user_id}")
+            raise ValueError(f"Song with ID {song_id} not found")
         
-        # Create the analyzer with the user_id
-        analyzer = SongAnalyzer(user_id=user_id)
-        analysis_output = analyzer.analyze_song(title=song.title, artist=song.artist)
-
-        if analysis_output.get('error'):
-            task_logger.error(f"Analysis error for song {song.id}: {analysis_output['error']}")
-            return None
-
-        # The analysis output contains the results directly
-        christian_analysis_data = analysis_output
+        # Create local variables to avoid session issues
+        song_title = song.title
+        song_artist = song.artist
+        spotify_track_id = song.spotify_track_id
+        is_explicit = song.is_explicit
         
-        if not christian_analysis_data:
-            task_logger.error(f"No analysis data returned for song {song.id}")
-            return None
-            
-        task_logger.info(f"Analysis results for song {song.id}: {christian_analysis_data}")
-
-        # Start a new transaction for storing results
-        try:
-            # Extract relevant data from the analysis results
-            themes = christian_analysis_data.get('themes', {})
-            concerns = christian_analysis_data.get('concerns', [])
-            score = christian_analysis_data.get('christian_score')
-            concern_level = christian_analysis_data.get('christian_concern_level', 'Low')
-            
-            # Generate explanation
-            explanation = f"Analysis completed with score: {score} ({concern_level} concern)"
-            if concerns:
-                explanation += f"\nConcerns: {', '.join(concerns)}"
-            
-            # Check for existing analysis
-            existing_analysis = AnalysisResult.query.filter_by(song_id=song.id).first()
-            
-            if existing_analysis:
-                # Update existing analysis
-                task_logger.info(f"Updating existing analysis for song {song.id}")
-                existing_analysis.mark_completed(
-                    score=score,
-                    concern_level=concern_level,
-                    themes=themes,
-                    concerns=concerns,
-                    explanation=explanation
-                )
-            else:
-                # Create new analysis
-                task_logger.info(f"Creating new analysis for song {song.id}")
-                analysis_result = AnalysisResult(
-                    song_id=song.id,
-                    status=AnalysisResult.STATUS_COMPLETED,
-                    themes=themes,
-                    concerns=concerns,
-                    score=score,
-                    concern_level=concern_level,
-                    explanation=explanation
-                )
-                db.session.add(analysis_result)
-            
-            # Update the song's last_analyzed timestamp
-            song.last_analyzed = datetime.utcnow()
-            
+        logging.info(f"Analyzing song: {song_title} by {song_artist} (ID: {song_id}) for user_id: {user_id}")
+        
+        # Initialize services
+        lyrics_fetcher = LyricsFetcher()
+        user_service = UserService()
+        
+        # Get analysis configuration
+        if user_id:
+            analysis_config = user_service.get_analysis_config(user_id)
+        else:
+            logging.info(f"Using default analysis config for user {user_id or 1}")
+            analysis_config = user_service.get_analysis_config(1)  # Default user
+        
+        # Initialize enhanced analyzer
+        analyzer = SongAnalyzer(
+            lyrics_fetcher=lyrics_fetcher,
+            analysis_config=analysis_config,
+            user_id=user_id or 1
+        )
+        
+        # Perform enhanced analysis
+        result = analyzer.analyze_song(
+            song_title=song_title,
+            artist_name=song_artist,
+            lyrics=None,  # Will fetch from Genius
+            spotify_track_id=spotify_track_id,
+            is_explicit=is_explicit,
+            song_id=song_id
+        )
+        
+        if result:
+            logging.info(f"✅ Analysis completed for song ID {song_id}")
+            # Explicitly commit the session to ensure persistence
             db.session.commit()
-            task_logger.info(f"Analysis completed and saved for song: {song.title} (ID: {song.id})")
-            return christian_analysis_data
-            
-        except Exception as e:
+            return result
+        else:
+            logging.error(f"❌ Analysis failed for song ID {song_id}: No result returned")
             db.session.rollback()
-            task_logger.exception(f"Database error saving analysis for song {song.id}: {e}")
             return None
-
+            
     except Exception as e:
-        task_logger.exception(f"Error during analysis of song {song_id}: {e}")
-        return None
+        logging.error(f"❌ Error analyzing song '{song_title if 'song_title' in locals() else 'Unknown'}' (ID: {song_id}): {str(e)}")
+        # Rollback on error to clean up session state
+        db.session.rollback()
+        raise e
 
 def _execute_song_analysis_task(song_id: int, user_id: int = None, **kwargs):
     """
-    Wrapper function that ensures the task runs within a Flask application context.
-    This is the actual function that gets called by RQ.
+    Background task function that executes the song analysis.
+    This function is called by RQ workers and uses proper Flask app context.
     
     Args:
         song_id: ID of the song to analyze
         user_id: Optional ID of the user who requested the analysis
         **kwargs: Additional keyword arguments (for RQ compatibility)
     """
-    import os
     from flask import current_app
-    from .. import create_app
     
-    # Create a new app instance for the background task
-    app = create_app()
-    
-    with app.app_context():
-        try:
-            # Ensure environment variables are set from the app config
-            if 'LYRICSGENIUS_API_KEY' not in os.environ and 'LYRICSGENIUS_API_KEY' in app.config:
-                os.environ['LYRICSGENIUS_API_KEY'] = app.config['LYRICSGENIUS_API_KEY']
-            if 'BIBLE_API_KEY' not in os.environ and 'BIBLE_API_KEY' in app.config:
-                os.environ['BIBLE_API_KEY'] = app.config['BIBLE_API_KEY']
-                
-            current_app.logger.info(f"Starting song analysis task for song_id={song_id}, user_id={user_id}")
-            
-            # Call the implementation
-            result = _execute_song_analysis_impl(song_id, user_id)
-            
-            current_app.logger.info(f"Completed song analysis task for song_id={song_id}")
-            return result
-            
-        except Exception as e:
-            current_app.logger.exception(f"Error in _execute_song_analysis_task for song_id={song_id}: {e}")
-            raise  # Re-raise to mark the job as failed
+    # Ensure we're in an application context
+    if not current_app:
+        # Create application context for RQ worker
+        from app import create_app
+        app = create_app('development')
+        with app.app_context():
+            return _execute_song_analysis_impl(song_id, user_id)
+    else:
+        # We're already in an app context
+        return _execute_song_analysis_impl(song_id, user_id)
 
 def perform_christian_song_analysis_and_store(song_id: int, user_id: int = None):
     """
@@ -154,7 +112,17 @@ def perform_christian_song_analysis_and_store(song_id: int, user_id: int = None)
     Returns:
         Job object if enqueued successfully, None otherwise.
     """
+    from flask import current_app
+    
+    # Use the current app context instead of creating a new one
     try:
+        # Ensure environment variables are set from the app config
+        import os
+        if 'LYRICSGENIUS_API_KEY' not in os.environ and 'LYRICSGENIUS_API_KEY' in current_app.config:
+            os.environ['LYRICSGENIUS_API_KEY'] = current_app.config['LYRICSGENIUS_API_KEY']
+        if 'BIBLE_API_KEY' not in os.environ and 'BIBLE_API_KEY' in current_app.config:
+            os.environ['BIBLE_API_KEY'] = current_app.config['BIBLE_API_KEY']
+        
         # Ensure we have a database session and the song exists
         from ..models import Song, User
         
@@ -164,17 +132,17 @@ def perform_christian_song_analysis_and_store(song_id: int, user_id: int = None)
         # Verify the song exists
         song = db.session.get(Song, song_id)
         if not song:
-            logger.error(f"Cannot enqueue analysis: Song with ID {song_id} not found in database")
+            current_app.logger.error(f"Cannot enqueue analysis: Song with ID {song_id} not found in database")
             return None
             
         # If user_id was provided, verify it's valid
         if user_id is not None:
             user = db.session.get(User, user_id)
             if not user:
-                logger.warning(f"User with ID {user_id} not found, but continuing with analysis")
+                current_app.logger.warning(f"User with ID {user_id} not found, but continuing with analysis")
                 user_id = None
             
-        logger.info(f"Enqueueing Christian song analysis for song: {song.title} (ID: {song_id}) requested by user ID: {user_id or 'system'}")
+        current_app.logger.info(f"Enqueueing Christian song analysis for song: {song.title} (ID: {song_id}) requested by user ID: {user_id or 'system'}")
         
         try:
             # Get the default queue
@@ -189,18 +157,18 @@ def perform_christian_song_analysis_and_store(song_id: int, user_id: int = None)
             )
             
             if job:
-                logger.info(f"Song analysis task for song ID {song_id} enqueued with job ID: {job.id}")
+                current_app.logger.info(f"Song analysis task for song ID {song_id} enqueued with job ID: {job.id}")
                 return job
             else:
-                logger.error(f"Failed to enqueue job for song ID {song_id}")
+                current_app.logger.error(f"Failed to enqueue job for song ID {song_id}")
                 return None
                 
         except Exception as e:
-            logger.exception(f"Error enqueueing job for song ID {song_id}: {e}")
+            current_app.logger.exception(f"Error enqueueing job for song ID {song_id}: {e}")
             return None
-        
+            
     except Exception as e:
-        logger.exception(f"Error enqueueing song analysis task for song ID {song_id}: {e}")
+        current_app.logger.exception(f"Unexpected error in perform_christian_song_analysis_and_store: {e}")
         return None
 
 # Placeholder functions for future implementation

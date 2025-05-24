@@ -1,4 +1,4 @@
-from flask import render_template, flash, redirect, url_for, request, current_app, jsonify, has_request_context
+from flask import render_template, flash, redirect, url_for, request, current_app, jsonify, has_request_context, session
 from flask_login import login_required, current_user, current_user as flask_login_current_user
 import spotipy
 
@@ -61,30 +61,153 @@ def test_base_render_route():
 @login_required
 @spotify_token_required # Re-enabled
 def dashboard():
-    playlists_to_display = []
-    error_message = None
-    sync_message = "Synchronizing your playlists with Spotify. This may take a few moments..."
-
-    try:
-        spotify_service = SpotifyService(flask_login_current_user.access_token)
-        # sync_user_playlists_with_db should return the playlists from the DB after sync
-        synced_playlists = spotify_service.sync_user_playlists_with_db(flask_login_current_user.id)
-        playlists_to_display = synced_playlists
-        sync_message = "Playlist synchronization complete." if not error_message else sync_message # Keep initial if error happened during sync
-
-    except spotipy.SpotifyException as e:
-        current_app.logger.error(f"Spotify API error fetching user playlists for user {flask_login_current_user.id}: {e}")
-        error_message = "Could not retrieve playlists from Spotify. Please try again later."
-        sync_message = None # No sync message if Spotify API error before/during sync setup
-    except Exception as e: # Catch other potential errors
-        current_app.logger.error(f"Unexpected error fetching playlists for user {flask_login_current_user.id}: {e}")
-        error_message = "An unexpected error occurred while fetching playlists."
-        sync_message = None # No sync message on other unexpected errors
+    from ..services.playlist_sync_service import get_sync_status
     
-    return render_template('dashboard.html', 
-                           playlists=playlists_to_display, 
-                           error_message=error_message,
-                           sync_message=sync_message)
+    try:
+        user_id = flask_login_current_user.id
+        
+        # Handle clearing auto_sync_started flag
+        if request.method == 'POST' and request.form.get('clear_auto_sync'):
+            session.pop('auto_sync_started', None)
+            return jsonify({"status": "success"})
+        
+        # Your existing dashboard logic here...
+        sync_status = get_sync_status(user_id)
+        
+        stats = {
+            'total_playlists': 0,
+            'total_songs': 0,
+            'analyzed_songs': 0,
+            'clean_playlists': 0
+        }
+        
+        # Check for sync message in session
+        sync_message = session.pop('sync_message', None)
+        
+        # Get user's playlists from database  
+        playlists = Playlist.query.filter_by(owner_id=user_id).all()
+        
+        # Calculate playlist scores for any playlists that need updating
+        for playlist in playlists:
+            if playlist.overall_alignment_score is None:
+                calculate_playlist_score(playlist)
+        
+        # Commit any playlist score updates
+        try:
+            db.session.commit()
+        except Exception as e:
+            current_app.logger.error(f"Error committing playlist score updates: {e}")
+            db.session.rollback()
+        
+        # Calculate stats
+        stats['total_playlists'] = len(playlists)
+        
+        for playlist in playlists:
+            stats['total_songs'] += len(playlist.songs)
+            stats['analyzed_songs'] += sum(1 for song in playlist.songs if song.analysis_results)
+            
+            # Count clean playlists (score >= 0.75)
+            if playlist.overall_alignment_score is not None and playlist.overall_alignment_score >= 75.0:
+                stats['clean_playlists'] += 1
+            elif playlist.score is not None and playlist.score >= 0.75:
+                stats['clean_playlists'] += 1
+        
+        # Get last sync info
+        from datetime import datetime
+        last_sync_info = None
+        if playlists:
+            # Find most recent playlist update
+            most_recent = max(playlists, key=lambda p: p.updated_at or datetime.min, default=None)
+            if most_recent and most_recent.updated_at:
+                last_sync_info = {
+                    'last_sync_at': most_recent.updated_at.isoformat()
+                }
+        
+        current_app.logger.debug(f"Dashboard for user {user_id}: {len(playlists)} playlists, sync_status: {sync_status}")
+        
+        return render_template('dashboard.html', 
+                               playlists=playlists, 
+                               stats=stats,
+                               sync_status=sync_status,
+                               sync_message=sync_message,
+                               last_sync_info=last_sync_info)
+                               
+    except Exception as e:
+        current_app.logger.exception(f"Error loading dashboard for user {flask_login_current_user.id}: {e}")
+        flash('Error loading dashboard. Please try refreshing the page.', 'danger')
+        return render_template('dashboard.html', 
+                               playlists=[], 
+                               stats={
+                                   'total_playlists': 0,
+                                   'total_songs': 0,
+                                   'analyzed_songs': 0,
+                                   'clean_playlists': 0
+                               },
+                               sync_status={'has_active_sync': False})
+
+@main_bp.route('/dashboard', methods=['POST'])
+@login_required  
+def dashboard_post():
+    """Handle POST requests to dashboard (like clearing auto_sync flag)"""
+    if request.form.get('clear_auto_sync'):
+        session.pop('auto_sync_started', None)
+        return jsonify({"status": "success"})
+    
+    # Redirect to GET dashboard for other POST requests
+    return redirect(url_for('main.dashboard'))
+
+@main_bp.route('/sync-playlists', methods=['POST'])
+@login_required
+@spotify_token_required
+def sync_playlists():
+    """Trigger background playlist synchronization."""
+    from ..services.playlist_sync_service import enqueue_playlist_sync, get_sync_status
+    
+    try:
+        # Check if there's already an active sync job
+        sync_status = get_sync_status(flask_login_current_user.id)
+        
+        if sync_status.get('has_active_sync', False):
+            flash('Playlist synchronization is already in progress.', 'info')
+            return redirect(url_for('main.dashboard'))
+        
+        # Enqueue the sync job
+        job = enqueue_playlist_sync(flask_login_current_user.id)
+        
+        if job:
+            current_app.logger.info(f"Playlist sync job {job.id} enqueued for user {flask_login_current_user.id}")
+            flash('Playlist synchronization started. This may take a few minutes.', 'success')
+        else:
+            current_app.logger.error(f"Failed to enqueue playlist sync for user {flask_login_current_user.id}")
+            flash('Failed to start playlist synchronization. Please try again.', 'danger')
+            
+    except Exception as e:
+        current_app.logger.exception(f"Error starting playlist sync for user {flask_login_current_user.id}: {e}")
+        flash('An error occurred while starting playlist synchronization.', 'danger')
+    
+    return redirect(url_for('main.dashboard'))
+
+@main_bp.route('/api/sync-status')
+@login_required
+def api_sync_status():
+    """API endpoint to check playlist sync status."""
+    from ..services.playlist_sync_service import get_sync_status
+    
+    try:
+        user_id = flask_login_current_user.id
+        sync_status = get_sync_status(user_id)
+        return jsonify(sync_status)
+    except Exception as e:
+        try:
+            user_id = flask_login_current_user.id if flask_login_current_user.is_authenticated else 'unknown'
+        except:
+            user_id = 'unknown'
+        current_app.logger.exception(f"Error checking sync status for user {user_id}: {e}")
+        return jsonify({
+            "user_id": user_id,
+            "has_active_sync": False,
+            "error": "Failed to check sync status"
+        }), 500
 
 @main_bp.route('/check_auth')
 @login_required
@@ -192,9 +315,8 @@ SONGS_PER_PAGE = 20
 @login_required
 def playlist_detail(playlist_id):
     sp = SpotifyService(flask_login_current_user.access_token)
-    # list_manager = ListManagementService(sp) # No longer needed for direct lookups here
 
-    if not sp.sp: # Check if the underlying spotipy client is initialized
+    if not sp.sp:
         flash('Spotify client not available. Please log in again.', 'warning')
         return redirect(url_for('main.index'))
 
@@ -221,7 +343,7 @@ def playlist_detail(playlist_id):
                 image_url=playlist_data['images'][0]['url'] if playlist_data.get('images') else None
             )
             db.session.add(playlist_in_db)
-            # db.session.flush() # Ensure playlist_in_db.id is available if needed before commit
+            db.session.flush()  # Ensure playlist_in_db.id is available
 
         playlist_score_to_display = getattr(playlist_in_db, 'overall_score', None)
         if playlist_score_to_display is None and hasattr(playlist_in_db, 'score') and playlist_in_db.score is not None:
@@ -279,70 +401,70 @@ def playlist_detail(playlist_id):
                         artist=', '.join([artist['name'] for artist in track_data.get('artists', [])]),
                         album=album_data.get('name', 'Unknown Album') if album_data else 'Unknown Album',
                         album_art_url=album_art_url,
-                        duration_ms=track_data.get('duration_ms') # Add this line
+                        duration_ms=track_data.get('duration_ms')
                     )
                     db.session.add(song_in_db)
-                    db.session.flush() # Ensure song_in_db.id is populated for AnalysisResult query
+                    db.session.flush()  # Ensure song_in_db.id is populated
                     current_app.logger.debug(f"Item {idx+1}: New song created with ID {song_in_db.id} (pending commit).")
+                    
                     # Enqueue analysis for the new song
-                    analysis_job = perform_christian_song_analysis_and_store(song_in_db.id)
-                    if analysis_job:
-                        current_app.logger.info(f"Item {idx+1}: Analysis task enqueued for new song ID {song_in_db.id}. Job ID: {analysis_job.id}")
-                    else:
-                        current_app.logger.error(f"Item {idx+1}: Failed to enqueue analysis task for new song ID {song_in_db.id}.")
+                    try:
+                        analysis_job = perform_christian_song_analysis_and_store(song_in_db.id)
+                        if analysis_job:
+                            current_app.logger.info(f"Item {idx+1}: Analysis task enqueued for new song ID {song_in_db.id}. Job ID: {analysis_job.id}")
+                        else:
+                            current_app.logger.error(f"Item {idx+1}: Failed to enqueue analysis task for new song ID {song_in_db.id}.")
+                    except Exception as e:
+                        current_app.logger.error(f"Error enqueuing analysis for song {song_in_db.id}: {e}")
+                        
                 else:
-                    current_app.logger.debug(f"Item {idx+1}: Found song in DB with ID {song_in_db.id}. Current DB album_art_url: '{song_in_db.album_art_url}'")
+                    current_app.logger.debug(f"Item {idx+1}: Found song in DB with ID {song_in_db.id}.")
+                    
+                    # Update song info if needed (album art, duration, etc.)
                     album_data = track_data.get('album')
                     new_album_art_url_from_spotify = None
                     if album_data and album_data.get('images') and len(album_data['images']) > 0:
                         new_album_art_url_from_spotify = album_data['images'][0]['url']
-                    current_app.logger.debug(f"Item {idx+1}: Fetched new_album_art_url_from_spotify: '{new_album_art_url_from_spotify}'")
                     
                     needs_db_update = False
-                    if new_album_art_url_from_spotify:
-                        if not song_in_db.album_art_url:
-                            current_app.logger.info(f"Item {idx+1}: Populating missing DB album_art_url for song ID {song_in_db.id} with '{new_album_art_url_from_spotify}'.")
-                            song_in_db.album_art_url = new_album_art_url_from_spotify
-                            needs_db_update = True
-                        elif song_in_db.album_art_url != new_album_art_url_from_spotify:
-                            current_app.logger.info(f"Item {idx+1}: Updating DB album_art_url for song ID {song_in_db.id} from '{song_in_db.album_art_url}' to '{new_album_art_url_from_spotify}'.")
-                            song_in_db.album_art_url = new_album_art_url_from_spotify
-                            needs_db_update = True
-                        else:
-                            current_app.logger.debug(f"Item {idx+1}: DB album_art_url for song ID {song_in_db.id} is already correct ('{song_in_db.album_art_url}'). No update needed for album art.")
-                    else:
-                        current_app.logger.debug(f"Item {idx+1}: No new_album_art_url_from_spotify obtained. Cannot update album_art_url for song ID {song_in_db.id}.")
-
-                    # Update duration_ms if it's not set in DB
+                    if new_album_art_url_from_spotify and not song_in_db.album_art_url:
+                        song_in_db.album_art_url = new_album_art_url_from_spotify
+                        needs_db_update = True
+                        
                     spotify_duration_ms = track_data.get('duration_ms')
-                    if spotify_duration_ms is not None: # Ensure we have a value from Spotify
-                        if song_in_db.duration_ms is None: # Check if DB value is not set
-                            current_app.logger.info(f"Item {idx+1}: Populating missing DB duration_ms for song ID {song_in_db.id} with {spotify_duration_ms} ms.")
-                            song_in_db.duration_ms = spotify_duration_ms
-                            needs_db_update = True
-                        elif song_in_db.duration_ms != spotify_duration_ms: # Optional: update if different, though duration rarely changes
-                            current_app.logger.info(f"Item {idx+1}: Updating DB duration_ms for song ID {song_in_db.id} from {song_in_db.duration_ms} to {spotify_duration_ms} ms.")
-                            song_in_db.duration_ms = spotify_duration_ms
-                            needs_db_update = True
-                        else:
-                             current_app.logger.debug(f"Item {idx+1}: DB duration_ms for song ID {song_in_db.id} is already correct ({song_in_db.duration_ms} ms). No update needed for duration.")
-                    else:
-                        current_app.logger.debug(f"Item {idx+1}: No duration_ms found in Spotify track_data for song ID {song_in_db.id}.")
+                    if spotify_duration_ms is not None and song_in_db.duration_ms is None:
+                        song_in_db.duration_ms = spotify_duration_ms
+                        needs_db_update = True
 
-                    # For existing songs, check if analysis is missing and perform it.
-                    # The perform_christian_song_analysis_and_store function handles its own commit.
-                    # This ensures that even if a song was in DB but never analyzed, it gets analyzed now.
-                    # We query for analysis_result again in the common block below this 'if/else song_in_db'.
+                    # For existing songs, check if analysis is missing and perform it
                     if not AnalysisResult.query.filter_by(song_id=song_in_db.id).first():
                         current_app.logger.info(f"Item {idx+1}: Existing song ID {song_in_db.id} has no AnalysisResult. Enqueuing analysis now.")
-                        analysis_job_existing = perform_christian_song_analysis_and_store(song_in_db.id)
-                        if analysis_job_existing:
-                            current_app.logger.info(f"Item {idx+1}: Analysis task enqueued for existing song ID {song_in_db.id}. Job ID: {analysis_job_existing.id}")
-                        else:
-                            current_app.logger.error(f"Item {idx+1}: Failed to enqueue analysis task for existing song ID {song_in_db.id}.")
+                        try:
+                            analysis_job_existing = perform_christian_song_analysis_and_store(song_in_db.id)
+                            if analysis_job_existing:
+                                current_app.logger.info(f"Item {idx+1}: Analysis task enqueued for existing song ID {song_in_db.id}. Job ID: {analysis_job_existing.id}")
+                            else:
+                                current_app.logger.error(f"Item {idx+1}: Failed to enqueue analysis task for existing song ID {song_in_db.id}.")
+                        except Exception as e:
+                            current_app.logger.error(f"Error enqueuing analysis for existing song {song_in_db.id}: {e}")
 
                     if needs_db_update:
-                        db.session.add(song_in_db) # Mark as dirty for commit
+                        db.session.add(song_in_db)
+
+                # Create or update PlaylistSong association
+                playlist_song_assoc = PlaylistSong.query.filter_by(
+                    playlist_id=playlist_in_db.id, 
+                    song_id=song_in_db.id
+                ).first()
+                
+                if not playlist_song_assoc:
+                    playlist_song_assoc = PlaylistSong(
+                        playlist_id=playlist_in_db.id,
+                        song_id=song_in_db.id,
+                        position=offset + idx  # Track position in playlist
+                    )
+                    db.session.add(playlist_song_assoc)
+                    current_app.logger.debug(f"Created PlaylistSong association for playlist {playlist_in_db.id}, song {song_in_db.id}")
 
                 is_song_whitelisted = song_spotify_id in user_whitelisted_track_ids
                 is_song_blacklisted = song_spotify_id in user_blacklisted_track_ids
@@ -367,32 +489,108 @@ def playlist_detail(playlist_id):
                 # Construct the dictionary for the template
                 item_data_to_append = {
                     'song': song_in_db,
-                    'analysis_result': analysis_result, # Keep for direct access if needed, though status obj also has it
+                    'analysis_result': analysis_result,
                     'is_whitelisted': is_song_whitelisted,
                     'is_blacklisted': is_song_blacklisted,
                     'status': status_obj
-                    # 'alignment_score' key is removed as it's accessed via status.analysis_result.overall_score in template
                 }
-
-                # Detailed log for the status object within the fully constructed item_data_to_append
-                current_app.logger.debug(
-                    f"Item {idx+1}: STATUS OBJECT IN DICT CHECK. "
-                    f"Type: {type(item_data_to_append.get('status'))}, "
-                    f"Content: {str(item_data_to_append.get('status'))}, "
-                    f"is_preferred: {item_data_to_append.get('status').is_preferred if item_data_to_append.get('status') else 'N/A'}, "
-                    f"Display: {item_data_to_append.get('status').display_message if item_data_to_append.get('status') else 'N/A'}, "
-                    f"Color: {item_data_to_append.get('status').color_class if item_data_to_append.get('status') else 'N/A'}"
-                )
-                current_app.logger.debug(f"Item {idx+1}: POST-CONSTRUCTION DICT CHECK. item_data_to_append: {str(item_data_to_append)[:500]}")
 
                 songs_with_status.append(item_data_to_append)
                 current_app.logger.debug(f"Item {idx+1}: Appended to songs_with_status. Current count: {len(songs_with_status)}")
             
-            # Commit any changes made to song records (like new album_art_url)
+            # Commit any changes made to song records and playlist associations
             db.session.commit()
             current_app.logger.info(f"Committed session changes after processing tracks for playlist {playlist_id}, page {page}.")
 
         current_app.logger.debug(f"Finished processing tracks. Total songs in songs_with_status: {len(songs_with_status)}")
+
+        # Calculate analysis summary using a simpler approach that doesn't require PlaylistSong relationships
+        # Instead, get all songs that appear in this playlist by fetching all tracks from Spotify
+        try:
+            # Get all tracks from Spotify for this playlist to calculate accurate analysis summary
+            all_spotify_tracks = []
+            spotify_offset = 0
+            spotify_limit = 100  # Max allowed by Spotify API
+            
+            while True:
+                batch_response = sp.get_playlist_items(
+                    playlist_id,
+                    fields='items(track(id))',
+                    limit=spotify_limit,
+                    offset=spotify_offset
+                )
+                
+                if not batch_response or not batch_response.get('items'):
+                    break
+                    
+                for item in batch_response['items']:
+                    track_data = item.get('track')
+                    if track_data and track_data.get('id'):
+                        all_spotify_tracks.append(track_data['id'])
+                
+                # Check if we've got all tracks
+                if len(batch_response['items']) < spotify_limit:
+                    break
+                    
+                spotify_offset += spotify_limit
+            
+            # Now get analysis data for these tracks
+            if all_spotify_tracks:
+                all_songs_in_playlist = Song.query.filter(
+                    Song.spotify_id.in_(all_spotify_tracks)
+                ).all()
+                
+                total_songs = len(all_spotify_tracks)  # Total tracks in playlist
+                analyzed_songs = []
+                scores = []
+                concern_levels = {'extreme': 0, 'high': 0, 'medium': 0, 'low': 0}
+                
+                for song in all_songs_in_playlist:
+                    analysis_result = AnalysisResult.query.filter_by(song_id=song.id).first()
+                    if analysis_result and analysis_result.status == 'completed':
+                        analyzed_songs.append(song)
+                        if analysis_result.score is not None:
+                            scores.append(analysis_result.score)
+                        if analysis_result.concern_level:
+                            level = analysis_result.concern_level.lower()
+                            if level in concern_levels:
+                                concern_levels[level] += 1
+                                
+                overall_score = sum(scores) / len(scores) if scores else None
+                analysis_percentage = (len(analyzed_songs) / total_songs) * 100 if total_songs > 0 else 0
+                
+                playlist_analysis_summary = {
+                    'total_songs': total_songs,
+                    'analyzed_songs': len(analyzed_songs),
+                    'analysis_percentage': analysis_percentage,
+                    'overall_score': overall_score,
+                    'concern_levels': concern_levels,
+                    'clean_songs': concern_levels['low'],
+                    'problem_songs': concern_levels['extreme'] + concern_levels['high']
+                }
+            else:
+                playlist_analysis_summary = {
+                    'total_songs': 0,
+                    'analyzed_songs': 0,
+                    'analysis_percentage': 0,
+                    'overall_score': None,
+                    'concern_levels': {'extreme': 0, 'high': 0, 'medium': 0, 'low': 0},
+                    'clean_songs': 0,
+                    'problem_songs': 0
+                }
+                
+        except Exception as e:
+            current_app.logger.error(f"Error calculating playlist analysis summary: {e}")
+            # Fallback to basic summary
+            playlist_analysis_summary = {
+                'total_songs': playlist_data['tracks']['total'],
+                'analyzed_songs': 0,
+                'analysis_percentage': 0,
+                'overall_score': None,
+                'concern_levels': {'extreme': 0, 'high': 0, 'medium': 0, 'low': 0},
+                'clean_songs': 0,
+                'problem_songs': 0
+            }
 
         pagination = {
             'page': page,
@@ -420,7 +618,7 @@ def playlist_detail(playlist_id):
         flash(f'An unexpected error occurred. Type: {type(e).__name__}, Details: {str(e)}', 'danger')
         return redirect(url_for('main.dashboard'))
 
-    return render_template('playlist_detail_scripts.html', playlist=playlist_details, songs_with_status=songs_with_status, pagination=pagination)
+    return render_template('playlist_detail.html', playlist=playlist_details, songs_with_status=songs_with_status, pagination=pagination, playlist_analysis_summary=playlist_analysis_summary)
 
 @main_bp.route('/playlist/<string:playlist_id>/update', methods=['POST'])
 @login_required
@@ -689,118 +887,81 @@ def api_blacklist_song(song_db_id):
 
     return jsonify({'success': success, 'message': message, 'new_status': new_status_for_ui, 'spotify_id': song.spotify_id})
 
-@main_bp.route('/song/<string:song_id>')
+@main_bp.route('/songs/<int:song_id>')
+@main_bp.route('/songs/<int:song_id>/')
 @login_required
+@spotify_token_required
 def song_detail(song_id):
-    current_app.logger.info(f"Accessing song detail page for song_id: {song_id}")
-    # Using generic song_id now. Could be Spotify ID or local DB ID depending on how you link to this page.
-    # For consistency, let's assume song_id IS the Spotify ID for now.
-    song = Song.query.filter_by(spotify_id=song_id).first()
-
-    if not song:
-        flash('Song not found.', 'danger')
-        current_app.logger.warning(f"Song with spotify_id '{song_id}' not found.")
-        return redirect(url_for('main.dashboard')) # Or some other appropriate page
-
-    analysis_result_db = AnalysisResult.query.filter_by(song_id=song.id).first()
+    """Display detailed information about a specific song."""
+    current_app.logger.info(f"Accessing song detail for song_id: {song_id}")
     
-    prepared_analysis_data = {}
-    lyrics_to_render = song.lyrics # Assuming Song model has a lyrics field, fallback later
-    concern_level_class = "text-muted"
-    scriptures_to_render = []
-    positive_themes_to_render = {}
-    negative_themes_to_render = {} # Placeholder for now
-    purity_flags_triggered_to_render = {}
-
-    if analysis_result_db:
-        try:
-            raw_analysis = json.loads(analysis_result_db.raw_analysis) if analysis_result_db.raw_analysis else {}
-            lyrics_to_render = raw_analysis.get('lyrics_used_for_analysis', song.lyrics)
-            
-            parsed_themes = json.loads(analysis_result_db.themes) if analysis_result_db.themes else []
-            parsed_purity_flags = json.loads(analysis_result_db.purity_flags_details) if analysis_result_db.purity_flags_details else []
-
-            prepared_analysis_data = {
-                "score": analysis_result_db.score,
-                "concern_level": analysis_result_db.concern_level,
-                "analyzed_at": analysis_result_db.analyzed_at,
-                # Raw fields for potential direct use or debugging in template
-                "raw_themes_list": parsed_themes,
-                "raw_purity_flags_list": parsed_purity_flags,
-                "raw_full_analysis_blob": raw_analysis
+    # Get the playlist_id from query parameters if provided
+    playlist_id = request.args.get('playlist_id')
+    
+    try:
+        # Get the song
+        song = Song.query.get_or_404(song_id)
+        current_app.logger.info(f"Found song: {song.title} by {song.artist}")
+        
+        # Get the analysis result
+        analysis_result_db = AnalysisResult.query.filter_by(song_id=song.id).first()
+        current_app.logger.info(f"Analysis result found: {analysis_result_db is not None}")
+        
+        # Build analysis data for template
+        analysis = None
+        if analysis_result_db:
+            analysis = {
+                'score': analysis_result_db.score,
+                'concern_level': analysis_result_db.concern_level,
+                'explanation': analysis_result_db.explanation,
+                'themes': analysis_result_db.themes or {},
+                'concerns': analysis_result_db.concerns or [],
+                'purity_flags_triggered': analysis_result_db.purity_flags_details or [],
+                'positive_themes_identified': analysis_result_db.positive_themes_identified or [],
+                'biblical_themes': analysis_result_db.biblical_themes or [],
+                'supporting_scripture': analysis_result_db.supporting_scripture or {}
             }
-
-            # Determine concern level class
-            if analysis_result_db.concern_level:
-                level_lower = analysis_result_db.concern_level.lower()
-                if level_lower == "extreme": 
-                    concern_level_class = "text-bg-extreme"
-                elif level_lower == "high": 
-                    concern_level_class = "text-bg-high"
-                elif level_lower == "medium": 
-                    concern_level_class = "text-bg-medium"
-                elif level_lower == "low": 
-                    concern_level_class = "text-bg-low"
-                else: 
-                    concern_level_class = "text-muted" # For 'None' or other
-
-            # Transform purity_flags_details (list of dicts) to dict for template
-            # Original template: {% for flag, details in purity_flags_triggered.items() %}
-            # where details might be like {'penalty': X}
-            # Assuming parsed_purity_flags is like [{'category': 'Profanity', 'level': 'Low', 'penalty': 5, 'details': '...'}, ...]
-            for flag_detail in parsed_purity_flags:
-                purity_flags_triggered_to_render[flag_detail.get('category', 'Unknown Flag')] = {
-                    'penalty': flag_detail.get('penalty', 0),
-                    'level': flag_detail.get('level', 'N/A'),
-                    'details': flag_detail.get('details', '')
+        
+        # Use song lyrics if available
+        lyrics_to_render = song.lyrics or "Lyrics not available"
+        
+        # Transform concerns list to purity flags format for template compatibility
+        purity_flags_for_template = {}
+        if analysis_result_db and analysis_result_db.concerns:
+            for i, concern in enumerate(analysis_result_db.concerns):
+                purity_flags_for_template[f"flag_{i}"] = {
+                    "flag": concern,
+                    "description": f"Concern identified: {concern}"
                 }
-
-            # Transform themes (list of dicts) to dicts for template
-            # Original template expects: positive_themes = {theme_name: {points: Y}}, negative_themes = ...
-            # Assuming parsed_themes is like [{'theme': 'Faith', 'score_impact': 5, 'keywords': [], 'scriptures': [REF1,...]}, ...]
-            # For now, consider all themes in parsed_themes as positive.
-            for theme_detail in parsed_themes:
-                theme_name = theme_detail.get('theme', 'Unknown Theme')
-                positive_themes_to_render[theme_name] = {
-                    'points': theme_detail.get('score_impact', 0), # or some other field representing points
-                    'keywords': theme_detail.get('keywords', [])
-                    # Scriptures for this theme will be handled in the scripture_to_render loop
-                }
-                # Populate scriptures_to_render
-                for ref in theme_detail.get('scriptures', []):
-                    scripture_info = SCRIPTURE_MAPPINGS.get(ref, {})
-                    scriptures_to_render.append({
-                        'reference': ref,
-                        'theme_or_flag': theme_name,
-                        'text_bsb': scripture_info.get('text_bsb'),
-                        'text_kjv': scripture_info.get('text_kjv'),
-                        'full_mapping': scripture_info # For more detailed display if needed
-                    })
-
-        except json.JSONDecodeError as e:
-            current_app.logger.error(f"Error decoding JSON for analysis of song {song.id}: {e}")
-            prepared_analysis_data = {"error": "Could not parse analysis data."}
-        except Exception as e:
-            current_app.logger.error(f"Unexpected error processing analysis for song {song.id}: {e}")
-            prepared_analysis_data = {"error": "An unexpected error occurred while processing analysis data."}
-    else:
-        current_app.logger.info(f"No analysis found for song '{song.title}' (ID: {song.id}).")
-        # Provide default empty structures if no analysis
-        prepared_analysis_data = {"score": "N/A", "concern_level": "Not Analyzed"}
-
-    # Get playlist_id from request arguments for 'back' links
-    playlist_spotify_id_from_request = request.args.get('playlist_id')
-
-    return render_template('song_detail.html', 
-                           song=song, 
-                           analysis=prepared_analysis_data, 
-                           lyrics=lyrics_to_render,
-                           concern_level_class=concern_level_class,
-                           purity_flags_triggered=purity_flags_triggered_to_render,
-                           positive_themes=positive_themes_to_render,
-                           negative_themes=negative_themes_to_render, # Still empty for now
-                           scriptures=scriptures_to_render,
-                           playlist_spotify_id=playlist_spotify_id_from_request)
+        
+        # Check if song is whitelisted
+        is_whitelisted = False
+        if flask_login_current_user.is_authenticated:
+            whitelist_entry = Whitelist.query.filter_by(
+                user_id=flask_login_current_user.id,
+                spotify_id=song.spotify_id,
+                item_type='song'
+            ).first()
+            is_whitelisted = whitelist_entry is not None
+        
+        # Get scripture mappings for themes
+        scripture_mappings = SCRIPTURE_MAPPINGS
+        
+        current_app.logger.info(f"Rendering song detail template with analysis: {analysis is not None}")
+        
+        return render_template('song_detail.html',
+                             song=song,
+                             analysis=analysis,
+                             lyrics=lyrics_to_render,
+                             purity_flags=purity_flags_for_template,
+                             is_whitelisted=is_whitelisted,
+                             scripture_mappings=scripture_mappings,
+                             playlist_spotify_id=playlist_id)
+                             
+    except Exception as e:
+        current_app.logger.error(f"Error in song_detail route: {str(e)}", exc_info=True)
+        flash(f"Error loading song details: {str(e)}", 'error')
+        return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/analyze_playlist_api/<string:playlist_id>', methods=['POST'])
 @login_required
@@ -905,13 +1066,16 @@ def get_song_analysis_status(song_id):
                 elif job.is_finished:
                     # Refresh the song to get updated analysis
                     db.session.refresh(song)
+                    # Include both christian_ and non-christian fields for backward compatibility
                     return jsonify({
                         'success': True,
                         'completed': True,
                         'song_id': song_id,
                         'analysis': {
                             'score': song.score,
+                            'christian_score': song.score,  # Add christian_ prefixed fields
                             'concern_level': song.concern_level,
+                            'christian_concern_level': song.concern_level,  # Add christian_ prefixed fields
                             'updated_at': song.updated_at.isoformat() if song.updated_at else None
                         }
                     })
@@ -925,15 +1089,23 @@ def get_song_analysis_status(song_id):
                     })
         
         # If no task_id or job not found, return current song analysis status
+        if song.score is not None:
+            # Include both christian_ and non-christian fields for backward compatibility
+            analysis_data = {
+                'score': song.score,
+                'christian_score': song.score,  # Add christian_ prefixed fields
+                'concern_level': song.concern_level,
+                'christian_concern_level': song.concern_level,  # Add christian_ prefixed fields
+                'updated_at': song.updated_at.isoformat() if song.updated_at else None
+            }
+        else:
+            analysis_data = None
+            
         return jsonify({
             'success': True,
             'song_id': song_id,
             'has_analysis': song.score is not None,
-            'analysis': {
-                'score': song.score,
-                'concern_level': song.concern_level,
-                'updated_at': song.updated_at.isoformat() if song.updated_at else None
-            } if song.score is not None else None
+            'analysis': analysis_data
         })
         
     except Exception as e:
@@ -949,11 +1121,12 @@ def get_song_analysis_status(song_id):
 @login_required
 def get_analysis_status(playlist_id):
     """
-    Endpoint to check the status of playlist analysis.
+    Endpoint to check the status of playlist or song analysis.
     Returns detailed information about the analysis progress.
     
     Query Parameters:
         task_id: Optional task ID to check job status
+        song_id: Optional song ID to check status for a specific song
     """
     try:
         if not playlist_id:
@@ -965,9 +1138,81 @@ def get_analysis_status(playlist_id):
             }), 400
             
         task_id = request.args.get('task_id')
-        current_app.logger.info(f"Checking analysis status for playlist {playlist_id}, task_id: {task_id}")
+        song_id = request.args.get('song_id')
+        current_app.logger.info(f"Checking analysis status for playlist {playlist_id}, task_id: {task_id}, song_id: {song_id}")
         
-        # If task_id is provided, check the job status first
+        # If checking status for a specific song
+        if song_id:
+            song = Song.query.filter_by(id=song_id).first()
+            if not song:
+                return jsonify({
+                    'success': False,
+                    'error': 'song_not_found',
+                    'message': 'Song not found'
+                }), 404
+                
+            # If song has a score, return it
+            if song.score is not None:
+                return jsonify({
+                    'success': True,
+                    'completed': True,
+                    'song_id': song_id,
+                    'analysis': {
+                        'score': song.score,
+                        'concern_level': song.concern_level,
+                        'updated_at': song.updated_at.isoformat() if song.updated_at else None
+                    }
+                })
+            
+            # If no score but we have a task_id, check job status
+            if task_id:
+                job = current_app.task_queue.fetch_job(task_id)
+                if job:
+                    if job.is_failed:
+                        error_msg = f'Analysis failed: {str(job.exc_info)}'
+                        current_app.logger.error(f"Job {task_id} failed: {error_msg}")
+                        return jsonify({
+                            'success': False,
+                            'error': 'analysis_failed',
+                            'message': error_msg,
+                            'song_id': song_id
+                        }), 500
+                    elif job.is_finished:
+                        # Refresh the song to get updated analysis
+                        db.session.refresh(song)
+                        if song.score is not None:
+                            return jsonify({
+                                'success': True,
+                                'completed': True,
+                                'song_id': song_id,
+                                'analysis': {
+                                    'score': song.score,
+                                    'concern_level': song.concern_level,
+                                    'updated_at': song.updated_at.isoformat() if song.updated_at else None
+                                }
+                            })
+                    
+                    # Job is still running
+                    return jsonify({
+                        'success': True,
+                        'in_progress': True,
+                        'message': 'Analysis in progress...',
+                        'song_id': song_id
+                    })
+                
+            # No task_id or job not found
+            return jsonify({
+                'success': True,
+                'song_id': song_id,
+                'has_analysis': song.score is not None,
+                'analysis': {
+                    'score': song.score,
+                    'concern_level': song.concern_level,
+                    'updated_at': song.updated_at.isoformat() if song.updated_at else None
+                } if song.score is not None else None
+            })
+        
+        # If no song_id but we have a task_id, check job status for the playlist
         if task_id:
             try:
                 job = current_app.task_queue.fetch_job(task_id)
@@ -1015,7 +1260,7 @@ def get_analysis_status(playlist_id):
             }), 404
         
         # Get all songs in the playlist
-        songs = Song.query.join(playlist_songs).filter(playlist_songs.c.playlist_id == playlist.id).all()
+        songs = Song.query.join(PlaylistSong).filter(PlaylistSong.playlist_id == playlist.id).all()
         
         if not songs:
             return jsonify({
@@ -1034,15 +1279,16 @@ def get_analysis_status(playlist_id):
         analysis_details = []
         
         for song in songs:
-            if song.analysis_result:
+            analysis_result = song.analysis_results.first()
+            if analysis_result:
                 analyzed_count += 1
                 analysis_details.append({
                     'song_id': song.id,
                     'title': song.title,
                     'artist': song.artist,
                     'analyzed': True,
-                    'concern_level': song.analysis_result[0].concern_level if song.analysis_result else None,
-                    'score': song.analysis_result[0].raw_score if song.analysis_result else None,
+                    'concern_level': analysis_result.concern_level,
+                    'score': analysis_result.score,
                     'last_analyzed': song.last_analyzed.isoformat() if song.last_analyzed else None
                 })
             else:
@@ -1088,58 +1334,54 @@ def get_analysis_status(playlist_id):
             'playlist_id': playlist_id
         }), 500
 
-@main_bp.route('/api/songs/<int:song_id>/analyze', methods=['POST'])
+@main_bp.route('/api/songs/<int:song_id>/analyze/', methods=['POST'])
+@main_bp.route('/api/songs/<int:song_id>/analyze', methods=['POST'])  # For backward compatibility
 @login_required
 @spotify_token_required
 def analyze_song_route(song_id):
-    """Analyze a single song by ID."""
+    """Route handler for analyzing/re-analyzing a single song."""
+    current_app.logger.info(f"Starting analysis for song {song_id}")
+    
     try:
-        # Get the song with proper ownership check
-        song = Song.query.filter_by(id=song_id).first()
-        if not song:
+        # Get the song
+        song = Song.query.get_or_404(song_id)
+        current_app.logger.info(f"Found song: {song.title} by {song.artist}")
+        
+        # Enqueue the analysis task
+        from ..services.analysis_service import perform_christian_song_analysis_and_store
+        job = perform_christian_song_analysis_and_store(song_id, current_user.id)
+        
+        if job:
+            current_app.logger.info(f"Song analysis task enqueued for song {song_id} with job ID: {job.id}")
+            return jsonify({
+                'success': True,
+                'message': f'Analysis started for "{song.title}"',
+                'job_id': job.id,
+                'song_id': song_id
+            })
+        else:
+            current_app.logger.error(f"Failed to enqueue analysis task for song {song_id}")
             return jsonify({
                 'success': False,
-                'error': 'song_not_found',
-                'message': 'Song not found'
-            }), 404
+                'error': 'Failed to start analysis',
+                'message': 'Unable to enqueue analysis task'
+            }), 500
             
-        # Check if the song belongs to a playlist owned by the current user
-        user_playlist_ids = [p.id for p in current_user.playlists]
-        song_playlist_ids = [assoc.playlist_id for assoc in song.playlist_associations]
-        
-        if not song_playlist_ids or not any(pid in user_playlist_ids for pid in song_playlist_ids):
-            return jsonify({
-                'success': False,
-                'error': 'unauthorized',
-                'message': 'You do not have permission to analyze this song'
-            }), 403
-            
-        # Queue the analysis job using RQ directly
-        from ..extensions import rq
-        job = rq.get_queue().enqueue(
-            'app.services.analysis_service.perform_christian_song_analysis_and_store',
-            song_id=song_id,
-            user_id=current_user.id,
-            job_timeout=300,  # 5 minutes in seconds
-            result_ttl='24h'
-        )
-        
-        return jsonify({
-            'success': True,
-            'message': 'Song analysis started',
-            'task_id': job.get_id(),
-            'song_id': song_id,
-            'song_title': song.title,
-            'song_artist': song.artist
-        })
-        
     except Exception as e:
-        current_app.logger.error(f"Error in analyze_song_route: {str(e)}", exc_info=True)
+        current_app.logger.exception(f"Error in analyze_song_route for song {song_id}: {e}")
         return jsonify({
             'success': False,
             'error': 'analysis_error',
-            'message': f'Failed to start song analysis: {str(e)}'
+            'message': f'Error starting analysis: {str(e)}'
         }), 500
+
+@main_bp.route('/api/songs/<int:song_id>/reanalyze/', methods=['POST'])
+@main_bp.route('/api/songs/<int:song_id>/reanalyze', methods=['POST'])  # For backward compatibility
+@login_required
+@spotify_token_required  
+def reanalyze_song_route(song_id):
+    """Route handler for re-analyzing a single song (alias for analyze_song_route)."""
+    return analyze_song_route(song_id)
 
 @main_bp.route('/api/playlists/<string:playlist_id>/analyze-unanalyzed/', methods=['POST'])
 @main_bp.route('/api/playlists/<string:playlist_id>/analyze-unanalyzed', methods=['POST'])  # For backward compatibility
@@ -1166,6 +1408,33 @@ def analyze_unanalyzed_songs_route(playlist_id):
             'success': False,
             'error': 'analysis_error',
             'message': f'Failed to start analysis: {str(e)}'
+        }), 500
+
+@main_bp.route('/api/playlists/<string:playlist_id>/reanalyze-all/', methods=['POST'])
+@main_bp.route('/api/playlists/<string:playlist_id>/reanalyze-all', methods=['POST'])  # For backward compatibility
+@login_required
+@spotify_token_required
+def reanalyze_all_songs_route(playlist_id):
+    """Route handler for re-analyzing ALL songs in a playlist (not just unanalyzed ones)."""
+    if not playlist_id:
+        current_app.logger.error("Missing playlist_id in reanalyze_all_songs_route")
+        return jsonify({
+            'success': False,
+            'error': 'missing_playlist_id',
+            'message': 'Playlist ID is required'
+        }), 400
+        
+    current_app.logger.info(f"Starting re-analysis for ALL songs in playlist {playlist_id}")
+    try:
+        # Get the user ID from the current user and pass it explicitly
+        user_id = flask_login_current_user.id
+        return reanalyze_all_songs(playlist_id, user_id=user_id)
+    except Exception as e:
+        current_app.logger.error(f"Error in reanalyze_all_songs_route: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'analysis_error',
+            'message': f'Failed to start re-analysis: {str(e)}'
         }), 500
 
 def analyze_unanalyzed_songs(playlist_id, user_id=None):
@@ -1303,3 +1572,730 @@ def analyze_unanalyzed_songs(playlist_id, user_id=None):
             
         flash(error_message, 'error')
         return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+
+def reanalyze_all_songs(playlist_id, user_id=None):
+    """Re-analyze all songs in a playlist.
+    
+    Args:
+        playlist_id (str): The Spotify ID of the playlist to re-analyze
+        user_id (int, optional): The ID of the user who owns the playlist. 
+                              Required when called from a background job.
+    """
+    current_app.logger.info(f"reanalyze_all_songs called for playlist_id: {playlist_id}, user_id: {user_id}")
+    
+    try:
+        # Get the user ID from the current user if not provided
+        if user_id is None:
+            if not has_request_context() or not hasattr(flask_login_current_user, 'id') or not flask_login_current_user.is_authenticated:
+                current_app.logger.error("No user_id provided and no authenticated current_user available")
+                if has_request_context() and request and hasattr(request, 'is_json') and request.is_json:
+                    return jsonify({"error": "User authentication required"}), 401
+                return "User authentication required", 401
+            user_id = flask_login_current_user.id
+            
+        # Get the playlist from the database
+        playlist = Playlist.query.filter_by(spotify_id=playlist_id, owner_id=user_id).first()
+        if not playlist:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({"success": False, "message": "Playlist not found or access denied"}), 404
+            flash("Playlist not found or access denied", 'error')
+            return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+            
+        # Get all songs in the playlist
+        songs = Song.query.join(PlaylistSong).filter(PlaylistSong.playlist_id == playlist.id).all()
+        
+        total_songs = len(songs)
+        analyzed_count = 0
+        
+        if total_songs == 0:
+            response_data = {
+                "success": True, 
+                "message": "No songs found in this playlist.",
+                "analyzed_count": 0,
+                "total_songs": 0
+            }
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify(response_data)
+            flash(response_data["message"], 'info')
+            return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+        
+        # Generate a unique task ID for this batch of analyses
+        import uuid
+        batch_id = str(uuid.uuid4())
+        current_app.logger.info(f"Starting batch analysis with ID: {batch_id}")
+        
+        # Process each song
+        for i, song in enumerate(songs, 1):
+            current_app.logger.info(f"Starting analysis for song {song.id} for user {user_id}")
+            
+            try:
+                # Call the analysis service using the background task
+                job = perform_christian_song_analysis_and_store(song.id, user_id=user_id)
+                if job:
+                    # The analysis is happening in the background
+                    analyzed_count += 1
+                    job_id = job.get_id() if hasattr(job, 'get_id') else str(job.id) if hasattr(job, 'id') else 'unknown'
+                    current_app.logger.info(f"Started analysis job {job_id} for song {song.id}")
+                    
+                    # Update the song's last_analyzed timestamp
+                    song.last_analyzed = datetime.utcnow()
+                    db.session.add(song)
+                    
+                    # Commit every 5 songs to avoid long transactions
+                    if i % 5 == 0 or i == len(songs):
+                        db.session.commit()
+                        current_app.logger.debug(f"Committed database changes after song {i}")
+                else:
+                    current_app.logger.warning(f"Analysis job for song {song.id} was not created")
+                    
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Error analyzing song {song.id if song else 'unknown'}: {e}", exc_info=True)
+                # Continue with the next song even if one fails
+                continue
+        
+        # Update the playlist's last analyzed timestamp
+        try:
+            playlist.last_analyzed_at = datetime.utcnow()
+            db.session.commit()
+            
+            response_data = {
+                "success": True,
+                "message": f"Successfully started re-analysis for {analyzed_count} out of {total_songs} songs.",
+                "analyzed_count": analyzed_count,
+                "total_songs": total_songs,
+                "status": "started",
+                "task_id": batch_id,  # Return the batch ID as task_id
+                "progress": 0,
+                "current_song": "Starting re-analysis..."
+            }
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify(response_data)
+                
+            flash(response_data["message"], 'success' if analyzed_count > 0 else 'info')
+            return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error updating playlist status: {e}", exc_info=True)
+            error_message = f"Re-analysis completed with {analyzed_count} songs analyzed, but failed to update playlist status."
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    "success": analyzed_count > 0,
+                    "message": error_message,
+                    "analyzed_count": analyzed_count,
+                    "total_songs": total_songs
+                }), 207  # 207 Multi-Status
+                
+            flash(error_message, 'warning' if analyzed_count > 0 else 'error')
+            return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error in reanalyze_all_songs for playlist {playlist_id}: {e}", exc_info=True)
+        error_message = f"An error occurred while re-analyzing songs: {str(e)}"
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({"success": False, "message": error_message}), 500
+            
+        flash(error_message, 'error')
+        return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+
+# User Settings and List Management Routes
+
+@main_bp.route('/settings')
+@login_required
+@spotify_token_required
+def user_settings():
+    """Display user settings page"""
+    return render_template('user_settings.html', user=flask_login_current_user)
+
+@main_bp.route('/settings', methods=['POST'])
+@login_required
+@spotify_token_required
+def update_user_settings():
+    """Update user settings"""
+    try:
+        # Get form data
+        display_name = request.form.get('display_name', '').strip()
+        email = request.form.get('email', '').strip()
+        
+        # Basic validation
+        if not display_name:
+            flash('Display name is required.', 'danger')
+            return render_template('user_settings.html', user=flask_login_current_user)
+        
+        if email and '@' not in email:
+            flash('Invalid email address.', 'danger')
+            return render_template('user_settings.html', user=flask_login_current_user)
+        
+        # Update user
+        flask_login_current_user.display_name = display_name
+        if email:
+            flask_login_current_user.email = email
+        
+        db.session.commit()
+        flash('Settings updated successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating user settings: {e}")
+        flash('An error occurred while updating settings.', 'danger')
+    
+    return redirect(url_for('main.user_settings'))
+
+@main_bp.route('/blacklist-whitelist')
+@login_required
+@spotify_token_required
+def blacklist_whitelist():
+    """Display blacklist/whitelist management page"""
+    user_id = flask_login_current_user.id
+    
+    # Get user's whitelist and blacklist items
+    whitelist_items = Whitelist.query.filter_by(user_id=user_id).order_by(Whitelist.added_date.desc()).all()
+    blacklist_items = Blacklist.query.filter_by(user_id=user_id).order_by(Blacklist.added_date.desc()).all()
+    
+    return render_template('blacklist_whitelist.html', 
+                         whitelist_items=whitelist_items,
+                         blacklist_items=blacklist_items)
+
+@main_bp.route('/add-whitelist-item', methods=['POST'])
+@login_required
+@spotify_token_required
+def add_whitelist_item():
+    """Add a new item to whitelist"""
+    try:
+        item_type = request.form.get('item_type', '').strip()
+        spotify_id = request.form.get('spotify_id', '').strip()
+        name = request.form.get('name', '').strip()
+        reason = request.form.get('reason', '').strip()
+        
+        # Validation
+        if not all([item_type, spotify_id, name]):
+            flash('Item type, Spotify ID, and name are required.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        if item_type not in ['song', 'artist', 'playlist']:
+            flash('Invalid item type.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        # Check if item already exists
+        existing_item = Whitelist.query.filter_by(
+            user_id=flask_login_current_user.id,
+            spotify_id=spotify_id,
+            item_type=item_type
+        ).first()
+        
+        if existing_item:
+            flash(f'{item_type.title()} already exists in your whitelist.', 'info')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        # Remove from blacklist if it exists there
+        blacklist_item = Blacklist.query.filter_by(
+            user_id=flask_login_current_user.id,
+            spotify_id=spotify_id,
+            item_type=item_type
+        ).first()
+        
+        if blacklist_item:
+            db.session.delete(blacklist_item)
+            flash(f'{item_type.title()} moved from blacklist to whitelist.', 'success')
+        
+        # Add to whitelist
+        new_item = Whitelist(
+            user_id=flask_login_current_user.id,
+            spotify_id=spotify_id,
+            item_type=item_type,
+            name=name,
+            reason=reason
+        )
+        
+        db.session.add(new_item)
+        db.session.commit()
+        
+        if not blacklist_item:
+            flash(f'{item_type.title()} added to whitelist successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error adding whitelist item: {e}")
+        flash('An error occurred while adding the item.', 'danger')
+    
+    return redirect(url_for('main.blacklist_whitelist'))
+
+@main_bp.route('/add-blacklist-item', methods=['POST'])
+@login_required
+@spotify_token_required
+def add_blacklist_item():
+    """Add a new item to blacklist"""
+    try:
+        item_type = request.form.get('item_type', '').strip()
+        spotify_id = request.form.get('spotify_id', '').strip()
+        name = request.form.get('name', '').strip()
+        reason = request.form.get('reason', '').strip()
+        
+        # Validation
+        if not all([item_type, spotify_id, name]):
+            flash('Item type, Spotify ID, and name are required.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        if item_type not in ['song', 'artist', 'playlist']:
+            flash('Invalid item type.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        # Check if item already exists
+        existing_item = Blacklist.query.filter_by(
+            user_id=flask_login_current_user.id,
+            spotify_id=spotify_id,
+            item_type=item_type
+        ).first()
+        
+        if existing_item:
+            flash(f'{item_type.title()} already exists in your blacklist.', 'info')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        # Remove from whitelist if it exists there
+        whitelist_item = Whitelist.query.filter_by(
+            user_id=flask_login_current_user.id,
+            spotify_id=spotify_id,
+            item_type=item_type
+        ).first()
+        
+        if whitelist_item:
+            db.session.delete(whitelist_item)
+            flash(f'{item_type.title()} moved from whitelist to blacklist.', 'success')
+        
+        # Add to blacklist
+        new_item = Blacklist(
+            user_id=flask_login_current_user.id,
+            spotify_id=spotify_id,
+            item_type=item_type,
+            name=name,
+            reason=reason
+        )
+        
+        db.session.add(new_item)
+        db.session.commit()
+        
+        if not whitelist_item:
+            flash(f'{item_type.title()} added to blacklist successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error adding blacklist item: {e}")
+        flash('An error occurred while adding the item.', 'danger')
+    
+    return redirect(url_for('main.blacklist_whitelist'))
+
+@main_bp.route('/remove-whitelist-item/<int:item_id>', methods=['POST'])
+@login_required
+@spotify_token_required
+def remove_whitelist_item(item_id):
+    """Remove an item from whitelist"""
+    try:
+        item = Whitelist.query.filter_by(
+            id=item_id,
+            user_id=flask_login_current_user.id
+        ).first()
+        
+        if not item:
+            flash('Item not found.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        item_name = item.name
+        db.session.delete(item)
+        db.session.commit()
+        
+        flash(f'"{item_name}" removed from whitelist.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error removing whitelist item: {e}")
+        flash('An error occurred while removing the item.', 'danger')
+    
+    return redirect(url_for('main.blacklist_whitelist'))
+
+@main_bp.route('/remove-blacklist-item/<int:item_id>', methods=['POST'])
+@login_required
+@spotify_token_required
+def remove_blacklist_item(item_id):
+    """Remove an item from blacklist"""
+    try:
+        item = Blacklist.query.filter_by(
+            id=item_id,
+            user_id=flask_login_current_user.id
+        ).first()
+        
+        if not item:
+            flash('Item not found.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        item_name = item.name
+        db.session.delete(item)
+        db.session.commit()
+        
+        flash(f'"{item_name}" removed from blacklist.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error removing blacklist item: {e}")
+        flash('An error occurred while removing the item.', 'danger')
+    
+    return redirect(url_for('main.blacklist_whitelist'))
+
+@main_bp.route('/edit-whitelist-item/<int:item_id>', methods=['POST'])
+@login_required
+@spotify_token_required
+def edit_whitelist_item(item_id):
+    """Edit a whitelist item"""
+    try:
+        item = Whitelist.query.filter_by(
+            id=item_id,
+            user_id=flask_login_current_user.id
+        ).first()
+        
+        if not item:
+            flash('Item not found.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        name = request.form.get('name', '').strip()
+        reason = request.form.get('reason', '').strip()
+        
+        if not name:
+            flash('Name is required.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        item.name = name
+        item.reason = reason
+        
+        db.session.commit()
+        flash('Item updated successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error editing whitelist item: {e}")
+        flash('An error occurred while updating the item.', 'danger')
+    
+    return redirect(url_for('main.blacklist_whitelist'))
+
+@main_bp.route('/edit-blacklist-item/<int:item_id>', methods=['POST'])
+@login_required
+@spotify_token_required
+def edit_blacklist_item(item_id):
+    """Edit a blacklist item"""
+    try:
+        item = Blacklist.query.filter_by(
+            id=item_id,
+            user_id=flask_login_current_user.id
+        ).first()
+        
+        if not item:
+            flash('Item not found.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        name = request.form.get('name', '').strip()
+        reason = request.form.get('reason', '').strip()
+        
+        if not name:
+            flash('Name is required.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        item.name = name
+        item.reason = reason
+        
+        db.session.commit()
+        flash('Item updated successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error editing blacklist item: {e}")
+        flash('An error occurred while updating the item.', 'danger')
+    
+    return redirect(url_for('main.blacklist_whitelist'))
+
+@main_bp.route('/export-whitelist')
+@login_required
+@spotify_token_required
+def export_whitelist():
+    """Export whitelist items as CSV"""
+    import csv
+    from io import StringIO
+    from flask import Response
+    
+    try:
+        user_id = flask_login_current_user.id
+        items = Whitelist.query.filter_by(user_id=user_id).order_by(Whitelist.added_date.desc()).all()
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow(['Item Type', 'Spotify ID', 'Name', 'Reason', 'Added Date'])
+        
+        # Write data
+        for item in items:
+            writer.writerow([
+                item.item_type,
+                item.spotify_id,
+                item.name,
+                item.reason or '',
+                item.added_date.strftime('%Y-%m-%d %H:%M:%S')
+            ])
+        
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=whitelist.csv'}
+        )
+        
+    except Exception as e:
+        current_app.logger.error(f"Error exporting whitelist: {e}")
+        flash('An error occurred while exporting the whitelist.', 'danger')
+        return redirect(url_for('main.blacklist_whitelist'))
+
+@main_bp.route('/export-blacklist')
+@login_required
+@spotify_token_required
+def export_blacklist():
+    """Export blacklist items as CSV"""
+    import csv
+    from io import StringIO
+    from flask import Response
+    
+    try:
+        user_id = flask_login_current_user.id
+        items = Blacklist.query.filter_by(user_id=user_id).order_by(Blacklist.added_date.desc()).all()
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow(['Item Type', 'Spotify ID', 'Name', 'Reason', 'Added Date'])
+        
+        # Write data
+        for item in items:
+            writer.writerow([
+                item.item_type,
+                item.spotify_id,
+                item.name,
+                item.reason or '',
+                item.added_date.strftime('%Y-%m-%d %H:%M:%S')
+            ])
+        
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=blacklist.csv'}
+        )
+        
+    except Exception as e:
+        current_app.logger.error(f"Error exporting blacklist: {e}")
+        flash('An error occurred while exporting the blacklist.', 'danger')
+        return redirect(url_for('main.blacklist_whitelist'))
+
+@main_bp.route('/bulk-import-whitelist', methods=['POST'])
+@login_required
+@spotify_token_required
+def bulk_import_whitelist():
+    """Bulk import whitelist items from CSV"""
+    import csv
+    from io import StringIO
+    
+    try:
+        if 'csv_file' not in request.files:
+            flash('No file selected.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        file = request.files['csv_file']
+        if file.filename == '':
+            flash('No file selected.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        if not file.filename.endswith('.csv'):
+            flash('Please upload a CSV file.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        # Read CSV content
+        csv_content = file.read().decode('utf-8')
+        csv_reader = csv.DictReader(StringIO(csv_content))
+        
+        imported_count = 0
+        skipped_count = 0
+        
+        for row in csv_reader:
+            item_type = row.get('item_type', '').strip()
+            spotify_id = row.get('spotify_id', '').strip()
+            name = row.get('name', '').strip()
+            reason = row.get('reason', '').strip()
+            
+            # Validate required fields
+            if not all([item_type, spotify_id, name]):
+                skipped_count += 1
+                continue
+            
+            if item_type not in ['song', 'artist', 'playlist']:
+                skipped_count += 1
+                continue
+            
+            # Check if item already exists
+            existing_item = Whitelist.query.filter_by(
+                user_id=flask_login_current_user.id,
+                spotify_id=spotify_id,
+                item_type=item_type
+            ).first()
+            
+            if existing_item:
+                skipped_count += 1
+                continue
+            
+            # Remove from blacklist if it exists there
+            blacklist_item = Blacklist.query.filter_by(
+                user_id=flask_login_current_user.id,
+                spotify_id=spotify_id,
+                item_type=item_type
+            ).first()
+            
+            if blacklist_item:
+                db.session.delete(blacklist_item)
+            
+            # Add to whitelist
+            new_item = Whitelist(
+                user_id=flask_login_current_user.id,
+                spotify_id=spotify_id,
+                item_type=item_type,
+                name=name,
+                reason=reason
+            )
+            
+            db.session.add(new_item)
+            imported_count += 1
+        
+        db.session.commit()
+        
+        flash(f'Import completed! {imported_count} items imported, {skipped_count} items skipped.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error importing whitelist: {e}")
+        flash('An error occurred while importing the file.', 'danger')
+    
+    return redirect(url_for('main.blacklist_whitelist'))
+
+@main_bp.route('/bulk-import-blacklist', methods=['POST'])
+@login_required
+@spotify_token_required
+def bulk_import_blacklist():
+    """Bulk import blacklist items from CSV"""
+    import csv
+    from io import StringIO
+    
+    try:
+        if 'csv_file' not in request.files:
+            flash('No file selected.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        file = request.files['csv_file']
+        if file.filename == '':
+            flash('No file selected.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        if not file.filename.endswith('.csv'):
+            flash('Please upload a CSV file.', 'danger')
+            return redirect(url_for('main.blacklist_whitelist'))
+        
+        # Read CSV content
+        csv_content = file.read().decode('utf-8')
+        csv_reader = csv.DictReader(StringIO(csv_content))
+        
+        imported_count = 0
+        skipped_count = 0
+        
+        for row in csv_reader:
+            item_type = row.get('item_type', '').strip()
+            spotify_id = row.get('spotify_id', '').strip()
+            name = row.get('name', '').strip()
+            reason = row.get('reason', '').strip()
+            
+            # Validate required fields
+            if not all([item_type, spotify_id, name]):
+                skipped_count += 1
+                continue
+            
+            if item_type not in ['song', 'artist', 'playlist']:
+                skipped_count += 1
+                continue
+            
+            # Check if item already exists
+            existing_item = Blacklist.query.filter_by(
+                user_id=flask_login_current_user.id,
+                spotify_id=spotify_id,
+                item_type=item_type
+            ).first()
+            
+            if existing_item:
+                skipped_count += 1
+                continue
+            
+            # Remove from whitelist if it exists there
+            whitelist_item = Whitelist.query.filter_by(
+                user_id=flask_login_current_user.id,
+                spotify_id=spotify_id,
+                item_type=item_type
+            ).first()
+            
+            if whitelist_item:
+                db.session.delete(whitelist_item)
+            
+            # Add to blacklist
+            new_item = Blacklist(
+                user_id=flask_login_current_user.id,
+                spotify_id=spotify_id,
+                item_type=item_type,
+                name=name,
+                reason=reason
+            )
+            
+            db.session.add(new_item)
+            imported_count += 1
+        
+        db.session.commit()
+        
+        flash(f'Import completed! {imported_count} items imported, {skipped_count} items skipped.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error importing blacklist: {e}")
+        flash('An error occurred while importing the file.', 'danger')
+    
+    return redirect(url_for('main.blacklist_whitelist'))
+
+def calculate_playlist_score(playlist):
+    """Calculate the overall score for a playlist based on analyzed songs."""
+    try:
+        # Get all analysis results for songs in this playlist
+        analyzed_songs = []
+        for song in playlist.songs:
+            analysis_result = song.analysis_results.first()
+            if analysis_result and analysis_result.status == 'completed' and analysis_result.score is not None:
+                analyzed_songs.append(analysis_result.score)
+        
+        if not analyzed_songs:
+            return None  # No analyzed songs
+            
+        # Calculate average score (analysis results are 0-100)
+        average_score = sum(analyzed_songs) / len(analyzed_songs)
+        
+        # Update the playlist's overall_alignment_score
+        playlist.overall_alignment_score = average_score
+        
+        return average_score
+        
+    except Exception as e:
+        current_app.logger.error(f"Error calculating playlist score for {playlist.id}: {e}")
+        return None

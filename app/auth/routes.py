@@ -6,7 +6,7 @@ from datetime import datetime
 import os
 
 from app.extensions import db
-from app.models.models import User
+from app.models.models import User, Playlist
 from flask_login import login_user, logout_user, login_required, current_user
 
 def get_spotify_oauth():
@@ -24,6 +24,17 @@ def get_spotify_oauth():
     if not all([client_id, client_secret, redirect_uri, scopes]):
         current_app.logger.error("Spotify API credentials, redirect URI, or scopes not configured.")
         return None
+    
+    # Check for placeholder values
+    if client_secret in ['c6c66', 'your-client-secret-here', 'placeholder']:
+        current_app.logger.error(f"SPOTIPY_CLIENT_SECRET appears to be a placeholder value: {client_secret}")
+        current_app.logger.error("Please update your .env file with a valid Spotify Client Secret from https://developer.spotify.com/dashboard")
+        return None
+    
+    if len(client_secret) < 20:
+        current_app.logger.error(f"SPOTIPY_CLIENT_SECRET appears to be too short: {len(client_secret)} characters")
+        current_app.logger.error("Spotify client secrets are typically 32+ characters long")
+        return None
 
     return SpotifyOAuth(
         client_id=client_id,
@@ -37,7 +48,7 @@ def get_spotify_oauth():
 def login():
     sp_oauth = get_spotify_oauth()
     if not sp_oauth:
-        flash('Spotify authentication is not configured correctly. Please contact support.', 'danger')
+        flash('Spotify authentication is not configured correctly. Please ensure SPOTIPY_CLIENT_SECRET is set with a valid value from your Spotify Developer Dashboard.', 'danger')
         return redirect(url_for('main.index')) 
 
     if current_user.is_authenticated:
@@ -116,6 +127,7 @@ def callback():
     display_name = spotify_user_profile.get('display_name') or spotify_id
 
     user = User.query.filter_by(spotify_id=spotify_id).first()
+    is_new_user = user is None
 
     token_expiry_timestamp = token_info['expires_at']
     token_expiry_datetime = datetime.fromtimestamp(token_expiry_timestamp)
@@ -150,10 +162,37 @@ def callback():
 
     login_user(user, remember=True)
     current_app.logger.info(f"User {user.id} ({user.spotify_id}) logged in successfully.")
-    flash('Successfully logged in with Spotify!', 'success')
+    
+    # Check if user needs auto-sync (new user or user with no playlists)
+    should_auto_sync = False
+    if is_new_user:
+        should_auto_sync = True
+        current_app.logger.info(f"New user {user.id} - will auto-start playlist sync")
+    else:
+        # Check if existing user has any playlists
+        playlist_count = Playlist.query.filter_by(owner_id=user.id).count()
+        if playlist_count == 0:
+            should_auto_sync = True
+            current_app.logger.info(f"Existing user {user.id} has no playlists - will auto-start playlist sync")
+    
+    if should_auto_sync:
+        try:
+            from app.services.playlist_sync_service import enqueue_playlist_sync
+            job = enqueue_playlist_sync(user.id)
+            if job:
+                flash('Welcome! We\'re syncing your playlists automatically. This may take a few minutes.', 'success')
+                session['auto_sync_started'] = True
+                current_app.logger.info(f"Auto-sync job {job.id} started for user {user.id}")
+            else:
+                flash('Welcome! Please click "Sync Playlists" to get started.', 'info')
+        except Exception as e:
+            current_app.logger.exception(f"Error starting auto-sync for user {user.id}: {e}")
+            flash('Welcome! Please click "Sync Playlists" to get started.', 'info')
+    else:
+        flash('Successfully logged in with Spotify!', 'success')
     
     next_url = session.pop('next_url', None) 
-    return redirect(next_url or url_for('main.index'))
+    return redirect(next_url or url_for('main.dashboard'))
 
 @auth.route('/logout')
 @login_required

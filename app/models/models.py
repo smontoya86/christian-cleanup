@@ -1,8 +1,13 @@
+"""
+Database models for the Christian Music Curation application.
+"""
+from datetime import datetime, timedelta
+from flask_login import UserMixin
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.ext.declarative import declarative_base
+from ..extensions import db
 from sqlalchemy.orm import relationship
 from sqlalchemy import CheckConstraint
-from datetime import datetime, timedelta
-from ..extensions import db
-from flask_login import UserMixin
 from flask import current_app
 from spotipy.oauth2 import SpotifyOAuth
 import requests
@@ -202,9 +207,11 @@ class Playlist(db.Model):
         
     @property
     def score(self):
-        """Alias for overall_alignment_score for backward compatibility."""
-        # Return the raw score (0-100) without any multiplication
-        return self.overall_alignment_score / 100.0 if self.overall_alignment_score is not None else None
+        """Return normalized score (0-1) for compatibility with template."""
+        if self.overall_alignment_score is not None:
+            # overall_alignment_score is 0-100, return as 0-1 scale
+            return self.overall_alignment_score / 100.0
+        return None
 
     def __repr__(self):
         return f'<Playlist {self.name}>'
@@ -294,6 +301,12 @@ class AnalysisResult(db.Model):
     analyzed_at = db.Column(db.DateTime, default=datetime.utcnow)
     error_message = db.Column(db.Text, nullable=True)  # Store error message if analysis fails
     
+    # New detailed analysis fields
+    purity_flags_details = db.Column(db.JSON, nullable=True)  # Detailed purity flags information
+    positive_themes_identified = db.Column(db.JSON, nullable=True)  # Positive Christian themes detected
+    biblical_themes = db.Column(db.JSON, nullable=True)  # Biblical themes and relevant verses
+    supporting_scripture = db.Column(db.JSON, nullable=True)  # Supporting scripture references and text
+    
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -313,7 +326,9 @@ class AnalysisResult(db.Model):
         self.status = self.STATUS_PROCESSING
         self.updated_at = datetime.utcnow()
         
-    def mark_completed(self, score=None, concern_level=None, themes=None, concerns=None, explanation=None):
+    def mark_completed(self, score=None, concern_level=None, themes=None, concerns=None, explanation=None, 
+                      purity_flags_details=None, positive_themes_identified=None, biblical_themes=None, 
+                      supporting_scripture=None):
         """Mark this analysis as completed with the given results."""
         self.status = self.STATUS_COMPLETED
         self.score = score
@@ -321,6 +336,10 @@ class AnalysisResult(db.Model):
         self.themes = themes
         self.concerns = concerns
         self.explanation = explanation
+        self.purity_flags_details = purity_flags_details
+        self.positive_themes_identified = positive_themes_identified
+        self.biblical_themes = biblical_themes
+        self.supporting_scripture = supporting_scripture
         self.analyzed_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
         

@@ -318,6 +318,11 @@ class SpotifyService:
                                     song.title = track_details['name']
                                     updated_existing_song = True
                                 current_artist_name_from_spotify = track_details['artists'][0]['name'] if track_details.get('artists') else 'Unknown Artist'
+                                # Update explicit flag if it has changed on Spotify
+                                spotify_explicit = track_details.get('explicit', False)
+                                if song.explicit != spotify_explicit:
+                                    song.explicit = spotify_explicit
+                                    updated_existing_song = True
                                 if song.artist != current_artist_name_from_spotify:
                                     song.artist = current_artist_name_from_spotify
                                     updated_existing_song = True
@@ -402,18 +407,44 @@ class SpotifyService:
         self.logger.info(f"Successfully processed: {successfully_processed_count} playlists. Encountered errors for: {error_processing_count} playlists.")
         self.logger.info(f"Song processing stats: Successfully added to DB: {songs_successfully_added_to_db}, Failed to add/find: {songs_failed_to_add_or_find}, Skipped: {songs_skipped}")
 
-        # --- Deactivate playlists no longer returned by Spotify --- 
-        # (This part might need its own try-catch or careful placement if db.session.commit() is moved)
-        # current_spotify_playlist_ids = {item['id'] for item in all_playlist_items if item.get('id')}
-        # playlists_to_deactivate = Playlist.query.filter(
-        #     Playlist.owner_id == user_id,
-        #     Playlist.is_active == True, # Assuming you have an 'is_active' flag
-        #     ~Playlist.spotify_id.in_(current_spotify_playlist_ids)
-        # ).all()
-        # for p_deactivate in playlists_to_deactivate:
-        #     self.logger.info(f"Deactivating playlist '{p_deactivate.name}' (ID: {p_deactivate.spotify_id}) as it's no longer on Spotify for user {user_id}.")
-        #     p_deactivate.is_active = False # Or some other deactivation logic
-        # db.session.flush() # Apply deactivations
+        # --- Delete playlists no longer returned by Spotify ---
+        try:
+            # Get set of current Spotify playlist IDs
+            current_spotify_playlist_ids = {item['id'] for item in all_playlist_items if item.get('id')}
+            self.logger.debug(f"Current Spotify playlist IDs for user {user_id}: {current_spotify_playlist_ids}")
+            
+            # Find playlists in database that are no longer on Spotify
+            orphaned_playlists = Playlist.query.filter(
+                Playlist.owner_id == user_id,
+                ~Playlist.spotify_id.in_(current_spotify_playlist_ids)
+            ).all()
+            
+            if orphaned_playlists:
+                self.logger.info(f"Found {len(orphaned_playlists)} orphaned playlists for user {user_id} that need to be deleted.")
+                
+                # Delete each orphaned playlist (PlaylistSong associations will be deleted automatically due to cascade)
+                deleted_count = 0
+                for orphaned_playlist in orphaned_playlists:
+                    playlist_name = orphaned_playlist.name
+                    playlist_spotify_id = orphaned_playlist.spotify_id
+                    
+                    # Log before deletion
+                    self.logger.info(f"Deleting orphaned playlist '{playlist_name}' (Spotify ID: {playlist_spotify_id}) for user {user_id}.")
+                    
+                    # Delete the playlist (this will cascade delete PlaylistSong associations)
+                    db.session.delete(orphaned_playlist)
+                    deleted_count += 1
+                
+                # Flush the deletions before committing
+                db.session.flush()
+                self.logger.info(f"Successfully deleted {deleted_count} orphaned playlists for user {user_id}.")
+            else:
+                self.logger.debug(f"No orphaned playlists found for user {user_id}.")
+                
+        except Exception as e_orphan_cleanup:
+            self.logger.error(f"Error during orphaned playlist cleanup for user {user_id}: {e_orphan_cleanup}", exc_info=True)
+            # Don't re-raise here as playlist deletion is not critical to overall sync
+            # The main sync operation should still complete successfully
 
         try:
             db.session.commit()

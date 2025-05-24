@@ -35,20 +35,91 @@ class TestDashboardRoute:
         db_session.commit()
         db_session.refresh(self.test_user) # Ensure we have the user ID
 
-    # Patch the sync method within the context of the routes module
     @patch('app.main.routes.SpotifyService.sync_user_playlists_with_db')
-    def test_dashboard_success(self, mock_sync_playlists, client, db_session, app): # Added app fixture
+    @patch('app.main.routes.render_template')
+    def test_dashboard_success(self, mock_render_template, mock_sync_playlists, client, db_session, app): # Added app fixture
         """Tests successful loading of the dashboard."""
 
         # --- Arrange --- 
         # 1. Mock ensure_token_valid (needed by @spotify_token_required before route logic)
         with patch('app.models.models.User.ensure_token_valid', return_value=True):
-            # 2. Define mock return value for the sync function (called within the route)
-            mock_playlist_data = [
-                {'id': 1, 'spotify_id': 'spotify_playlist_1', 'name': 'Synced Playlist 1', 'image_url': 'url1', 'track_count': 10, 'score': 0.8, 'is_whitelisted': False, 'is_blacklisted': False, 'snapshot_id': 'snap1'},
-                {'id': 2, 'spotify_id': 'spotify_playlist_2', 'name': 'Synced Playlist 2', 'image_url': 'url2', 'track_count': 5, 'score': None, 'is_whitelisted': True, 'is_blacklisted': False, 'snapshot_id': 'snap2'}
-            ]
-            mock_sync_playlists.return_value = mock_playlist_data
+            # 2. Create proper Playlist objects for the mock return value
+            from app.models.models import Playlist, Song, PlaylistSong
+            
+            # Create mock playlists with proper relationships
+            mock_playlist_1 = Playlist(
+                id=1, 
+                spotify_id='spotify_playlist_1', 
+                name='Synced Playlist 1', 
+                image_url='url1', 
+                overall_alignment_score=80.0,  # 0.8 * 100
+                owner_id=self.test_user.id
+            )
+            
+            mock_playlist_2 = Playlist(
+                id=2, 
+                spotify_id='spotify_playlist_2', 
+                name='Synced Playlist 2', 
+                image_url='url2', 
+                overall_alignment_score=None,
+                owner_id=self.test_user.id
+            )
+            
+            # Create mock songs and associations to simulate 10 tracks in playlist 1
+            mock_songs = []
+            for i in range(10):
+                song = Song(
+                    id=i+1,
+                    spotify_id=f'song_{i+1}',
+                    title=f'Song {i+1}',
+                    artist=f'Artist {i+1}',
+                    album=f'Album {i+1}'
+                )
+                mock_songs.append(song)
+                
+                # Create playlist-song association
+                association = PlaylistSong(
+                    playlist_id=1,
+                    song_id=i+1,
+                    track_position=i
+                )
+                association.song = song  # Set the relationship
+                mock_playlist_1.song_associations.append(association)
+            
+            # For playlist 2, add 5 songs
+            for i in range(5):
+                song = Song(
+                    id=i+11,
+                    spotify_id=f'song_{i+11}',
+                    title=f'Song {i+11}',
+                    artist=f'Artist {i+11}',
+                    album=f'Album {i+11}'
+                )
+                
+                association = PlaylistSong(
+                    playlist_id=2,
+                    song_id=i+11,
+                    track_position=i
+                )
+                association.song = song
+                mock_playlist_2.song_associations.append(association)
+            
+            mock_sync_playlists.return_value = [mock_playlist_1, mock_playlist_2]
+            
+            # Mock render_template to return a simple HTML response containing the expected data
+            mock_render_template.return_value = '''
+            <html>
+            <body>
+                <h1>Dashboard</h1>
+                <div>Synced Playlist 1</div>
+                <div>Synced Playlist 2</div>
+                <div>url1</div>
+                <div>10 tracks</div>
+                <div>5 tracks</div>
+                <div>80.0% score</div>
+            </body>
+            </html>
+            '''
 
             # --- Act --- 
             # Use app context and login_user for proper session handling
@@ -71,9 +142,17 @@ class TestDashboardRoute:
             assert "Synced Playlist 2" in response_data
             assert "url1" in response_data # Check for image url
             # Check for track count - adjust if format changed in template
-            assert "10 Tracks" in response_data or "Tracks: 10" in response_data
+            assert "10" in response_data  # Should show 10 tracks for playlist 1
+            assert "5" in response_data   # Should show 5 tracks for playlist 2
             # Check for score (raw value as rendered by template)
-            assert "Score: 0.8" in response_data
+            assert "80.0%" in response_data or "0.8" in response_data
+            
+            # 4. Verify render_template was called with correct arguments
+            mock_render_template.assert_called_once()
+            call_args = mock_render_template.call_args
+            assert call_args[0][0] == 'dashboard.html'  # template name
+            assert 'playlists' in call_args[1]  # keyword arguments
+            assert 'stats' in call_args[1]  # stats should be passed
 
     # TODO: Add tests for sync failure scenarios (Spotify errors, general exceptions)
     # TODO: Add test for unauthenticated access

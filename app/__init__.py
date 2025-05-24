@@ -32,7 +32,7 @@ def load_user(user_id):
         current_app.logger.debug(f"load_user: No user found for user_id: {user_id}")
     return user
 
-def create_app(config_name=None):
+def create_app(config_name=None, init_scheduler=True):
     """Application factory function."""
     if config_name is None:
         config_name = os.getenv('FLASK_ENV', 'default')
@@ -72,17 +72,25 @@ def create_app(config_name=None):
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
-    scheduler.init_app(app)
+    
+    # Only initialize scheduler if requested (workers don't need it)
+    if init_scheduler:
+        # Import here to avoid global scheduler conflicts
+        from flask_apscheduler import APScheduler
+        app_scheduler = APScheduler()
+        app_scheduler.init_app(app)
+        app.scheduler = app_scheduler
+    
     bootstrap.init_app(app) 
     rq.init_app(app)
     
     # Initialize task queue
     app.task_queue = rq.get_queue()
 
-    # Only start the scheduler if it's not already running AND we are not in testing mode.
-    # For testing, we typically don't want background jobs running.
-    if not scheduler.running and not app.config.get('TESTING', False):
-        scheduler.start()
+    # Only start the scheduler if it's been initialized and other conditions are met
+    if init_scheduler and not app.config.get('TESTING', False):
+        if hasattr(app, 'scheduler') and hasattr(app.scheduler, 'running') and not app.scheduler.running:
+            app.scheduler.start()
 
     # Instantiate and register application services
     from .services.spotify_service import SpotifyService
@@ -124,15 +132,15 @@ def create_app(config_name=None):
         app.register_blueprint(api_bp, url_prefix='/api')
         current_app.logger.info("API blueprint registered.")
 
-        # Schedule the background sync job
+        # Schedule the background sync job - only if scheduler is initialized
         # Ensure the job doesn't run when importing for migrations or other non-server tasks
         # Or handle this within the job itself if needed.
-        if not app.config.get('TESTING', False) and os.environ.get('WERKZEUG_RUN_MAIN') == 'true': 
+        if init_scheduler and hasattr(app, 'scheduler') and not app.config.get('TESTING', False) and os.environ.get('WERKZEUG_RUN_MAIN') == 'true': 
             # Check WERKZEUG_RUN_MAIN prevents duplicate jobs with Flask reloader
             # Check not TESTING to avoid running scheduler during tests
             job_id = 'sync_all_playlists'
-            if not scheduler.get_job(job_id):
-                scheduler.add_job(
+            if not app.scheduler.get_job(job_id):
+                app.scheduler.add_job(
                     id=job_id,
                     func=sync_all_playlists_job,
                     trigger='interval',

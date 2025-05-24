@@ -21,7 +21,12 @@ def spotify_token_required(f):
             session['next_url'] = request.url 
             return redirect(url_for('auth.login'))
             
-        current_app.logger.debug(f"spotify_token_required: User {current_user.get_id()} is authenticated.")
+        # Get user ID safely without triggering database access
+        try:
+            user_id = getattr(current_user, 'spotify_id', 'unknown') if hasattr(current_user, 'spotify_id') else 'unknown'
+        except Exception:
+            user_id = 'unknown'
+        current_app.logger.debug(f"spotify_token_required: User {user_id} is authenticated.")
 
         if not hasattr(current_user, 'ensure_token_valid'):
             current_app.logger.error("spotify_token_required: current_user lacks 'ensure_token_valid'. Logging out.")
@@ -34,7 +39,7 @@ def spotify_token_required(f):
             session['next_url'] = request.url
             return redirect(url_for('auth.login'))
 
-        current_app.logger.debug(f"spotify_token_required: Checking token for user {current_user.get_id()}. Method is {current_user.ensure_token_valid}")
+        current_app.logger.debug(f"spotify_token_required: Checking token for user {user_id}. Method exists: {hasattr(current_user, 'ensure_token_valid')}")
 
         token_is_valid = False # Default
         try:
@@ -50,6 +55,6 @@ def spotify_token_required(f):
             session['next_url'] = request.url 
             return redirect(url_for('auth.login'))
         
-        current_app.logger.debug(f"Spotify token check passed for user {current_user.get_id()} for route {request.path}.") # Adjusted user ID attribute
+        current_app.logger.debug(f"Spotify token check passed for user {user_id} for route {request.path}.") # Adjusted user ID attribute
         return f(*args, **kwargs)
     return decorated_function

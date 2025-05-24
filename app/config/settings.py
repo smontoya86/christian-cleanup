@@ -14,7 +14,7 @@ dotenv_path = os.path.join(project_root, '.env')
 
 print(f"[settings.py TOP] Attempting to load .env from: {dotenv_path}")
 if os.path.exists(dotenv_path):
-    load_dotenv(dotenv_path=dotenv_path, override=True) 
+    load_dotenv(dotenv_path=dotenv_path, override=False)  # Changed from override=True to override=False
     print(f"[settings.py TOP] .env file loaded successfully from {dotenv_path}")
     # Debug print values immediately after loading
     print(f"[settings.py TOP] After load_dotenv - SPOTIPY_CLIENT_ID: {os.environ.get('SPOTIPY_CLIENT_ID')}")

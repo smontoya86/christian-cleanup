@@ -26,11 +26,12 @@
                 <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="#">About</a> {# Placeholder for About page #}
                 {% if current_user.is_authenticated %}
                     <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.user_settings') }}">Settings</a>
                     <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('auth.logout') }}">Logout</a>
                 {% else %}
                      <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('auth.login') }}">Login</a>
+                     <a class="btn btn-primary btn-connect-spotify ms-3" href="{{ url_for('auth.login') }}">Connect to Spotify</a>
                 {% endif %}
-                <a class="btn btn-primary btn-connect-spotify ms-3" href="{{ url_for('auth.login') }}">Connect to Spotify</a>
             </div>
         </nav>
     </header>
