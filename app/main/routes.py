@@ -59,13 +59,22 @@ def index():
 def test_base_render_route():
     return render_template('test_page.html')
 
+PLAYLISTS_PER_PAGE = 25
+
 @main_bp.route('/dashboard')
 @login_required
 @spotify_token_required # Re-enabled
 def dashboard():
     from ..services.playlist_sync_service import get_sync_status
+    from ..models import AnalysisResult
+    from ..services.background_analysis_service import BackgroundAnalysisService
     
     try:
+        # Ensure token is valid before proceeding
+        if not flask_login_current_user.ensure_token_valid():
+            flash('Your Spotify session has expired. Please log in again.', 'warning')
+            return redirect(url_for('auth.login'))
+        
         user_id = flask_login_current_user.id
         
         # Handle clearing auto_sync_started flag
@@ -73,9 +82,16 @@ def dashboard():
             session.pop('auto_sync_started', None)
             return jsonify({"status": "success"})
         
-        # Your existing dashboard logic here...
+        # Get sync status
         sync_status = get_sync_status(user_id)
         
+        # Check for sync message in session
+        sync_message = session.pop('sync_message', None)
+        
+        # Pagination logic
+        page = request.args.get('page', 1, type=int)
+        
+        # OPTIMIZED: Get stats using efficient database queries instead of loading all data
         stats = {
             'total_playlists': 0,
             'total_songs': 0,
@@ -83,13 +99,48 @@ def dashboard():
             'clean_playlists': 0
         }
         
-        # Check for sync message in session
-        sync_message = session.pop('sync_message', None)
+        # Efficient query for total playlists count
+        stats['total_playlists'] = db.session.query(Playlist).filter_by(owner_id=user_id).count()
         
-        # Get user's playlists from database using SQLAlchemy 2.0 pattern
-        playlists = get_all_by_filter(Playlist, owner_id=user_id)
+        # Efficient query for total songs count using PlaylistSong JOIN
+        stats['total_songs'] = db.session.query(Song).join(
+            PlaylistSong, Song.id == PlaylistSong.song_id
+        ).join(
+            Playlist, PlaylistSong.playlist_id == Playlist.id
+        ).filter(Playlist.owner_id == user_id).count()
         
-        # Calculate playlist scores for any playlists that need updating
+        # Efficient query for analyzed songs count using PlaylistSong JOIN
+        stats['analyzed_songs'] = db.session.query(Song).join(
+            PlaylistSong, Song.id == PlaylistSong.song_id
+        ).join(
+            Playlist, PlaylistSong.playlist_id == Playlist.id
+        ).join(
+            AnalysisResult, Song.id == AnalysisResult.song_id
+        ).filter(
+            Playlist.owner_id == user_id,
+            AnalysisResult.status == 'completed'
+        ).count()
+        
+        # Efficient query for clean playlists count
+        stats['clean_playlists'] = db.session.query(Playlist).filter(
+            Playlist.owner_id == user_id,
+            Playlist.overall_alignment_score >= 75.0
+        ).count()
+        
+        # Get paginated playlists using optimized query
+        playlists_query = Playlist.query.filter_by(owner_id=user_id)\
+            .order_by(Playlist.updated_at.desc())
+        
+        # Get paginated playlists
+        paginated_playlists = playlists_query.paginate(
+            page=page,
+            per_page=PLAYLISTS_PER_PAGE,
+            error_out=False
+        )
+        
+        playlists = paginated_playlists.items
+        
+        # OPTIMIZED: Only calculate scores for playlists on current page
         for playlist in playlists:
             if playlist.overall_alignment_score is None:
                 calculate_playlist_score(playlist)
@@ -101,29 +152,35 @@ def dashboard():
             current_app.logger.error(f"Error committing playlist score updates: {e}")
             db.session.rollback()
         
-        # Calculate stats
-        stats['total_playlists'] = len(playlists)
-        
-        for playlist in playlists:
-            stats['total_songs'] += len(playlist.songs)
-            stats['analyzed_songs'] += sum(1 for song in playlist.songs if song.analysis_results)
-            
-            # Count clean playlists (score >= 0.75)
-            if playlist.overall_alignment_score is not None and playlist.overall_alignment_score >= 75.0:
-                stats['clean_playlists'] += 1
-            elif playlist.score is not None and playlist.score >= 0.75:
-                stats['clean_playlists'] += 1
-        
-        # Get last sync info
-        from datetime import datetime
+        # OPTIMIZED: Get last sync info efficiently
         last_sync_info = None
-        if playlists:
-            # Find most recent playlist update
-            most_recent = max(playlists, key=lambda p: p.updated_at or datetime.min, default=None)
-            if most_recent and most_recent.updated_at:
-                last_sync_info = {
-                    'last_sync_at': most_recent.updated_at.isoformat()
-                }
+        most_recent_playlist = db.session.query(Playlist).filter_by(owner_id=user_id)\
+            .order_by(Playlist.updated_at.desc()).first()
+        
+        if most_recent_playlist and most_recent_playlist.updated_at:
+            last_sync_info = {
+                'last_sync_at': most_recent_playlist.updated_at.isoformat()
+            }
+        
+        # Create pagination object for template
+        pagination = {
+            'page': page,
+            'per_page': PLAYLISTS_PER_PAGE,
+            'total_pages': paginated_playlists.pages,
+            'total_items': stats['total_playlists'],
+            'has_prev': paginated_playlists.has_prev,
+            'has_next': paginated_playlists.has_next,
+            'prev_num': paginated_playlists.prev_num,
+            'next_num': paginated_playlists.next_num
+        }
+        
+        # Start background analysis if needed
+        try:
+            if BackgroundAnalysisService.should_start_background_analysis(user_id, min_interval_hours=1):
+                background_result = BackgroundAnalysisService.start_background_analysis_for_user(user_id, max_songs_per_batch=25)
+                current_app.logger.info(f"Background analysis started for user {user_id}: {background_result}")
+        except Exception as e:
+            current_app.logger.error(f"Error starting background analysis for user {user_id}: {e}")
         
         current_app.logger.debug(f"Dashboard for user {user_id}: {len(playlists)} playlists, sync_status: {sync_status}")
         
@@ -132,7 +189,8 @@ def dashboard():
                                stats=stats,
                                sync_status=sync_status,
                                sync_message=sync_message,
-                               last_sync_info=last_sync_info)
+                               last_sync_info=last_sync_info,
+                               pagination=pagination)
                                
     except Exception as e:
         current_app.logger.exception(f"Error loading dashboard for user {flask_login_current_user.id}: {e}")
@@ -316,6 +374,11 @@ SONGS_PER_PAGE = 20
 @spotify_token_required
 @login_required
 def playlist_detail(playlist_id):
+    # Ensure token is valid before creating SpotifyService
+    if not flask_login_current_user.ensure_token_valid():
+        flash('Your Spotify session has expired. Please log in again.', 'warning')
+        return redirect(url_for('auth.login'))
+    
     sp = SpotifyService(flask_login_current_user.access_token)
 
     if not sp.sp:

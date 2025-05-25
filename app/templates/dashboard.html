@@ -50,28 +50,124 @@
         </div>
     {% endif %}
 
+    <!-- Enhanced Progress Indicators Section -->
     {% if sync_status and sync_status.has_active_sync %}
-        <div class="alert alert-info d-flex align-items-center" role="alert" id="syncAlert">
-            <i class="fas fa-spinner fa-spin me-2"></i> 
-            <div class="flex-grow-1">
-                <strong>Playlist Sync in Progress</strong><br>
-                <span id="syncMessage">{{ sync_message or "Synchronizing your playlists..." }}</span>
-                <div class="progress mt-2" style="height: 20px;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                         role="progressbar" 
-                         style="width: 25%" 
-                         id="syncProgress">
-                        <span class="progress-text">Initializing...</span>
+        <div class="alert alert-info" role="alert" id="syncAlert">
+            <div class="d-flex align-items-center mb-3">
+                <i class="fas fa-spinner fa-spin me-2"></i> 
+                <div class="flex-grow-1">
+                    <strong>Playlist Sync in Progress</strong>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <span id="syncMessage">{{ sync_message or "Synchronizing your playlists..." }}</span>
+                        <div class="text-end">
+                            <small class="text-muted">
+                                <span id="syncElapsed">0:00</span> elapsed
+                                • ETA: <span id="syncETA">calculating...</span>
+                            </small>
+                        </div>
                     </div>
                 </div>
-                <small class="text-muted">
-                    Job ID: {{ sync_status.active_jobs[0].job_id if sync_status.active_jobs else 'N/A' }}
-                    • Started: <span id="syncStarted">just now</span>
-                </small>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            
+            <!-- Enhanced Progress Bar -->
+            <div class="progress mb-2" style="height: 25px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                     role="progressbar" 
+                     style="width: 25%" 
+                     id="syncProgress">
+                    <span class="progress-text fw-bold">Initializing...</span>
+                </div>
+            </div>
+            
+            <!-- Sync Details -->
+            <div class="row text-center mt-3">
+                <div class="col-4">
+                    <div class="sync-stat">
+                        <div class="sync-number text-success" id="syncProcessed">0</div>
+                        <div class="sync-label">Processed</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="sync-stat">
+                        <div class="sync-number text-warning" id="syncRemaining">--</div>
+                        <div class="sync-label">Remaining</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="sync-stat">
+                        <div class="sync-number text-info" id="syncRate">--/min</div>
+                        <div class="sync-label">Rate</div>
+                    </div>
+                </div>
+            </div>
+            
+            <small class="text-muted d-block mt-2">
+                Job ID: {{ sync_status.active_jobs[0].job_id if sync_status.active_jobs else 'N/A' }}
+                • Started: <span id="syncStarted">just now</span>
+            </small>
         </div>
     {% endif %}
+
+    <!-- Song Analysis Progress Indicator -->
+    <div id="analysisProgressAlert" class="alert alert-warning" role="alert" style="display: none;">
+        <div class="d-flex align-items-center mb-3">
+            <i class="fas fa-brain fa-pulse me-2"></i>
+            <div class="flex-grow-1">
+                <strong>Song Analysis in Progress</strong>
+                <div class="d-flex justify-content-between align-items-center mt-1">
+                    <span id="analysisMessage">Analyzing song content...</span>
+                    <div class="text-end">
+                        <small class="text-muted">
+                            <span id="analysisElapsed">0:00</span> elapsed
+                            • ETA: <span id="analysisETA">calculating...</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-close" onclick="hideAnalysisProgress()" aria-label="Close"></button>
+        </div>
+        
+        <!-- Analysis Progress Bar -->
+        <div class="progress mb-2" style="height: 25px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
+                 role="progressbar" 
+                 style="width: 0%" 
+                 id="analysisProgress">
+                <span class="progress-text fw-bold">Starting analysis...</span>
+            </div>
+        </div>
+        
+        <!-- Analysis Details -->
+        <div class="row text-center mt-3">
+            <div class="col-4">
+                <div class="analysis-stat">
+                    <div class="analysis-number text-success" id="analysisCompleted">0</div>
+                    <div class="analysis-label">Completed</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="analysis-stat">
+                    <div class="analysis-number text-primary" id="analysisInProgress">0</div>
+                    <div class="analysis-label">In Progress</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="analysis-stat">
+                    <div class="analysis-number text-warning" id="analysisPending">0</div>
+                    <div class="analysis-label">Pending</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Current Analysis Details -->
+        <div class="mt-3">
+            <small class="text-muted">
+                <strong>Current:</strong> <span id="currentAnalysis">Preparing...</span><br>
+                <strong>Recent:</strong> <span id="recentAnalysis">None</span>
+            </small>
+        </div>
+    </div>
 
     <!-- Auto-sync notification for new users -->
     {% if session.auto_sync_started %}
@@ -81,14 +177,17 @@
                 <strong>Welcome to Spotify Cleanup!</strong><br>
                 We're automatically syncing your playlists to get you started. 
                 This process will analyze your music library and help you discover cleanup opportunities.
-                <div class="progress mt-2" style="height: 15px;">
+                <div class="progress mt-2" style="height: 20px;">
                     <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" 
                          role="progressbar" 
                          style="width: 30%" 
                          id="autoSyncProgress">
-                        <small>Getting started...</small>
+                        <small class="fw-bold">Getting started...</small>
                     </div>
                 </div>
+                <small class="text-muted mt-1 d-block">
+                    This may take a few minutes depending on your library size.
+                </small>
             </div>
         </div>
     {% endif %}
@@ -114,14 +213,24 @@
             <div class="card text-center h-100 border-info">
                 <div class="card-body">
                     <h5 class="card-title text-info"><i class="fas fa-music me-2"></i>Songs Analyzed</h5>
-                    <p class="card-text fs-2 fw-bold text-info">{{ stats.analyzed_songs }}</p>
+                    <p class="card-text fs-2 fw-bold text-info" id="totalAnalyzedSongs">{{ stats.analyzed_songs }}</p>
                     <small class="text-muted">
                         {% if stats.total_songs > 0 %}
-                            {{ '%.1f'|format((stats.analyzed_songs / stats.total_songs) * 100) }}% of total songs
+                            <span id="analysisPercentage">{{ '%.1f'|format((stats.analyzed_songs / stats.total_songs) * 100) }}%</span> of total songs
                         {% else %}
                             Ready for analysis
                         {% endif %}
                     </small>
+                    <!-- Analysis Progress Mini-Bar -->
+                    {% if stats.total_songs > 0 %}
+                    <div class="progress mt-2" style="height: 8px;">
+                        <div class="progress-bar bg-info" 
+                             role="progressbar" 
+                             style="width: {{ (stats.analyzed_songs / stats.total_songs) * 100 }}%"
+                             id="miniAnalysisProgress">
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -144,7 +253,12 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="mb-0">Your Spotify Playlists</h2>
-        {% if playlists %}
+        {% if pagination %}
+            <small class="text-muted">
+                Showing {{ ((pagination.page - 1) * pagination.per_page) + 1 }}-{{ pagination.page * pagination.per_page if pagination.page * pagination.per_page <= pagination.total_items else pagination.total_items }} 
+                of {{ pagination.total_items }} playlists
+            </small>
+        {% elif playlists %}
             <small class="text-muted">{{ playlists|length }} playlists found</small>
         {% endif %}
     </div>
@@ -239,6 +353,112 @@
                 </div>
             {% endfor %}
         </div>
+        
+        <!-- Pagination Controls -->
+        {% if pagination and pagination.total_pages > 1 %}
+        <nav aria-label="Playlist pagination" class="mt-4">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <p class="text-muted mb-0">
+                        Page {{ pagination.page }} of {{ pagination.total_pages }}
+                    </p>
+                </div>
+                <div class="col">
+                    <ul class="pagination justify-content-center mb-0">
+                        <!-- First Page -->
+                        {% if pagination.page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=1) }}" aria-label="First">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Previous Page -->
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.prev_num) }}" aria-label="Previous">
+                                <span aria-hidden="true">&lsaquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&lsaquo;</span>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Page Numbers -->
+                        {% set start_page = 1 if pagination.page - 2 < 1 else pagination.page - 2 %}
+                        {% set end_page = pagination.total_pages if pagination.page + 2 > pagination.total_pages else pagination.page + 2 %}
+                        
+                        {% if start_page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=1) }}">1</a>
+                        </li>
+                        {% if start_page > 2 %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                        {% endif %}
+                        
+                        {% for page_num in range(start_page, end_page + 1) %}
+                            {% if page_num == pagination.page %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('main.dashboard', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if end_page < pagination.total_pages %}
+                        {% if end_page < pagination.total_pages - 1 %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.total_pages) }}">{{ pagination.total_pages }}</a>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Next Page -->
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.next_num) }}" aria-label="Next">
+                                <span aria-hidden="true">&rsaquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&rsaquo;</span>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Last Page -->
+                        {% if pagination.page < pagination.total_pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.total_pages) }}" aria-label="Last">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        {% endif %}
     {% else %}
         <div class="text-center py-5">
             <i class="fas fa-folder-open fa-4x text-muted mb-4"></i>
@@ -281,8 +501,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const syncProgress = document.getElementById('syncProgress');
     const lastChecked = document.getElementById('lastChecked');
     
+    // Progress tracking variables
     let syncStartTime = null;
     let syncCheckInterval = null;
+    let analysisCheckInterval = null;
+    let lastSyncProcessed = 0;
 
     function filterPlaylists() {
         const searchTerm = searchInput.value.toLowerCase();
@@ -354,25 +577,195 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function updateSyncProgress(elapsedSeconds) {
+    function updateSyncProgress(elapsedSeconds, data = {}) {
         if (!syncProgress) return;
         
-        // Estimate progress based on time elapsed (rough estimation)
-        let progressPercent = Math.min(20 + (elapsedSeconds / 120) * 60, 90);
-        let progressText = '';
+        // Enhanced progress calculation with real data
+        let progressPercent = 25;
+        let progressText = 'Initializing...';
         
-        if (elapsedSeconds < 30) {
-            progressText = 'Initializing...';
-        } else if (elapsedSeconds < 60) {
-            progressText = 'Fetching playlists...';
-        } else if (elapsedSeconds < 120) {
-            progressText = 'Processing playlists...';
+        if (data.processed !== undefined && data.total !== undefined && data.total > 0) {
+            progressPercent = Math.min((data.processed / data.total) * 100, 95);
+            progressText = `Processing ${data.processed}/${data.total} playlists`;
         } else {
-            progressText = 'Finalizing...';
+            // Fallback to time-based estimation
+            progressPercent = Math.min(20 + (elapsedSeconds / 120) * 60, 90);
+            
+            if (elapsedSeconds < 30) {
+                progressText = 'Initializing...';
+            } else if (elapsedSeconds < 60) {
+                progressText = 'Fetching playlists...';
+            } else if (elapsedSeconds < 120) {
+                progressText = 'Processing playlists...';
+            } else {
+                progressText = 'Finalizing...';
+            }
         }
         
         syncProgress.style.width = progressPercent + '%';
         syncProgress.querySelector('.progress-text').textContent = progressText;
+        
+        // Update detailed sync stats
+        updateSyncStats(elapsedSeconds, data);
+    }
+    
+    function updateSyncStats(elapsedSeconds, data) {
+        const processed = data.processed || 0;
+        const total = data.total || 0;
+        const remaining = Math.max(total - processed, 0);
+        
+        // Update counters
+        document.getElementById('syncProcessed').textContent = processed;
+        document.getElementById('syncRemaining').textContent = remaining > 0 ? remaining : '--';
+        
+        // Calculate and update rate
+        if (processed > lastSyncProcessed && elapsedSeconds > 0) {
+            const rate = ((processed - lastSyncProcessed) / (elapsedSeconds / 60)).toFixed(1);
+            syncRateHistory.push(parseFloat(rate));
+            if (syncRateHistory.length > 5) syncRateHistory.shift(); // Keep last 5 measurements
+            
+            const avgRate = syncRateHistory.reduce((a, b) => a + b, 0) / syncRateHistory.length;
+            document.getElementById('syncRate').textContent = avgRate.toFixed(1) + '/min';
+            
+            // Calculate ETA
+            if (avgRate > 0 && remaining > 0) {
+                const etaMinutes = remaining / avgRate;
+                const etaText = etaMinutes < 1 ? '<1 min' : Math.ceil(etaMinutes) + ' min';
+                document.getElementById('syncETA').textContent = etaText;
+            }
+        }
+        
+        lastSyncProcessed = processed;
+        
+        // Update elapsed time
+        const minutes = Math.floor(elapsedSeconds / 60);
+        const seconds = elapsedSeconds % 60;
+        document.getElementById('syncElapsed').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    function updateAnalysisProgress(data) {
+        console.log('updateAnalysisProgress called with:', data); // Debug log
+        
+        const analysisAlert = document.getElementById('analysisProgressAlert');
+        const analysisProgress = document.getElementById('analysisProgress');
+        
+        if (!analysisAlert || !analysisProgress) {
+            console.error('Analysis progress elements not found');
+            return;
+        }
+        
+        // Show progress indicator if there's active analysis OR pending songs
+        const shouldShow = data.has_active_analysis || (data.pending && data.pending > 0);
+        
+        if (!shouldShow) {
+            analysisAlert.style.display = 'none';
+            if (analysisCheckInterval) {
+                clearInterval(analysisCheckInterval);
+                analysisCheckInterval = null;
+            }
+            return;
+        }
+        
+        // Show analysis progress
+        analysisAlert.style.display = 'block';
+        
+        const completed = data.completed || 0;
+        const inProgress = data.in_progress || 0;
+        const pending = data.pending || 0;
+        const total = completed + inProgress + pending;
+        
+        console.log(`Analysis progress: ${completed}/${total} (${inProgress} in progress, ${pending} pending)`);
+        
+        // Update progress bar
+        const progressPercent = total > 0 ? (completed / total) * 100 : 0;
+        analysisProgress.style.width = progressPercent + '%';
+        
+        const progressText = analysisProgress.querySelector('.progress-text');
+        if (progressText) {
+            progressText.textContent = `${completed}/${total} songs analyzed (${progressPercent.toFixed(1)}%)`;
+        }
+        
+        // Update stats (simplified - no rates)
+        const elements = {
+            'analysisCompleted': completed,
+            'analysisInProgress': inProgress,
+            'analysisPending': pending
+        };
+        
+        for (const [id, value] of Object.entries(elements)) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+                console.log(`Updated ${id} to ${value}`);
+            } else {
+                console.warn(`Element ${id} not found`);
+            }
+        }
+        
+        // Update current analysis info
+        const currentAnalysisElement = document.getElementById('currentAnalysis');
+        if (currentAnalysisElement) {
+            if (data.current_song && data.current_song.title) {
+                currentAnalysisElement.textContent = 
+                    `"${data.current_song.title}" by ${data.current_song.artist}`;
+            } else if (inProgress > 0) {
+                currentAnalysisElement.textContent = 
+                    `${inProgress} songs being analyzed...`;
+            } else {
+                currentAnalysisElement.textContent = 'Preparing next batch...';
+            }
+        }
+        
+        // Update recent analysis (simplified)
+        const recentAnalysisElement = document.getElementById('recentAnalysis');
+        if (recentAnalysisElement) {
+            if (data.recent_completed && data.recent_completed.length > 0) {
+                const recent = data.recent_completed[0];
+                recentAnalysisElement.textContent = 
+                    `"${recent.title}" by ${recent.artist}`;
+            } else {
+                recentAnalysisElement.textContent = 'None yet';
+            }
+        }
+        
+        // Update main stats card
+        const totalAnalyzedElement = document.getElementById('totalAnalyzedSongs');
+        if (totalAnalyzedElement) {
+            totalAnalyzedElement.textContent = completed;
+        }
+        
+        const analysisPercentageElement = document.getElementById('analysisPercentage');
+        const miniProgressElement = document.getElementById('miniAnalysisProgress');
+        
+        if (total > 0) {
+            const percentage = (completed / total * 100).toFixed(1);
+            if (analysisPercentageElement) {
+                analysisPercentageElement.textContent = percentage + '%';
+            }
+            if (miniProgressElement) {
+                miniProgressElement.style.width = percentage + '%';
+            }
+        }
+    }
+    
+    function hideAnalysisProgress() {
+        document.getElementById('analysisProgressAlert').style.display = 'none';
+        if (analysisCheckInterval) {
+            clearInterval(analysisCheckInterval);
+            analysisCheckInterval = null;
+        }
+    }
+    
+    function checkAnalysisStatus() {
+        // Check if there are any active analysis jobs
+        fetch('/api/analysis/status')
+            .then(response => response.json())
+            .then(data => {
+                updateAnalysisProgress(data);
+            })
+            .catch(error => {
+                console.error('Error checking analysis status:', error);
+            });
     }
 
     function showSyncCompleteToast() {
@@ -384,7 +777,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function checkSyncStatus() {
-        fetch('{{ url_for("main.api_sync_status") }}')
+        fetch('/api/sync-status')
             .then(response => response.json())
             .then(data => {
                 updateLastCheckedTime();
@@ -427,7 +820,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Sync is still active - update progress
                     if (syncStartTime) {
                         const elapsedSeconds = Math.floor((Date.now() - syncStartTime) / 1000);
-                        updateSyncProgress(elapsedSeconds);
+                        updateSyncProgress(elapsedSeconds, data);
                         
                         // Update started time display
                         const syncStartedElement = document.getElementById('syncStarted');
@@ -505,14 +898,23 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Initial progress update
     updateSyncProgress(0);
+    {% endif %}
     
-    // Clean up interval when page is unloaded
+    // Always monitor analysis progress
+    analysisCheckInterval = setInterval(checkAnalysisStatus, 3000);
+    
+    // Initial analysis status check
+    checkAnalysisStatus();
+    
+    // Clean up intervals when page is unloaded
     window.addEventListener('beforeunload', function() {
         if (syncCheckInterval) {
             clearInterval(syncCheckInterval);
         }
+        if (analysisCheckInterval) {
+            clearInterval(analysisCheckInterval);
+        }
     });
-    {% endif %}
 
     // Update checked time immediately
     updateLastCheckedTime();
@@ -524,5 +926,71 @@ document.addEventListener('DOMContentLoaded', function () {
 
 {% endblock %}
 
-<!-- Include Progress Indicator Component -->
-{% include 'components/progress_indicator.html' %}
+<style>
+/* Enhanced Progress Indicator Styles */
+.sync-stat, .analysis-stat {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px 8px;
+    margin-bottom: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.sync-number, .analysis-number {
+    font-size: 1.4rem;
+    font-weight: bold;
+    display: block;
+    line-height: 1.2;
+}
+
+.sync-label, .analysis-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
+.progress-text {
+    font-size: 0.85rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sync-stat, .analysis-stat {
+        padding: 8px 4px;
+        margin-bottom: 6px;
+    }
+    
+    .sync-number, .analysis-number {
+        font-size: 1.1rem;
+    }
+    
+    .sync-label, .analysis-label {
+        font-size: 0.65rem;
+    }
+    
+    .progress-text {
+        font-size: 0.75rem;
+    }
+}
+
+/* Animation for progress bars */
+.progress-bar {
+    transition: width 0.3s ease-in-out;
+}
+
+/* Pulse animation for analysis icon */
+.fa-pulse {
+    animation: fa-pulse 2s infinite;
+}
+
+@keyframes fa-pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+</style>
+
+<!-- Progress indicators are now integrated directly in the dashboard -->

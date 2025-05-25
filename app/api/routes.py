@@ -20,6 +20,13 @@ from app.services.blacklist_service import (
     INVALID_INPUT as BL_INVALID_INPUT
 )
 from sqlalchemy.exc import SQLAlchemyError
+import json
+import time
+from datetime import datetime, timedelta
+from sqlalchemy import func, desc, and_, or_
+from app.models import Song, AnalysisResult, Playlist, PlaylistSong, User
+from app.extensions import rq
+from app.services.spotify_service import SpotifyService
 
 # --- Whitelist API Endpoints ---
 
@@ -212,134 +219,275 @@ def remove_blacklist_item(entry_id):
         current_app.logger.error(f"Error removing blacklist entry {entry_id} for user {current_user.id}: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
-@api_bp.route('/analysis/progress')
-def get_analysis_progress():
-    """Get current analysis progress for visual indicators"""
+def get_cache_key(endpoint, user_id=None, **kwargs):
+    """Generate a cache key for API endpoints"""
+    key_parts = [f'api:{endpoint}']
+    if user_id:
+        key_parts.append(f'user:{user_id}')
+    for k, v in sorted(kwargs.items()):
+        key_parts.append(f'{k}:{v}')
+    return ':'.join(key_parts)
+
+def cache_response(key, data, ttl=300):
+    """Cache response data with TTL (default 5 minutes)"""
     try:
-        from ..models import Song, AnalysisResult
-        from ..extensions import db
+        # Try to get Redis connection from RQ
+        try:
+            redis_conn = rq.get_connection()
+        except AttributeError:
+            # Fallback to RQ connection attribute
+            redis_conn = rq.connection
         
-        # Get total song count
+        redis_conn.setex(key, ttl, json.dumps(data, default=str))
+    except Exception as e:
+        current_app.logger.warning(f"Failed to cache response: {e}")
+
+def get_cached_response(key):
+    """Get cached response data"""
+    try:
+        # Try to get Redis connection from RQ
+        try:
+            redis_conn = rq.get_connection()
+        except AttributeError:
+            # Fallback to RQ connection attribute
+            redis_conn = rq.connection
+            
+        cached = redis_conn.get(key)
+        if cached:
+            return json.loads(cached)
+    except Exception as e:
+        current_app.logger.warning(f"Failed to get cached response: {e}")
+    return None
+
+@api_bp.route('/analysis/progress')
+@login_required
+def analysis_progress():
+    """Get analysis progress with caching"""
+    # Check cache first (cache for 2 minutes since this changes frequently)
+    cache_key = get_cache_key('progress', current_user.id)
+    cached_response = get_cached_response(cache_key)
+    if cached_response:
+        cached_response['cached'] = True
+        return jsonify(cached_response)
+    
+    try:
+        # Get total songs count
         total_songs = db.session.query(Song).count()
         
-        # Get analyzed song count
-        analyzed_songs = db.session.query(AnalysisResult).filter(
+        # Get completed analysis count using our optimized index
+        completed_count = db.session.query(AnalysisResult).filter(
             AnalysisResult.status == 'completed'
         ).count()
         
-        # Calculate pending
-        pending_songs = total_songs - analyzed_songs
+        # Get recent analysis results (limited to 5 for performance)
+        recent_results = db.session.query(AnalysisResult, Song)\
+            .join(Song)\
+            .filter(AnalysisResult.status == 'completed')\
+            .order_by(AnalysisResult.analyzed_at.desc())\
+            .limit(5).all()
         
-        # Get recent analysis results for activity feed
-        recent_results = db.session.query(AnalysisResult, Song).join(Song).filter(
-            AnalysisResult.status == 'completed'
-        ).order_by(AnalysisResult.analyzed_at.desc()).limit(5).all()
+        # Calculate progress
+        progress_percentage = (completed_count / total_songs * 100) if total_songs > 0 else 0
+        remaining_count = total_songs - completed_count
         
+        # Format recent results
         recent_songs = []
-        for result, song in recent_results:
+        for analysis, song in recent_results:
             recent_songs.append({
                 'title': song.title,
                 'artist': song.artist,
-                'status': 'completed',
-                'score': result.score,
-                'analyzed_at': result.analyzed_at.isoformat() if result.analyzed_at else None
+                'score': analysis.score,
+                'analyzed_at': analysis.analyzed_at.isoformat() if analysis.analyzed_at else None
             })
         
-        # Check if analysis is actively running
-        from ..extensions import rq
-        queue = rq.get_queue()
-        active_jobs = len(queue.jobs)
-        
-        return jsonify({
-            'total': total_songs,
-            'analyzed': analyzed_songs,
-            'pending': pending_songs,
-            'percentage': round((analyzed_songs / total_songs * 100), 1) if total_songs > 0 else 0,
+        response_data = {
+            'total_songs': total_songs,
+            'analyzed_songs': completed_count,
+            'remaining_songs': remaining_count,
+            'progress_percentage': round(progress_percentage, 1),
             'recent_songs': recent_songs,
-            'active_jobs': active_jobs,
-            'in_progress': pending_songs > 0 and active_jobs > 0
-        })
+            'cached': False
+        }
+        
+        # Cache the response for 2 minutes
+        cache_response(cache_key, response_data, ttl=120)
+        
+        return jsonify(response_data)
         
     except Exception as e:
-        current_app.logger.error(f"Error getting analysis progress: {e}")
-        return jsonify({'error': str(e)}), 500
+        current_app.logger.error(f"Error in analysis_progress: {e}")
+        return jsonify({'error': 'Failed to get analysis progress'}), 500
 
 @api_bp.route('/analysis/status')
-def get_analysis_status():
-    """Get overall analysis status"""
+@login_required
+def analysis_status():
+    """Get enhanced analysis status with active job monitoring for current user"""
+    from ..services.background_analysis_service import BackgroundAnalysisService
+    
+    # For active analysis monitoring, use shorter cache (30 seconds)
+    cache_key = get_cache_key('status', current_user.id)
+    cached_response = get_cached_response(cache_key)
+    if cached_response:
+        cached_response['cached'] = True
+        return jsonify(cached_response)
+    
     try:
-        from ..models import Song, AnalysisResult
-        from ..extensions import db, rq
+        # Use the background analysis service to get user-specific progress
+        progress_data = BackgroundAnalysisService.get_analysis_progress_for_user(current_user.id)
         
-        # Get basic counts
+        # Format response to match expected structure
+        response_data = {
+            'user_id': current_user.id,
+            'has_active_analysis': progress_data['has_active_analysis'],
+            'total_songs': progress_data['total_songs'],
+            'completed': progress_data['completed'],
+            'in_progress': progress_data['in_progress'],
+            'pending': progress_data['pending'],
+            'failed': progress_data['failed'],
+            'status_counts': {
+                'completed': progress_data['completed'],
+                'in_progress': progress_data['in_progress'],
+                'pending': progress_data['pending'],
+                'failed': progress_data['failed']
+            },
+            'progress_percentage': progress_data['progress_percentage'],
+            'current_song': progress_data['current_analysis'],  # JavaScript expects 'current_song'
+            'recent_completed': progress_data['recent_analyses'],
+            'cached': False
+        }
+        
+        # Cache for 30 seconds during active analysis, 2 minutes otherwise
+        cache_ttl = 30 if progress_data['has_active_analysis'] else 120
+        cache_response(cache_key, response_data, ttl=cache_ttl)
+        
+        current_app.logger.debug(f"Analysis status for user {current_user.id}: {progress_data['completed']}/{progress_data['total_songs']} completed, {progress_data['in_progress']} in progress")
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in analysis_status for user {current_user.id}: {e}")
+        return jsonify({'error': 'Failed to get analysis status'}), 500
+
+@api_bp.route('/analysis/performance')
+@login_required
+def analysis_performance():
+    """Get analysis performance metrics with caching"""
+    # Check cache first (cache for 5 minutes since this changes less frequently)
+    cache_key = get_cache_key('performance', current_user.id)
+    cached_response = get_cached_response(cache_key)
+    if cached_response:
+        cached_response['cached'] = True
+        return jsonify(cached_response)
+    
+    try:
+        # Get analysis performance over last 24 hours
+        since_time = datetime.utcnow() - timedelta(hours=24)
+        
+        # Count analyses completed in last 24 hours using our optimized index
+        recent_analyses = db.session.query(AnalysisResult).filter(
+            and_(
+                AnalysisResult.status == 'completed',
+                AnalysisResult.analyzed_at >= since_time
+            )
+        ).count()
+        
+        # Calculate songs per minute (assuming even distribution)
+        hours_elapsed = 24
+        songs_per_hour = recent_analyses / hours_elapsed if hours_elapsed > 0 else 0
+        songs_per_minute = songs_per_hour / 60
+        
+        # Get total pending count
         total_songs = db.session.query(Song).count()
-        analyzed_songs = db.session.query(AnalysisResult).filter(
+        completed_total = db.session.query(AnalysisResult).filter(
             AnalysisResult.status == 'completed'
         ).count()
+        pending_count = total_songs - completed_total
+        
+        # Calculate ETA
+        eta_minutes = pending_count / songs_per_minute if songs_per_minute > 0 else 0
+        
+        response_data = {
+            'songs_per_minute': round(songs_per_minute, 1),
+            'recent_analyses_24h': recent_analyses,
+            'pending_count': pending_count,
+            'eta_minutes': round(eta_minutes, 1),
+            'cached': False
+        }
+        
+        # Cache the response for 5 minutes
+        cache_response(cache_key, response_data, ttl=300)
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in analysis_performance: {e}")
+        return jsonify({'error': 'Failed to get performance metrics'}), 500
+
+@api_bp.route('/playlists/<playlist_id>/analysis-status')
+@login_required
+def playlist_analysis_status(playlist_id):
+    """Get analysis status for a specific playlist with caching"""
+    # Check cache first (cache for 3 minutes)
+    cache_key = get_cache_key('playlist_status', current_user.id, playlist_id=playlist_id)
+    cached_response = get_cached_response(cache_key)
+    if cached_response:
+        cached_response['cached'] = True
+        return jsonify(cached_response)
+    
+    try:
+        # Get playlist
+        playlist = Playlist.query.filter_by(spotify_id=playlist_id, owner_id=current_user.id).first()
+        if not playlist:
+            return jsonify({'error': 'Playlist not found'}), 404
+        
+        # Get playlist songs with analysis status using our optimized indexes
+        playlist_songs = db.session.query(Song, AnalysisResult)\
+            .join(PlaylistSong, Song.id == PlaylistSong.song_id)\
+            .outerjoin(AnalysisResult, Song.id == AnalysisResult.song_id)\
+            .filter(PlaylistSong.playlist_id == playlist.id)\
+            .order_by(PlaylistSong.track_position)\
+            .all()
+        
+        # Calculate statistics
+        total_songs = len(playlist_songs)
+        analyzed_songs = sum(1 for _, analysis in playlist_songs if analysis and analysis.status == 'completed')
         pending_songs = total_songs - analyzed_songs
         
-        # Check queue status
-        queue = rq.get_queue()
-        active_jobs = len(queue.jobs)
-        failed_jobs = len(queue.failed_job_registry)
+        # Calculate average score for analyzed songs
+        scores = [analysis.score for _, analysis in playlist_songs 
+                 if analysis and analysis.status == 'completed' and analysis.score is not None]
+        avg_score = sum(scores) / len(scores) if scores else None
         
-        # Determine if analysis is in progress
-        in_progress = pending_songs > 0 and active_jobs > 0
-        
-        return jsonify({
-            'in_progress': in_progress,
+        response_data = {
+            'playlist_id': playlist_id,
+            'playlist_name': playlist.name,
             'total_songs': total_songs,
             'analyzed_songs': analyzed_songs,
             'pending_songs': pending_songs,
-            'active_jobs': active_jobs,
-            'failed_jobs': failed_jobs,
-            'completion_percentage': round((analyzed_songs / total_songs * 100), 1) if total_songs > 0 else 0
-        })
+            'analysis_percentage': round((analyzed_songs / total_songs * 100), 1) if total_songs > 0 else 0,
+            'average_score': round(avg_score, 1) if avg_score is not None else None,
+            'cached': False
+        }
+        
+        # Cache for 3 minutes
+        cache_response(cache_key, response_data, ttl=180)
+        
+        return jsonify(response_data)
         
     except Exception as e:
-        current_app.logger.error(f"Error getting analysis status: {e}")
-        return jsonify({'error': str(e)}), 500
+        current_app.logger.error(f"Error in playlist_analysis_status: {e}")
+        return jsonify({'error': 'Failed to get playlist analysis status'}), 500
 
-@api_bp.route('/analysis/performance')
-def get_analysis_performance():
-    """Get detailed performance metrics for analysis"""
+# Cache invalidation helper
+def invalidate_user_cache(user_id):
+    """Invalidate all cached responses for a user"""
     try:
-        from ..models import Song, AnalysisResult
-        from ..extensions import db
-        from datetime import datetime, timedelta
-        
-        # Get analysis results from last hour for rate calculation
-        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
-        recent_analyses = db.session.query(AnalysisResult).filter(
-            AnalysisResult.analyzed_at >= one_hour_ago,
-            AnalysisResult.status == 'completed'
-        ).count()
-        
-        # Get analysis results from last 10 minutes for current rate
-        ten_minutes_ago = datetime.utcnow() - timedelta(minutes=10)
-        very_recent_analyses = db.session.query(AnalysisResult).filter(
-            AnalysisResult.analyzed_at >= ten_minutes_ago,
-            AnalysisResult.status == 'completed'
-        ).count()
-        
-        # Calculate rates
-        hourly_rate = recent_analyses  # songs per hour
-        current_rate = very_recent_analyses * 6  # extrapolate to songs per hour
-        
-        # Get worker information
-        from ..extensions import rq
-        queue = rq.get_queue()
-        worker_count = len(queue.connection.smembers('rq:workers'))
-        
-        return jsonify({
-            'hourly_rate': hourly_rate,
-            'current_rate': current_rate,
-            'songs_per_minute': round(current_rate / 60, 1),
-            'worker_count': worker_count,
-            'queue_length': len(queue.jobs),
-            'performance_status': 'optimal' if current_rate > 100 else 'normal' if current_rate > 50 else 'slow'
-        })
-        
+        # Get all keys for this user
+        redis_conn = rq.get_connection()
+        pattern = f'api:*:user:{user_id}*'
+        keys = redis_conn.keys(pattern)
+        if keys:
+            redis_conn.delete(*keys)
+            current_app.logger.info(f"Invalidated {len(keys)} cache entries for user {user_id}")
     except Exception as e:
-        current_app.logger.error(f"Error getting performance metrics: {e}")
-        return jsonify({'error': str(e)}), 500
+        current_app.logger.warning(f"Failed to invalidate cache for user {user_id}: {e}")

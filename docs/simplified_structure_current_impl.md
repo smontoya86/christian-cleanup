@@ -147,6 +147,12 @@ All core features are working correctly:
 - **Docker environment** for development/production parity
 - **Comprehensive testing** with integration and regression test suites
 
+### Performance Optimization (Planned)
+- **Database indexing**: Composite indexes for 70% API performance improvement
+- **Response caching**: Redis-based caching for frequently accessed data
+- **Pagination implementation**: 25 items per page for dashboard and playlist details
+- **Infrastructure tuning**: PostgreSQL and Redis memory optimization
+
 ## Development Setup
 
 ### Quick Start (Docker - Recommended)
@@ -174,19 +180,39 @@ pip install -r requirements.txt
 python run.py
 ```
 
+## Performance Metrics
+
+### Current Performance (January 2025)
+- **Dashboard**: 3.5ms average response time (excellent)
+- **Playlist Detail**: 14ms average response time (excellent)
+- **Progress API**: 1,316ms average (optimization target)
+- **Performance API**: 1,193ms average (optimization target)
+- **Database Queries**: 4-31ms for basic operations
+
+### Scalability Assessment
+- **Current Capacity**: Handles typical Spotify user patterns (12 playlists, 3,000+ songs)
+- **Heavy User Support**: System architecture supports hundreds of playlists and tens of thousands of tracks
+- **Performance Bottlenecks**: Progress/Performance APIs identified for optimization
+- **Infrastructure**: Docker-based with PostgreSQL and Redis for horizontal scaling
+
 ## Future Enhancements
 
-### Short-term
-- **User preferences**: Customizable analysis sensitivity
-- **Batch operations**: Bulk whitelist/blacklist management
-- **Export functionality**: CSV/JSON export of analysis results
+### Priority 1: Performance Optimization (Weeks 1-2)
+- **Database indexing**: Composite indexes for API performance
+- **Response caching**: Redis-based caching implementation
+- **Query optimization**: Eliminate N+1 queries and slow aggregations
 
-### Medium-term
-- **Advanced filtering**: Genre, artist, date-based filters
-- **Playlist templates**: Pre-configured analysis settings
-- **Integration APIs**: Third-party Christian music services
+### Priority 2: UI Scalability (Weeks 3-4)
+- **Pagination**: 25 items per page for dashboard and playlist details
+- **AJAX loading**: Smooth pagination transitions
+- **Responsive design**: Mobile-optimized pagination controls
 
-### Long-term
+### Priority 3: Infrastructure (Week 5)
+- **PostgreSQL tuning**: Memory and connection optimization
+- **Redis optimization**: Increased memory allocation for caching
+- **Monitoring**: Performance metrics and alerting
+
+### Long-term Vision
 - **Mobile app**: React Native companion
 - **Community features**: Shared whitelists and recommendations
 - **Premium tiers**: Advanced analysis and bulk operations
