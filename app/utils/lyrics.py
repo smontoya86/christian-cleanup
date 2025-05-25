@@ -30,8 +30,8 @@ class LyricsFetcher:
             try:
                 self.genius = lyricsgenius.Genius(
                     self.genius_token,
-                    timeout=8,  # Faster timeout for better performance
-                    sleep_time=0.2,  # Reduced sleep time between requests
+                    timeout=5,  # Optimized timeout for better performance
+                    sleep_time=0.1,  # Optimized sleep time between requests
                     retries=2,  # Fewer retries for faster processing
                     remove_section_headers=True,
                     skip_non_songs=True,
@@ -75,8 +75,8 @@ class LyricsFetcher:
         if current_time - _last_api_call > 60:
             _api_call_count = 0
         
-        # Limit to 30 requests per minute (well within Genius limits)
-        if _api_call_count >= 30:
+        # Limit to 60 requests per minute (optimized) (well within Genius limits)
+        if _api_call_count >= 60:
             sleep_time = 60 - (current_time - _last_api_call)
             if sleep_time > 0:
                 logger.debug(f"Rate limiting: sleeping for {sleep_time:.1f}s")

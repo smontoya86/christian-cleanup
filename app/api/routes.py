@@ -211,3 +211,135 @@ def remove_blacklist_item(entry_id):
     except Exception as e:
         current_app.logger.error(f"Error removing blacklist entry {entry_id} for user {current_user.id}: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
+
+@api_bp.route('/analysis/progress')
+def get_analysis_progress():
+    """Get current analysis progress for visual indicators"""
+    try:
+        from ..models import Song, AnalysisResult
+        from ..extensions import db
+        
+        # Get total song count
+        total_songs = db.session.query(Song).count()
+        
+        # Get analyzed song count
+        analyzed_songs = db.session.query(AnalysisResult).filter(
+            AnalysisResult.status == 'completed'
+        ).count()
+        
+        # Calculate pending
+        pending_songs = total_songs - analyzed_songs
+        
+        # Get recent analysis results for activity feed
+        recent_results = db.session.query(AnalysisResult, Song).join(Song).filter(
+            AnalysisResult.status == 'completed'
+        ).order_by(AnalysisResult.analyzed_at.desc()).limit(5).all()
+        
+        recent_songs = []
+        for result, song in recent_results:
+            recent_songs.append({
+                'title': song.title,
+                'artist': song.artist,
+                'status': 'completed',
+                'score': result.score,
+                'analyzed_at': result.analyzed_at.isoformat() if result.analyzed_at else None
+            })
+        
+        # Check if analysis is actively running
+        from ..extensions import rq
+        queue = rq.get_queue()
+        active_jobs = len(queue.jobs)
+        
+        return jsonify({
+            'total': total_songs,
+            'analyzed': analyzed_songs,
+            'pending': pending_songs,
+            'percentage': round((analyzed_songs / total_songs * 100), 1) if total_songs > 0 else 0,
+            'recent_songs': recent_songs,
+            'active_jobs': active_jobs,
+            'in_progress': pending_songs > 0 and active_jobs > 0
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting analysis progress: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/analysis/status')
+def get_analysis_status():
+    """Get overall analysis status"""
+    try:
+        from ..models import Song, AnalysisResult
+        from ..extensions import db, rq
+        
+        # Get basic counts
+        total_songs = db.session.query(Song).count()
+        analyzed_songs = db.session.query(AnalysisResult).filter(
+            AnalysisResult.status == 'completed'
+        ).count()
+        pending_songs = total_songs - analyzed_songs
+        
+        # Check queue status
+        queue = rq.get_queue()
+        active_jobs = len(queue.jobs)
+        failed_jobs = len(queue.failed_job_registry)
+        
+        # Determine if analysis is in progress
+        in_progress = pending_songs > 0 and active_jobs > 0
+        
+        return jsonify({
+            'in_progress': in_progress,
+            'total_songs': total_songs,
+            'analyzed_songs': analyzed_songs,
+            'pending_songs': pending_songs,
+            'active_jobs': active_jobs,
+            'failed_jobs': failed_jobs,
+            'completion_percentage': round((analyzed_songs / total_songs * 100), 1) if total_songs > 0 else 0
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting analysis status: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/analysis/performance')
+def get_analysis_performance():
+    """Get detailed performance metrics for analysis"""
+    try:
+        from ..models import Song, AnalysisResult
+        from ..extensions import db
+        from datetime import datetime, timedelta
+        
+        # Get analysis results from last hour for rate calculation
+        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        recent_analyses = db.session.query(AnalysisResult).filter(
+            AnalysisResult.analyzed_at >= one_hour_ago,
+            AnalysisResult.status == 'completed'
+        ).count()
+        
+        # Get analysis results from last 10 minutes for current rate
+        ten_minutes_ago = datetime.utcnow() - timedelta(minutes=10)
+        very_recent_analyses = db.session.query(AnalysisResult).filter(
+            AnalysisResult.analyzed_at >= ten_minutes_ago,
+            AnalysisResult.status == 'completed'
+        ).count()
+        
+        # Calculate rates
+        hourly_rate = recent_analyses  # songs per hour
+        current_rate = very_recent_analyses * 6  # extrapolate to songs per hour
+        
+        # Get worker information
+        from ..extensions import rq
+        queue = rq.get_queue()
+        worker_count = len(queue.connection.smembers('rq:workers'))
+        
+        return jsonify({
+            'hourly_rate': hourly_rate,
+            'current_rate': current_rate,
+            'songs_per_minute': round(current_rate / 60, 1),
+            'worker_count': worker_count,
+            'queue_length': len(queue.jobs),
+            'performance_status': 'optimal' if current_rate > 100 else 'normal' if current_rate > 50 else 'slow'
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting performance metrics: {e}")
+        return jsonify({'error': str(e)}), 500

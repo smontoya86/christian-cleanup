@@ -1,0 +1,356 @@
+<!-- Progress Indicator Component -->
+<div id="analysisProgressContainer" class="analysis-progress-container" style="display: none;">
+    <div class="card border-primary">
+        <div class="card-header bg-primary text-white">
+            <h6 class="mb-0">
+                <i class="fas fa-cogs fa-spin me-2"></i>
+                Analysis in Progress
+            </h6>
+        </div>
+        <div class="card-body">
+            <!-- Overall Progress Bar -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold">Overall Progress</span>
+                    <span id="progressPercentage" class="badge bg-primary">0%</span>
+                </div>
+                <div class="progress" style="height: 20px;">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statistics Grid -->
+            <div class="row text-center">
+                <div class="col-4">
+                    <div class="stat-item">
+                        <div class="stat-number text-success" id="analyzedCount">0</div>
+                        <div class="stat-label">Analyzed</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="stat-item">
+                        <div class="stat-number text-warning" id="pendingCount">0</div>
+                        <div class="stat-label">Remaining</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="stat-item">
+                        <div class="stat-number text-primary" id="etaTime">--:--</div>
+                        <div class="stat-label">Time Left</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="mt-3">
+                <h6 class="text-muted mb-2">Recent Activity</h6>
+                <div id="recentActivity" class="recent-activity">
+                    <div class="activity-item">
+                        <i class="fas fa-circle text-success me-2"></i>
+                        <span class="text-muted">Waiting for analysis to begin...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="mt-3 d-flex justify-content-between">
+                <button id="pauseAnalysis" class="btn btn-warning btn-sm" style="display: none;">
+                    <i class="fas fa-pause me-1"></i> Pause
+                </button>
+                <button id="refreshProgress" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-sync-alt me-1"></i> Refresh
+                </button>
+                <button id="hideProgress" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-times me-1"></i> Hide
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Progress Badge (when minimized) -->
+<div id="floatingProgress" class="floating-progress-badge" style="display: none;">
+    <div class="badge bg-primary p-2 shadow-lg" style="cursor: pointer;" onclick="showProgressIndicator()">
+        <i class="fas fa-cogs fa-spin me-1"></i>
+        <span id="floatingPercentage">0%</span>
+        <small class="d-block">Analysis</small>
+    </div>
+</div>
+
+<style>
+.analysis-progress-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 400px;
+    z-index: 1050;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.floating-progress-badge {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1050;
+}
+
+.stat-item {
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    margin-bottom: 10px;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.recent-activity {
+    max-height: 120px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.activity-item {
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.activity-item:last-child {
+    margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+    .analysis-progress-container {
+        width: 95%;
+        left: 2.5%;
+        right: 2.5%;
+        top: 10px;
+    }
+    
+    .stat-number {
+        font-size: 1.2rem;
+    }
+    
+    .stat-label {
+        font-size: 0.7rem;
+    }
+    
+    .stat-item {
+        padding: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .floating-progress-badge {
+        bottom: 15px;
+        right: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .analysis-progress-container {
+        width: 98%;
+        left: 1%;
+        right: 1%;
+        top: 5px;
+    }
+    
+    .stat-number {
+        font-size: 1rem;
+    }
+    
+    .stat-label {
+        font-size: 0.65rem;
+    }
+    
+    .recent-activity {
+        max-height: 80px;
+        font-size: 0.8rem;
+    }
+    
+    .activity-item {
+        font-size: 0.75rem;
+    }
+}
+</style>
+
+<script>
+let progressUpdateInterval;
+let lastAnalyzedCount = 0;
+let analysisStartTime = null;
+
+function showProgressIndicator() {
+    document.getElementById('analysisProgressContainer').style.display = 'block';
+    document.getElementById('floatingProgress').style.display = 'none';
+    startProgressUpdates();
+}
+
+function hideProgressIndicator() {
+    document.getElementById('analysisProgressContainer').style.display = 'none';
+    document.getElementById('floatingProgress').style.display = 'block';
+}
+
+function startProgressUpdates() {
+    if (progressUpdateInterval) {
+        clearInterval(progressUpdateInterval);
+    }
+    
+    analysisStartTime = Date.now();
+    updateProgress(); // Initial update
+    
+    // Update every 10 seconds
+    progressUpdateInterval = setInterval(updateProgress, 10000);
+}
+
+function stopProgressUpdates() {
+    if (progressUpdateInterval) {
+        clearInterval(progressUpdateInterval);
+        progressUpdateInterval = null;
+    }
+}
+
+async function updateProgress() {
+    try {
+        const response = await fetch('/api/analysis/progress');
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Progress update error:', data.error);
+            return;
+        }
+        
+        // Update progress bar
+        const percentage = Math.round((data.analyzed / data.total) * 100);
+        document.getElementById('progressBar').style.width = percentage + '%';
+        document.getElementById('progressBar').setAttribute('aria-valuenow', percentage);
+        document.getElementById('progressPercentage').textContent = percentage + '%';
+        document.getElementById('floatingPercentage').textContent = percentage + '%';
+        
+        // Update statistics
+        document.getElementById('analyzedCount').textContent = data.analyzed.toLocaleString();
+        document.getElementById('pendingCount').textContent = data.pending.toLocaleString();
+        
+        // Calculate ETA using API performance data
+        calculateAndDisplayETA(data.pending);
+        
+        // Update recent activity
+        updateRecentActivity(data);
+        
+        // Check if analysis is complete
+        if (data.pending === 0) {
+            onAnalysisComplete();
+        }
+        
+    } catch (error) {
+        console.error('Failed to update progress:', error);
+    }
+}
+
+async function calculateAndDisplayETA(pendingSongs) {
+    try {
+        // Get current performance metrics from API
+        const response = await fetch('/api/analysis/performance');
+        const perfData = await response.json();
+        
+        if (perfData.error || !perfData.songs_per_minute || perfData.songs_per_minute === 0) {
+            document.getElementById('etaTime').textContent = 'Calculating...';
+            return;
+        }
+        
+        // Calculate ETA based on current performance
+        const minutesRemaining = Math.round(pendingSongs / perfData.songs_per_minute);
+        
+        if (minutesRemaining < 1) {
+            document.getElementById('etaTime').textContent = '< 1m';
+        } else if (minutesRemaining < 60) {
+            document.getElementById('etaTime').textContent = `${minutesRemaining}m`;
+        } else {
+            const hours = Math.floor(minutesRemaining / 60);
+            const minutes = minutesRemaining % 60;
+            if (minutes === 0) {
+                document.getElementById('etaTime').textContent = `${hours}h`;
+            } else {
+                document.getElementById('etaTime').textContent = `${hours}h ${minutes}m`;
+            }
+        }
+        
+    } catch (error) {
+        console.error('Failed to calculate ETA:', error);
+        document.getElementById('etaTime').textContent = '--:--';
+    }
+}
+
+function updateRecentActivity(data) {
+    const activityContainer = document.getElementById('recentActivity');
+    
+    // Add new activity items based on progress
+    if (data.recent_songs && data.recent_songs.length > 0) {
+        let activityHTML = '';
+        data.recent_songs.slice(0, 3).forEach(song => {
+            const icon = song.status === 'completed' ? 'fa-check text-success' : 'fa-clock text-warning';
+            activityHTML += `
+                <div class="activity-item">
+                    <i class="fas ${icon} me-2"></i>
+                    <span>${song.title} by ${song.artist}</span>
+                </div>
+            `;
+        });
+        activityContainer.innerHTML = activityHTML;
+    }
+}
+
+function onAnalysisComplete() {
+    stopProgressUpdates();
+    
+    // Update UI to show completion
+    document.getElementById('progressBar').classList.remove('progress-bar-animated');
+    document.getElementById('progressBar').classList.add('bg-success');
+    
+    // Show completion message
+    const activityContainer = document.getElementById('recentActivity');
+    activityContainer.innerHTML = `
+        <div class="activity-item">
+            <i class="fas fa-check-circle text-success me-2"></i>
+            <span class="text-success fw-bold">Analysis Complete!</span>
+        </div>
+    `;
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        document.getElementById('analysisProgressContainer').style.display = 'none';
+        document.getElementById('floatingProgress').style.display = 'none';
+    }, 5000);
+}
+
+// Event listeners
+document.getElementById('hideProgress').addEventListener('click', hideProgressIndicator);
+document.getElementById('refreshProgress').addEventListener('click', updateProgress);
+
+// Auto-start progress tracking if analysis is in progress
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if analysis is in progress
+    fetch('/api/analysis/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.in_progress) {
+                showProgressIndicator();
+            }
+        })
+        .catch(error => console.error('Failed to check analysis status:', error));
+});
+</script> 

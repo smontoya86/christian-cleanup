@@ -634,7 +634,7 @@ class EnhancedSongAnalyzer:
         
         # Add starting baseline info
         explanation_parts.append(f"**Analysis Summary:** This song received a score of {score}/100 based on comprehensive biblical analysis.")
-        explanation_parts.append(f"**Baseline:** Analysis started with a baseline score of 85 points.")
+        explanation_parts.append(f"**Baseline:** Analysis started with a baseline score of 100 points.")
         
         # Add positive content information
         if positive_bonus > 0:
