@@ -1,8 +1,8 @@
 """
-Enhanced Song Analyzer - Prototype for Task 12.1
+Enhanced Song Analyzer - Comprehensive Biblical Analysis
 
-Smart pattern matching with context awareness for better accuracy
-while maintaining the performance benefits of the lightweight system.
+Smart pattern matching with context awareness and comprehensive biblical analysis
+including supporting scripture, detailed themes, and thorough explanations.
 """
 import re
 import logging
@@ -38,12 +38,14 @@ class AnalysisConfig:
 
 class EnhancedSongAnalyzer:
     """
-    Enhanced song analyzer with context-aware pattern matching.
+    Enhanced song analyzer with comprehensive biblical analysis.
     
-    Improvements over lightweight analyzer:
-    - Context-aware patterns to reduce false positives
+    Provides:
+    - Context-aware pattern matching to reduce false positives
     - Intensity-based scoring for nuanced penalties
-    - Better positive Christian content detection
+    - Comprehensive positive Christian content detection
+    - Biblical themes identification with supporting scripture
+    - Detailed explanations of analysis decisions
     - User-configurable analysis parameters
     """
     
@@ -52,7 +54,126 @@ class EnhancedSongAnalyzer:
         self.user_id = user_id
         self.config = config or AnalysisConfig()
         self._setup_enhanced_patterns()
+        self._setup_biblical_themes()
         
+    def _setup_biblical_themes(self):
+        """Setup biblical themes with supporting scripture"""
+        self.biblical_themes = {
+            'worship_and_praise': {
+                'patterns': [
+                    r'\b(?:praise|worship|glorify|exalt|magnify)\s+(?:the\s+)?(?:lord|god|jesus|christ)\b',
+                    r'\b(?:hallelujah|alleluia|hosanna|amen)\b',
+                    r'\b(?:holy|sacred|divine|blessed)\s+(?:is\s+)?(?:the\s+)?(?:lord|god|jesus)\b',
+                    r'\b(?:sing|singing)\s+(?:to\s+)?(?:the\s+)?(?:lord|god|jesus)\b',
+                    r'\b(?:lift|lifting)\s+(?:up\s+)?(?:my|our)\s+(?:hands|voice|heart)\b'
+                ],
+                'scripture': {
+                    'Psalm 150:6': 'Let everything that has breath praise the Lord. Praise the Lord!',
+                    'Psalm 95:1': 'Come, let us sing for joy to the Lord; let us shout aloud to the Rock of our salvation.',
+                    'Ephesians 5:19': 'Speaking to one another with psalms, hymns, and songs from the Spirit. Sing and make music from your heart to the Lord.',
+                    'Colossians 3:16': 'Let the message of Christ dwell among you richly as you teach and admonish one another with all wisdom through psalms, hymns, and songs from the Spirit, singing to God with gratitude in your hearts.'
+                },
+                'description': 'Songs that focus on worshiping and praising God'
+            },
+            'faith_and_trust': {
+                'patterns': [
+                    r'\b(?:i|we)\s+(?:believe|trust|have\s+faith)\s+in\s+(?:god|jesus|christ|the\s+lord)\b',
+                    r'\b(?:faith|hope|trust)\s+in\s+(?:god|jesus|christ|the\s+lord)\b',
+                    r'\b(?:lean|leaning)\s+on\s+(?:god|jesus|christ|the\s+lord)\b',
+                    r'\b(?:depend|depending)\s+on\s+(?:god|jesus|christ|the\s+lord)\b'
+                ],
+                'scripture': {
+                    'Proverbs 3:5-6': 'Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.',
+                    'Hebrews 11:1': 'Now faith is confidence in what we hope for and assurance about what we do not see.',
+                    'Romans 10:17': 'Consequently, faith comes from hearing the message, and the message is heard through the word about Christ.',
+                    'Psalm 56:3': 'When I am afraid, I put my trust in you.'
+                },
+                'description': 'Songs expressing faith and trust in God'
+            },
+            'salvation_and_redemption': {
+                'patterns': [
+                    r'\b(?:salvation|redemption|eternal\s+life|born\s+again)\b',
+                    r'\b(?:saved|redeemed|forgiven|cleansed)\b',
+                    r'\b(?:cross|calvary|crucifixion|resurrection)\b',
+                    r'\b(?:blood\s+of\s+jesus|blood\s+of\s+christ|blood\s+of\s+the\s+lamb)\b'
+                ],
+                'scripture': {
+                    'Romans 10:9': 'If you declare with your mouth, "Jesus is Lord," and believe in your heart that God raised him from the dead, you will be saved.',
+                    'Ephesians 2:8-9': 'For it is by grace you have been saved, through faith—and this is not from yourselves, it is the gift of God—not by works, so that no one can boast.',
+                    '1 Peter 1:18-19': 'For you know that it was not with perishable things such as silver or gold that you were redeemed from the empty way of life handed down to you from your ancestors, but with the precious blood of Christ, a lamb without blemish or defect.',
+                    'John 3:16': 'For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.'
+                },
+                'description': 'Songs about salvation through Jesus Christ'
+            },
+            'love_and_grace': {
+                'patterns': [
+                    r'\b(?:love|grace|mercy|compassion|kindness)\s+of\s+(?:god|jesus|christ|the\s+lord)\b',
+                    r'\b(?:unconditional\s+love|amazing\s+grace|endless\s+love)\b',
+                    r'\b(?:forgiveness|forgiven|mercy|merciful)\b',
+                    r'\b(?:god\s+loves|jesus\s+loves|christ\s+loves)\b'
+                ],
+                'scripture': {
+                    '1 John 4:8': 'Whoever does not love does not know God, because God is love.',
+                    'Romans 8:38-39': 'For I am convinced that neither death nor life, neither angels nor demons, neither the present nor the future, nor any powers, neither height nor depth, nor anything else in all creation, will be able to separate us from the love of God that is in Christ Jesus our Lord.',
+                    'Ephesians 2:4-5': 'But because of his great love for us, God, who is rich in mercy, made us alive with Christ even when we were dead in transgressions—it is by grace you have been saved.',
+                    'Lamentations 3:22-23': 'Because of the Lord\'s great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness.'
+                },
+                'description': 'Songs celebrating God\'s love and grace'
+            },
+            'prayer_and_communion': {
+                'patterns': [
+                    r'\b(?:pray|prayer|praying|prayers)\b',
+                    r'\b(?:talk|talking|speak|speaking)\s+(?:to|with)\s+(?:god|jesus|christ|the\s+lord)\b',
+                    r'\b(?:communion|fellowship)\s+with\s+(?:god|jesus|christ)\b',
+                    r'\b(?:quiet\s+time|devotion|devotional)\b'
+                ],
+                'scripture': {
+                    '1 Thessalonians 5:17': 'Pray continually.',
+                    'Philippians 4:6': 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.',
+                    'Matthew 6:9-11': 'This, then, is how you should pray: "Our Father in heaven, hallowed be your name, your kingdom come, your will be done, on earth as it is in heaven. Give us today our daily bread."',
+                    'James 5:16': 'Therefore confess your sins to each other and pray for each other so that you may be healed. The prayer of a righteous person is powerful and effective.'
+                },
+                'description': 'Songs about prayer and communion with God'
+            },
+            'spiritual_warfare': {
+                'patterns': [
+                    r'\bfight\s+(?:the\s+)?(?:good\s+)?fight\b',
+                    r'\b(?:spiritual\s+)?(?:battle|warfare)(?:\s+against\s+(?:evil|sin|darkness))?\b',
+                    r'\b(?:armor\s+of\s+god|sword\s+of\s+the\s+spirit|shield\s+of\s+faith)\b',
+                    r'\b(?:victory|victorious|overcome|overcoming)\s+(?:in\s+)?(?:jesus|christ)\b'
+                ],
+                'scripture': {
+                    'Ephesians 6:11': 'Put on the full armor of God, so that you can take your stand against the devil\'s schemes.',
+                    '2 Timothy 4:7': 'I have fought the good fight, I have finished the race, I have kept the faith.',
+                    '1 John 5:4': 'For everyone born of God overcomes the world. This is the victory that has overcome the world, even our faith.',
+                    'Romans 8:37': 'No, in all these things we are more than conquerors through him who loved us.'
+                },
+                'description': 'Songs about spiritual warfare and victory in Christ'
+            },
+            'hope_and_encouragement': {
+                'patterns': [
+                    r'\b(?:hope|hopeful|encouraged|encouragement)\b',
+                    r'\b(?:strength|strengthen|strong)\s+in\s+(?:the\s+)?(?:lord|god|jesus)\b',
+                    r'\b(?:peace|peaceful|comfort|comforting)\b',
+                    r'\b(?:never\s+give\s+up|persevere|endure)\b'
+                ],
+                'scripture': {
+                    'Jeremiah 29:11': 'For I know the plans I have for you," declares the Lord, "plans to prosper you and not to harm you, plans to give you hope and a future.',
+                    'Romans 15:13': 'May the God of hope fill you with all joy and peace as you trust in him, so that you may overflow with hope by the power of the Holy Spirit.',
+                    'Isaiah 40:31': 'But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.',
+                    'Philippians 4:13': 'I can do all this through him who gives me strength.'
+                },
+                'description': 'Songs offering hope and encouragement through faith'
+            }
+        }
+        
+        # Compile biblical theme patterns
+        self.compiled_biblical_patterns = {}
+        for theme, data in self.biblical_themes.items():
+            self.compiled_biblical_patterns[theme] = [
+                re.compile(pattern, re.IGNORECASE) for pattern in data['patterns']
+            ]
+    
     def _setup_enhanced_patterns(self):
         """Setup enhanced pattern matching rules with context awareness"""
         
@@ -204,23 +325,27 @@ class EnhancedSongAnalyzer:
                     'weight': data['weight'],
                     'compiled': [re.compile(pattern, re.IGNORECASE) for pattern in data['patterns']]
                 }
-    
+
     def analyze_song(self, song_data: Dict[str, Any], lyrics: Optional[str]) -> Dict[str, Any]:
         """
-        Analyze a song with enhanced context-aware detection.
+        Analyze a song with comprehensive biblical analysis.
         
         Args:
             song_data: Dictionary containing song metadata
             lyrics: Song lyrics text (can be None or empty)
             
         Returns:
-            Dictionary with enhanced analysis results
+            Dictionary with comprehensive analysis results including biblical themes and supporting scripture
         """
         try:
             # Start with base score
             base_score = 85  # Slightly more optimistic than lightweight version
             flags = []
             positive_score = 0
+            biblical_themes_found = []
+            supporting_scripture = {}
+            detailed_concerns = []
+            positive_themes = []
             
             # Handle explicit flag from Spotify
             if song_data.get('explicit', False):
@@ -235,13 +360,23 @@ class EnhancedSongAnalyzer:
                 )
                 flags.append(flag)
                 base_score -= penalty_amount  # Apply penalty to base score
+                detailed_concerns.append({
+                    'type': 'explicit_content',
+                    'severity': 'high',
+                    'description': 'Song is marked as explicit by Spotify, indicating potentially inappropriate language or themes',
+                    'biblical_concern': 'Christians are called to think on things that are pure and lovely (Philippians 4:8)'
+                })
                 
             # Analyze lyrics if available
             if lyrics and lyrics.strip():
-                lyrics_flags, lyrics_penalty, positive_bonus = self._analyze_lyrics_enhanced(lyrics)
+                lyrics_flags, lyrics_penalty, positive_bonus, themes_found, scripture_refs, concerns, pos_themes = self._analyze_lyrics_comprehensive(lyrics)
                 flags.extend(lyrics_flags)
                 base_score -= lyrics_penalty
                 positive_score += positive_bonus
+                biblical_themes_found.extend(themes_found)
+                supporting_scripture.update(scripture_refs)
+                detailed_concerns.extend(concerns)
+                positive_themes.extend(pos_themes)
                 
             # Apply positive score boost (this affects the bonus calculation)
             final_positive_bonus = int(positive_score * self.config.positive_boost)
@@ -251,8 +386,10 @@ class EnhancedSongAnalyzer:
             # Determine concern level with enhanced logic
             concern_level = self._determine_concern_level(final_score, flags)
             
-            # Generate detailed explanation
-            explanation = self._generate_enhanced_explanation(final_score, flags, final_positive_bonus)
+            # Generate comprehensive explanation
+            explanation = self._generate_comprehensive_explanation(
+                final_score, flags, final_positive_bonus, biblical_themes_found, detailed_concerns, positive_themes
+            )
             
             return {
                 'christian_score': final_score,
@@ -260,7 +397,11 @@ class EnhancedSongAnalyzer:
                 'purity_flags': [self._flag_to_dict(flag) for flag in flags],
                 'positive_score_bonus': final_positive_bonus,
                 'concern_level': concern_level,
-                'analysis_version': 'enhanced_v1'
+                'biblical_themes': biblical_themes_found,
+                'supporting_scripture': supporting_scripture,
+                'detailed_concerns': detailed_concerns,
+                'positive_themes': positive_themes,
+                'analysis_version': 'enhanced_v2_comprehensive'
             }
             
         except Exception as e:
@@ -268,35 +409,50 @@ class EnhancedSongAnalyzer:
             # Return safe default
             return {
                 'christian_score': 50,
-                'explanation': 'Analysis failed - assigned neutral score',
+                'explanation': 'Analysis failed - assigned neutral score due to processing error',
                 'purity_flags': [],
                 'positive_score_bonus': 0,
                 'concern_level': 'Medium',
-                'analysis_version': 'enhanced_v1_error'
+                'biblical_themes': [],
+                'supporting_scripture': {},
+                'detailed_concerns': [{'type': 'analysis_error', 'description': 'Unable to complete full analysis'}],
+                'positive_themes': [],
+                'analysis_version': 'enhanced_v2_error'
             }
     
-    def _analyze_lyrics_enhanced(self, lyrics: str) -> Tuple[List[ContentFlag], int, int]:
-        """Enhanced lyrics analysis with context awareness"""
+    def _analyze_lyrics_comprehensive(self, lyrics: str) -> Tuple[List[ContentFlag], int, int, List[Dict], Dict, List[Dict], List[Dict]]:
+        """Comprehensive lyrics analysis with biblical themes and detailed concerns"""
         flags = []
         total_penalty = 0
         positive_bonus = 0
+        biblical_themes_found = []
+        supporting_scripture = {}
+        detailed_concerns = []
+        positive_themes = []
         
         # Analyze negative content with context awareness
         for category in ['profanity', 'drugs', 'violence']:
-            category_flags, category_penalty = self._analyze_category(lyrics, category)
+            category_flags, category_penalty, category_concerns = self._analyze_category_comprehensive(lyrics, category)
             flags.extend(category_flags)
             total_penalty += category_penalty
+            detailed_concerns.extend(category_concerns)
             
         # Analyze positive content for bonus points
         positive_matches = self._analyze_positive_content(lyrics)
         positive_bonus = sum(match['bonus'] for match in positive_matches)
+        positive_themes = positive_matches
         
-        return flags, total_penalty, positive_bonus
+        # Analyze biblical themes
+        biblical_themes_found, theme_scripture = self._analyze_biblical_themes(lyrics)
+        supporting_scripture.update(theme_scripture)
+        
+        return flags, total_penalty, positive_bonus, biblical_themes_found, supporting_scripture, detailed_concerns, positive_themes
     
-    def _analyze_category(self, lyrics: str, category: str) -> Tuple[List[ContentFlag], int]:
-        """Analyze a specific category with intensity-based scoring"""
+    def _analyze_category_comprehensive(self, lyrics: str, category: str) -> Tuple[List[ContentFlag], int, List[Dict]]:
+        """Analyze a specific category with comprehensive concern details"""
         flags = []
         total_penalty = 0
+        detailed_concerns = []
         
         category_patterns = self.compiled_patterns.get(category, {})
         category_weight = getattr(self.config, f'{category}_weight', 1.0)
@@ -325,10 +481,96 @@ class EnhancedSongAnalyzer:
                     )
                     flags.append(flag)
                     
+                    # Add detailed concern
+                    concern = self._create_detailed_concern(category, severity, matches, penalty)
+                    if concern:
+                        detailed_concerns.append(concern)
+                    
                     # Don't double-penalize similar patterns
                     break
                     
-        return flags, total_penalty
+        return flags, total_penalty, detailed_concerns
+    
+    def _create_detailed_concern(self, category: str, severity: str, matches: List[str], penalty: int) -> Dict[str, Any]:
+        """Create detailed concern with biblical context"""
+        concern_templates = {
+            'profanity': {
+                'mild': {
+                    'description': 'Contains mild profanity or inappropriate language',
+                    'biblical_concern': 'Ephesians 4:29 - "Do not let any unwholesome talk come out of your mouths, but only what is helpful for building others up according to their needs, that it may benefit those who listen."'
+                },
+                'moderate': {
+                    'description': 'Contains moderate profanity that may be offensive',
+                    'biblical_concern': 'Colossians 3:8 - "But now you must also rid yourselves of all such things as these: anger, rage, malice, slander, and filthy language from your lips."'
+                },
+                'strong': {
+                    'description': 'Contains strong profanity or vulgar language',
+                    'biblical_concern': 'Ephesians 5:4 - "Nor should there be obscenity, foolish talk or coarse joking, which are out of place, but rather thanksgiving."'
+                }
+            },
+            'drugs': {
+                'moderate': {
+                    'description': 'References substance use or drinking that may promote unhealthy behaviors',
+                    'biblical_concern': '1 Corinthians 6:19-20 - "Do you not know that your bodies are temples of the Holy Spirit, who is in you, whom you have received from God? You are not your own; you were bought at a price. Therefore honor God with your bodies."'
+                },
+                'strong': {
+                    'description': 'Contains explicit references to illegal drugs or substance abuse',
+                    'biblical_concern': '1 Peter 5:8 - "Be alert and of sober mind. Your enemy the devil prowls around like a roaring lion looking for someone to devour."'
+                }
+            },
+            'violence': {
+                'moderate': {
+                    'description': 'Contains themes of violence, hatred, or aggression',
+                    'biblical_concern': 'Matthew 5:39 - "But I tell you, do not resist an evil person. If anyone slaps you on the right cheek, turn to them the other cheek also."'
+                },
+                'strong': {
+                    'description': 'Contains explicit violent imagery or threats',
+                    'biblical_concern': 'Romans 12:18 - "If it is possible, as far as it depends on you, live at peace with everyone."'
+                }
+            }
+        }
+        
+        template = concern_templates.get(category, {}).get(severity)
+        if not template:
+            return None
+            
+        return {
+            'type': f'{category}_{severity}',
+            'severity': severity,
+            'description': template['description'],
+            'biblical_concern': template['biblical_concern'],
+            'examples': matches[:3],  # First 3 examples
+            'penalty_applied': penalty
+        }
+    
+    def _analyze_biblical_themes(self, lyrics: str) -> Tuple[List[Dict], Dict]:
+        """Analyze lyrics for biblical themes and return supporting scripture"""
+        themes_found = []
+        supporting_scripture = {}
+        
+        for theme_name, theme_data in self.biblical_themes.items():
+            patterns = self.compiled_biblical_patterns[theme_name]
+            matches = []
+            
+            for pattern in patterns:
+                pattern_matches = pattern.findall(lyrics)
+                if pattern_matches:
+                    matches.extend(pattern_matches)
+            
+            if matches:
+                theme_info = {
+                    'theme': theme_name,
+                    'description': theme_data['description'],
+                    'matches': len(matches),
+                    'examples': matches[:3],  # First 3 examples
+                    'confidence': min(0.9, 0.5 + (len(matches) * 0.1))  # Higher confidence with more matches
+                }
+                themes_found.append(theme_info)
+                
+                # Add supporting scripture for this theme
+                supporting_scripture[theme_name] = theme_data['scripture']
+        
+        return themes_found, supporting_scripture
     
     def _analyze_positive_content(self, lyrics: str) -> List[Dict[str, Any]]:
         """Analyze positive Christian content for bonus scoring"""
@@ -346,7 +588,8 @@ class EnhancedSongAnalyzer:
                         'theme': theme,
                         'matches': len(matches),
                         'bonus': bonus,
-                        'examples': matches[:3]  # Keep first 3 examples
+                        'examples': matches[:3],  # Keep first 3 examples
+                        'description': f'Positive {theme} content detected'
                     })
                     break  # Don't double-count similar patterns
                     
@@ -383,64 +626,79 @@ class EnhancedSongAnalyzer:
         else:
             return 'Very High'
     
-    def _generate_enhanced_explanation(self, score: int, flags: List[ContentFlag], positive_bonus: int) -> str:
-        """Generate detailed explanation of the analysis"""
+    def _generate_comprehensive_explanation(self, score: int, flags: List[ContentFlag], positive_bonus: int, 
+                                          biblical_themes: List[Dict], detailed_concerns: List[Dict], 
+                                          positive_themes: List[Dict]) -> str:
+        """Generate comprehensive explanation of the analysis"""
         explanation_parts = []
         
         # Add starting baseline info
-        explanation_parts.append(f"Analysis started with a baseline score of 85 points.")
+        explanation_parts.append(f"**Analysis Summary:** This song received a score of {score}/100 based on comprehensive biblical analysis.")
+        explanation_parts.append(f"**Baseline:** Analysis started with a baseline score of 85 points.")
         
+        # Add positive content information
         if positive_bonus > 0:
-            explanation_parts.append(f"Positive Christian content detected (+{positive_bonus} points).")
+            explanation_parts.append(f"**Positive Content:** Positive Christian content detected (+{positive_bonus} points).")
+            if positive_themes:
+                theme_names = [theme['theme'] for theme in positive_themes]
+                explanation_parts.append(f"**Positive Themes:** {', '.join(theme_names)}")
         
+        # Add biblical themes
+        if biblical_themes:
+            theme_descriptions = [f"{theme['theme'].replace('_', ' ').title()}" for theme in biblical_themes]
+            explanation_parts.append(f"**Biblical Themes Identified:** {', '.join(theme_descriptions)}")
+        
+        # Add concerns
+        if detailed_concerns:
+            explanation_parts.append("**Areas of Concern:**")
+            for concern in detailed_concerns:
+                penalty = concern.get('penalty_applied', 0)
+                if penalty > 0:
+                    explanation_parts.append(f"- {concern['description']} (-{penalty} points)")
+                else:
+                    explanation_parts.append(f"- {concern['description']}")
+        
+        # Add flag summary
         if flags:
             flag_summary = {}
-            flag_details = []
             for flag in flags:
                 if flag.category not in flag_summary:
                     flag_summary[flag.category] = 0
                 flag_summary[flag.category] += flag.penalty
-                
-                # Add detailed information about the specific flag
-                if flag.category == 'explicit':
-                    flag_details.append(f"Explicit content flag applied (-{flag.penalty} points): {flag.context}")
-                else:
-                    flag_details.append(f"{flag.category.title()} content detected (-{flag.penalty} points): {flag.context}")
-                
-            # Add summary line
-            total_penalties = sum(flag_summary.values())
-            explanation_parts.append(f"Content concerns detected with total penalty of -{total_penalties} points:")
             
-            # Add detailed flag information
-            for detail in flag_details:
-                explanation_parts.append(f"• {detail}")
+            penalty_details = [f"{category}: -{penalty} points" for category, penalty in flag_summary.items()]
+            explanation_parts.append(f"**Penalties Applied:** {', '.join(penalty_details)}")
         
-        if not flags and positive_bonus == 0:
-            explanation_parts.append("No concerning content detected.")
-        
-        # Add final score calculation
-        if flags or positive_bonus != 0:
-            explanation_parts.append(f"Final calculation: 85 base {'+' + str(positive_bonus) if positive_bonus > 0 else ''}{'-' + str(sum(flag.penalty for flag in flags)) if flags else ''} = {score}/100.")
+        # Add final assessment
+        if score >= 85:
+            explanation_parts.append("**Assessment:** This song aligns well with Christian values and is suitable for Christian listening.")
+        elif score >= 70:
+            explanation_parts.append("**Assessment:** This song has some positive elements but may contain content that requires discernment.")
+        elif score >= 50:
+            explanation_parts.append("**Assessment:** This song contains concerning content that may not align with Christian values.")
         else:
-            explanation_parts.append(f"Final score: {score}/100.")
+            explanation_parts.append("**Assessment:** This song contains significant content that conflicts with Christian values and is not recommended.")
         
         return " ".join(explanation_parts)
     
     def _flag_to_dict(self, flag: ContentFlag) -> Dict[str, Any]:
-        """Convert ContentFlag to dictionary for JSON serialization"""
+        """Convert ContentFlag to dictionary"""
         return {
-            'flag': f"{flag.category.title()} Content ({flag.severity})",
+            'flag': flag.category,
             'category': flag.category,
             'severity': flag.severity,
-            'penalty_applied': flag.penalty,
             'confidence': flag.confidence,
-            'details': f"{flag.context}: {flag.matched_text}"
+            'penalty_applied': flag.penalty,
+            'context': flag.context,
+            'details': flag.matched_text
         }
 
-# Factory function for backward compatibility
 def create_enhanced_analyzer(user_id: int, config: Optional[Dict[str, Any]] = None) -> EnhancedSongAnalyzer:
-    """Create an enhanced analyzer with optional configuration"""
-    analysis_config = None
+    """Factory function to create an enhanced analyzer with optional configuration"""
+    analysis_config = AnalysisConfig()
     if config:
-        analysis_config = AnalysisConfig(**config)
-    return EnhancedSongAnalyzer(user_id, analysis_config) 
+        for key, value in config.items():
+            if hasattr(analysis_config, key):
+                setattr(analysis_config, key, value)
+    
+    return EnhancedSongAnalyzer(user_id=user_id, config=analysis_config) 

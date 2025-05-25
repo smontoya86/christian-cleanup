@@ -10,8 +10,6 @@ from app.models.models import User, Playlist
 from flask_login import login_user, logout_user, login_required, current_user
 from ..utils.database import get_by_filter, count_by_filter  # Add SQLAlchemy 2.0 utilities
 
-auth = Blueprint('auth', __name__, url_prefix='/auth')
-
 def get_spotify_oauth():
     client_id = current_app.config.get('SPOTIPY_CLIENT_ID')
     client_secret = current_app.config.get('SPOTIPY_CLIENT_SECRET')

@@ -29,18 +29,24 @@ services:
     entrypoint: ["/app/docker-entrypoint-worker.sh"]
     volumes:
       - .:/app
+    env_file:
+      - .env
     environment:
       - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES  # Required for macOS compatibility
       - PYTHONUNBUFFERED=1
       - FLASK_ENV=development
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - RQ_REDIS_URL=redis://redis:6379/0
+      - RQ_WORKER_BURST=true  # Process jobs in burst mode for faster processing
+      - RQ_WORKER_TIMEOUT=300  # 5 minute timeout per job
     depends_on:
       redis:
         condition: service_healthy
       db:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      replicas: 6  # Scale to 6 workers for faster processing
 
   db:
     image: postgres:14-alpine
@@ -63,6 +69,7 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save 60 1000
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
