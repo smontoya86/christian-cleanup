@@ -99,14 +99,18 @@
                                 <div class="mt-2">
                                     {% for flag in analysis.purity_flags_triggered %}
                                     <div class="alert alert-warning alert-sm mb-2">
-                                        <strong>{{ flag.flag_type or flag.get('flag_type', 'Unknown Flag') }}</strong>
-                                        {% if flag.description or flag.get('description') %}
-                                        <br><small>{{ flag.description or flag.get('description') }}</small>
-                                        {% endif %}
-                                        {% if flag.severity or flag.get('severity') %}
-                                        <span class="badge bg-{{ 'danger' if (flag.severity or flag.get('severity')) == 'high' else 'warning' }} ms-2">
-                                            {{ (flag.severity or flag.get('severity')).title() }}
-                                        </span>
+                                        <strong>{{ flag.flag_type if flag.flag_type else (flag.get('flag_type', 'Unknown Flag') if flag is mapping else 'Unknown Flag') }}</strong>
+                                        {% if flag is mapping %}
+                                            {% if flag.description or flag.get('description') %}
+                                            <br><small>{{ flag.description or flag.get('description') }}</small>
+                                            {% endif %}
+                                            {% if flag.severity or flag.get('severity') %}
+                                            <span class="badge bg-{{ 'danger' if (flag.severity or flag.get('severity')) == 'high' else 'warning' }} ms-2">
+                                                {{ (flag.severity or flag.get('severity')).title() }}
+                                            </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <br><small>{{ flag if flag is string else 'No description available' }}</small>
                                         {% endif %}
                                     </div>
                                     {% endfor %}
@@ -125,9 +129,13 @@
                                 <div class="mt-2">
                                     {% for theme in analysis.positive_themes_identified %}
                                     <div class="alert alert-success alert-sm mb-2">
-                                        <strong>{{ theme.theme or theme.get('theme', 'Unknown Theme') }}</strong>
-                                        {% if theme.description or theme.get('description') %}
-                                        <br><small>{{ theme.description or theme.get('description') }}</small>
+                                        <strong>{{ theme.theme if theme.theme else (theme.get('theme', 'Unknown Theme') if theme is mapping else 'Unknown Theme') }}</strong>
+                                        {% if theme is mapping %}
+                                            {% if theme.description or theme.get('description') %}
+                                            <br><small>{{ theme.description or theme.get('description') }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <br><small>{{ theme if theme is string else 'No description available' }}</small>
                                         {% endif %}
                                     </div>
                                     {% endfor %}
@@ -152,9 +160,13 @@
                     <div class="card-body">
                         {% for theme in analysis.biblical_themes %}
                         <div class="mb-3 p-3 border rounded">
-                            <h6 class="text-primary mb-2">{{ theme.theme or theme.get('theme', 'Unknown Theme') }}</h6>
-                            {% if theme.relevance or theme.get('relevance') %}
-                            <p class="mb-0 text-muted">{{ theme.relevance or theme.get('relevance') }}</p>
+                            <h6 class="text-primary mb-2">{{ theme.theme if theme.theme else (theme.get('theme', 'Unknown Theme') if theme is mapping else 'Unknown Theme') }}</h6>
+                            {% if theme is mapping %}
+                                {% if theme.relevance or theme.get('relevance') %}
+                                <p class="mb-0 text-muted">{{ theme.relevance or theme.get('relevance') }}</p>
+                                {% endif %}
+                            {% else %}
+                                <p class="mb-0 text-muted">{{ theme if theme is string else 'No description available' }}</p>
                             {% endif %}
                         </div>
                         {% endfor %}

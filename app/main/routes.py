@@ -914,16 +914,28 @@ def song_detail(song_id):
         # Build analysis data for template
         analysis = None
         if analysis_result_db:
+            # Helper function to safely parse JSON fields
+            def safe_json_parse(field_value, default=None):
+                if field_value is None:
+                    return default or []
+                if isinstance(field_value, str):
+                    try:
+                        import json
+                        return json.loads(field_value)
+                    except (json.JSONDecodeError, ValueError):
+                        return default or []
+                return field_value
+            
             analysis = {
                 'score': analysis_result_db.score,
                 'concern_level': analysis_result_db.concern_level,
                 'explanation': analysis_result_db.explanation,
-                'themes': analysis_result_db.themes or {},
-                'concerns': analysis_result_db.concerns or [],
-                'purity_flags_triggered': analysis_result_db.purity_flags_details or [],
-                'positive_themes_identified': analysis_result_db.positive_themes_identified or [],
-                'biblical_themes': analysis_result_db.biblical_themes or [],
-                'supporting_scripture': analysis_result_db.supporting_scripture or {}
+                'themes': safe_json_parse(analysis_result_db.themes, {}),
+                'concerns': safe_json_parse(analysis_result_db.concerns, []),
+                'purity_flags_triggered': safe_json_parse(analysis_result_db.purity_flags_details, []),
+                'positive_themes_identified': safe_json_parse(analysis_result_db.positive_themes_identified, []),
+                'biblical_themes': safe_json_parse(analysis_result_db.biblical_themes, []),
+                'supporting_scripture': safe_json_parse(analysis_result_db.supporting_scripture, {})
             }
         
         # Use song lyrics if available
