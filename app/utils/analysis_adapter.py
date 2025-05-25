@@ -136,7 +136,7 @@ class SongAnalyzer:
             "lyrics_provided": lyrics_text is not None,
             "lyrics_fetched_successfully": False,
             "lyrics_used_for_analysis": "",
-            "christian_score": 85,  # Default score for clean songs
+            "christian_score": 100,  # Default score for clean songs
             "christian_concern_level": "Low",
             "christian_purity_flags_details": [],
             "christian_positive_themes_detected": [],
@@ -147,17 +147,7 @@ class SongAnalyzer:
         }
         
         try:
-            # 1. Handle explicit songs immediately
-            if is_explicit:
-                logger.info(f"⚡ Processing explicit song: '{title}'")
-                analysis_results.update({
-                    "christian_score": 25,
-                    "christian_concern_level": "High",
-                    "christian_purity_flags_details": [{"flag_type": "explicit_content", "severity": "high"}],
-                    "christian_negative_themes_detected": ["explicit_content"],
-                    "explanation": "Song marked as explicit by Spotify"
-                })
-                return analysis_results
+            # Note: We no longer fast-track explicit songs - let the enhanced analyzer handle them properly
             
             # 2. Determine if we should fetch lyrics
             should_fetch_lyrics = fetch_lyrics_if_missing and not lyrics_text

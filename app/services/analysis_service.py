@@ -75,32 +75,14 @@ def _execute_song_analysis_impl(song_id: int, user_id: int = None):
         # Initialize enhanced analyzer (it handles its own configuration)
         analyzer = SongAnalyzer(user_id=user_id or 1)
         
-        # Fast-track analysis for explicit songs (automatic high concern)
-        if is_explicit:
-            logging.info(f"⚡ Fast-tracking explicit song: {song_title}")
-            result = {
-                'christian_score': 25,  # Low score for explicit content
-                'christian_concern_level': 'High',
-                'christian_purity_flags_details': [{'flag_type': 'explicit_content', 'severity': 'high'}],
-                'christian_positive_themes_detected': [],
-                'christian_biblical_themes': [],
-                'christian_supporting_scripture': {},
-                'christian_detailed_concerns': [{
-                    'type': 'explicit_content',
-                    'severity': 'high',
-                    'description': 'Song marked as explicit by Spotify',
-                    'biblical_concern': 'Christians are called to think on things that are pure and lovely (Philippians 4:8)'
-                }],
-                'explanation': 'Song marked as explicit by Spotify - automatic high concern level applied'
-            }
-        else:
-            # Perform comprehensive analysis
-            result = analyzer.analyze_song(
-                title=song_title,
-                artist=song_artist,
-                lyrics_text=None,  # Will fetch from Genius if needed
-                is_explicit=is_explicit
-            )
+        # Always perform comprehensive analysis (including for explicit songs)
+        # The enhanced analyzer will handle explicit content appropriately while still doing full analysis
+        result = analyzer.analyze_song(
+            title=song_title,
+            artist=song_artist,
+            lyrics_text=None,  # Will fetch from Genius if needed
+            is_explicit=is_explicit
+        )
         
         if result:
             # Cache the result for future identical songs

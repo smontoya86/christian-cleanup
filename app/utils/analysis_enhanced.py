@@ -339,7 +339,7 @@ class EnhancedSongAnalyzer:
         """
         try:
             # Start with base score
-            base_score = 85  # Slightly more optimistic than lightweight version
+            base_score = 100  # Start with perfect score, deduct for issues
             flags = []
             positive_score = 0
             biblical_themes_found = []
