@@ -340,6 +340,27 @@ christian-cleanup-windsurf/
 
 ## Recent Improvements
 
+### Dashboard UX & Performance Fixes (2025-05-26) ✅ COMPLETED
+**Comprehensive dashboard improvements addressing user experience issues:**
+
+#### Progress Indicator Enhancements
+- **Responsive Progress Bar**: Shows progress when analysis is < 100% complete (94% in current build)
+- **Real-time Updates**: Every 3 seconds via /api/analysis/status endpoint
+- **Improved Visibility Logic**: Shows progress for pending songs, in-progress analysis, or incomplete analysis
+- **User Feedback**: Clear indication of analysis progress with detailed statistics
+
+#### User Interface Improvements
+- **Local Timezone Display**: Last Sync and Status Check now show in user's local timezone with zone names
+- **Sort Functionality**: Added comprehensive sorting options (Name A-Z/Z-A, Score High/Low, Song Count Most/Fewest)
+- **Settings Access Fixed**: Removed inappropriate @spotify_token_required decorator from settings route
+- **Enhanced Search & Filter**: Maintained sort order after filtering, integrated search/filter/sort workflow
+
+#### Technical Fixes
+- **Data Attributes**: Added data-tracks attribute for reliable sorting
+- **JavaScript Integration**: Proper event handlers for sort/filter combination
+- **Progress API**: Responsive analysis status checking with proper error handling
+- **Route Security**: Appropriate authentication levels for different page types
+
 ### Album Art Performance Optimization (2025-01-25) ✅ COMPLETED
 **Database-stored album art URLs prioritized over live Spotify API calls:**
 

@@ -263,21 +263,31 @@
         {% endif %}
     </div>
 
-    <!-- Search/Filter Bar -->
+    <!-- Search/Filter/Sort Bar -->
     <div class="row mb-4">
-        <div class="col-md-8">
+        <div class="col-md-6">
             <div class="input-group">
                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                 <input class="form-control" type="search" id="playlistSearchInput" placeholder="Search playlists by name or description..." aria-label="Search">
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <select class="form-select" id="scoreFilter">
                 <option value="">Filter by Score</option>
                 <option value="high">High Score (≥75%)</option>
                 <option value="medium">Medium Score (50-74%)</option>
                 <option value="low">Low Score (<50%)</option>
                 <option value="unanalyzed">Not Analyzed</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="sortSelect">
+                <option value="name-asc">Sort: Name (A-Z)</option>
+                <option value="name-desc">Sort: Name (Z-A)</option>
+                <option value="score-desc">Sort: Score (High to Low)</option>
+                <option value="score-asc">Sort: Score (Low to High)</option>
+                <option value="tracks-desc">Sort: Most Songs</option>
+                <option value="tracks-asc">Sort: Fewest Songs</option>
             </select>
         </div>
     </div>
@@ -288,7 +298,8 @@
                 <div class="col playlist-item" 
                      data-score="{{ playlist.score * 100 if playlist.score is not none else 'null' }}"
                      data-name="{{ playlist.name|lower }}"
-                     data-description="{{ playlist.description|lower if playlist.description else '' }}">
+                     data-description="{{ playlist.description|lower if playlist.description else '' }}"
+                     data-tracks="{{ playlist.songs|length }}">
                     <div class="card h-100 shadow-sm playlist-card-custom">
                         {% if playlist.image_url %}
                             <img src="{{ playlist.image_url }}" class="card-img-top" alt="{{ playlist.name }} cover" style="height: 200px; object-fit: cover;">
@@ -547,32 +558,61 @@ document.addEventListener('DOMContentLoaded', function () {
 
             item.style.display = showItem ? '' : 'none';
         });
+        
+        // Maintain sort order after filtering
+        if (sortSelect && sortSelect.value) {
+            sortPlaylists();
+        }
     }
 
     function updateLastCheckedTime() {
         if (lastChecked) {
             const now = new Date();
-            lastChecked.textContent = now.toLocaleTimeString();
+            // Use user's local timezone with full date/time info
+            const options = {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZoneName: 'short'
+            };
+            lastChecked.textContent = now.toLocaleString(undefined, options);
         }
     }
 
     function formatTimestamps() {
-        // Format last sync timestamp
+        // Format last sync timestamp with user's timezone
         const lastSyncElement = document.getElementById('lastSync');
         if (lastSyncElement) {
             const timestamp = lastSyncElement.getAttribute('data-timestamp');
             if (timestamp) {
                 const date = new Date(timestamp);
-                lastSyncElement.textContent = date.toLocaleDateString() + ' at ' + date.toLocaleTimeString();
+                const options = {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                };
+                lastSyncElement.textContent = date.toLocaleString(undefined, options);
             }
         }
         
-        // Format checked timestamp
+        // Format checked timestamp with user's timezone
         if (lastChecked) {
             const timestamp = lastChecked.getAttribute('data-timestamp');
             if (timestamp) {
                 const date = new Date(timestamp);
-                lastChecked.textContent = date.toLocaleTimeString();
+                const options = {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                };
+                lastChecked.textContent = date.toLocaleString(undefined, options);
             }
         }
     }
@@ -654,10 +694,21 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         
-        // Show progress indicator if there's active analysis OR pending songs
-        const shouldShow = data.has_active_analysis || (data.pending && data.pending > 0);
+        // Show progress indicator if there's active analysis OR pending songs (more aggressive showing)
+        const hasData = data.total_songs && data.total_songs > 0;
+        const hasInProgress = data.in_progress && data.in_progress > 0;
+        const hasPending = data.pending && data.pending > 0;
+        const hasActiveAnalysis = data.has_active_analysis;
         
-        console.log(`🎯 Should show progress: ${shouldShow} (active: ${data.has_active_analysis}, pending: ${data.pending})`);
+        // Show if we have data and either in-progress analyses OR pending songs OR total progress < 100%
+        const totalProgress = data.total_songs > 0 ? (data.completed / data.total_songs) * 100 : 0;
+        const shouldShow = hasData && (hasInProgress || hasPending || hasActiveAnalysis || totalProgress < 100);
+        
+        console.log(`🎯 Should show progress: ${shouldShow}`);
+        console.log(`   - Has data: ${hasData} (total: ${data.total_songs})`);
+        console.log(`   - Has in progress: ${hasInProgress} (${data.in_progress})`);
+        console.log(`   - Has pending: ${hasPending} (${data.pending})`);
+        console.log(`   - Has active analysis: ${hasActiveAnalysis}`);
         
         if (!shouldShow) {
             console.log('🔒 Hiding progress indicator - no active analysis or pending songs');
@@ -680,7 +731,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         console.log(`Analysis progress: ${completed}/${total} (${inProgress} in progress, ${pending} pending)`);
         
-        // Update progress bar
+        // Update progress bar - ensure it's visible and updating
         let progressPercent = 0;
         if (total > 0) {
             progressPercent = (completed / total) * 100;
@@ -689,7 +740,9 @@ document.addEventListener('DOMContentLoaded', function () {
             progressPercent = data.progress_percentage;
         }
         
+        // Force progress bar update
         analysisProgress.style.width = progressPercent + '%';
+        analysisProgress.style.transition = 'width 0.3s ease-in-out';
         
         const progressText = analysisProgress.querySelector('.progress-text');
         if (progressText) {
@@ -708,8 +761,14 @@ document.addEventListener('DOMContentLoaded', function () {
         for (const [id, value] of Object.entries(elements)) {
             const element = document.getElementById(id);
             if (element) {
+                const oldValue = element.textContent;
                 element.textContent = value;
-                console.log(`Updated ${id} to ${value}`);
+                if (oldValue !== value.toString()) {
+                    // Highlight change briefly
+                    element.style.color = '#28a745';
+                    setTimeout(() => { element.style.color = ''; }, 1000);
+                }
+                console.log(`Updated ${id} from ${oldValue} to ${value}`);
             } else {
                 console.warn(`Element ${id} not found`);
             }
@@ -741,10 +800,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
         
-        // Update main stats card
+        // Update main stats card with animation
         const totalAnalyzedElement = document.getElementById('totalAnalyzedSongs');
         if (totalAnalyzedElement) {
+            const oldValue = totalAnalyzedElement.textContent;
             totalAnalyzedElement.textContent = completed;
+            if (oldValue !== completed.toString()) {
+                // Animate number change
+                totalAnalyzedElement.style.transform = 'scale(1.1)';
+                totalAnalyzedElement.style.color = '#28a745';
+                setTimeout(() => {
+                    totalAnalyzedElement.style.transform = '';
+                    totalAnalyzedElement.style.color = '';
+                }, 500);
+            }
         }
         
         const analysisPercentageElement = document.getElementById('analysisPercentage');
@@ -757,8 +826,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (miniProgressElement) {
                 miniProgressElement.style.width = percentage + '%';
+                miniProgressElement.style.transition = 'width 0.3s ease-in-out';
             }
         }
+        
+        // Update timestamp
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        console.log(`✅ Progress updated at ${timeString}`);
     }
     
     function hideAnalysisProgress() {
@@ -899,6 +974,49 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (scoreFilter) {
         scoreFilter.addEventListener('change', filterPlaylists);
+    }
+
+    // Add sort functionality
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', sortPlaylists);
+    }
+
+    function sortPlaylists() {
+        const sortValue = sortSelect.value;
+        const playlistGrid = document.getElementById('playlistGrid');
+        const playlistItems = Array.from(playlistGrid.children);
+
+        playlistItems.sort((a, b) => {
+            switch (sortValue) {
+                case 'name-asc':
+                    return a.getAttribute('data-name').localeCompare(b.getAttribute('data-name'));
+                case 'name-desc':
+                    return b.getAttribute('data-name').localeCompare(a.getAttribute('data-name'));
+                case 'score-desc':
+                    const scoreA = parseFloat(a.getAttribute('data-score')) || -1;
+                    const scoreB = parseFloat(b.getAttribute('data-score')) || -1;
+                    return scoreB - scoreA;
+                case 'score-asc':
+                    const scoreA2 = parseFloat(a.getAttribute('data-score')) || 101;
+                    const scoreB2 = parseFloat(b.getAttribute('data-score')) || 101;
+                    return scoreA2 - scoreB2;
+                case 'tracks-desc':
+                    const tracksA = parseInt(a.getAttribute('data-tracks')) || 0;
+                    const tracksB = parseInt(b.getAttribute('data-tracks')) || 0;
+                    return tracksB - tracksA;
+                case 'tracks-asc':
+                    const tracksA2 = parseInt(a.getAttribute('data-tracks')) || 0;
+                    const tracksB2 = parseInt(b.getAttribute('data-tracks')) || 0;
+                    return tracksA2 - tracksB2;
+                default:
+                    return 0;
+            }
+        });
+
+        // Clear and re-append sorted items
+        playlistGrid.innerHTML = '';
+        playlistItems.forEach(item => playlistGrid.appendChild(item));
     }
 
     // Auto-refresh when sync is complete

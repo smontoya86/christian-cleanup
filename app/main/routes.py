@@ -1744,14 +1744,12 @@ def reanalyze_all_songs(playlist_id, user_id=None):
 
 @main_bp.route('/settings')
 @login_required
-@spotify_token_required
 def user_settings():
     """Display user settings page"""
     return render_template('user_settings.html', user=flask_login_current_user)
 
 @main_bp.route('/settings', methods=['POST'])
 @login_required
-@spotify_token_required
 def update_user_settings():
     """Update user settings"""
     try:
