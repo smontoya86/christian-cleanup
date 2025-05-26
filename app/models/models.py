@@ -177,6 +177,13 @@ class PlaylistSong(db.Model):
 
     playlist = db.relationship('Playlist', back_populates='song_associations')
     song = db.relationship('Song', back_populates='playlist_associations')
+    
+    # Performance indexes
+    __table_args__ = (
+        db.Index('idx_playlist_songs_playlist_id', 'playlist_id'),
+        db.Index('idx_playlist_songs_song_id', 'song_id'),
+        db.Index('idx_playlist_songs_track_position', 'playlist_id', 'track_position'),
+    )
 
     def __repr__(self):
         return f'<PlaylistSong playlist_id={self.playlist_id} song_id={self.song_id} position={self.track_position}>'
@@ -199,6 +206,13 @@ class Playlist(db.Model):
     # Relationships
     owner = db.relationship('User', back_populates='playlists')
     song_associations = db.relationship('PlaylistSong', back_populates='playlist', cascade='all, delete-orphan')
+    
+    # Performance indexes
+    __table_args__ = (
+        db.Index('idx_playlists_owner_id', 'owner_id'),
+        db.Index('idx_playlists_last_analyzed', 'last_analyzed'),
+        db.Index('idx_playlists_updated_at', 'updated_at'),
+    )
 
     # Helper to easily get songs through the association
     @property
@@ -234,6 +248,12 @@ class Song(db.Model):
     # Relationships
     playlist_associations = db.relationship('PlaylistSong', back_populates='song')
     analysis_results = db.relationship('AnalysisResult', back_populates='song_rel', lazy='dynamic', cascade="all, delete-orphan")
+    
+    # Performance indexes
+    __table_args__ = (
+        db.Index('idx_songs_explicit', 'explicit'),
+        db.Index('idx_songs_last_analyzed', 'last_analyzed'),
+    )
 
     # Analysis properties (not stored in DB, used for template rendering)
     @property

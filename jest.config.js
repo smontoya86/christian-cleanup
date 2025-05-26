@@ -1,6 +1,10 @@
 // jest.config.js
 module.exports = {
   testEnvironment: 'jsdom',
+  // Remove preset that's causing issues
+  transform: {
+    '^.+\\.js$': 'babel-jest'
+  },
   // Optional: If you need to mock CSS/Sass/Less imports in your JS files (not common for inline scripts)
   // moduleNameMapper: {
   //   '\\.(css|less|scss|sass)$': 'identity-obj-proxy',

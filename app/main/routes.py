@@ -37,6 +37,7 @@ from app.services.song_status_service import SongStatus
 from sqlalchemy.orm import joinedload
 from datetime import datetime, timezone
 from ..utils.analysis import SongAnalyzer  # For analyzing song lyrics
+from ..utils.cache import cached, invalidate_playlist_cache, cache
 
 # Load Scripture Mappings
 SCRIPTURE_MAPPINGS_PATH = os.path.join(os.path.dirname(__file__), 'scripture_mappings.json')
@@ -61,12 +62,113 @@ def test_base_render_route():
 
 PLAYLISTS_PER_PAGE = 25
 
+def get_dashboard_data(user_id, page=1):
+    """Get dashboard data for a user. 
+    
+    Note: Caching temporarily disabled due to SQLAlchemy object serialization issues.
+    The @cached decorator converts Playlist objects to strings via json.dumps(default=str).
+    """
+    from ..services.playlist_sync_service import get_sync_status
+    from ..models import AnalysisResult
+    
+    # Get sync status
+    sync_status = get_sync_status(user_id)
+    
+    # OPTIMIZED: Get stats using efficient database queries instead of loading all data
+    stats = {
+        'total_playlists': 0,
+        'total_songs': 0,
+        'analyzed_songs': 0,
+        'clean_playlists': 0
+    }
+    
+    # Efficient query for total playlists count
+    stats['total_playlists'] = db.session.query(Playlist).filter_by(owner_id=user_id).count()
+    
+    # Efficient query for total songs count using PlaylistSong JOIN
+    stats['total_songs'] = db.session.query(Song).join(
+        PlaylistSong, Song.id == PlaylistSong.song_id
+    ).join(
+        Playlist, PlaylistSong.playlist_id == Playlist.id
+    ).filter(Playlist.owner_id == user_id).count()
+    
+    # Efficient query for analyzed songs count using PlaylistSong JOIN
+    stats['analyzed_songs'] = db.session.query(Song).join(
+        PlaylistSong, Song.id == PlaylistSong.song_id
+    ).join(
+        Playlist, PlaylistSong.playlist_id == Playlist.id
+    ).join(
+        AnalysisResult, Song.id == AnalysisResult.song_id
+    ).filter(
+        Playlist.owner_id == user_id,
+        AnalysisResult.status == 'completed'
+    ).count()
+    
+    # Efficient query for clean playlists count
+    stats['clean_playlists'] = db.session.query(Playlist).filter(
+        Playlist.owner_id == user_id,
+        Playlist.overall_alignment_score >= 75.0
+    ).count()
+    
+    # Get paginated playlists using optimized query
+    playlists_query = Playlist.query.filter_by(owner_id=user_id)\
+        .order_by(Playlist.updated_at.desc())
+    
+    # Get paginated playlists
+    paginated_playlists = playlists_query.paginate(
+        page=page,
+        per_page=PLAYLISTS_PER_PAGE,
+        error_out=False
+    )
+    
+    playlists = paginated_playlists.items
+    
+    # OPTIMIZED: Only calculate scores for playlists on current page
+    for playlist in playlists:
+        if playlist.overall_alignment_score is None:
+            calculate_playlist_score(playlist)
+    
+    # Commit any playlist score updates
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(f"Error committing playlist score updates: {e}")
+        db.session.rollback()
+    
+    # OPTIMIZED: Get last sync info efficiently
+    last_sync_info = None
+    most_recent_playlist = db.session.query(Playlist).filter_by(owner_id=user_id)\
+        .order_by(Playlist.updated_at.desc()).first()
+    
+    if most_recent_playlist and most_recent_playlist.updated_at:
+        last_sync_info = {
+            'last_sync_at': most_recent_playlist.updated_at.isoformat()
+        }
+    
+    # Create pagination object for template
+    pagination = {
+        'page': page,
+        'per_page': PLAYLISTS_PER_PAGE,
+        'total_pages': paginated_playlists.pages,
+        'total_items': stats['total_playlists'],
+        'has_prev': paginated_playlists.has_prev,
+        'has_next': paginated_playlists.has_next,
+        'prev_num': paginated_playlists.prev_num,
+        'next_num': paginated_playlists.next_num
+    }
+    
+    return {
+        'playlists': playlists,
+        'stats': stats,
+        'sync_status': sync_status,
+        'last_sync_info': last_sync_info,
+        'pagination': pagination
+    }
+
 @main_bp.route('/dashboard')
 @login_required
 @spotify_token_required # Re-enabled
 def dashboard():
-    from ..services.playlist_sync_service import get_sync_status
-    from ..models import AnalysisResult
     from ..services.background_analysis_service import BackgroundAnalysisService
     
     try:
@@ -82,97 +184,14 @@ def dashboard():
             session.pop('auto_sync_started', None)
             return jsonify({"status": "success"})
         
-        # Get sync status
-        sync_status = get_sync_status(user_id)
-        
         # Check for sync message in session
         sync_message = session.pop('sync_message', None)
         
         # Pagination logic
         page = request.args.get('page', 1, type=int)
         
-        # OPTIMIZED: Get stats using efficient database queries instead of loading all data
-        stats = {
-            'total_playlists': 0,
-            'total_songs': 0,
-            'analyzed_songs': 0,
-            'clean_playlists': 0
-        }
-        
-        # Efficient query for total playlists count
-        stats['total_playlists'] = db.session.query(Playlist).filter_by(owner_id=user_id).count()
-        
-        # Efficient query for total songs count using PlaylistSong JOIN
-        stats['total_songs'] = db.session.query(Song).join(
-            PlaylistSong, Song.id == PlaylistSong.song_id
-        ).join(
-            Playlist, PlaylistSong.playlist_id == Playlist.id
-        ).filter(Playlist.owner_id == user_id).count()
-        
-        # Efficient query for analyzed songs count using PlaylistSong JOIN
-        stats['analyzed_songs'] = db.session.query(Song).join(
-            PlaylistSong, Song.id == PlaylistSong.song_id
-        ).join(
-            Playlist, PlaylistSong.playlist_id == Playlist.id
-        ).join(
-            AnalysisResult, Song.id == AnalysisResult.song_id
-        ).filter(
-            Playlist.owner_id == user_id,
-            AnalysisResult.status == 'completed'
-        ).count()
-        
-        # Efficient query for clean playlists count
-        stats['clean_playlists'] = db.session.query(Playlist).filter(
-            Playlist.owner_id == user_id,
-            Playlist.overall_alignment_score >= 75.0
-        ).count()
-        
-        # Get paginated playlists using optimized query
-        playlists_query = Playlist.query.filter_by(owner_id=user_id)\
-            .order_by(Playlist.updated_at.desc())
-        
-        # Get paginated playlists
-        paginated_playlists = playlists_query.paginate(
-            page=page,
-            per_page=PLAYLISTS_PER_PAGE,
-            error_out=False
-        )
-        
-        playlists = paginated_playlists.items
-        
-        # OPTIMIZED: Only calculate scores for playlists on current page
-        for playlist in playlists:
-            if playlist.overall_alignment_score is None:
-                calculate_playlist_score(playlist)
-        
-        # Commit any playlist score updates
-        try:
-            db.session.commit()
-        except Exception as e:
-            current_app.logger.error(f"Error committing playlist score updates: {e}")
-            db.session.rollback()
-        
-        # OPTIMIZED: Get last sync info efficiently
-        last_sync_info = None
-        most_recent_playlist = db.session.query(Playlist).filter_by(owner_id=user_id)\
-            .order_by(Playlist.updated_at.desc()).first()
-        
-        if most_recent_playlist and most_recent_playlist.updated_at:
-            last_sync_info = {
-                'last_sync_at': most_recent_playlist.updated_at.isoformat()
-            }
-        
-        # Create pagination object for template
-        pagination = {
-            'page': page,
-            'per_page': PLAYLISTS_PER_PAGE,
-            'total_pages': paginated_playlists.pages,
-            'total_items': stats['total_playlists'],
-            'has_prev': paginated_playlists.has_prev,
-            'has_next': paginated_playlists.has_next,
-            'prev_num': paginated_playlists.prev_num,
-            'next_num': paginated_playlists.next_num
-        }
+        # Get cached dashboard data
+        dashboard_data = get_dashboard_data(user_id, page)
         
         # Start background analysis if needed
         try:
@@ -182,15 +201,15 @@ def dashboard():
         except Exception as e:
             current_app.logger.error(f"Error starting background analysis for user {user_id}: {e}")
         
-        current_app.logger.debug(f"Dashboard for user {user_id}: {len(playlists)} playlists, sync_status: {sync_status}")
+        current_app.logger.debug(f"Dashboard for user {user_id}: {len(dashboard_data['playlists'])} playlists, sync_status: {dashboard_data['sync_status']}")
         
         return render_template('dashboard.html', 
-                               playlists=playlists, 
-                               stats=stats,
-                               sync_status=sync_status,
+                               playlists=dashboard_data['playlists'], 
+                               stats=dashboard_data['stats'],
+                               sync_status=dashboard_data['sync_status'],
                                sync_message=sync_message,
-                               last_sync_info=last_sync_info,
-                               pagination=pagination)
+                               last_sync_info=dashboard_data['last_sync_info'],
+                               pagination=dashboard_data['pagination'])
                                
     except Exception as e:
         current_app.logger.exception(f"Error loading dashboard for user {flask_login_current_user.id}: {e}")
@@ -235,6 +254,9 @@ def sync_playlists():
         job = enqueue_playlist_sync(flask_login_current_user.id)
         
         if job:
+            # Invalidate dashboard cache since playlists will be updated
+            invalidate_playlist_cache()
+            
             current_app.logger.info(f"Playlist sync job {job.id} enqueued for user {flask_login_current_user.id}")
             flash('Playlist synchronization started. This may take a few minutes.', 'success')
         else:
@@ -370,304 +392,244 @@ def whitelist_song(playlist_id, track_id):
 
 SONGS_PER_PAGE = 20
 
+def get_playlist_detail_data(playlist_id, user_id, page=1):
+    """Get playlist detail data.
+    
+    Note: Caching disabled due to SQLAlchemy object serialization issues.
+    The @cached decorator converts SongStatus objects to strings via json.dumps(default=str).
+    """
+    from ..services.spotify_service import SpotifyService
+    
+    # Get user's access token
+    user = User.query.get(user_id)
+    if not user or not user.ensure_token_valid():
+        return None
+    
+    sp = SpotifyService(user.access_token)
+    if not sp.sp:
+        return None
+    
+    # OPTIMIZED: Pre-fetch whitelist and blacklist for the current user in bulk
+    user_whitelisted_track_ids = {item.spotify_id for item in get_all_by_filter(Whitelist, user_id=user_id, item_type='track')}
+    user_blacklisted_track_ids = {item.spotify_id for item in get_all_by_filter(Blacklist, user_id=user_id, item_type='track')}
+
+    # Fetch basic playlist details
+    playlist_data = sp.sp.playlist(playlist_id, fields="id,name,description,images,owner(display_name),tracks(total)")
+    if not playlist_data:
+        return None
+
+    # Check if playlist exists in DB or add it
+    playlist_in_db = get_by_filter(Playlist, spotify_id=playlist_id, owner_id=user_id)
+    if not playlist_in_db:
+        playlist_in_db = Playlist(
+            spotify_id=playlist_data['id'],
+            name=playlist_data['name'],
+            owner_id=user_id,
+            description=playlist_data.get('description', ''),
+            image_url=playlist_data['images'][0]['url'] if playlist_data.get('images') else None
+        )
+        db.session.add(playlist_in_db)
+        db.session.flush()  # Ensure playlist_in_db.id is available
+
+    playlist_score_to_display = getattr(playlist_in_db, 'overall_score', None)
+    if playlist_score_to_display is None and hasattr(playlist_in_db, 'score') and playlist_in_db.score is not None:
+         playlist_score_to_display = playlist_in_db.score
+    
+    # Get paginated tracks
+    offset = (page - 1) * SONGS_PER_PAGE
+    tracks_response = sp.sp.playlist_tracks(
+        playlist_id, 
+        offset=offset, 
+        limit=SONGS_PER_PAGE,
+        fields="items(track(id,name,artists(name),album(name),external_urls)),next,previous,total"
+    )
+    
+    tracks = tracks_response.get('items', [])
+    total_tracks_from_spotify = tracks_response.get('total', 0)
+    total_pages = (total_tracks_from_spotify + SONGS_PER_PAGE - 1) // SONGS_PER_PAGE
+    
+    # Process tracks and get analysis data
+    songs_with_status = []
+    for track_item in tracks:
+        track = track_item.get('track')
+        if not track or not track.get('id'):
+            continue
+            
+        track_id = track['id']
+        
+        # Check if song exists in database
+        song_in_db = get_by_filter(Song, spotify_id=track_id)
+        
+        # Get analysis result if song exists
+        analysis_result = None
+        if song_in_db:
+            analysis_result = get_by_filter(AnalysisResult, song_id=song_in_db.id, status='completed')
+        
+        # Determine status using SongStatus service
+        is_whitelisted = track_id in user_whitelisted_track_ids
+        is_blacklisted = track_id in user_blacklisted_track_ids
+        
+        # Create SongStatus instance to get proper status (only if song exists in DB)
+        status_service = None
+        if song_in_db:
+            status_service = SongStatus(
+                song=song_in_db,
+                analysis_result=analysis_result,
+                is_whitelisted=is_whitelisted,
+                is_blacklisted=is_blacklisted,
+                is_preferred=False
+            )
+        
+        # For template compatibility, create a simple status object
+        if is_whitelisted:
+            status = 'whitelisted'
+        elif is_blacklisted:
+            status = 'blacklisted'
+        elif analysis_result:
+            if analysis_result.concern_level in ['extreme', 'high']:
+                status = 'flagged'
+            else:
+                status = 'clean'
+        else:
+            status = 'not_analyzed'
+        
+        # Create a song object that matches what the template expects
+        # Handle podcast episodes where artist names might be None
+        artists = track.get('artists', [])
+        artist_names = [artist['name'] for artist in artists if artist.get('name') is not None]
+        artist_str = ', '.join(artist_names) if artist_names else 'Unknown Artist'
+        
+        # Use stored album art URL if song exists in database, otherwise get from Spotify API
+        album_art_url = None
+        if song_in_db and song_in_db.album_art_url:
+            album_art_url = song_in_db.album_art_url
+        elif track.get('album', {}).get('images'):
+            album_art_url = track['album']['images'][0].get('url')
+        
+        song_for_template = {
+            'id': song_in_db.id if song_in_db else None,
+            'title': track.get('name', 'Unknown Title'),
+            'artist': artist_str,
+            'album': track.get('album', {}).get('name', 'Unknown Album') if track.get('album') else 'Unknown Album',
+            'spotify_id': track_id,
+            'album_art_url': album_art_url
+        }
+        
+        songs_with_status.append({
+            'track': track,  # Keep original track data for reference
+            'song': song_for_template,  # Add song data in expected format
+            'song_db_id': song_in_db.id if song_in_db else None,
+            'analysis_result': analysis_result,
+            'status': status,
+            'status_service': status_service,  # Will be None if song doesn't exist in DB
+            'is_whitelisted': is_whitelisted,
+            'is_blacklisted': is_blacklisted
+        })
+    
+    # Calculate playlist analysis summary
+    try:
+        playlist_analysis_summary = {
+            'total_songs': total_tracks_from_spotify,
+            'analyzed_songs': 0,
+            'analysis_percentage': 0,
+            'overall_score': playlist_score_to_display,
+            'concern_levels': {'extreme': 0, 'high': 0, 'medium': 0, 'low': 0},
+            'clean_songs': 0,
+            'problem_songs': 0
+        }
+        
+        # Count analysis results for this playlist
+        if playlist_in_db:
+            analysis_results = db.session.query(AnalysisResult).join(
+                Song, AnalysisResult.song_id == Song.id
+            ).join(
+                PlaylistSong, Song.id == PlaylistSong.song_id
+            ).filter(
+                PlaylistSong.playlist_id == playlist_in_db.id,
+                AnalysisResult.status == 'completed'
+            ).all()
+            
+            playlist_analysis_summary['analyzed_songs'] = len(analysis_results)
+            
+            if total_tracks_from_spotify > 0:
+                playlist_analysis_summary['analysis_percentage'] = round(
+                    (len(analysis_results) / total_tracks_from_spotify) * 100, 1
+                )
+            
+            # Count by concern level
+            for result in analysis_results:
+                concern_level = result.concern_level.lower()
+                if concern_level in playlist_analysis_summary['concern_levels']:
+                    playlist_analysis_summary['concern_levels'][concern_level] += 1
+                
+                if concern_level in ['extreme', 'high']:
+                    playlist_analysis_summary['problem_songs'] += 1
+                else:
+                    playlist_analysis_summary['clean_songs'] += 1
+    
+    except Exception as e:
+        current_app.logger.error(f"Error calculating playlist analysis summary: {e}")
+        playlist_analysis_summary = {
+            'total_songs': total_tracks_from_spotify,
+            'analyzed_songs': 0,
+            'analysis_percentage': 0,
+            'overall_score': None,
+            'concern_levels': {'extreme': 0, 'high': 0, 'medium': 0, 'low': 0},
+            'clean_songs': 0,
+            'problem_songs': 0
+        }
+
+    pagination = {
+        'page': page,
+        'per_page': SONGS_PER_PAGE,
+        'total_pages': total_pages,
+        'total_items': total_tracks_from_spotify,
+        'has_prev': page > 1,
+        'has_next': page < total_pages,
+        'prev_num': page - 1 if page > 1 else None,
+        'next_num': page + 1 if page < total_pages else None
+    }
+    
+    return {
+        'playlist': {
+            'id': playlist_data['id'],
+            'name': playlist_data['name'],
+            'description': playlist_data.get('description', ''),
+            'images': playlist_data.get('images', []),
+            'owner': playlist_data.get('owner', {}),
+            'tracks': {'total': total_tracks_from_spotify}
+        },
+        'songs_with_status': songs_with_status,
+        'pagination': pagination,
+        'playlist_analysis_summary': playlist_analysis_summary
+    }
+
 @main_bp.route('/playlist/<string:playlist_id>')
 @spotify_token_required
 @login_required
 def playlist_detail(playlist_id):
-    # Ensure token is valid before creating SpotifyService
+    # Ensure token is valid before proceeding
     if not flask_login_current_user.ensure_token_valid():
         flash('Your Spotify session has expired. Please log in again.', 'warning')
         return redirect(url_for('auth.login'))
-    
-    sp = SpotifyService(flask_login_current_user.access_token)
-
-    if not sp.sp:
-        flash('Spotify client not available. Please log in again.', 'warning')
-        return redirect(url_for('main.index'))
 
     try:
         user_id = flask_login_current_user.id
-        # Pre-fetch whitelist and blacklist for the current user
-        user_whitelisted_track_ids = {item.spotify_id for item in get_all_by_filter(Whitelist, user_id=user_id, item_type='track')}
-        user_blacklisted_track_ids = {item.spotify_id for item in get_all_by_filter(Blacklist, user_id=user_id, item_type='track')}
-
-        # Fetch basic playlist details
-        playlist_data = sp.sp.playlist(playlist_id, fields="id,name,description,images,owner(display_name),tracks(total)")
+        page = request.args.get('page', 1, type=int)
+        
+        # Get cached playlist detail data
+        playlist_data = get_playlist_detail_data(playlist_id, user_id, page)
+        
         if not playlist_data:
             flash('Playlist not found or access denied.', 'danger')
             return redirect(url_for('main.dashboard'))
-
-        # Check if playlist exists in DB or add it
-        playlist_in_db = get_by_filter(Playlist, spotify_id=playlist_id, owner_id=user_id)
-        if not playlist_in_db:
-            playlist_in_db = Playlist(
-                spotify_id=playlist_data['id'],
-                name=playlist_data['name'],
-                owner_id=user_id,
-                description=playlist_data.get('description', ''),
-                image_url=playlist_data['images'][0]['url'] if playlist_data.get('images') else None
-            )
-            db.session.add(playlist_in_db)
-            db.session.flush()  # Ensure playlist_in_db.id is available
-
-        playlist_score_to_display = getattr(playlist_in_db, 'overall_score', None)
-        if playlist_score_to_display is None and hasattr(playlist_in_db, 'score') and playlist_in_db.score is not None:
-             playlist_score_to_display = playlist_in_db.score
         
-        playlist_details = {
-            'spotify_id': playlist_data['id'],
-            'name': playlist_data['name'],
-            'description': playlist_data.get('description'),
-            'image_url': playlist_data['images'][0]['url'] if playlist_data.get('images') else None,
-            'owner_name': playlist_data['owner']['display_name'],
-            'total_tracks': playlist_data['tracks']['total'],
-            'score': playlist_score_to_display
-        }
-
-        # Pagination logic
-        page = request.args.get('page', 1, type=int)
-        offset = (page - 1) * SONGS_PER_PAGE
-        total_tracks_from_spotify = playlist_data['tracks']['total']
-        total_pages = (total_tracks_from_spotify + SONGS_PER_PAGE - 1) // SONGS_PER_PAGE
-
-        tracks_response = sp.get_playlist_items(
-            playlist_id,
-            fields='items(track(id,name,artists(name),album(name,images),duration_ms))',
-            limit=SONGS_PER_PAGE,
-            offset=offset
-        )
-        current_app.logger.debug(f"Spotify tracks_response for playlist {playlist_id}, page {page}: {tracks_response}")
-
-        songs_with_status = []
-        if tracks_response and tracks_response.get('items'):
-            current_app.logger.debug(f"Processing {len(tracks_response['items'])} items from Spotify.")
-            for idx, item in enumerate(tracks_response['items']):
-                current_app.logger.debug(f"Processing item {idx+1}: {item}")
-                track_data = item.get('track')
-                if not track_data or not track_data.get('id'):
-                    current_app.logger.warning(f"Skipping item {idx+1} in playlist {playlist_id} due to missing track data or ID: {item}")
-                    continue
-                
-                song_spotify_id = track_data['id']
-                current_app.logger.debug(f"Item {idx+1}: song_spotify_id = {song_spotify_id}")
-
-                song_in_db = get_by_filter(Song, spotify_id=song_spotify_id)
-                if not song_in_db:
-                    current_app.logger.debug(f"Item {idx+1}: Song {song_spotify_id} not in DB, creating new entry.")
-                    
-                    album_art_url = None
-                    album_data = track_data.get('album')
-                    if album_data and album_data.get('images') and len(album_data['images']) > 0:
-                        album_art_url = album_data['images'][0]['url']
-
-                    song_in_db = Song(
-                        spotify_id=song_spotify_id,
-                        title=track_data.get('name', 'Unknown Title'),
-                        artist=', '.join([artist['name'] for artist in track_data.get('artists', [])]),
-                        album=album_data.get('name', 'Unknown Album') if album_data else 'Unknown Album',
-                        album_art_url=album_art_url,
-                        duration_ms=track_data.get('duration_ms')
-                    )
-                    db.session.add(song_in_db)
-                    db.session.flush()  # Ensure song_in_db.id is populated
-                    current_app.logger.debug(f"Item {idx+1}: New song created with ID {song_in_db.id} (pending commit).")
-                    
-                    # Enqueue analysis for the new song
-                    try:
-                        analysis_job = perform_christian_song_analysis_and_store(song_in_db.id)
-                        if analysis_job:
-                            current_app.logger.info(f"Item {idx+1}: Analysis task enqueued for new song ID {song_in_db.id}. Job ID: {analysis_job.id}")
-                        else:
-                            current_app.logger.error(f"Item {idx+1}: Failed to enqueue analysis task for new song ID {song_in_db.id}.")
-                    except Exception as e:
-                        current_app.logger.error(f"Error enqueuing analysis for song {song_in_db.id}: {e}")
-                        
-                else:
-                    current_app.logger.debug(f"Item {idx+1}: Found song in DB with ID {song_in_db.id}.")
-                    
-                    # Update song info if needed (album art, duration, etc.)
-                    album_data = track_data.get('album')
-                    new_album_art_url_from_spotify = None
-                    if album_data and album_data.get('images') and len(album_data['images']) > 0:
-                        new_album_art_url_from_spotify = album_data['images'][0]['url']
-                    
-                    needs_db_update = False
-                    if new_album_art_url_from_spotify and not song_in_db.album_art_url:
-                        song_in_db.album_art_url = new_album_art_url_from_spotify
-                        needs_db_update = True
-                        
-                    spotify_duration_ms = track_data.get('duration_ms')
-                    if spotify_duration_ms is not None and song_in_db.duration_ms is None:
-                        song_in_db.duration_ms = spotify_duration_ms
-                        needs_db_update = True
-
-                    # For existing songs, check if analysis is missing and perform it
-                    if not AnalysisResult.query.filter_by(song_id=song_in_db.id).first():
-                        current_app.logger.info(f"Item {idx+1}: Existing song ID {song_in_db.id} has no AnalysisResult. Enqueuing analysis now.")
-                        try:
-                            analysis_job_existing = perform_christian_song_analysis_and_store(song_in_db.id)
-                            if analysis_job_existing:
-                                current_app.logger.info(f"Item {idx+1}: Analysis task enqueued for existing song ID {song_in_db.id}. Job ID: {analysis_job_existing.id}")
-                            else:
-                                current_app.logger.error(f"Item {idx+1}: Failed to enqueue analysis task for existing song ID {song_in_db.id}.")
-                        except Exception as e:
-                            current_app.logger.error(f"Error enqueuing analysis for existing song {song_in_db.id}: {e}")
-
-                    if needs_db_update:
-                        db.session.add(song_in_db)
-
-                # Create or update PlaylistSong association
-                playlist_song_assoc = PlaylistSong.query.filter_by(
-                    playlist_id=playlist_in_db.id, 
-                    song_id=song_in_db.id
-                ).first()
-                
-                if not playlist_song_assoc:
-                    playlist_song_assoc = PlaylistSong(
-                        playlist_id=playlist_in_db.id,
-                        song_id=song_in_db.id,
-                        position=offset + idx  # Track position in playlist
-                    )
-                    db.session.add(playlist_song_assoc)
-                    current_app.logger.debug(f"Created PlaylistSong association for playlist {playlist_in_db.id}, song {song_in_db.id}")
-
-                is_song_whitelisted = song_spotify_id in user_whitelisted_track_ids
-                is_song_blacklisted = song_spotify_id in user_blacklisted_track_ids
-
-                analysis_result = AnalysisResult.query.filter_by(song_id=song_in_db.id).first()
-                current_app.logger.debug(f"Item {idx+1}: AnalysisResult query for song_id {song_in_db.id} found: {analysis_result}")
-                
-                # Add analysis status and concerns to the song object
-                song_in_db.analysis_status = analysis_result.status if analysis_result else 'pending'
-                song_in_db.score = analysis_result.score if analysis_result else None
-                song_in_db.concern_level = analysis_result.concern_level if analysis_result else None
-                song_in_db.analysis_concerns = analysis_result.concerns if analysis_result and analysis_result.concerns else []
-                
-                # Create SongStatus object
-                status_obj = SongStatus(
-                    song=song_in_db,
-                    analysis_result=analysis_result,
-                    is_whitelisted=is_song_whitelisted,
-                    is_blacklisted=is_song_blacklisted
-                )
-
-                # Construct the dictionary for the template
-                item_data_to_append = {
-                    'song': song_in_db,
-                    'analysis_result': analysis_result,
-                    'is_whitelisted': is_song_whitelisted,
-                    'is_blacklisted': is_song_blacklisted,
-                    'status': status_obj
-                }
-
-                songs_with_status.append(item_data_to_append)
-                current_app.logger.debug(f"Item {idx+1}: Appended to songs_with_status. Current count: {len(songs_with_status)}")
-            
-            # Commit any changes made to song records and playlist associations
-            db.session.commit()
-            current_app.logger.info(f"Committed session changes after processing tracks for playlist {playlist_id}, page {page}.")
-
-        current_app.logger.debug(f"Finished processing tracks. Total songs in songs_with_status: {len(songs_with_status)}")
-
-        # Calculate analysis summary using a simpler approach that doesn't require PlaylistSong relationships
-        # Instead, get all songs that appear in this playlist by fetching all tracks from Spotify
-        try:
-            # Get all tracks from Spotify for this playlist to calculate accurate analysis summary
-            all_spotify_tracks = []
-            spotify_offset = 0
-            spotify_limit = 100  # Max allowed by Spotify API
-            
-            while True:
-                batch_response = sp.get_playlist_items(
-                    playlist_id,
-                    fields='items(track(id))',
-                    limit=spotify_limit,
-                    offset=spotify_offset
-                )
-                
-                if not batch_response or not batch_response.get('items'):
-                    break
-                    
-                for item in batch_response['items']:
-                    track_data = item.get('track')
-                    if track_data and track_data.get('id'):
-                        all_spotify_tracks.append(track_data['id'])
-                
-                # Check if we've got all tracks
-                if len(batch_response['items']) < spotify_limit:
-                    break
-                    
-                spotify_offset += spotify_limit
-            
-            # Now get analysis data for these tracks
-            if all_spotify_tracks:
-                all_songs_in_playlist = Song.query.filter(
-                    Song.spotify_id.in_(all_spotify_tracks)
-                ).all()
-                
-                total_songs = len(all_spotify_tracks)  # Total tracks in playlist
-                analyzed_songs = []
-                scores = []
-                concern_levels = {'extreme': 0, 'high': 0, 'medium': 0, 'low': 0}
-                
-                for song in all_songs_in_playlist:
-                    analysis_result = AnalysisResult.query.filter_by(song_id=song.id).first()
-                    if analysis_result and analysis_result.status == 'completed':
-                        analyzed_songs.append(song)
-                        if analysis_result.score is not None:
-                            scores.append(analysis_result.score)
-                        if analysis_result.concern_level:
-                            level = analysis_result.concern_level.lower()
-                            if level in concern_levels:
-                                concern_levels[level] += 1
-                                
-                overall_score = sum(scores) / len(scores) if scores else None
-                analysis_percentage = (len(analyzed_songs) / total_songs) * 100 if total_songs > 0 else 0
-                
-                playlist_analysis_summary = {
-                    'total_songs': total_songs,
-                    'analyzed_songs': len(analyzed_songs),
-                    'analysis_percentage': analysis_percentage,
-                    'overall_score': overall_score,
-                    'concern_levels': concern_levels,
-                    'clean_songs': concern_levels['low'],
-                    'problem_songs': concern_levels['extreme'] + concern_levels['high']
-                }
-            else:
-                playlist_analysis_summary = {
-                    'total_songs': 0,
-                    'analyzed_songs': 0,
-                    'analysis_percentage': 0,
-                    'overall_score': None,
-                    'concern_levels': {'extreme': 0, 'high': 0, 'medium': 0, 'low': 0},
-                    'clean_songs': 0,
-                    'problem_songs': 0
-                }
-                
-        except Exception as e:
-            current_app.logger.error(f"Error calculating playlist analysis summary: {e}")
-            # Fallback to basic summary
-            playlist_analysis_summary = {
-                'total_songs': playlist_data['tracks']['total'],
-                'analyzed_songs': 0,
-                'analysis_percentage': 0,
-                'overall_score': None,
-                'concern_levels': {'extreme': 0, 'high': 0, 'medium': 0, 'low': 0},
-                'clean_songs': 0,
-                'problem_songs': 0
-            }
-
-        pagination = {
-            'page': page,
-            'per_page': SONGS_PER_PAGE,
-            'total_pages': total_pages,
-            'total_items': total_tracks_from_spotify,
-            'has_prev': page > 1,
-            'has_next': page < total_pages,
-            'prev_num': page - 1 if page > 1 else None,
-            'next_num': page + 1 if page < total_pages else None
-        }
-
+        return render_template('playlist_detail.html', 
+                               playlist=playlist_data['playlist'], 
+                               songs_with_status=playlist_data['songs_with_status'], 
+                               pagination=playlist_data['pagination'], 
+                               playlist_analysis_summary=playlist_data['playlist_analysis_summary'])
+                               
     except spotipy.SpotifyException as e:
         current_app.logger.error(f"Spotify API error in playlist_detail for {playlist_id}: {e}")
         flash(f'Spotify API error: Could not load playlist details. Details: {str(e)}', 'danger')
@@ -682,8 +644,6 @@ def playlist_detail(playlist_id):
         current_app.logger.error(f"Unexpected error in playlist_detail for {playlist_id}: {e}", exc_info=True)
         flash(f'An unexpected error occurred. Type: {type(e).__name__}, Details: {str(e)}', 'danger')
         return redirect(url_for('main.dashboard'))
-
-    return render_template('playlist_detail.html', playlist=playlist_details, songs_with_status=songs_with_status, pagination=pagination, playlist_analysis_summary=playlist_analysis_summary)
 
 @main_bp.route('/playlist/<string:playlist_id>/update', methods=['POST'])
 @login_required
@@ -2376,3 +2336,142 @@ def calculate_playlist_score(playlist):
     except Exception as e:
         current_app.logger.error(f"Error calculating playlist score for {playlist.id}: {e}")
         return None
+
+
+# Lazy Loading API Endpoints
+
+@main_bp.route('/api/analysis/playlist/<string:playlist_id>')
+@login_required
+def playlist_analysis_data(playlist_id):
+    """API endpoint for lazy loading playlist analysis data."""
+    try:
+        user_id = flask_login_current_user.id
+        
+        # Get cached data if available
+        cache_key = f"playlist_analysis:{user_id}:{playlist_id}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return jsonify(cached_data)
+        
+        # Get playlist data from database
+        playlist = Playlist.query.filter_by(spotify_id=playlist_id, owner_id=user_id).first()
+        if not playlist:
+            abort(404)
+        
+        # Get songs in the playlist
+        songs = db.session.query(Song).join(
+            PlaylistSong, Song.id == PlaylistSong.song_id
+        ).filter(PlaylistSong.playlist_id == playlist.id).all()
+        
+        # Format data for frontend
+        analysis_data = {
+            'songs': [],
+            'summary': {
+                'total_songs': len(songs),
+                'analyzed_songs': 0,
+                'pending_analysis': 0,
+                'average_score': 0
+            }
+        }
+        
+        total_score = 0
+        analyzed_count = 0
+        
+        for song in songs:
+            result = AnalysisResult.query.filter_by(song_id=song.id, status='completed').first()
+            song_data = {
+                'id': song.id,
+                'title': song.title,
+                'artist': song.artist,
+                'album': song.album,
+                'status': 'pending'
+            }
+            
+            if result:
+                song_data['status'] = 'analyzed'
+                song_data['score'] = result.score
+                song_data['details'] = {
+                    'concern_level': result.concern_level,
+                    'explanation': result.explanation
+                }
+                total_score += result.score
+                analyzed_count += 1
+            else:
+                analysis_data['summary']['pending_analysis'] += 1
+            
+            analysis_data['songs'].append(song_data)
+        
+        if analyzed_count > 0:
+            analysis_data['summary']['average_score'] = round(total_score / analyzed_count, 1)
+        
+        analysis_data['summary']['analyzed_songs'] = analyzed_count
+        
+        # Cache the result
+        cache.set(cache_key, analysis_data, timeout=300)  # 5 minutes cache
+        
+        return jsonify(analysis_data)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting playlist analysis data for {playlist_id}: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+@main_bp.route('/api/analysis/song/<int:song_id>')
+@login_required
+def song_analysis_data(song_id):
+    """API endpoint for lazy loading individual song analysis data."""
+    try:
+        user_id = flask_login_current_user.id
+        
+        # Get cached data if available
+        cache_key = f"song_analysis:{user_id}:{song_id}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return jsonify(cached_data)
+        
+        # Get song data from database
+        song = Song.query.filter_by(id=song_id).first()
+        if not song:
+            abort(404)
+        
+        # Verify user has access to this song
+        playlist_song = PlaylistSong.query.filter_by(song_id=song.id).first()
+        if not playlist_song:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        playlist = Playlist.query.filter_by(id=playlist_song.playlist_id, owner_id=user_id).first()
+        if not playlist:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        result = AnalysisResult.query.filter_by(song_id=song.id, status='completed').first()
+        
+        if result:
+            analysis_data = {
+                'id': song.id,
+                'title': song.title,
+                'artist': song.artist,
+                'album': song.album,
+                'status': 'analyzed',
+                'score': result.score,
+                'details': {
+                    'concern_level': result.concern_level,
+                    'explanation': result.explanation
+                }
+            }
+        else:
+            analysis_data = {
+                'id': song.id,
+                'title': song.title,
+                'artist': song.artist,
+                'album': song.album,
+                'status': 'pending'
+            }
+        
+        # Cache the result
+        cache.set(cache_key, analysis_data, timeout=300)  # 5 minutes cache
+        
+        return jsonify(analysis_data)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting song analysis data for {song_id}: {e}")
+        return jsonify({'error': 'Internal server error'}), 500

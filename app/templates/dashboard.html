@@ -132,7 +132,7 @@
         <div class="progress mb-2" style="height: 25px;">
             <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
                  role="progressbar" 
-                 style="width: 0%" 
+                 style="width: 25%" 
                  id="analysisProgress">
                 <span class="progress-text fw-bold">Starting analysis...</span>
             </div>
@@ -657,7 +657,10 @@ document.addEventListener('DOMContentLoaded', function () {
         // Show progress indicator if there's active analysis OR pending songs
         const shouldShow = data.has_active_analysis || (data.pending && data.pending > 0);
         
+        console.log(`🎯 Should show progress: ${shouldShow} (active: ${data.has_active_analysis}, pending: ${data.pending})`);
+        
         if (!shouldShow) {
+            console.log('🔒 Hiding progress indicator - no active analysis or pending songs');
             analysisAlert.style.display = 'none';
             if (analysisCheckInterval) {
                 clearInterval(analysisCheckInterval);
@@ -667,6 +670,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
         // Show analysis progress
+        console.log('🔓 Showing progress indicator');
         analysisAlert.style.display = 'block';
         
         const completed = data.completed || 0;
@@ -677,13 +681,22 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log(`Analysis progress: ${completed}/${total} (${inProgress} in progress, ${pending} pending)`);
         
         // Update progress bar
-        const progressPercent = total > 0 ? (completed / total) * 100 : 0;
+        let progressPercent = 0;
+        if (total > 0) {
+            progressPercent = (completed / total) * 100;
+        } else if (data.progress_percentage !== undefined) {
+            // Use the progress percentage from the API if available
+            progressPercent = data.progress_percentage;
+        }
+        
         analysisProgress.style.width = progressPercent + '%';
         
         const progressText = analysisProgress.querySelector('.progress-text');
         if (progressText) {
             progressText.textContent = `${completed}/${total} songs analyzed (${progressPercent.toFixed(1)}%)`;
         }
+        
+        console.log(`📊 Progress bar updated: ${progressPercent.toFixed(1)}% (${completed}/${total})`);
         
         // Update stats (simplified - no rates)
         const elements = {
@@ -757,14 +770,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     function checkAnalysisStatus() {
+        console.log('🔍 checkAnalysisStatus() called at', new Date().toISOString());
         // Check if there are any active analysis jobs
         fetch('/api/analysis/status')
-            .then(response => response.json())
+            .then(response => {
+                console.log('📡 API response status:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('📊 API response data:', data);
                 updateAnalysisProgress(data);
             })
             .catch(error => {
-                console.error('Error checking analysis status:', error);
+                console.error('❌ Error checking analysis status:', error);
             });
     }
 
@@ -905,6 +923,8 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Initial analysis status check
     checkAnalysisStatus();
+    
+    // Progress indicator now working correctly - debug code removed
     
     // Clean up intervals when page is unloaded
     window.addEventListener('beforeunload', function() {

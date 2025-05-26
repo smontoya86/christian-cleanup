@@ -29,6 +29,15 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     LOG_LEVEL = os.environ.get('LOG_LEVEL') or logging.INFO
 
+    # Database Connection Pooling Configuration
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': int(os.environ.get('DB_POOL_SIZE', '10')),
+        'max_overflow': int(os.environ.get('DB_MAX_OVERFLOW', '20')),
+        'pool_recycle': int(os.environ.get('DB_POOL_RECYCLE', '1800')),  # 30 minutes
+        'pool_pre_ping': True,  # Verify connections before use
+        'pool_timeout': int(os.environ.get('DB_POOL_TIMEOUT', '30')),  # 30 seconds
+    }
+
     # Session Configuration
     PERMANENT_SESSION_LIFETIME = timedelta(days=int(os.environ.get('PERMANENT_SESSION_LIFETIME_DAYS', '7')))
     SESSION_COOKIE_HTTPONLY = True
@@ -63,6 +72,19 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)), 'app_dev.db')
     LOG_LEVEL = logging.DEBUG
+    
+    # Query monitoring configuration
+    SQLALCHEMY_RECORD_QUERIES = True
+    SLOW_QUERY_THRESHOLD = float(os.environ.get('SLOW_QUERY_THRESHOLD', '0.5'))  # 500ms default
+    
+    # Development-specific pool settings (smaller for local development)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': int(os.environ.get('DB_POOL_SIZE', '5')),
+        'max_overflow': int(os.environ.get('DB_MAX_OVERFLOW', '10')),
+        'pool_recycle': int(os.environ.get('DB_POOL_RECYCLE', '3600')),  # 1 hour
+        'pool_pre_ping': True,
+        'pool_timeout': int(os.environ.get('DB_POOL_TIMEOUT', '30')),
+    }
 
 class TestingConfig(Config):
     """Testing configuration."""
@@ -71,6 +93,19 @@ class TestingConfig(Config):
     WTF_CSRF_ENABLED = False # Disable CSRF for tests
     LOG_LEVEL = logging.DEBUG
     RQ_REDIS_URL = os.environ.get('RQ_TEST_REDIS_URL') or 'redis://localhost:6379/1' # Use a different Redis DB for tests
+    
+    # Query monitoring configuration (enabled for testing)
+    SQLALCHEMY_RECORD_QUERIES = True
+    SLOW_QUERY_THRESHOLD = float(os.environ.get('TEST_SLOW_QUERY_THRESHOLD', '0.1'))  # 100ms for testing
+    
+    # Testing-specific pool settings (smaller for tests)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': int(os.environ.get('TEST_DB_POOL_SIZE', '5')),
+        'max_overflow': int(os.environ.get('TEST_DB_MAX_OVERFLOW', '10')),
+        'pool_recycle': int(os.environ.get('TEST_DB_POOL_RECYCLE', '300')),  # 5 minutes
+        'pool_pre_ping': True,
+        'pool_timeout': int(os.environ.get('TEST_DB_POOL_TIMEOUT', '10')),
+    }
 
     @classmethod
     def init_app(cls, app):
@@ -89,6 +124,15 @@ class ProductionConfig(Config):
     """Production configuration."""
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') # Must be set in production
     LOG_LEVEL = os.environ.get('LOG_LEVEL') or logging.WARNING # Higher log level for production
+    
+    # Production-specific pool settings (larger for production load)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': int(os.environ.get('PROD_DB_POOL_SIZE', '20')),
+        'max_overflow': int(os.environ.get('PROD_DB_MAX_OVERFLOW', '40')),
+        'pool_recycle': int(os.environ.get('PROD_DB_POOL_RECYCLE', '1800')),  # 30 minutes
+        'pool_pre_ping': True,
+        'pool_timeout': int(os.environ.get('PROD_DB_POOL_TIMEOUT', '30')),
+    }
 
     @classmethod
     def init_app(cls, app):

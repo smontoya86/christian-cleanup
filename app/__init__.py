@@ -84,8 +84,28 @@ def create_app(config_name=None, init_scheduler=True):
     bootstrap.init_app(app) 
     rq.init_app(app)
     
-    # Initialize task queue
-    app.task_queue = rq.get_queue()
+    # Configure enhanced RQ with priority queues
+    from .worker_config import HIGH_QUEUE, DEFAULT_QUEUE, LOW_QUEUE
+    
+    # Initialize task queues with priority support
+    app.task_queue = rq.get_queue()  # Default queue for backward compatibility
+    
+    # Register priority queues for easy access
+    app.high_queue = rq.get_queue(HIGH_QUEUE)
+    app.default_queue = rq.get_queue(DEFAULT_QUEUE) 
+    app.low_queue = rq.get_queue(LOW_QUEUE)
+
+    # Setup query monitoring
+    from .utils.query_monitoring import setup_query_monitoring
+    setup_query_monitoring(app)
+    
+    # Setup database monitoring
+    from .utils.database_monitoring import setup_pool_monitoring
+    setup_pool_monitoring(app)
+    
+    # Initialize Redis cache
+    from .utils.cache import cache
+    cache.init_app(app)
 
     # Only start the scheduler if it's been initialized and other conditions are met
     if init_scheduler and not app.config.get('TESTING', False):

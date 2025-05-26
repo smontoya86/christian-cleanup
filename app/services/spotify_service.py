@@ -77,8 +77,17 @@ class SpotifyService:
 
     def get_playlist_items(self, playlist_id, fields=None, limit=100, offset=0):
         if not self.sp:
-            self.logger.error("Spotify client not initialized in get_playlist_items")
-            return None
+            # Try to initialize with current_user token if available
+            if hasattr(current_user, 'access_token') and current_user.access_token:
+                # Ensure token is valid before using it
+                if current_user.ensure_token_valid():
+                    self.sp = spotipy.Spotify(auth=current_user.access_token)
+                else:
+                    self.logger.error("Failed to validate/refresh token in get_playlist_items")
+                    return None
+            else:
+                self.logger.error("Spotify client not initialized in get_playlist_items")
+                return None
         try:
             return self.sp.playlist_items(playlist_id, fields=fields, limit=limit, offset=offset)
         except spotipy.SpotifyException as e:

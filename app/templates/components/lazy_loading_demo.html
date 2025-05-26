@@ -1,0 +1,121 @@
+<!-- Lazy Loading Demo Template -->
+<div class="lazy-loading-demo">
+  <h3>Lazy Loading Analysis Results Demo</h3>
+  
+  <!-- Loading Template -->
+  <template id="analysis-loading-template">
+    <div class="skeleton-card">
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row short"></div>
+      <div class="skeleton-row medium"></div>
+    </div>
+  </template>
+  
+  <!-- Error Template -->
+  <template id="analysis-error-template">
+    <div class="error-card">
+      <p>Failed to load analysis data</p>
+      <button onclick="retryLoad(this)" class="retry-btn">Retry</button>
+    </div>
+  </template>
+  
+  <!-- Lazy loaded content containers -->
+  <div class="analysis-results">
+    {% for playlist in playlists %}
+    <div 
+      data-lazy-url="/api/analysis/playlist/{{ playlist.spotify_id }}"
+      data-loading-template="analysis-loading-template"
+      data-error-template="analysis-error-template"
+      class="lazy-load-container"
+      id="playlist-{{ playlist.id }}-analysis">
+      <!-- Content will be loaded here -->
+    </div>
+    {% endfor %}
+    
+    {% for song in songs %}
+    <div 
+      data-lazy-url="/api/analysis/song/{{ song.id }}"
+      data-loading-template="analysis-loading-template"
+      data-error-template="analysis-error-template"
+      class="lazy-load-container"
+      id="song-{{ song.id }}-analysis">
+      <!-- Content will be loaded here -->
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+// Initialize lazy loader when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  const lazyLoader = new LazyLoader({
+    threshold: 0.1,
+    rootMargin: '50px',
+    retryLimit: 3,
+    retryDelay: 2000
+  });
+  
+  // Observe all lazy load containers
+  const containers = document.querySelectorAll('.lazy-load-container');
+  containers.forEach(container => {
+    lazyLoader.observe(container);
+  });
+});
+
+// Global retry function for error templates
+function retryLoad(button) {
+  const container = button.closest('.lazy-load-container');
+  if (container && window.LazyLoader) {
+    // Find the lazy loader instance and retry
+    const url = container.dataset.lazyUrl;
+    const loadingTemplate = container.dataset.loadingTemplate;
+    const errorTemplate = container.dataset.errorTemplate;
+    
+    // Create new lazy loader instance for retry
+    const retryLoader = new LazyLoader();
+    retryLoader.loadContent(container, url, loadingTemplate, errorTemplate, 0);
+  }
+}
+</script>
+
+<style>
+.lazy-loading-demo {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.analysis-results {
+  display: grid;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.lazy-load-container {
+  min-height: 100px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  background: #fff;
+}
+
+.error-card {
+  text-align: center;
+  padding: 20px;
+  color: #d32f2f;
+}
+
+.retry-btn {
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.retry-btn:hover {
+  background: #1565c0;
+}
+</style> 
