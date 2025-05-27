@@ -41,6 +41,16 @@ from worker_config_standalone import (
     DEFAULT_QUEUES
 )
 
+# Import enhanced Redis management and retry handling (if available)
+try:
+    from app.utils.redis_manager import redis_manager
+    from app.utils.job_retry import handle_job_exception
+    ENHANCED_REDIS_AVAILABLE = True
+    print("Enhanced Redis management and retry handling loaded")
+except ImportError as e:
+    print(f"Enhanced Redis features not available (running standalone): {e}")
+    ENHANCED_REDIS_AVAILABLE = False
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -252,9 +262,14 @@ def create_worker(use_threading=False, queues=None):
     Returns:
         Configured RQ Worker instance
     """
-    # Get Redis connection
-    redis_url = os.getenv('RQ_REDIS_URL', 'redis://localhost:6379/0')
-    conn = Redis.from_url(redis_url)
+    # Get Redis connection using enhanced manager if available
+    if ENHANCED_REDIS_AVAILABLE:
+        print("Using enhanced Redis connection manager...")
+        conn = redis_manager.get_connection()
+    else:
+        # Fallback to basic Redis connection
+        redis_url = os.getenv('RQ_REDIS_URL', 'redis://localhost:6379/0')
+        conn = Redis.from_url(redis_url)
     
     if queues is None:
         queues = DEFAULT_QUEUES
@@ -266,6 +281,11 @@ def create_worker(use_threading=False, queues=None):
     else:
         print("Creating platform-optimized worker...")
         worker = configure_worker_for_platform(conn, queues=queues)
+    
+    # Add enhanced exception handler if available
+    if ENHANCED_REDIS_AVAILABLE:
+        print("Adding enhanced job retry handling...")
+        worker.push_exc_handler(handle_job_exception)
     
     return worker
 

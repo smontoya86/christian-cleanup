@@ -28,6 +28,10 @@ from app.models import Song, AnalysisResult, Playlist, PlaylistSong, User
 from app.extensions import rq
 from app.services.spotify_service import SpotifyService
 
+# Enhanced Redis connectivity imports
+from app.utils.redis_manager import redis_manager, test_redis_connection
+from app.utils.job_retry import get_job_retry_stats
+
 # --- Whitelist API Endpoints ---
 
 @api_bp.route('/whitelist', methods=['GET'])
@@ -491,3 +495,188 @@ def invalidate_user_cache(user_id):
             current_app.logger.info(f"Invalidated {len(keys)} cache entries for user {user_id}")
     except Exception as e:
         current_app.logger.warning(f"Failed to invalidate cache for user {user_id}: {e}")
+
+
+# --- Health Check and Monitoring API Endpoints ---
+
+@api_bp.route('/health/redis', methods=['GET'])
+def redis_health():
+    """Test Redis connection and return detailed health information."""
+    try:
+        result = test_redis_connection()
+        
+        if result['success']:
+            return jsonify({
+                'status': 'healthy',
+                'message': 'Redis connection successful',
+                'response_time_ms': result['response_time_ms'],
+                'redis_info': result.get('redis_info', {}),
+                'pool_info': result.get('pool_info', {}),
+                'timestamp': datetime.utcnow().isoformat()
+            }), 200
+        else:
+            return jsonify({
+                'status': 'unhealthy',
+                'message': f'Redis connection failed: {result["error"]}',
+                'response_time_ms': result['response_time_ms'],
+                'timestamp': datetime.utcnow().isoformat()
+            }), 503
+            
+    except Exception as e:
+        current_app.logger.error(f"Error in redis health check: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Health check failed: {str(e)}',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
+
+
+@api_bp.route('/health/queues', methods=['GET'])
+def queue_health():
+    """Monitor health of RQ queues and return detailed statistics."""
+    try:
+        health_data = redis_manager.monitor_queue_health()
+        
+        # Determine HTTP status based on overall health
+        if health_data['overall_status'] == 'healthy':
+            status_code = 200
+        elif health_data['overall_status'] == 'degraded':
+            status_code = 206  # Partial Content - degraded but functional
+        else:
+            status_code = 503  # Service Unavailable
+        
+        return jsonify(health_data), status_code
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in queue health check: {e}")
+        return jsonify({
+            'timestamp': datetime.utcnow().isoformat(),
+            'overall_status': 'error',
+            'error': str(e),
+            'queues': {}
+        }), 500
+
+
+@api_bp.route('/health/redis/stats', methods=['GET'])
+def redis_stats():
+    """Get comprehensive Redis connection statistics."""
+    try:
+        stats = redis_manager.get_health_stats()
+        
+        return jsonify({
+            'status': 'success',
+            'timestamp': datetime.utcnow().isoformat(),
+            'connection_stats': stats
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting Redis stats: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
+
+
+@api_bp.route('/health/jobs/<job_id>', methods=['GET'])
+def job_retry_stats(job_id):
+    """Get retry statistics for a specific job."""
+    try:
+        stats = get_job_retry_stats(job_id)
+        
+        if stats:
+            return jsonify({
+                'status': 'success',
+                'job_stats': stats,
+                'timestamp': datetime.utcnow().isoformat()
+            }), 200
+        else:
+            return jsonify({
+                'status': 'not_found',
+                'message': f'Job {job_id} not found or has no retry stats',
+                'timestamp': datetime.utcnow().isoformat()
+            }), 404
+            
+    except Exception as e:
+        current_app.logger.error(f"Error getting job retry stats for {job_id}: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
+
+
+@api_bp.route('/health', methods=['GET'])
+def overall_health():
+    """Comprehensive health check combining all system components."""
+    try:
+        health_status = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'overall_status': 'healthy',
+            'components': {}
+        }
+        
+        # Test Redis connection
+        try:
+            redis_result = test_redis_connection()
+            health_status['components']['redis'] = {
+                'status': 'healthy' if redis_result['success'] else 'unhealthy',
+                'response_time_ms': redis_result['response_time_ms'],
+                'error': redis_result.get('error')
+            }
+            if not redis_result['success']:
+                health_status['overall_status'] = 'degraded'
+        except Exception as e:
+            health_status['components']['redis'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+            health_status['overall_status'] = 'unhealthy'
+        
+        # Test database connection
+        try:
+            db.session.execute('SELECT 1')
+            health_status['components']['database'] = {
+                'status': 'healthy'
+            }
+        except Exception as e:
+            health_status['components']['database'] = {
+                'status': 'unhealthy',
+                'error': str(e)
+            }
+            health_status['overall_status'] = 'unhealthy'
+        
+        # Test queue health
+        try:
+            queue_health_data = redis_manager.monitor_queue_health()
+            health_status['components']['queues'] = {
+                'status': queue_health_data['overall_status'],
+                'queue_count': len(queue_health_data.get('queues', {}))
+            }
+            if queue_health_data['overall_status'] != 'healthy':
+                if health_status['overall_status'] == 'healthy':
+                    health_status['overall_status'] = 'degraded'
+        except Exception as e:
+            health_status['components']['queues'] = {
+                'status': 'error',
+                'error': str(e)
+            }
+            health_status['overall_status'] = 'unhealthy'
+        
+        # Determine HTTP status code
+        if health_status['overall_status'] == 'healthy':
+            status_code = 200
+        elif health_status['overall_status'] == 'degraded':
+            status_code = 206
+        else:
+            status_code = 503
+        
+        return jsonify(health_status), status_code
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in overall health check: {e}")
+        return jsonify({
+            'timestamp': datetime.utcnow().isoformat(),
+            'overall_status': 'error',
+            'error': str(e)
+        }), 500
