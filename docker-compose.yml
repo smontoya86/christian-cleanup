@@ -7,11 +7,12 @@ services:
     volumes:
       - .:/app
     env_file:
-      - .env
+      - .env.docker
     environment:
       - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES  # Required for macOS compatibility
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - RQ_REDIS_URL=redis://redis:6379/0
+      - USE_LIGHTWEIGHT_ANALYZER=false  # Always use comprehensive analysis
     depends_on:
       db:
         condition: service_healthy
@@ -23,6 +24,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - app-network
 
   worker:
     build: .
@@ -30,7 +33,7 @@ services:
     volumes:
       - .:/app
     env_file:
-      - .env
+      - .env.docker
     environment:
       - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES  # Required for macOS compatibility
       - PYTHONUNBUFFERED=1
@@ -38,13 +41,22 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - RQ_REDIS_URL=redis://redis:6379/0
       - RQ_WORKER_BURST=true  # Process jobs in burst mode for faster processing
-      - RQ_WORKER_TIMEOUT=300  # 5 minute timeout per job
+      - RQ_WORKER_TIMEOUT=600  # 10 minute timeout for comprehensive analysis
+      - USE_LIGHTWEIGHT_ANALYZER=false  # Always use comprehensive analysis
     depends_on:
       redis:
         condition: service_healthy
       db:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis; r = redis.from_url('redis://redis:6379/0'); r.ping()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - app-network
     deploy:
       replicas: 6  # Scale to 6 workers for faster processing
 
@@ -62,6 +74,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - app-network
 
   redis:
     image: redis:7-alpine
@@ -76,7 +90,13 @@ services:
       timeout: 3s
       retries: 5
     restart: unless-stopped
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
   redis_data:
+
+networks:
+  app-network:
+    driver: bridge

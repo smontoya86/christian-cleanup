@@ -61,6 +61,42 @@ If you prefer local development without Docker:
    python run.py
    ```
 
+4. **Start Background Workers**
+   ```bash
+   # Option 1: Use the macOS-optimized startup script (recommended for macOS)
+   ./start_worker_macos.sh
+   
+   # Option 2: Threading-based worker (alternative for macOS)
+   ./start_worker_threading.sh
+   
+   # Option 3: Direct Python execution (worker auto-detects macOS)
+   python worker.py
+   
+   # Option 4: Direct threading mode
+   python worker.py --threading
+   ```
+
+### macOS Development Notes
+The application includes comprehensive macOS fork safety measures for background workers:
+
+**Automatic Detection & Configuration:**
+- Workers automatically detect the macOS environment
+- Sets `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` to prevent Objective-C runtime conflicts
+- Provides console feedback when macOS compatibility mode is active
+
+**Startup Options:**
+- **Recommended**: Use `./start_worker_macos.sh` for optimal macOS compatibility
+- **Threading Mode**: Use `./start_worker_threading.sh` for alternative execution model
+- **Direct Execution**: `python worker.py` (auto-detects macOS) or `python worker.py --threading`
+
+**What's Fixed:**
+- ✅ Eliminates "objc[PID]: +[NSMutableString initialize] may have been in progress" errors
+- ✅ Prevents worker crashes with "waitpid returned 6 (signal 6)"
+- ✅ Enables complex Flask application jobs to run successfully
+- ✅ Maintains full compatibility with Linux/Docker environments
+
+No manual configuration is required - the system handles macOS-specific requirements automatically.
+
 ## System Status
 
 ✅ **100% Functional** - All core features working correctly:
@@ -100,6 +136,9 @@ docker-compose exec web python scripts/bulk_reanalyze_parallel.py --workers 2 --
 
 - **Setup Instructions**: See `.env.example` for configuration
 - **Architecture Overview**: `docs/simplified_structure_current_impl.md`
+- **Docker Environment**: `docs/DOCKER_ENVIRONMENT_FIXES.md`
+- **macOS Development**: `docs/MACOS_FORK_SAFETY.md`
+- **Threading Workers**: `docs/THREADING_WORKER_CONFIG.md`
 - **UI Improvements**: `docs/UI_IMPROVEMENTS_SUMMARY.md`
 - **API Documentation**: `docs/api_docs.md`
 - **Parallel Processing**: `docs/PARALLEL_PROCESSING.md`

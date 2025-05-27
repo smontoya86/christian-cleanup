@@ -1,10 +1,14 @@
 #!/bin/bash
 set -e
 
-# Set the Redis URL
+# Set the Redis URL for Docker
 export RQ_REDIS_URL=redis://redis:6379/0
 
-echo "Starting RQ worker with Redis URL: $RQ_REDIS_URL"
+# Force comprehensive analysis
+export USE_LIGHTWEIGHT_ANALYZER=false
 
-# Execute the RQ worker command
-exec rq worker --url "$RQ_REDIS_URL" default
+echo "Starting RQ worker with Redis URL: $RQ_REDIS_URL"
+echo "Comprehensive analysis mode: enabled"
+
+# Execute the RQ worker command to handle all priority queues
+exec rq worker --url "$RQ_REDIS_URL" high default low

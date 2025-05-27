@@ -89,7 +89,47 @@
                             {% if analysis and analysis.explanation %}
                             <li class="list-group-item">
                                 <strong>Analysis Explanation:</strong>
-                                <p class="mt-2 mb-0">{{ analysis.explanation }}</p>
+                                <div class="mt-3 analysis-explanation">
+                                    {% set explanation_parts = analysis.explanation.split('**') %}
+                                    {% for part in explanation_parts %}
+                                        {% if loop.index is odd %}
+                                            {% if part.strip() %}
+                                                <p class="mb-2 text-muted">{{ part.strip() }}</p>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if part.strip() %}
+                                                <div class="mt-3 mb-2">
+                                                    <h6 class="text-primary mb-2">
+                                                        {% if ':' in part %}
+                                                            {{ part.split(':', 1)[0] }}
+                                                        {% else %}
+                                                            {{ part }}
+                                                        {% endif %}
+                                                    </h6>
+                                                    {% if ':' in part %}
+                                                        <div class="ms-3">
+                                                            {% set content = part.split(':', 1)[1].strip() %}
+                                                            {% if content.startswith('-') %}
+                                                                <ul class="list-unstyled mb-0">
+                                                                    {% for line in content.split('- ')[1:] %}
+                                                                        {% if line.strip() %}
+                                                                            <li class="mb-1">
+                                                                                <i class="fas fa-circle text-warning me-2" style="font-size: 0.5em;"></i>
+                                                                                {{ line.strip() }}
+                                                                            </li>
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                </ul>
+                                                            {% else %}
+                                                                <p class="mb-0 text-muted">{{ content }}</p>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
                             </li>
                             {% endif %}
                             
@@ -178,7 +218,18 @@
                         <h5 class="mb-0"><i class="fas fa-cross me-2"></i>Biblical Themes</h5>
                     </div>
                     <div class="card-body">
+                        {% if not lyrics and (not song.lyrics or song.lyrics.strip() == '' or song.lyrics == 'Lyrics not available') %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-info-circle text-info mb-2"></i>
+                            <p class="text-muted mb-2"><strong>Biblical themes require lyrics for analysis</strong></p>
+                            <p class="small text-muted mb-0">
+                                This song's lyrics are not available, so biblical themes cannot be identified. 
+                                The analysis is based on song metadata (title, artist, explicit flag) only.
+                            </p>
+                        </div>
+                        {% else %}
                         <p class="text-muted mb-0">No specific biblical themes were identified in this analysis.</p>
+                        {% endif %}
                     </div>
                 </div>
                 {% endif %}
@@ -240,7 +291,18 @@
                         <h5 class="mb-0"><i class="fas fa-book-open me-2"></i>Supporting Scripture</h5>
                     </div>
                     <div class="card-body">
+                        {% if not lyrics and (not song.lyrics or song.lyrics.strip() == '' or song.lyrics == 'Lyrics not available') %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-info-circle text-info mb-2"></i>
+                            <p class="text-muted mb-2"><strong>Scripture references require lyrics for analysis</strong></p>
+                            <p class="small text-muted mb-0">
+                                Since this song's lyrics are not available, relevant scripture references cannot be identified. 
+                                Analysis is based on available metadata only.
+                            </p>
+                        </div>
+                        {% else %}
                         <p class="text-muted mb-0">No supporting scripture references were identified for this analysis.</p>
+                        {% endif %}
                     </div>
                 </div>
                 {% endif %}
