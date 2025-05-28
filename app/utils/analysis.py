@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import time
 from typing import Optional, Dict, Any, List, Tuple
 
 import torch
@@ -1062,9 +1063,25 @@ class SongAnalyzer:
 
     def analyze_song(self, title: str, artist: str, lyrics_text: Optional[str] = None, 
                     fetch_lyrics_if_missing: bool = True, is_explicit: bool = False) -> Dict[str, Any]:
-        # Log the start of analysis with user context if available
+        # Import metrics tracking
+        from ..utils.metrics import metrics_collector
+        from ..utils.logging import log_analysis_metrics
+        
+        start_time = time.time()
         log_prefix = f"[User {self.user_id}] " if self.user_id else ""
-        logger.info(f"{log_prefix}--- Starting Song Analysis for '{title}' by '{artist}' ---")
+        
+        # Log the start of analysis with comprehensive context
+        logger.info(f"{log_prefix}🔍 Starting Song Analysis", extra={
+            'extra_fields': {
+                'song_title': title,
+                'song_artist': artist,
+                'user_id': self.user_id,
+                'is_explicit': is_explicit,
+                'lyrics_provided': lyrics_text is not None,
+                'fetch_lyrics_enabled': fetch_lyrics_if_missing,
+                'analysis_type': 'comprehensive'
+            }
+        })
         
         # Default analysis results with safe defaults
         analysis_results = {
@@ -1090,20 +1107,76 @@ class SongAnalyzer:
         try:
             # 1. Get Lyrics
             if not lyrics_text and fetch_lyrics_if_missing:
-                logger.info(f"Lyrics not provided for '{title}'. Fetching...")
+                logger.info(f"{log_prefix}📝 Fetching lyrics", extra={
+                    'extra_fields': {
+                        'song_title': title,
+                        'song_artist': artist,
+                        'lyrics_source': 'external_fetch'
+                    }
+                })
                 try:
+                    fetch_start = time.time()
                     lyrics_text = self.lyrics_fetcher.fetch_lyrics(title, artist)
+                    fetch_duration = time.time() - fetch_start
+                    
                     if lyrics_text:
-                        logger.info(f"Lyrics fetched successfully for '{title}'. Length: {len(lyrics_text)}")
+                        logger.info(f"{log_prefix}✅ Lyrics fetched successfully", extra={
+                            'extra_fields': {
+                                'song_title': title,
+                                'lyrics_length': len(lyrics_text),
+                                'fetch_duration_ms': round(fetch_duration * 1000, 2),
+                                'lyrics_source': 'genius_api'
+                            }
+                        })
                         analysis_results["lyrics_fetched_successfully"] = True
+                        
+                        # Track lyrics fetch metrics
+                        metrics_collector.track_api_request(
+                            endpoint='lyrics_fetch',
+                            method='GET',
+                            status_code=200,
+                            duration=fetch_duration * 1000
+                        )
                     else:
-                        logger.warning(f"Could not fetch lyrics for '{title}'.")
+                        logger.warning(f"{log_prefix}❌ No lyrics found", extra={
+                            'extra_fields': {
+                                'song_title': title,
+                                'song_artist': artist,
+                                'fetch_duration_ms': round(fetch_duration * 1000, 2),
+                                'reason': 'not_found'
+                            }
+                        })
                         analysis_results["warnings"].append("Failed to fetch lyrics. Analysis will be limited.")
+                        
+                        # Track failed lyrics fetch
+                        metrics_collector.track_api_request(
+                            endpoint='lyrics_fetch',
+                            method='GET',
+                            status_code=404,
+                            duration=fetch_duration * 1000
+                        )
                 except Exception as e:
-                    logger.error(f"Error fetching lyrics for '{title}': {e}", exc_info=True)
+                    fetch_duration = time.time() - fetch_start if 'fetch_start' in locals() else 0
+                    logger.error(f"{log_prefix}💥 Error fetching lyrics", extra={
+                        'extra_fields': {
+                            'song_title': title,
+                            'song_artist': artist,
+                            'error_type': type(e).__name__,
+                            'error_message': str(e),
+                            'fetch_duration_ms': round(fetch_duration * 1000, 2)
+                        }
+                    }, exc_info=True)
                     error_msg = f"Error fetching lyrics: {str(e)}"
                     analysis_results["warnings"].append(error_msg)
                     analysis_results["errors"].append(error_msg)
+                    
+                    # Track error metrics
+                    metrics_collector.track_api_request(
+                        endpoint='lyrics_fetch',
+                        method='GET',
+                        status_code=500,
+                        duration=fetch_duration * 1000
+                    )
             
             if not lyrics_text:
                 error_msg = "No lyrics available for analysis. Using default scoring."
@@ -1239,7 +1312,40 @@ class SongAnalyzer:
         if not analysis_results.get("warnings"):
             analysis_results["warnings"] = []
             
-        logger.info(f"--- Completed Song Analysis for '{title}' by '{artist}' ---")
+        # Calculate total analysis duration
+        total_duration = time.time() - start_time
+        
+        # Log comprehensive completion details
+        logger.info(f"{log_prefix}✅ Song Analysis Complete", extra={
+            'extra_fields': {
+                'song_title': title,
+                'song_artist': artist,
+                'user_id': self.user_id,
+                'analysis_duration_ms': round(total_duration * 1000, 2),
+                'christian_score': analysis_results.get('christian_score', 0),
+                'concern_level': analysis_results.get('christian_concern_level', 'Unknown'),
+                'purity_flags_count': len(analysis_results.get('christian_purity_flags_details', [])),
+                'positive_themes_count': len(analysis_results.get('christian_positive_themes_detected', [])),
+                'negative_themes_count': len(analysis_results.get('christian_negative_themes_detected', [])),
+                'warnings_count': len(analysis_results.get('warnings', [])),
+                'errors_count': len(analysis_results.get('errors', [])),
+                'lyrics_available': bool(analysis_results.get('lyrics_used_for_analysis')),
+                'analysis_success': len(analysis_results.get('errors', [])) == 0
+            }
+        })
+        
+        # Track analysis metrics
+        success = len(analysis_results.get('errors', [])) == 0
+        log_analysis_metrics(
+            song_id=0,  # We don't have song ID at this level
+            duration=total_duration,
+            success=success,
+            christian_score=analysis_results.get('christian_score', 0),
+            concern_level=analysis_results.get('christian_concern_level', 'Unknown'),
+            purity_flags_count=len(analysis_results.get('christian_purity_flags_details', [])),
+            user_id=self.user_id
+        )
+        
         return analysis_results
 
 

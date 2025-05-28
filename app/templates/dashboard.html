@@ -861,6 +861,127 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
+    function checkReanalysisStatus() {
+        fetch('/api/admin/reanalysis-status')
+            .then(response => {
+                if (!response.ok) {
+                    // If endpoint doesn't exist or returns error, just return silently
+                    return null;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return;
+                
+                // Show/hide re-analysis progress indicator
+                let reanalysisAlert = document.getElementById('reanalysisProgressAlert');
+                
+                if (data.active) {
+                    // Create or update progress indicator
+                    if (!reanalysisAlert) {
+                        reanalysisAlert = document.createElement('div');
+                        reanalysisAlert.id = 'reanalysisProgressAlert';
+                        reanalysisAlert.className = 'alert alert-info mb-3';
+                        reanalysisAlert.innerHTML = `
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-sync-alt fa-spin me-2"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Re-analysis in Progress</strong>
+                                    <div class="progress mt-2" style="height: 8px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                                             role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <small class="text-muted mt-1 d-block">Starting re-analysis...</small>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Insert at top of main content
+                        const mainContent = document.querySelector('.container-fluid .row .col-12');
+                        if (mainContent) {
+                            mainContent.insertBefore(reanalysisAlert, mainContent.firstChild);
+                        }
+                    }
+                    
+                    // Update progress
+                    const progressBar = reanalysisAlert.querySelector('.progress-bar');
+                    const statusText = reanalysisAlert.querySelector('small');
+                    
+                    if (progressBar && data.progress !== undefined) {
+                        const progress = Math.round(data.progress);
+                        progressBar.style.width = progress + '%';
+                        progressBar.setAttribute('aria-valuenow', progress);
+                    }
+                    
+                    if (statusText) {
+                        if (data.current_song && data.processed && data.total) {
+                            statusText.textContent = `Processing song ${data.processed}/${data.total}: ${data.current_song}`;
+                        } else if (data.message) {
+                            statusText.textContent = data.message;
+                        } else {
+                            statusText.textContent = 'Re-analyzing songs...';
+                        }
+                    }
+                } else if (data.completed && reanalysisAlert) {
+                    // Re-analysis complete, show success message briefly then remove
+                    const statusText = reanalysisAlert.querySelector('small');
+                    const progressBar = reanalysisAlert.querySelector('.progress-bar');
+                    const icon = reanalysisAlert.querySelector('i');
+                    
+                    if (statusText) statusText.textContent = 'Re-analysis completed successfully!';
+                    if (progressBar) {
+                        progressBar.style.width = '100%';
+                        progressBar.setAttribute('aria-valuenow', '100');
+                        progressBar.classList.remove('progress-bar-animated');
+                        progressBar.classList.add('bg-success');
+                    }
+                    if (icon) {
+                        icon.classList.remove('fa-sync-alt', 'fa-spin');
+                        icon.classList.add('fa-check-circle');
+                    }
+                    
+                    // Remove indicator after a brief delay and refresh
+                    setTimeout(() => {
+                        if (reanalysisAlert && reanalysisAlert.parentNode) {
+                            reanalysisAlert.parentNode.removeChild(reanalysisAlert);
+                            // Refresh the page to show updated results
+                            window.location.reload();
+                        }
+                    }, 3000);
+                } else if (data.failed && reanalysisAlert) {
+                    // Re-analysis failed, show error message
+                    const statusText = reanalysisAlert.querySelector('small');
+                    const progressBar = reanalysisAlert.querySelector('.progress-bar');
+                    const icon = reanalysisAlert.querySelector('i');
+                    
+                    reanalysisAlert.className = 'alert alert-danger mb-3';
+                    if (statusText) statusText.textContent = `Re-analysis failed: ${data.error || 'Unknown error'}`;
+                    if (progressBar) {
+                        progressBar.classList.remove('progress-bar-animated', 'bg-info');
+                        progressBar.classList.add('bg-danger');
+                    }
+                    if (icon) {
+                        icon.classList.remove('fa-sync-alt', 'fa-spin');
+                        icon.classList.add('fa-exclamation-triangle');
+                    }
+                    
+                    // Remove error message after a longer delay
+                    setTimeout(() => {
+                        if (reanalysisAlert && reanalysisAlert.parentNode) {
+                            reanalysisAlert.parentNode.removeChild(reanalysisAlert);
+                        }
+                    }, 8000);
+                } else if (reanalysisAlert && !data.active) {
+                    // No active job and we have an indicator, remove it
+                    reanalysisAlert.parentNode.removeChild(reanalysisAlert);
+                }
+            })
+            .catch(error => {
+                // Silently handle errors - re-analysis status is optional
+                console.debug('Re-analysis status check failed:', error);
+            });
+    }
+
     function showSyncCompleteToast() {
         const toastElement = document.getElementById('syncCompleteToast');
         if (toastElement) {
@@ -887,10 +1008,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             autoSyncAlert.style.display = 'none';
                         }
                         
-                        // Show completion notification
-                        if (data.summary && data.summary.recent_completed_count > 0) {
-                            showSyncCompleteToast();
-                        }
+                        // Show completion notification (regardless of completed count)
+                        showSyncCompleteToast();
                         
                         // Wait a moment then refresh to show new data
                         setTimeout(() => {
@@ -1039,8 +1158,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Always monitor analysis progress
     analysisCheckInterval = setInterval(checkAnalysisStatus, 3000);
     
-    // Initial analysis status check
+    // Monitor admin re-analysis progress
+    reanalysisCheckInterval = setInterval(checkReanalysisStatus, 3000);
+    
+    // Initial status checks
     checkAnalysisStatus();
+    checkReanalysisStatus();
     
     // Progress indicator now working correctly - debug code removed
     
@@ -1051,6 +1174,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (analysisCheckInterval) {
             clearInterval(analysisCheckInterval);
+        }
+        if (reanalysisCheckInterval) {
+            clearInterval(reanalysisCheckInterval);
         }
     });
 

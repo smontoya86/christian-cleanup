@@ -70,19 +70,71 @@ def get_by_filter(model_class: Type, **filters) -> Optional[Any]:
     Returns:
         First matching model instance or None
     """
+    from .metrics import metrics_collector
+    from .logging import log_database_metrics
+    
+    start_time = time.time()
+    operation = f"get_by_filter_{model_class.__name__}"
+    
     try:
         stmt = select(model_class)
         for key, value in filters.items():
             if hasattr(model_class, key):
                 stmt = stmt.where(getattr(model_class, key) == value)
             else:
-                logger.warning(f"Model {model_class.__name__} has no attribute {key}")
+                logger.warning(f"Model {model_class.__name__} has no attribute {key}", extra={
+                    'extra_fields': {
+                        'model': model_class.__name__,
+                        'invalid_attribute': key,
+                        'operation': operation
+                    }
+                })
                 return None
         
         result = db.session.execute(stmt).scalar_one_or_none()
+        duration = time.time() - start_time
+        
+        # Log successful database operation
+        logger.debug(f"🔍 Database query completed", extra={
+            'extra_fields': {
+                'model': model_class.__name__,
+                'operation': operation,
+                'filters': filters,
+                'duration_ms': round(duration * 1000, 2),
+                'result_found': result is not None
+            }
+        })
+        
+        # Track database metrics
+        log_database_metrics(
+            operation=operation,
+            duration=duration,
+            affected_rows=1 if result else 0,
+            model=model_class.__name__
+        )
+        
         return result
     except Exception as e:
-        logger.error(f"Error filtering {model_class.__name__} with {filters}: {e}")
+        duration = time.time() - start_time
+        logger.error(f"💥 Database query failed", extra={
+            'extra_fields': {
+                'model': model_class.__name__,
+                'operation': operation,
+                'filters': filters,
+                'error_type': type(e).__name__,
+                'error_message': str(e),
+                'duration_ms': round(duration * 1000, 2)
+            }
+        }, exc_info=True)
+        
+        # Track failed database operation
+        metrics_collector.record_error(
+            error_type='database_error',
+            error_message=str(e),
+            operation=operation,
+            model=model_class.__name__
+        )
+        
         return None
 
 

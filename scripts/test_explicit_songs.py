@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 from app import create_app, db
 from app.models.models import Song, AnalysisResult, Playlist, User
-from app.services.analysis_service import perform_christian_song_analysis_and_store
+from app.services.unified_analysis_service import UnifiedAnalysisService  # Updated import
 from app.utils.database import get_by_filter  # Add SQLAlchemy 2.0 utilities
 
 # Add project root to path
@@ -21,17 +21,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def analyze_song(title, artist, lyrics):
+def analyze_song(title, artist, lyrics, user_id=None):
     """Analyze a song with the given title, artist, and lyrics."""
     try:
         from app import create_app
         from app.extensions import db
         from app.models import Song, AnalysisResult
-        from app.services.analysis_service import perform_christian_song_analysis_and_store
+        from app.services.unified_analysis_service import UnifiedAnalysisService  # Updated import
         
         # Create Flask app and push app context
         app = create_app()
         with app.app_context():
+            # Determine user ID to use
+            if user_id is None:
+                from app.models import User
+                user = User.query.first()
+                if not user:
+                    logger.error("No users found in database")
+                    return False
+                user_id = user.id
+                logger.warning(f"No user specified, using first available user: {user.display_name} (ID: {user_id})")
+            
             # Create test song
             test_song = Song(
                 spotify_id=f"test_{title.lower().replace(' ', '_')}_{int(datetime.utcnow().timestamp())}",
@@ -47,68 +57,66 @@ def analyze_song(title, artist, lyrics):
             
             logger.info(f"Created test song: {test_song.title} by {test_song.artist} (ID: {test_song.id})")
             
-            # Create analysis result with lyrics
-            analysis = AnalysisResult(
-                song_id=test_song.id,
-                analyzed_by_user_id=1,  # Assuming user 1 exists
-                lyrics_provided=True,
-                lyrics_used_for_analysis=lyrics,
-                content_moderation_raw_predictions=[],  # Will be populated by the analyzer
-                alternative_model_raw_predictions={},   # Will be populated by the analyzer
-                christian_purity_flags_details=[],      # Will be populated by the analyzer
-                christian_positive_themes_detected=[],  # Will be populated by the analyzer
-                christian_negative_themes_detected=[],  # Will be populated by the analyzer
-                christian_score=100,                    # Will be updated by the analyzer
-                christian_concern_level="Pending"        # Will be updated by the analyzer
+            # Initialize unified analysis service
+            analysis_service = UnifiedAnalysisService()
+            
+            # Trigger comprehensive analysis
+            logger.info(f"Analyzing song: {title} by {artist}")
+            result = analysis_service.execute_comprehensive_analysis(
+                song_id=test_song.id, 
+                user_id=user_id, 
+                force_reanalysis=True
             )
             
-            db.session.add(analysis)
-            db.session.commit()
-            
-            logger.info(f"Created analysis record for song ID {test_song.id}")
-            
-            # Trigger analysis
-            logger.info(f"Analyzing song: {title} by {artist}")
-            job = perform_christian_song_analysis_and_store(test_song.id, 1)  # User ID 1
-            
-            if not job:
-                logger.error("Failed to enqueue analysis job")
+            if not result:
+                logger.error("Failed to complete analysis")
                 return False
                 
-            logger.info(f"Analysis job enqueued with ID: {job.id}")
-            
-            # For testing purposes, we'll wait a bit for the job to complete
-            import time
-            time.sleep(5)
+            logger.info(f"Analysis completed successfully")
             
             # Get the updated analysis using SQLAlchemy 2.0 pattern
             updated_analysis = get_by_filter(AnalysisResult, song_id=test_song.id)
             
             if not updated_analysis:
-                logger.error("No analysis results found after job completion")
+                logger.error("No analysis results found after analysis completion")
                 return False
                 
             # Print the results
             logger.info("\n=== Analysis Results ===")
             logger.info(f"Song: {title} by {artist}")
-            logger.info(f"Final Score: {updated_analysis.christian_score}")
-            logger.info(f"Concern Level: {updated_analysis.christian_concern_level}")
+            logger.info(f"Final Score: {updated_analysis.score}")
+            logger.info(f"Concern Level: {updated_analysis.concern_level}")
             
-            if updated_analysis.christian_purity_flags_details:
-                logger.info("\n=== Purity Flags ===")
-                for flag in updated_analysis.christian_purity_flags_details:
-                    logger.info(f"- {flag.get('flag')} (Confidence: {flag.get('confidence', 0):.2f})")
-                    logger.info(f"  Details: {flag.get('details', 'No details')}")
+            # Parse JSON fields for display
+            import json
             
-            if updated_analysis.christian_positive_themes_detected:
-                logger.info("\n=== Positive Themes ===")
-                for theme in updated_analysis.christian_positive_themes_detected:
-                    logger.info(f"- {theme.get('theme')}")
+            if updated_analysis.purity_flags_details:
+                try:
+                    purity_flags = json.loads(updated_analysis.purity_flags_details) if isinstance(updated_analysis.purity_flags_details, str) else updated_analysis.purity_flags_details
+                    logger.info("\n=== Purity Flags ===")
+                    for flag in purity_flags:
+                        logger.info(f"- {flag.get('flag')} (Confidence: {flag.get('confidence', 0):.2f})")
+                        logger.info(f"  Details: {flag.get('details', 'No details')}")
+                except (json.JSONDecodeError, TypeError):
+                    logger.info("=== Purity Flags === (parsing error)")
             
-            if updated_analysis.christian_negative_themes_detected:
-                logger.info("\n=== Negative Themes ===")
-                for theme in updated_analysis.christian_negative_themes_detected:
-                    logger.info(f"- {theme.get('theme')}")
+            if updated_analysis.positive_themes_identified:
+                try:
+                    positive_themes = json.loads(updated_analysis.positive_themes_identified) if isinstance(updated_analysis.positive_themes_identified, str) else updated_analysis.positive_themes_identified
+                    logger.info("\n=== Positive Themes ===")
+                    for theme in positive_themes:
+                        logger.info(f"- {theme.get('theme')}")
+                except (json.JSONDecodeError, TypeError):
+                    logger.info("=== Positive Themes === (parsing error)")
+            
+            if updated_analysis.concerns:
+                try:
+                    concerns = json.loads(updated_analysis.concerns) if isinstance(updated_analysis.concerns, str) else updated_analysis.concerns
+                    logger.info("\n=== Concerns ===")
+                    for concern in concerns:
+                        logger.info(f"- {concern.get('concern')}")
+                except (json.JSONDecodeError, TypeError):
+                    logger.info("=== Concerns === (parsing error)")
             
             return True
             
@@ -116,9 +124,43 @@ def analyze_song(title, artist, lyrics):
         logger.error(f"Error analyzing song: {str(e)}", exc_info=True)
         return False
 
-def main():
+def get_user_by_identifier(identifier):
+    """Get user by ID, Spotify ID, or display name"""
+    from app import create_app
+    from app.models import User
+    
+    app = create_app()
+    with app.app_context():
+        try:
+            # Try as integer ID first
+            user_id = int(identifier)
+            user = User.query.filter_by(id=user_id).first()
+            if user:
+                return user
+        except ValueError:
+            # Not an integer, try as Spotify ID
+            user = User.query.filter_by(spotify_id=identifier).first()
+            if user:
+                return user
+        
+        # Try as display name
+        user = User.query.filter_by(display_name=identifier).first()
+        return user
+
+def main(user_identifier=None):
     """Main function to test song analysis."""
     print("Testing song analysis with explicit content...\n")
+    
+    # Determine user ID to use
+    user_id = None
+    if user_identifier:
+        user = get_user_by_identifier(user_identifier)
+        if user:
+            user_id = user.id
+            print(f"Using user: {user.display_name} (ID: {user_id})")
+        else:
+            print(f"❌ User not found with identifier: {user_identifier}")
+            return
     
     # Test song 1: Seeing Red by Architects
     seeing_red_lyrics = """
@@ -266,7 +308,8 @@ def main():
         success = analyze_song(
             title=song['title'],
             artist=song['artist'],
-            lyrics=song['lyrics']
+            lyrics=song['lyrics'],
+            user_id=user_id
         )
         
         if not success:
@@ -275,4 +318,10 @@ def main():
     print("\nAnalysis complete!")
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Test explicit song analysis")
+    parser.add_argument("--user", type=str, help="User identifier (ID, Spotify ID, or display name)")
+    args = parser.parse_args()
+    
+    main(args.user)

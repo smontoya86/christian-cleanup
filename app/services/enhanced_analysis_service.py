@@ -23,7 +23,7 @@ def analyze_song_user_initiated(song_id, user_id=None):
     try:
         # Use high priority queue for user-initiated analysis
         job = rq.get_queue(HIGH_QUEUE).enqueue(
-            'app.services.analysis_service.perform_christian_song_analysis_and_store',
+            'app.services.unified_analysis_service.execute_comprehensive_analysis_task',
             song_id,
             user_id=user_id,
             job_timeout=300,  # 5 minutes
@@ -52,7 +52,7 @@ def analyze_song_background(song_id, user_id=None):
     try:
         # Use default priority queue for background analysis
         job = rq.get_queue(DEFAULT_QUEUE).enqueue(
-            'app.services.analysis_service.perform_christian_song_analysis_and_store',
+            'app.services.unified_analysis_service.execute_comprehensive_analysis_task',
             song_id,
             user_id=user_id,
             job_timeout=600,  # 10 minutes
@@ -82,7 +82,7 @@ def analyze_songs_batch(song_ids, user_id=None):
     try:
         for song_id in song_ids:
             job = rq.get_queue(LOW_QUEUE).enqueue(
-                'app.services.analysis_service.perform_christian_song_analysis_and_store',
+                'app.services.unified_analysis_service.execute_comprehensive_analysis_task',
                 song_id,
                 user_id=user_id,
                 job_timeout=1800,  # 30 minutes

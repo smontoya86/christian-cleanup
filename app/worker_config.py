@@ -1,46 +1,197 @@
 """
-Enhanced worker configuration for RQ background processing.
+Worker configuration for RQ (Redis Queue) with platform-specific optimizations.
+Supports both fork-based and threading-based worker modes.
 """
+
 import os
-import redis
-from rq import Queue
+import platform
+from rq import Worker
+from rq.worker import WorkerStatus
 
-# Configure Redis connection
-redis_url = os.getenv('RQ_REDIS_URL', 'redis://localhost:6379/0')
-redis_conn = redis.from_url(redis_url)
 
-# Define priority queue names
-HIGH_QUEUE = 'high'
+# Queue configuration
+HIGH_PRIORITY_QUEUE = 'high'
 DEFAULT_QUEUE = 'default'
-LOW_QUEUE = 'low'
+LOW_PRIORITY_QUEUE = 'low'
 
-# Queue definitions with TTL and result expiration settings
-def get_queues():
-    """Get all priority queues in order of priority."""
-    high_queue = Queue(HIGH_QUEUE, connection=redis_conn, default_timeout=300)  # 5 minutes
-    default_queue = Queue(DEFAULT_QUEUE, connection=redis_conn, default_timeout=600)  # 10 minutes
-    low_queue = Queue(LOW_QUEUE, connection=redis_conn, default_timeout=1800)  # 30 minutes
+# Default queue listening order (high priority first)
+DEFAULT_QUEUES = [HIGH_PRIORITY_QUEUE, DEFAULT_QUEUE, LOW_PRIORITY_QUEUE]
+
+
+def configure_worker_for_platform(connection, queues=None, worker_class=None, **kwargs):
+    """
+    Create a platform-optimized RQ worker with appropriate configuration.
     
-    return [high_queue, default_queue, low_queue]
+    Args:
+        connection: Redis connection instance
+        queues: List of queue names to listen on (default: DEFAULT_QUEUES)
+        worker_class: Custom worker class (optional)
+        **kwargs: Additional worker configuration options
+    
+    Returns:
+        Configured RQ Worker instance
+    """
+    if queues is None:
+        queues = DEFAULT_QUEUES
+    
+    # Detect platform
+    is_macos = platform.system() == 'Darwin'
+    is_docker = os.path.exists('/.dockerenv')
+    
+    # Base worker configuration
+    worker_config = {
+        'queues': queues,
+        'connection': connection,
+        **kwargs
+    }
+    
+    # Platform-specific configuration
+    if is_macos and not is_docker:
+        print("macOS detected: Configuring worker with platform optimizations")
+        
+        # Apply macOS fork safety measures
+        os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
+        
+        # Use threading mode if explicitly requested or if fork mode fails
+        use_threading = os.environ.get('RQ_WORKER_USE_THREADING', 'false').lower() == 'true'
+        
+        if use_threading:
+            print("Threading mode enabled for macOS compatibility")
+            # Note: RQ doesn't have built-in threading mode, but we can configure
+            # the worker to be more thread-safe and use different job execution
+            worker_config.update({
+                'job_monitoring_interval': 1,  # More frequent monitoring
+                'default_worker_ttl': 420,     # Shorter TTL for better cleanup
+            })
+        else:
+            print("Fork mode with safety measures enabled")
+            
+    elif is_docker:
+        print("Docker environment detected: Using standard configuration")
+        # Docker environments typically work well with fork mode
+        worker_config.update({
+            'job_monitoring_interval': 5,
+            'default_worker_ttl': 420,
+        })
+    else:
+        print("Linux/Unix environment detected: Using standard configuration")
+        # Standard configuration for Linux environments
+        pass
+    
+    # Create worker instance
+    if worker_class:
+        worker = worker_class(**worker_config)
+    else:
+        worker = Worker(**worker_config)
+    
+    return worker
 
-# Create individual queue instances for direct access
-def get_high_queue():
-    """Get high priority queue."""
-    return Queue(HIGH_QUEUE, connection=redis_conn, default_timeout=300)
 
-def get_default_queue():
-    """Get default priority queue."""
-    return Queue(DEFAULT_QUEUE, connection=redis_conn, default_timeout=600)
+def create_threading_worker(connection, queues=None, **kwargs):
+    """
+    Create a worker optimized for threading-based job execution.
+    This is an alternative approach for environments where fork() causes issues.
+    
+    Args:
+        connection: Redis connection instance
+        queues: List of queue names to listen on
+        **kwargs: Additional worker configuration
+    
+    Returns:
+        Worker configured for threading-based execution
+    """
+    if queues is None:
+        queues = DEFAULT_QUEUES
+    
+    print("Creating threading-optimized worker")
+    
+    # Threading-specific configuration
+    threading_config = {
+        'queues': queues,
+        'connection': connection,
+        'job_monitoring_interval': 1,      # Frequent monitoring for responsiveness
+        'default_worker_ttl': 300,         # Shorter TTL for threading mode
+        **kwargs
+    }
+    
+    # Set environment variables for threading safety
+    os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
+    os.environ['RQ_WORKER_USE_THREADING'] = 'true'
+    
+    worker = Worker(**threading_config)
+    
+    # Add custom attributes to identify this as a threading worker
+    worker._is_threading_mode = True
+    worker._platform_mode = 'threading'
+    
+    return worker
 
-def get_low_queue():
-    """Get low priority queue."""
-    return Queue(LOW_QUEUE, connection=redis_conn, default_timeout=1800)
 
-# RQ worker configuration
-WORKER_NAME = 'song_analysis_worker'
-QUEUES = ['default']
+def get_worker_info(worker):
+    """
+    Get information about the worker configuration and platform.
+    
+    Args:
+        worker: RQ Worker instance
+    
+    Returns:
+        Dictionary with worker information
+    """
+    info = {
+        'platform': platform.system(),
+        'is_docker': os.path.exists('/.dockerenv'),
+        'worker_id': worker.name,
+        'queues': [q.name for q in worker.queues],
+        'connection_info': {
+            'host': worker.connection.connection_pool.connection_kwargs.get('host', 'unknown'),
+            'port': worker.connection.connection_pool.connection_kwargs.get('port', 'unknown'),
+            'db': worker.connection.connection_pool.connection_kwargs.get('db', 0),
+        },
+        'threading_mode': getattr(worker, '_is_threading_mode', False),
+        'platform_mode': getattr(worker, '_platform_mode', 'fork'),
+        'environment_vars': {
+            'OBJC_DISABLE_INITIALIZE_FORK_SAFETY': os.environ.get('OBJC_DISABLE_INITIALIZE_FORK_SAFETY'),
+            'RQ_WORKER_USE_THREADING': os.environ.get('RQ_WORKER_USE_THREADING'),
+        }
+    }
+    
+    return info
 
-# Logging configuration
-LOG_LEVEL = 'INFO'
-LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-LOG_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+def print_worker_startup_info(worker):
+    """
+    Print detailed information about the worker configuration at startup.
+    
+    Args:
+        worker: RQ Worker instance
+    """
+    info = get_worker_info(worker)
+    
+    print("\n" + "="*60)
+    print("RQ WORKER STARTUP INFORMATION")
+    print("="*60)
+    print(f"Platform: {info['platform']}")
+    print(f"Docker Environment: {info['is_docker']}")
+    print(f"Worker ID: {info['worker_id']}")
+    print(f"Platform Mode: {info['platform_mode']}")
+    print(f"Threading Mode: {info['threading_mode']}")
+    print(f"Queues: {', '.join(info['queues'])}")
+    print(f"Redis Connection: {info['connection_info']['host']}:{info['connection_info']['port']}/{info['connection_info']['db']}")
+    
+    print("\nEnvironment Variables:")
+    for key, value in info['environment_vars'].items():
+        if value:
+            print(f"  {key}: {value}")
+    
+    print("="*60 + "\n")
+
+
+# Backward compatibility - maintain existing queue definitions
+QUEUE_HIGH = HIGH_PRIORITY_QUEUE
+QUEUE_DEFAULT = DEFAULT_QUEUE  
+QUEUE_LOW = LOW_PRIORITY_QUEUE
+
+# Legacy names for Flask app imports
+HIGH_QUEUE = HIGH_PRIORITY_QUEUE
+DEFAULT_QUEUE = DEFAULT_QUEUE
+LOW_QUEUE = LOW_PRIORITY_QUEUE

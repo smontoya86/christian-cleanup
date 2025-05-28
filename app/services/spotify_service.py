@@ -2,6 +2,7 @@
 Service layer for interacting with the Spotify API.
 """
 import spotipy
+import time
 from flask import current_app, session, url_for, flash, redirect
 from flask_login import current_user
 from spotipy.oauth2 import SpotifyOAuth
@@ -11,7 +12,7 @@ from dateutil import parser # Added for timestamp parsing
 # Added imports for DB interaction
 from .. import db
 from ..models import User, Playlist, Song, PlaylistSong, Whitelist, Blacklist
-from .analysis_service import perform_christian_song_analysis_and_store # Added import
+from .unified_analysis_service import UnifiedAnalysisService # Updated import
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 import requests
@@ -132,11 +133,30 @@ class SpotifyService:
         Returns a list of playlist data suitable for display.
         Raises exceptions on critical Spotify errors (e.g., auth issues).
         """
+        # Import metrics tracking
+        from ..utils.metrics import metrics_collector
+        from ..utils.logging import get_logger
+        
+        start_time = time.time()
+        sync_logger = get_logger('app.spotify')
+        
         if not self.sp:
-            self.logger.error(f"Spotify client not initialized for user {user_id} in sync_user_playlists_with_db")
+            sync_logger.error("Spotify client not initialized", extra={
+                'extra_fields': {
+                    'user_id': user_id,
+                    'operation': 'sync_playlists',
+                    'error_type': 'client_not_initialized'
+                }
+            })
             return []
 
-        self.logger.info(f"Starting playlist sync for user_id: {user_id}")
+        sync_logger.info("🎵 Starting Spotify playlist sync", extra={
+            'extra_fields': {
+                'user_id': user_id,
+                'operation': 'sync_playlists',
+                'sync_type': 'full'
+            }
+        })
         
         all_playlist_items = []
         offset = 0
@@ -302,8 +322,9 @@ class SpotifyService:
                                     db.session.add(song)
                                     db.session.flush() # Assigns ID to song object if new
                                     self.logger.info(f"Successfully created new song: {song.title} (ID: {song.id}) with Spotify ID {song.spotify_id}")
-                                    # Enqueue analysis for the new song
-                                    analysis_job = perform_christian_song_analysis_and_store(song.id)
+                                    # Enqueue analysis for the new song using unified service
+                                    analysis_service = UnifiedAnalysisService()
+                                    analysis_job = analysis_service.enqueue_analysis_job(song.id, user_id=user_id, priority='default')
                                     if analysis_job:
                                         self.logger.info(f"Analysis task for new song '{song.title}' (ID: {song.id}) enqueued. Job ID: {analysis_job.id}")
                                     else:

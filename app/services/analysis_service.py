@@ -1,3 +1,25 @@
+"""
+DEPRECATED: This module is being phased out in favor of unified_analysis_service.py
+
+⚠️ WARNING: This analysis service has INCORRECT FIELD MAPPINGS and is deprecated.
+Please use UnifiedAnalysisService from app.services.unified_analysis_service instead.
+
+The field mapping in this service uses incorrect prefixed field names like:
+- christian_concern_level (should be: concern_level)
+- christian_purity_flags_details (should be: purity_flags)
+- christian_positive_themes_detected (should be: positive_themes)
+etc.
+
+UnifiedAnalysisService has the CORRECT field mappings and comprehensive biblical analysis.
+"""
+
+import warnings
+warnings.warn(
+    "analysis_service.py is deprecated. Use UnifiedAnalysisService instead for correct field mappings.",
+    DeprecationWarning,
+    stacklevel=2
+)
+
 from flask import current_app
 import logging
 import json
@@ -44,6 +66,11 @@ def _execute_song_analysis_impl(song_id: int, user_id: int = None):
         if cache_key in _analysis_cache:
             cached_result = _analysis_cache[cache_key]
             logging.info(f"⚡ Using cached analysis for: {song_title}")
+            
+            # Clear any existing analysis results for this song (for re-analysis scenarios)
+            existing_results = AnalysisResult.query.filter_by(song_id=song_id).all()
+            for existing_result in existing_results:
+                db.session.delete(existing_result)
             
             # Create AnalysisResult from cached data with comprehensive fields
             analysis_result = AnalysisResult(
@@ -95,7 +122,12 @@ def _execute_song_analysis_impl(song_id: int, user_id: int = None):
                 for key in oldest_keys:
                     del _analysis_cache[key]
             
-            # Create AnalysisResult with comprehensive data mapping
+            # Clear any existing analysis results for this song (for re-analysis scenarios)
+            existing_results = AnalysisResult.query.filter_by(song_id=song_id).all()
+            for existing_result in existing_results:
+                db.session.delete(existing_result)
+            
+            # Create new AnalysisResult with comprehensive data mapping
             analysis_result = AnalysisResult(
                 song_id=song_id,
                 status=AnalysisResult.STATUS_COMPLETED,

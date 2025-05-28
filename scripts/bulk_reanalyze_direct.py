@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from app import create_app
 from app.models.models import Song, AnalysisResult
 from app.extensions import db
-from app.services.analysis_service import _execute_song_analysis_impl
+from app.services.unified_analysis_service import UnifiedAnalysisService  # Updated import
 from app.utils.database import get_by_filter
 
 def setup_logging():
@@ -39,8 +39,9 @@ logger = setup_logging()
 class DirectBulkReanalyzer:
     """Handles direct bulk re-analysis of songs for enhanced analysis fields."""
     
-    def __init__(self, app):
+    def __init__(self, app, user_id=None):
         self.app = app
+        self.user_id = user_id
         
     def get_songs_needing_enhancement(self, force_all=False):
         """Get all songs that need enhanced analysis data."""
@@ -71,13 +72,31 @@ class DirectBulkReanalyzer:
         failed = 0
         enhanced_populated = 0
         
+        # Initialize the unified analysis service
+        analysis_service = UnifiedAnalysisService()
+        
         for song in songs_batch:
             try:
                 with self.app.app_context():
                     logger.info(f"🎵 Analyzing: '{song.title}' by {song.artist} (ID: {song.id})")
                     
-                    # Use direct analysis implementation (no RQ)
-                    result = _execute_song_analysis_impl(song.id, user_id=1)
+                    # Determine user ID
+                    user_id = self.user_id
+                    if user_id is None:
+                        from app.models import User
+                        user = User.query.first()
+                        if not user:
+                            logger.error("No users found in database")
+                            continue
+                        user_id = user.id
+                        logger.warning(f"No user specified, using first available user: {user.display_name} (ID: {user_id})")
+                    
+                    # Use unified analysis service (direct implementation, no RQ)
+                    result = analysis_service.execute_comprehensive_analysis(
+                        song_id=song.id, 
+                        user_id=user_id, 
+                        force_reanalysis=True
+                    )
                     
                     if result:
                         successful += 1
@@ -169,20 +188,53 @@ class DirectBulkReanalyzer:
         
         return total_successful, total_failed, total_enhanced
 
+def get_user_by_identifier(identifier):
+    """Get user by ID, Spotify ID, or display name"""
+    from app.models import User
+    
+    try:
+        # Try as integer ID first
+        user_id = int(identifier)
+        user = User.query.filter_by(id=user_id).first()
+        if user:
+            return user
+    except ValueError:
+        # Not an integer, try as Spotify ID
+        user = User.query.filter_by(spotify_id=identifier).first()
+        if user:
+            return user
+    
+    # Try as display name
+    user = User.query.filter_by(display_name=identifier).first()
+    return user
+
 def main():
     """Main execution function."""
     parser = argparse.ArgumentParser(description='Direct bulk re-analyze songs for enhanced analysis data')
     parser.add_argument('--batch-size', type=int, default=10, help='Number of songs to process per batch (default: 10)')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be analyzed without actually doing it')
     parser.add_argument('--force-all', action='store_true', help='Re-analyze ALL songs, not just those missing enhanced data')
+    parser.add_argument('--user', type=str, help='User identifier (ID, Spotify ID, or display name)')
     
     args = parser.parse_args()
     
     # Create Flask app
     app = create_app('development')
     
+    # Determine user ID
+    user_id = None
+    if args.user:
+        with app.app_context():
+            user = get_user_by_identifier(args.user)
+            if user:
+                user_id = user.id
+                logger.info(f"Using user: {user.display_name} (ID: {user_id})")
+            else:
+                logger.error(f"❌ User not found with identifier: {args.user}")
+                sys.exit(1)
+    
     # Create direct bulk reanalyzer
-    reanalyzer = DirectBulkReanalyzer(app)
+    reanalyzer = DirectBulkReanalyzer(app, user_id)
     
     # Run the bulk re-analysis
     try:

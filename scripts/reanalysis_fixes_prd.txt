@@ -1,0 +1,129 @@
+# Re-Analysis System Fix - Product Requirements Document
+
+## Executive Summary
+Fix the comprehensive Christian song re-analysis system that is currently experiencing multiple critical issues preventing proper biblical analysis and content detection. The system needs to be unified, reliable, and always perform comprehensive biblical analysis.
+
+## Problem Statement
+The current re-analysis system has several critical issues:
+1. **Fragmented Analysis Services**: Multiple analysis services exist instead of one comprehensive system
+2. **API Rate Limiting**: Genius API is returning HTTP 429 errors, preventing lyrics fetching
+3. **Database Session Issues**: Workers experience SQLAlchemy DetachedInstanceError
+4. **Docker Configuration Issues**: Environment variables and worker setup problems
+5. **Incomplete Analysis**: Songs missing biblical themes and scripture references
+6. **Performance Issues**: Low CPU usage despite workers running
+
+## Root Cause Analysis Findings
+- **Primary Issue**: Genius API rate limiting (HTTP 429) prevents lyrics fetching, causing analysis to complete in 0.06s-0.12s without comprehensive content
+- **Secondary Issues**: 
+  - SQLAlchemy session detachment in workers
+  - Multiple fragmented analysis services causing confusion
+  - Docker environment variable configuration issues
+  - Field mapping errors between analysis results and database storage
+
+## Success Criteria
+1. **Unified Analysis Service**: Single comprehensive service handling all analysis
+2. **API Rate Limiting Mitigation**: Implement robust retry mechanisms and fallback strategies
+3. **Database Session Management**: Fix worker session issues
+4. **Comprehensive Analysis**: All songs receive full biblical theme analysis
+5. **Monitoring & Diagnostics**: Complete observability of the analysis pipeline
+6. **Docker Reliability**: Stable containerized deployment
+
+## Technical Requirements
+
+### 1. API Rate Limiting & Lyrics Fetching
+- Implement exponential backoff retry mechanism for Genius API
+- Add rate limiting detection and queuing system
+- Implement alternative lyrics sources as fallbacks
+- Add lyrics caching to reduce API calls
+- Monitor API usage and implement request throttling
+
+### 2. Database Session Management
+- Fix SQLAlchemy DetachedInstanceError in workers
+- Implement proper session lifecycle management
+- Add database connection pooling for workers
+- Ensure thread-safe database operations
+
+### 3. Unified Analysis Service Enhancement
+- Consolidate all analysis functionality into unified service
+- Ensure comprehensive biblical analysis for every song
+- Implement proper error handling and logging
+- Add analysis result validation
+- Fix field mapping between analyzer and database
+
+### 4. Worker System Improvements
+- Fix Redis queue connectivity issues
+- Implement proper job retry mechanisms
+- Add job status monitoring and alerting
+- Ensure proper environment variable propagation
+- Implement graceful shutdown handling
+
+### 5. Docker & Infrastructure
+- Fix Docker environment variable issues
+- Ensure proper Redis connectivity in containers
+- Implement health checks for all services
+- Add proper logging aggregation
+- Configure proper networking between containers
+
+### 6. Monitoring & Diagnostics
+- Implement comprehensive logging throughout the pipeline
+- Add metrics collection for analysis performance
+- Create diagnostic tools for troubleshooting
+- Implement alerting for critical failures
+- Add dashboard for system health monitoring
+
+### 7. Testing & Validation
+- Create comprehensive test suite for analysis pipeline
+- Add integration tests for API interactions
+- Implement performance testing
+- Add regression tests for fixed issues
+- Create test data for various scenarios
+
+## Implementation Phases
+
+### Phase 1: Critical Fixes
+- Fix API rate limiting with retry mechanisms
+- Resolve database session issues
+- Fix Docker configuration problems
+
+### Phase 2: System Unification
+- Complete unified analysis service implementation
+- Consolidate all analysis functionality
+- Implement proper error handling
+
+### Phase 3: Monitoring & Reliability
+- Add comprehensive monitoring
+- Implement diagnostic tools
+- Create alerting systems
+
+### Phase 4: Testing & Validation
+- Comprehensive test coverage
+- Performance optimization
+- Documentation updates
+
+## Acceptance Criteria
+1. **Analysis Success Rate**: >95% of songs successfully analyzed with biblical themes
+2. **Response Time**: Analysis completes within 5-30 seconds per song (depending on lyrics fetching)
+3. **API Reliability**: Graceful handling of rate limits with successful retries
+4. **Database Stability**: Zero DetachedInstanceError occurrences
+5. **Docker Reliability**: Containers start and maintain connectivity consistently
+6. **Monitoring Coverage**: Complete visibility into system health and performance
+
+## Dependencies
+- Genius API access and rate limit understanding
+- Redis queue system functionality
+- PostgreSQL database connectivity
+- Docker container orchestration
+- Flask application framework
+
+## Risks & Mitigation
+1. **Genius API Changes**: Implement multiple lyrics sources
+2. **Database Performance**: Optimize queries and implement connection pooling
+3. **Container Networking**: Implement robust service discovery
+4. **Analysis Accuracy**: Validate results against test dataset
+
+## Success Metrics
+- Biblical themes detected in >90% of Christian songs
+- Scripture references found for relevant songs
+- Analysis pipeline uptime >99%
+- Zero critical errors in production
+- Complete elimination of missing analysis data 

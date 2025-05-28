@@ -9,6 +9,13 @@ import logging
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 
+try:
+    from .biblical_reference_detector import EnhancedBiblicalDetector
+    ENHANCED_BIBLICAL_DETECTOR_AVAILABLE = True
+except ImportError:
+    ENHANCED_BIBLICAL_DETECTOR_AVAILABLE = False
+    logger.warning("Enhanced Biblical Detector not available - using fallback")
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -53,6 +60,14 @@ class EnhancedSongAnalyzer:
         """Initialize the enhanced analyzer"""
         self.user_id = user_id
         self.config = config or AnalysisConfig()
+        
+        # Initialize enhanced biblical detector if available
+        if ENHANCED_BIBLICAL_DETECTOR_AVAILABLE:
+            self.biblical_detector = EnhancedBiblicalDetector()
+            logger.info("Enhanced Biblical Detector initialized successfully")
+        else:
+            self.biblical_detector = None
+            
         self._setup_enhanced_patterns()
         self._setup_biblical_themes()
         
@@ -544,7 +559,76 @@ class EnhancedSongAnalyzer:
         }
     
     def _analyze_biblical_themes(self, lyrics: str) -> Tuple[List[Dict], Dict]:
-        """Analyze lyrics for biblical themes and return supporting scripture"""
+        """Analyze lyrics for biblical themes and return supporting scripture using enhanced detection"""
+        
+        # Use enhanced biblical detector if available
+        if self.biblical_detector:
+            try:
+                enhanced_analysis = self.biblical_detector.analyze_lyrics(lyrics)
+                
+                # Convert enhanced themes to expected format
+                themes_found = []
+                supporting_scripture = {}
+                
+                for theme in enhanced_analysis.get('biblical_themes', []):
+                    theme_info = {
+                        'theme': theme['theme_key'],
+                        'description': theme['theme'],
+                        'matches': theme['matches'],
+                        'examples': theme['examples'],
+                        'confidence': theme['confidence'],
+                        'weight': theme.get('weight', 1.0)
+                    }
+                    themes_found.append(theme_info)
+                
+                # Add enhanced supporting scripture
+                enhanced_scripture = enhanced_analysis.get('supporting_scripture', {})
+                supporting_scripture.update(enhanced_scripture)
+                
+                # Add scripture references found
+                scripture_refs = enhanced_analysis.get('scripture_references', [])
+                if scripture_refs:
+                    supporting_scripture['direct_references'] = [
+                        {
+                            'reference': ref['reference'],
+                            'text': ref.get('verse_text', ''),
+                            'confidence': ref['confidence']
+                        }
+                        for ref in scripture_refs
+                    ]
+                
+                # Add biblical names found
+                biblical_names = enhanced_analysis.get('biblical_names', [])
+                if biblical_names:
+                    supporting_scripture['biblical_names'] = [
+                        {
+                            'name': name['name'],
+                            'category': name['category'],
+                            'confidence': name['confidence']
+                        }
+                        for name in biblical_names
+                    ]
+                
+                # Add verse content matches
+                verse_matches = enhanced_analysis.get('verse_content_matches', [])
+                if verse_matches:
+                    supporting_scripture['verse_content_matches'] = [
+                        {
+                            'reference': match['reference'],
+                            'similarity': match['combined_score'],
+                            'confidence': match['confidence']
+                        }
+                        for match in verse_matches[:3]  # Top 3 matches
+                    ]
+                
+                logger.info(f"Enhanced biblical analysis found {len(themes_found)} themes, {len(scripture_refs)} scripture refs, {len(biblical_names)} names")
+                return themes_found, supporting_scripture
+                
+            except Exception as e:
+                logger.error(f"Error in enhanced biblical analysis, falling back to basic: {str(e)}")
+                # Fall back to basic analysis
+        
+        # Fallback to original method if enhanced detector not available or fails
         themes_found = []
         supporting_scripture = {}
         

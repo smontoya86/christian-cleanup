@@ -23,6 +23,15 @@
         {% endif %}
     {% endwith %}
 
+    {% if session.reanalysis_message %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            {{ session.reanalysis_message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% set _ = session.pop('reanalysis_message', None) %}
+    {% endif %}
+
     <div class="row">
         <!-- Profile Settings -->
         <div class="col-lg-6 mb-4">
@@ -152,6 +161,77 @@
                                 View Statistics
                                 <div class="small text-muted">Analysis Overview</div>
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Controls -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-tools me-2"></i>Admin Controls
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> These administrative functions will affect all your playlists and may take significant time to complete.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-sync-alt me-2 text-primary"></i>Re-sync All Playlists
+                                    </h6>
+                                    <p class="card-text small text-muted">
+                                        Refresh all playlist data from Spotify. This will update playlist names, descriptions, 
+                                        and song lists to match your current Spotify library.
+                                    </p>
+                                    <form method="POST" action="{{ url_for('main.admin_resync_all_playlists') }}" 
+                                          onsubmit="return confirm('Are you sure you want to re-sync ALL playlists? This may take several minutes.');">
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                                            <i class="fas fa-sync-alt me-1"></i>Start Re-sync
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-brain me-2 text-danger"></i>Re-analyze All Songs
+                                    </h6>
+                                    <p class="card-text small text-muted">
+                                        Force re-analysis of ALL songs in ALL playlists. This will regenerate Christian content 
+                                        ratings and may take 30+ minutes.
+                                    </p>
+                                    <form method="POST" action="{{ url_for('main.admin_reanalyze_all_songs') }}" 
+                                          onsubmit="return confirm('Are you sure you want to re-analyze ALL songs? This is a resource-intensive operation that may take 30+ minutes to complete.');">
+                                        <button type="submit" class="btn btn-danger btn-sm w-100">
+                                            <i class="fas fa-brain me-1"></i>Start Re-analysis
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Note:</strong> Progress can be monitored on the Dashboard. These operations run in the background 
+                                and you can continue using the application normally.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -329,7 +409,7 @@ function loadAccountStats() {
                 <div class="col-md-6 mb-3">
                     <div class="card border-primary">
                         <div class="card-body">
-                            <h5 class="card-title text-primary">{{ user.playlists|length if user.playlists else '0' }}</h5>
+                            <h5 class="card-title text-primary">{{ stats.total_playlists if stats else '0' }}</h5>
                             <p class="card-text small">Total Playlists</p>
                         </div>
                     </div>
@@ -337,7 +417,7 @@ function loadAccountStats() {
                 <div class="col-md-6 mb-3">
                     <div class="card border-info">
                         <div class="card-body">
-                            <h5 class="card-title text-info">—</h5>
+                            <h5 class="card-title text-info">{{ stats.analyzed_songs if stats else '0' }}</h5>
                             <p class="card-text small">Songs Analyzed</p>
                         </div>
                     </div>

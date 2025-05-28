@@ -169,27 +169,120 @@ class MonitoredWorker:
         """Callback when a job starts."""
         self.current_job = job
         self.job_start_time = datetime.now()
-        logger.info(f"Job started: {job.id} ({job.func_name})")
+        
+        # Import logging utilities
+        try:
+            from app.utils.logging import get_logger
+            from app.utils.metrics import metrics_collector
+            job_logger = get_logger('app.worker')
+            
+            job_logger.info("🚀 Worker job started", extra={
+                'extra_fields': {
+                    'job_id': job.id,
+                    'job_function': job.func_name,
+                    'job_queue': job.origin,
+                    'worker_name': worker.name,
+                    'job_args': str(job.args)[:200],  # Truncate long args
+                    'job_kwargs': str(job.kwargs)[:200],  # Truncate long kwargs
+                    'start_time': self.job_start_time.isoformat()
+                }
+            })
+        except ImportError:
+            logger.info(f"Job started: {job.id} ({job.func_name})")
     
     def _job_finished_callback(self, job, connection, worker, result):
         """Callback when a job finishes successfully."""
         duration = datetime.now() - self.job_start_time if self.job_start_time else None
+        duration_seconds = duration.total_seconds() if duration else 0
+        
         self.stats['jobs_processed'] += 1
         self.stats['last_job_time'] = datetime.now()
         self.current_job = None
         self.job_start_time = None
         
-        logger.info(f"Job completed: {job.id} in {duration}")
+        # Import logging utilities
+        try:
+            from app.utils.logging import get_logger, log_worker_metrics
+            from app.utils.metrics import metrics_collector
+            job_logger = get_logger('app.worker')
+            
+            job_logger.info("✅ Worker job completed", extra={
+                'extra_fields': {
+                    'job_id': job.id,
+                    'job_function': job.func_name,
+                    'job_queue': job.origin,
+                    'worker_name': worker.name,
+                    'duration_ms': round(duration_seconds * 1000, 2),
+                    'success': True,
+                    'result_type': type(result).__name__ if result else 'None'
+                }
+            })
+            
+            # Track worker metrics
+            log_worker_metrics(
+                job_id=job.id,
+                queue=job.origin,
+                duration=duration_seconds,
+                success=True,
+                job_function=job.func_name,
+                worker_name=worker.name
+            )
+            
+        except ImportError:
+            logger.info(f"Job completed: {job.id} in {duration}")
     
     def _job_failed_callback(self, job, connection, worker, exc_type, exc_value, traceback):
         """Callback when a job fails."""
         duration = datetime.now() - self.job_start_time if self.job_start_time else None
+        duration_seconds = duration.total_seconds() if duration else 0
+        
         self.stats['jobs_failed'] += 1
         self.stats['last_job_time'] = datetime.now()
         self.current_job = None
         self.job_start_time = None
         
-        logger.error(f"Job failed: {job.id} after {duration} - {exc_type.__name__}: {exc_value}")
+        # Import logging utilities
+        try:
+            from app.utils.logging import get_logger, log_worker_metrics
+            from app.utils.metrics import metrics_collector
+            job_logger = get_logger('app.worker')
+            
+            job_logger.error("❌ Worker job failed", extra={
+                'extra_fields': {
+                    'job_id': job.id,
+                    'job_function': job.func_name,
+                    'job_queue': job.origin,
+                    'worker_name': worker.name,
+                    'duration_ms': round(duration_seconds * 1000, 2),
+                    'success': False,
+                    'error_type': exc_type.__name__,
+                    'error_message': str(exc_value),
+                    'traceback_preview': str(traceback)[:500]  # Truncate long tracebacks
+                }
+            })
+            
+            # Track worker metrics
+            log_worker_metrics(
+                job_id=job.id,
+                queue=job.origin,
+                duration=duration_seconds,
+                success=False,
+                job_function=job.func_name,
+                worker_name=worker.name,
+                error_type=exc_type.__name__
+            )
+            
+            # Record error in metrics
+            metrics_collector.record_error(
+                error_type='worker_job_error',
+                error_message=f"{exc_type.__name__}: {exc_value}",
+                job_id=job.id,
+                job_function=job.func_name,
+                worker_name=worker.name
+            )
+            
+        except ImportError:
+            logger.error(f"Job failed: {job.id} after {duration} - {exc_type.__name__}: {exc_value}")
     
     def start_monitoring(self):
         """Start the monitoring thread."""

@@ -440,7 +440,102 @@ class Blacklist(db.Model):
         }
 
     def __repr__(self):
-        return f'<Blacklist {self.item_type.capitalize()}: {self.spotify_id} for User ID {self.user_id}>'
+        return f'<Blacklist {self.item_type}: {self.spotify_id} by User {self.user_id}>'
+
+class LyricsCache(db.Model):
+    """
+    Cache for storing fetched lyrics to reduce API calls and improve performance.
+    """
+    __tablename__ = 'lyrics_cache'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    artist = db.Column(db.String(255), nullable=False, index=True)
+    title = db.Column(db.String(255), nullable=False, index=True)
+    lyrics = db.Column(db.Text, nullable=False)
+    source = db.Column(db.String(50), nullable=False)  # 'lrclib', 'lyrics_ovh', 'genius', etc.
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Ensure unique combination of artist and title
+    __table_args__ = (
+        db.UniqueConstraint('artist', 'title', name='uix_artist_title'),
+        db.Index('idx_lyrics_cache_artist_title', 'artist', 'title'),
+        db.Index('idx_lyrics_cache_source', 'source'),
+        db.Index('idx_lyrics_cache_updated_at', 'updated_at'),
+    )
+    
+    def to_dict(self):
+        """Convert the cache entry to a dictionary for JSON serialization."""
+        return {
+            'id': self.id,
+            'artist': self.artist,
+            'title': self.title,
+            'lyrics': self.lyrics,
+            'source': self.source,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    @classmethod
+    def find_cached_lyrics(cls, artist, title):
+        """
+        Find cached lyrics for the given artist and title.
+        
+        Args:
+            artist (str): Artist name (will be normalized to lowercase)
+            title (str): Song title (will be normalized to lowercase)
+            
+        Returns:
+            LyricsCache: Cache entry if found, None otherwise
+        """
+        return cls.query.filter_by(
+            artist=artist.lower().strip(),
+            title=title.lower().strip()
+        ).first()
+    
+    @classmethod
+    def cache_lyrics(cls, artist, title, lyrics, source):
+        """
+        Cache lyrics for the given artist and title.
+        
+        Args:
+            artist (str): Artist name
+            title (str): Song title
+            lyrics (str): Lyrics content
+            source (str): Source provider name
+            
+        Returns:
+            LyricsCache: The created or updated cache entry
+        """
+        # Normalize artist and title
+        artist_normalized = artist.lower().strip()
+        title_normalized = title.lower().strip()
+        
+        # Check if entry already exists
+        existing = cls.query.filter_by(
+            artist=artist_normalized,
+            title=title_normalized
+        ).first()
+        
+        if existing:
+            # Update existing entry
+            existing.lyrics = lyrics
+            existing.source = source
+            existing.updated_at = datetime.utcnow()
+            return existing
+        else:
+            # Create new entry
+            cache_entry = cls(
+                artist=artist_normalized,
+                title=title_normalized,
+                lyrics=lyrics,
+                source=source
+            )
+            db.session.add(cache_entry)
+            return cache_entry
+    
+    def __repr__(self):
+        return f'<LyricsCache {self.artist} - {self.title} ({self.source})>'
 
 class BibleVerse(db.Model):
     __tablename__ = 'bible_verses'

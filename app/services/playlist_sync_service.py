@@ -120,6 +120,11 @@ def _execute_playlist_sync_impl(user_id: int) -> Dict[str, Any]:
         end_time = datetime.utcnow()
         duration_seconds = (end_time - start_time).total_seconds()
         
+        # Invalidate playlist cache after successful sync
+        from ..utils.cache import invalidate_playlist_cache
+        invalidate_playlist_cache()
+        current_app.logger.info(f"Cache invalidated after successful playlist sync for user {user_id}")
+        
         sync_stats = {
             "success": True,
             "user_id": user_id,

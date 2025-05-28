@@ -61,8 +61,33 @@ def create_app(config_name=None, init_scheduler=True):
         app.config['SPOTIFY_SCOPES'] = os.environ.get('SPOTIFY_SCOPES', app.config.get('SPOTIFY_SCOPES'))
         app.logger.debug(f"SPOTIPY_CLIENT_ID set to: {app.config.get('SPOTIPY_CLIENT_ID')}")
 
-    # Setup logging
+    # Setup comprehensive logging and monitoring
     setup_logging(app_config)
+    
+    # Initialize structured logging and metrics collection
+    from .utils.logging import configure_logging, setup_request_id_middleware
+    from .utils.metrics import metrics_collector
+    from .utils.performance_monitor import performance_monitor
+    
+    # Configure structured logging
+    app_logger = configure_logging(app)
+    app.logger = app_logger
+    
+    # Setup request ID middleware for request tracking
+    setup_request_id_middleware(app)
+    
+    # Initialize performance monitoring
+    try:
+        redis_client = app.extensions.get('redis')
+        if redis_client:
+            performance_monitor.redis_client = redis_client
+        # Start performance monitoring in production
+        if not app.debug and not app.testing:
+            performance_monitor.start_monitoring(interval_seconds=30)
+            app.logger.info("Performance monitoring started")
+    except Exception as e:
+        app.logger.warning(f"Could not initialize performance monitoring: {e}")
+    
     app.logger.info(f"Application starting with '{config_name}' configuration.")
 
     # Ensure all models are imported BEFORE db.init_app so metadata is populated
@@ -141,6 +166,11 @@ def create_app(config_name=None, init_scheduler=True):
     app.register_blueprint(main_blueprint)
     app.logger.info("Main blueprint registered.")
 
+    # Register admin blueprint
+    from .admin import admin_bp as admin_blueprint
+    app.register_blueprint(admin_blueprint)
+    app.logger.info("Admin blueprint registered.")
+
     # Context processor to inject current year
     @app.context_processor
     def inject_current_year():
@@ -151,6 +181,11 @@ def create_app(config_name=None, init_scheduler=True):
         from .api import api_bp
         app.register_blueprint(api_bp, url_prefix='/api')
         current_app.logger.info("API blueprint registered.")
+        
+        # Register diagnostics blueprint for monitoring
+        from .api.diagnostics import diagnostics_bp
+        app.register_blueprint(diagnostics_bp)
+        current_app.logger.info("Diagnostics blueprint registered.")
 
         # Schedule the background sync job - only if scheduler is initialized
         # Ensure the job doesn't run when importing for migrations or other non-server tasks
@@ -170,6 +205,14 @@ def create_app(config_name=None, init_scheduler=True):
                 app.logger.info(f"Scheduled job '{job_id}' to run every 1 hour.")
             else:
                 app.logger.info(f"Job '{job_id}' already scheduled.")
+
+        # Schedule cache maintenance jobs
+        if app.config.get('LYRICS_CACHE_ENABLED', True):
+            from .tasks.scheduled import schedule_cache_maintenance_jobs
+            try:
+                schedule_cache_maintenance_jobs(app)
+            except Exception as e:
+                app.logger.error(f"Failed to schedule cache maintenance jobs: {e}")
 
         app.logger.info("Application models imported/registered.")
 

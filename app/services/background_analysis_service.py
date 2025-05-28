@@ -6,7 +6,7 @@ Automatically analyzes all songs in all playlists for users in the background
 from flask import current_app
 from ..models import User, Playlist, Song, AnalysisResult, PlaylistSong
 from .. import db
-from ..services.analysis_service import perform_christian_song_analysis_and_store
+from ..services.unified_analysis_service import UnifiedAnalysisService
 from sqlalchemy import and_
 import time
 from datetime import datetime, timedelta
@@ -57,9 +57,12 @@ class BackgroundAnalysisService:
             jobs_queued = 0
             failed_jobs = 0
             
+            # Initialize unified analysis service
+            analysis_service = UnifiedAnalysisService()
+            
             for song in unanalyzed_songs:
                 try:
-                    job = perform_christian_song_analysis_and_store(song.id, user_id=user_id)
+                    job = analysis_service.enqueue_analysis_job(song.id, user_id=user_id, priority='low')
                     if job:
                         jobs_queued += 1
                         current_app.logger.debug(f"Queued analysis job for song {song.id}: {song.title}")

@@ -1,11 +1,12 @@
 from flask import render_template, flash, redirect, url_for, request, current_app, jsonify, has_request_context, session, abort
 from flask_login import login_required, current_user, current_user as flask_login_current_user
 import spotipy
+import time
 
 from .. import db
 from ..models import User, Whitelist, Blacklist, Song, AnalysisResult, PlaylistSong, Playlist
 from ..services.spotify_service import SpotifyService
-from ..services.analysis_service import analyze_playlist_content, get_playlist_analysis_results, perform_christian_song_analysis_and_store # Added import
+from ..services.unified_analysis_service import UnifiedAnalysisService # Updated import
 from app.auth.decorators import spotify_token_required
 from app.services.whitelist_service import (
     add_to_whitelist,
@@ -256,6 +257,10 @@ def sync_playlists():
         if job:
             # Invalidate dashboard cache since playlists will be updated
             invalidate_playlist_cache()
+            
+            # Set a session flag to track that we started a sync
+            session['sync_in_progress'] = True
+            session['sync_started_at'] = time.time()
             
             current_app.logger.info(f"Playlist sync job {job.id} enqueued for user {flask_login_current_user.id}")
             flash('Playlist synchronization started. This may take a few minutes.', 'success')
@@ -1022,8 +1027,9 @@ def analyze_playlist_api(playlist_id):
         return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
     
     try:
-        # Call the service function to analyze the playlist
-        analysis_summary = analyze_playlist_content(playlist_id, current_user.id)
+        # Call the unified analysis service to analyze the playlist
+        analysis_service = UnifiedAnalysisService()
+        analysis_summary = analysis_service.analyze_playlist_content(playlist_id, current_user.id)
 
         if analysis_summary.get("error"):
             error_msg = analysis_summary["error"]
@@ -1375,42 +1381,50 @@ def get_analysis_status(playlist_id):
 @spotify_token_required
 def analyze_song_route(song_id):
     """Route handler for analyzing/re-analyzing a single song."""
-    current_app.logger.info(f"Starting analysis for song {song_id}")
+    from app.utils.error_handling import (
+        safe_analysis_operation, validate_analysis_request, 
+        UnifiedAnalysisServiceError, DatabaseError
+    )
     
-    try:
+    def _analyze_song_operation():
+        """Internal function to perform the song analysis operation."""
+        # Validate request parameters
+        context = validate_analysis_request(song_id=song_id, user_id=current_user.id)
+        current_app.logger.info(f"Starting analysis for song {song_id}")
+        
         # Get the song
         song = get_by_id(Song, song_id)
         if not song:
+            from flask import abort
             abort(404)
         current_app.logger.info(f"Found song: {song.title} by {song.artist}")
         
-        # Enqueue the analysis task
-        from ..services.analysis_service import perform_christian_song_analysis_and_store
-        job = perform_christian_song_analysis_and_store(song_id, current_user.id)
-        
-        if job:
-            current_app.logger.info(f"Song analysis task enqueued for song {song_id} with job ID: {job.id}")
-            return jsonify({
-                'success': True,
-                'message': f'Analysis started for "{song.title}"',
-                'job_id': job.id,
-                'song_id': song_id
-            })
-        else:
-            current_app.logger.error(f"Failed to enqueue analysis task for song {song_id}")
-            return jsonify({
-                'success': False,
-                'error': 'Failed to start analysis',
-                'message': 'Unable to enqueue analysis task'
-            }), 500
+        # Enqueue the analysis task using unified service
+        try:
+            analysis_service = UnifiedAnalysisService()
+            job = analysis_service.enqueue_analysis_job(song_id, user_id=current_user.id, priority='high')
             
-    except Exception as e:
-        current_app.logger.exception(f"Error in analyze_song_route for song {song_id}: {e}")
-        return jsonify({
-            'success': False,
-            'error': 'analysis_error',
-            'message': f'Error starting analysis: {str(e)}'
-        }), 500
+            if job:
+                current_app.logger.info(f"Song analysis task enqueued for song {song_id} with job ID: {job.id}")
+                return jsonify({
+                    'success': True,
+                    'message': f'Analysis started for "{song.title}"',
+                    'job_id': job.id,
+                    'song_id': song_id
+                })
+            else:
+                raise UnifiedAnalysisServiceError("Failed to enqueue analysis task")
+                
+        except Exception as e:
+            raise UnifiedAnalysisServiceError(f"Analysis service error: {str(e)}")
+    
+    # Use the safe operation wrapper
+    context = {'song_id': song_id, 'user_id': current_user.id}
+    return safe_analysis_operation(
+        operation_func=_analyze_song_operation,
+        operation_name="analyze_song",
+        context=context
+    )
 
 @main_bp.route('/api/songs/<int:song_id>/reanalyze/', methods=['POST'])
 @main_bp.route('/api/songs/<int:song_id>/reanalyze', methods=['POST'])  # For backward compatibility
@@ -1426,26 +1440,29 @@ def reanalyze_song_route(song_id):
 @spotify_token_required
 def analyze_unanalyzed_songs_route(playlist_id):
     """Route handler for analyzing unanalyzed songs in a playlist."""
-    if not playlist_id:
-        current_app.logger.error("Missing playlist_id in analyze_unanalyzed_songs_route")
-        return jsonify({
-            'success': False,
-            'error': 'missing_playlist_id',
-            'message': 'Playlist ID is required'
-        }), 400
+    from app.utils.error_handling import (
+        safe_analysis_operation, validate_analysis_request, 
+        AnalysisError
+    )
+    
+    def _analyze_unanalyzed_operation():
+        """Internal function to perform the unanalyzed songs analysis operation."""
+        # Validate request parameters
+        context = validate_analysis_request(playlist_id=playlist_id, user_id=flask_login_current_user.id)
+        current_app.logger.info(f"Starting analysis for unanalyzed songs in playlist {playlist_id}")
         
-    current_app.logger.info(f"Starting analysis for unanalyzed songs in playlist {playlist_id}")
-    try:
         # Get the user ID from the current user and pass it explicitly
         user_id = flask_login_current_user.id
         return analyze_unanalyzed_songs(playlist_id, user_id=user_id)
-    except Exception as e:
-        current_app.logger.error(f"Error in analyze_unanalyzed_songs_route: {str(e)}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'error': 'analysis_error',
-            'message': f'Failed to start analysis: {str(e)}'
-        }), 500
+    
+    # Use the safe operation wrapper
+    context = {'playlist_id': playlist_id, 'user_id': flask_login_current_user.id}
+    return safe_analysis_operation(
+        operation_func=_analyze_unanalyzed_operation,
+        operation_name="analyze_unanalyzed_songs",
+        context=context,
+        error_redirect=url_for('main.playlist_detail', playlist_id=playlist_id)
+    )
 
 @main_bp.route('/api/playlists/<string:playlist_id>/reanalyze-all/', methods=['POST'])
 @main_bp.route('/api/playlists/<string:playlist_id>/reanalyze-all', methods=['POST'])  # For backward compatibility
@@ -1453,26 +1470,29 @@ def analyze_unanalyzed_songs_route(playlist_id):
 @spotify_token_required
 def reanalyze_all_songs_route(playlist_id):
     """Route handler for re-analyzing ALL songs in a playlist (not just unanalyzed ones)."""
-    if not playlist_id:
-        current_app.logger.error("Missing playlist_id in reanalyze_all_songs_route")
-        return jsonify({
-            'success': False,
-            'error': 'missing_playlist_id',
-            'message': 'Playlist ID is required'
-        }), 400
+    from app.utils.error_handling import (
+        safe_analysis_operation, validate_analysis_request, 
+        AnalysisError
+    )
+    
+    def _reanalyze_all_operation():
+        """Internal function to perform the reanalyze all songs operation."""
+        # Validate request parameters
+        context = validate_analysis_request(playlist_id=playlist_id, user_id=flask_login_current_user.id)
+        current_app.logger.info(f"Starting re-analysis for ALL songs in playlist {playlist_id}")
         
-    current_app.logger.info(f"Starting re-analysis for ALL songs in playlist {playlist_id}")
-    try:
         # Get the user ID from the current user and pass it explicitly
         user_id = flask_login_current_user.id
         return reanalyze_all_songs(playlist_id, user_id=user_id)
-    except Exception as e:
-        current_app.logger.error(f"Error in reanalyze_all_songs_route: {str(e)}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'error': 'analysis_error',
-            'message': f'Failed to start re-analysis: {str(e)}'
-        }), 500
+    
+    # Use the safe operation wrapper
+    context = {'playlist_id': playlist_id, 'user_id': flask_login_current_user.id}
+    return safe_analysis_operation(
+        operation_func=_reanalyze_all_operation,
+        operation_name="reanalyze_all_songs",
+        context=context,
+        error_redirect=url_for('main.playlist_detail', playlist_id=playlist_id)
+    )
 
 def analyze_unanalyzed_songs(playlist_id, user_id=None):
     """Analyze only the unanalyzed songs in a playlist.
@@ -1536,8 +1556,9 @@ def analyze_unanalyzed_songs(playlist_id, user_id=None):
             current_app.logger.info(f"Starting analysis for song {song.id} for user {user_id}")
             
             try:
-                # Call the analysis service using the background task
-                job = perform_christian_song_analysis_and_store(song.id, user_id=user_id)
+                # Call the unified analysis service using the background task
+                analysis_service = UnifiedAnalysisService()
+                job = analysis_service.enqueue_analysis_job(song.id, user_id=user_id, priority='low')
                 if job:
                     # The analysis is happening in the background
                     analyzed_count += 1
@@ -1610,6 +1631,188 @@ def analyze_unanalyzed_songs(playlist_id, user_id=None):
         flash(error_message, 'error')
         return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
 
+def admin_reanalyze_all_user_songs(user_id):
+    """Master function to re-analyze ALL songs across ALL playlists for a user
+    
+    This function is designed to be called by RQ workers which already have Flask context.
+    """
+    import sys
+    from datetime import datetime
+    from flask import has_app_context
+    
+    try:
+        # Check if we're already in a Flask context (RQ workers run within app context)
+        if has_app_context():
+            # We're already in Flask context (common for RQ workers), use it directly
+            return _admin_reanalyze_all_user_songs_impl(user_id)
+        else:
+            # We're not in Flask context (e.g., direct function call), create one
+            from app import create_app
+            app = create_app('development')
+            with app.app_context():
+                return _admin_reanalyze_all_user_songs_impl(user_id)
+                
+    except Exception as e:
+        # Log to stderr for background job debugging  
+        print(f"❌ Critical error in admin_reanalyze_all_user_songs: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def _admin_reanalyze_all_user_songs_impl(user_id):
+    """Implementation of admin_reanalyze_all_user_songs that assumes we're in app context"""
+    from app.extensions import db, rq
+    from app.models import User, Song, Playlist, PlaylistSong, AnalysisResult
+    from app.services.unified_analysis_service import UnifiedAnalysisService  # Updated import
+    import logging
+    
+    # Use direct logging instead of current_app.logger to avoid context issues
+    print(f"🚀 Starting master re-analysis for user {user_id}")
+    logging.info(f"🚀 Starting master re-analysis for user {user_id}")
+    
+    # Get the current job for progress updates
+    from rq import get_current_job
+    current_job = get_current_job()
+    
+    try:
+        # Get the user
+        user = User.query.get(user_id)
+        if not user:
+            print(f"❌ User {user_id} not found for re-analysis")
+            logging.error(f"❌ User {user_id} not found for re-analysis")
+            if current_job:
+                current_job.meta['error'] = f"User {user_id} not found"
+                current_job.save_meta()
+            return False
+        
+        # Get all unique songs across all playlists for the user
+        from sqlalchemy import func
+        songs_query = db.session.query(Song).join(
+            PlaylistSong, Song.id == PlaylistSong.song_id
+        ).join(
+            Playlist, PlaylistSong.playlist_id == Playlist.id
+        ).filter(Playlist.owner_id == user_id).distinct()
+        
+        all_songs = songs_query.all()
+        
+        if not all_songs:
+            print(f"ℹ️ No songs found for user {user_id}")
+            logging.info(f"ℹ️ No songs found for user {user_id}")
+            if current_job:
+                current_job.meta['progress'] = 100
+                current_job.meta['current_song'] = 'No songs to analyze'
+                current_job.meta['completed'] = True
+                current_job.save_meta()
+            return True
+        
+        total_songs = len(all_songs)
+        print(f"📊 Starting re-analysis for user {user.display_name}: {total_songs} unique songs")
+        logging.info(f"📊 Starting re-analysis for user {user.display_name}: {total_songs} unique songs")
+        
+        # Initialize progress tracking
+        successful = 0
+        failed = 0
+        
+        # Initialize unified analysis service
+        analysis_service = UnifiedAnalysisService()
+        
+        # Update initial job status
+        if current_job:
+            current_job.meta['progress'] = 0
+            current_job.meta['total'] = total_songs
+            current_job.meta['processed'] = 0
+            current_job.meta['successful'] = 0
+            current_job.meta['failed'] = 0
+            current_job.meta['current_song'] = 'Starting analysis...'
+            current_job.save_meta()
+        
+        # Process each song individually using the unified analysis service
+        for i, song in enumerate(all_songs):
+            try:
+                print(f"🎵 Analyzing song {i+1}/{total_songs}: {song.title} by {song.artist}")
+                logging.info(f"🎵 Analyzing song {i+1}/{total_songs}: {song.title} by {song.artist}")
+                
+                # Update progress
+                if current_job:
+                    progress_percentage = int((i / total_songs) * 100)
+                    current_job.meta['progress'] = progress_percentage
+                    current_job.meta['current_song'] = f"{song.title} by {song.artist}"
+                    current_job.meta['processed'] = i + 1
+                    current_job.save_meta()
+                
+                # Perform comprehensive analysis using unified service
+                result = analysis_service.execute_comprehensive_analysis(
+                    song_id=song.id, 
+                    user_id=user_id, 
+                    force_reanalysis=True  # Force re-analysis for all songs
+                )
+                
+                if result:
+                    successful += 1
+                    print(f"✅ Successfully analyzed song: {song.title}")
+                    logging.info(f"✅ Successfully analyzed song: {song.title}")
+                else:
+                    failed += 1
+                    print(f"⚠️ Failed to analyze song: {song.title}")
+                    logging.warning(f"⚠️ Failed to analyze song: {song.title}")
+                
+                # Update job meta with current stats
+                if current_job:
+                    current_job.meta['successful'] = successful
+                    current_job.meta['failed'] = failed
+                    current_job.save_meta()
+                
+                # Commit every 10 songs to avoid large transactions
+                if (i + 1) % 10 == 0 or (i + 1) == total_songs:
+                    try:
+                        db.session.commit()
+                        print(f"📝 Committed batch: {i+1}/{total_songs} songs processed")
+                        logging.debug(f"📝 Committed batch: {i+1}/{total_songs} songs processed")
+                    except Exception as e:
+                        print(f"❌ Error committing batch at song {i+1}: {e}")
+                        logging.error(f"❌ Error committing batch at song {i+1}: {e}")
+                        db.session.rollback()
+                
+            except Exception as e:
+                failed += 1
+                print(f"❌ Error processing song {song.title}: {e}")
+                logging.error(f"❌ Error processing song {song.title}: {e}")
+                # Continue with next song
+                continue
+        
+        # Final completion update
+        if current_job:
+            current_job.meta['progress'] = 100
+            current_job.meta['current_song'] = 'Re-analysis complete'
+            current_job.meta['completed'] = True
+            current_job.meta['successful'] = successful
+            current_job.meta['failed'] = failed
+            current_job.save_meta()
+        
+        print(f"🎉 Master re-analysis completed for user {user.display_name}: {successful} successful, {failed} failed out of {total_songs} total songs")
+        logging.info(f"🎉 Master re-analysis completed for user {user.display_name}: {successful} successful, {failed} failed out of {total_songs} total songs")
+        
+        # Invalidate cache to refresh dashboard
+        try:
+            from app.api.routes import invalidate_user_cache
+            invalidate_user_cache(user_id)
+        except Exception as e:
+            print(f"Failed to invalidate cache: {e}")
+            logging.warning(f"Failed to invalidate cache: {e}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error in master re-analysis for user {user_id}: {e}")
+        logging.error(f"❌ Error in master re-analysis for user {user_id}: {e}")
+        if current_job:
+            current_job.meta['error'] = str(e)
+            current_job.meta['failed'] = True
+            current_job.save_meta()
+        db.session.rollback()
+        return False
+
 def reanalyze_all_songs(playlist_id, user_id=None):
     """Re-analyze all songs in a playlist.
     
@@ -1666,8 +1869,9 @@ def reanalyze_all_songs(playlist_id, user_id=None):
             current_app.logger.info(f"Starting analysis for song {song.id} for user {user_id}")
             
             try:
-                # Call the analysis service using the background task
-                job = perform_christian_song_analysis_and_store(song.id, user_id=user_id)
+                # Call the unified analysis service using the background task
+                analysis_service = UnifiedAnalysisService()
+                job = analysis_service.enqueue_analysis_job(song.id, user_id=user_id, priority='low')
                 if job:
                     # The analysis is happening in the background
                     analyzed_count += 1
@@ -1745,8 +1949,34 @@ def reanalyze_all_songs(playlist_id, user_id=None):
 @main_bp.route('/settings')
 @login_required
 def user_settings():
-    """Display user settings page"""
-    return render_template('user_settings.html', user=flask_login_current_user)
+    """Display user settings page with admin functionality if user is admin"""
+    user = flask_login_current_user
+    
+    # Get user statistics for display
+    user_stats = {
+        'total_playlists': user.playlists.count(),
+        'total_songs': 0,
+        'analyzed_songs': 0,
+        'pending_songs': 0
+    }
+    
+    # Calculate song statistics
+    if user_stats['total_playlists'] > 0:
+        # Get all songs from user's playlists
+        from sqlalchemy import func
+        song_stats = db.session.query(
+            func.count(Song.id).label('total'),
+            func.count(AnalysisResult.id).label('analyzed')
+        ).select_from(Song).join(PlaylistSong).join(Playlist)\
+        .outerjoin(AnalysisResult, Song.id == AnalysisResult.song_id)\
+        .filter(Playlist.owner_id == user.id).first()
+        
+        if song_stats:
+            user_stats['total_songs'] = song_stats.total or 0
+            user_stats['analyzed_songs'] = song_stats.analyzed or 0
+            user_stats['pending_songs'] = user_stats['total_songs'] - user_stats['analyzed_songs']
+    
+    return render_template('user_settings.html', user=user, stats=user_stats)
 
 @main_bp.route('/settings', methods=['POST'])
 @login_required
@@ -1778,6 +2008,111 @@ def update_user_settings():
         db.session.rollback()
         current_app.logger.error(f"Error updating user settings: {e}")
         flash('An error occurred while updating settings.', 'danger')
+    
+    return redirect(url_for('main.user_settings'))
+
+@main_bp.route('/admin/resync-all-playlists', methods=['POST'])
+@login_required
+@spotify_token_required
+def admin_resync_all_playlists():
+    """Admin function to force re-sync all playlists from Spotify"""
+    from ..services.playlist_sync_service import enqueue_playlist_sync, get_sync_status
+    
+    try:
+        user = flask_login_current_user
+        current_app.logger.info(f"Admin re-sync all playlists requested by user {user.id}")
+        
+        # Check if there's already an active sync job
+        sync_status = get_sync_status(user.id)
+        
+        if sync_status.get('has_active_sync', False):
+            flash('Playlist synchronization is already in progress.', 'warning')
+            return redirect(url_for('main.user_settings'))
+        
+        # Enqueue playlist sync
+        job = enqueue_playlist_sync(user.id)
+        
+        if job:
+            # Invalidate dashboard cache since playlists will be updated
+            invalidate_playlist_cache()
+            flash('Full playlist re-sync started! This will refresh all playlists from Spotify and may take several minutes.', 'success')
+            current_app.logger.info(f"Admin full re-sync job {job.id} enqueued for user {user.id}")
+        else:
+            flash('Failed to start playlist re-sync. Please try again.', 'danger')
+            current_app.logger.error(f"Failed to enqueue admin re-sync for user {user.id}")
+            
+    except Exception as e:
+        current_app.logger.exception(f"Error in admin re-sync for user {flask_login_current_user.id}: {e}")
+        flash('An error occurred while starting playlist re-sync.', 'danger')
+    
+    return redirect(url_for('main.user_settings'))
+
+@main_bp.route('/admin/reanalyze-all-songs', methods=['POST'])
+@login_required
+@spotify_token_required
+def admin_reanalyze_all_songs():
+    """Admin function to force re-analysis of ALL songs across ALL playlists"""
+    try:
+        user = flask_login_current_user
+        current_app.logger.info(f"Admin re-analyze all songs requested by user {user.id}")
+        
+        # Get all playlists for the user
+        playlists = user.playlists.all()
+        
+        if not playlists:
+            flash('No playlists found to analyze.', 'info')
+            return redirect(url_for('main.user_settings'))
+        
+        # Get total song count for accurate messaging
+        from sqlalchemy import func
+        total_songs_result = db.session.query(func.count(PlaylistSong.song_id.distinct())).join(
+            Song, PlaylistSong.song_id == Song.id
+        ).filter(PlaylistSong.playlist_id.in_([p.id for p in playlists])).scalar()
+        
+        total_songs = total_songs_result or 0
+        
+        if total_songs == 0:
+            flash('No songs found to analyze.', 'info')
+            return redirect(url_for('main.user_settings'))
+        
+        # Queue a single coordinated re-analysis job instead of one per playlist
+        from ..extensions import rq
+        
+        try:
+            # Invalidate API cache before starting re-analysis
+            from ..api.routes import invalidate_user_cache
+            invalidate_user_cache(user.id)
+            
+            # Queue master re-analysis job with more reasonable timeout
+            job = rq.get_queue().enqueue(
+                'app.main.routes.admin_reanalyze_all_user_songs',
+                user.id,
+                job_timeout='2h',  # 2 hours instead of 3h for more reasonable expectation
+                job_id=f'reanalyze_all_user_{user.id}_{int(time.time())}'  # Unique job ID
+            )
+            
+            if job:
+                current_app.logger.info(f"Master re-analysis job {job.id} queued for user {user.id} ({len(playlists)} playlists, {total_songs} songs)")
+                
+                # Provide more accurate time estimate
+                estimated_minutes = max(30, total_songs // 50)  # Roughly 50 songs per minute
+                time_estimate = f"{estimated_minutes} minutes" if estimated_minutes < 120 else f"{estimated_minutes // 60} hours"
+                
+                # Create session-based flash to avoid duplication
+                session['reanalysis_message'] = f'Full re-analysis started! Processing {total_songs} songs across {len(playlists)} playlists. Estimated time: {time_estimate}. Progress will be visible on the dashboard shortly.'
+            else:
+                current_app.logger.error(f"Failed to queue master re-analysis for user {user.id}")
+                flash('Failed to start re-analysis. Please try again.', 'danger')
+                
+        except Exception as e:
+            current_app.logger.error(f"Error queuing master re-analysis for user {user.id}: {e}")
+            flash('An error occurred while starting re-analysis. Please try again.', 'danger')
+            
+        current_app.logger.info(f"Admin re-analysis requested for user {user.id}: single master job approach")
+        
+    except Exception as e:
+        current_app.logger.exception(f"Error in admin re-analyze all songs for user {flask_login_current_user.id}: {e}")
+        flash('An error occurred while starting full re-analysis.', 'danger')
     
     return redirect(url_for('main.user_settings'))
 
@@ -2473,3 +2808,165 @@ def song_analysis_data(song_id):
     except Exception as e:
         current_app.logger.error(f"Error getting song analysis data for {song_id}: {e}")
         return jsonify({'error': 'Internal server error'}), 500
+
+@main_bp.route('/api/admin/reanalysis-status', methods=['GET'])
+@login_required
+def get_admin_reanalysis_status():
+    """Check the status of the admin re-analysis job"""
+    try:
+        user_id = flask_login_current_user.id
+        
+        # Look for any active re-analysis job for this user
+        from ..extensions import rq
+        queue = rq.get_queue()
+        
+        # Find the most recent reanalysis job for this user
+        active_job = None
+        job_prefix = f'reanalyze_all_user_{user_id}_'
+        
+        # Check running jobs first
+        for job in queue.started_job_registry.get_job_ids():
+            if job.startswith(job_prefix):
+                try:
+                    active_job = queue.fetch_job(job)
+                    if active_job and not active_job.is_finished:
+                        break
+                except Exception:
+                    continue
+        
+        # If no running job, check deferred jobs
+        if not active_job:
+            for job in queue.deferred_job_registry.get_job_ids():
+                if job.startswith(job_prefix):
+                    try:
+                        active_job = queue.fetch_job(job)
+                        if active_job and not active_job.is_finished:
+                            break
+                    except Exception:
+                        continue
+        
+        # If no active job, check recent jobs in the queue
+        if not active_job:
+            for job in queue.jobs[:10]:  # Check last 10 jobs
+                if hasattr(job, 'id') and job.id.startswith(job_prefix):
+                    if not job.is_finished:
+                        active_job = job
+                        break
+        
+        if not active_job:
+            return jsonify({
+                'active': False,
+                'message': 'No active re-analysis job found'
+            })
+        
+        # Get job status and progress
+        if active_job.is_failed:
+            error_info = str(active_job.exc_info) if active_job.exc_info else 'Unknown error'
+            return jsonify({
+                'active': False,
+                'failed': True,
+                'error': error_info,
+                'message': 'Re-analysis job failed'
+            })
+        
+        if active_job.is_finished:
+            return jsonify({
+                'active': False,
+                'completed': True,
+                'message': 'Re-analysis completed successfully'
+            })
+        
+        # Job is active, get progress info
+        progress_data = {
+            'active': True,
+            'job_id': active_job.id,
+            'progress': 0,
+            'current_song': 'Initializing...',
+            'processed': 0,
+            'total': 0,
+            'successful': 0,
+            'failed': 0,
+            'message': 'Re-analysis in progress...'
+        }
+        
+        if active_job.meta:
+            progress_data.update({
+                'progress': active_job.meta.get('progress', 0),
+                'current_song': active_job.meta.get('current_song', 'Processing...'),
+                'processed': active_job.meta.get('processed', 0),
+                'total': active_job.meta.get('total', 0),
+                'successful': active_job.meta.get('successful', 0),
+                'failed': active_job.meta.get('failed', 0)
+            })
+            
+            if active_job.meta.get('completed'):
+                progress_data['active'] = False
+                progress_data['completed'] = True
+                progress_data['message'] = 'Re-analysis completed successfully'
+        
+        return jsonify(progress_data)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error checking admin reanalysis status: {e}")
+        return jsonify({
+            'error': True,
+            'message': f'Failed to check re-analysis status: {str(e)}'
+        }), 500
+
+@main_bp.route('/comprehensive_reanalyze_all_user_songs/<int:user_id>')
+@login_required
+def comprehensive_reanalyze_all_user_songs(user_id=None):
+    """
+    Comprehensive re-analysis of all user songs using the unified analysis service.
+    This replaces all fragmented analysis approaches with one comprehensive system.
+    """
+    from ..services.unified_analysis_service import unified_analysis_service
+    
+    try:
+        # Verify user exists and has permission
+        if user_id is None:
+            user_id = current_user.id
+        
+        if user_id != current_user.id and not getattr(current_user, 'is_admin', False):
+            flash('Access denied: You can only re-analyze your own songs.', 'error')
+            return redirect(url_for('main.dashboard'))
+        
+        user = db.session.get(User, user_id)
+        if not user:
+            flash(f'User with ID {user_id} not found.', 'error')
+            return redirect(url_for('main.dashboard'))
+        
+        current_app.logger.info(f"Starting comprehensive re-analysis for user {user_id} ({user.email})")
+        
+        # Use the unified analysis service for comprehensive biblical analysis
+        result = unified_analysis_service.analyze_user_songs(
+            user_id=user_id,
+            force_reanalysis=True,  # Re-analyze everything
+            max_songs=None  # Analyze all songs
+        )
+        
+        if result['status'] == 'started':
+            flash(f"✅ Comprehensive biblical re-analysis started! "
+                  f"{result['songs_analyzed']} songs queued for analysis. "
+                  f"Check the dashboard for progress.", 'success')
+            current_app.logger.info(f"Comprehensive re-analysis queued: {result}")
+        elif result['status'] == 'complete':
+            flash('All songs are already analyzed with comprehensive biblical analysis.', 'info')
+        else:
+            flash(f"Error starting comprehensive re-analysis: {result['message']}", 'error')
+            current_app.logger.error(f"Comprehensive re-analysis failed: {result}")
+        
+        return redirect(url_for('main.dashboard'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in comprehensive re-analysis for user {user_id}: {e}")
+        flash(f'Error starting comprehensive re-analysis: {str(e)}', 'error')
+        return redirect(url_for('main.dashboard'))
+
+@main_bp.route('/monitoring')
+@login_required
+def monitoring_dashboard():
+    """Display the monitoring dashboard for system observability."""
+    # For now, allow any authenticated user
+    # In production, you might want to check for admin role
+    return render_template('monitoring.html')

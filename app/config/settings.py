@@ -56,6 +56,13 @@ class Config:
     # Bible API Configuration (Optional)
     BIBLE_API_KEY = os.environ.get('BIBLE_API_KEY')
 
+    # Lyrics Cache Configuration
+    LYRICS_CACHE_ENABLED = os.environ.get('LYRICS_CACHE_ENABLED', 'true').lower() == 'true'
+    LYRICS_CACHE_MAX_AGE_DAYS = int(os.environ.get('LYRICS_CACHE_MAX_AGE_DAYS', '30'))
+    LYRICS_CACHE_CLEANUP_HOUR = int(os.environ.get('LYRICS_CACHE_CLEANUP_HOUR', '2'))  # 2 AM
+    LYRICS_CACHE_OPTIMIZATION_DAY = os.environ.get('LYRICS_CACHE_OPTIMIZATION_DAY', 'sunday')  # Weekly on Sunday
+    LYRICS_CACHE_VALIDATION_HOUR = int(os.environ.get('LYRICS_CACHE_VALIDATION_HOUR', '1'))  # 1 AM
+
     # RQ (Redis Queue) Configuration
     RQ_REDIS_URL = os.environ.get('RQ_REDIS_URL', 'redis://redis:6379/0')
     RQ_QUEUES = ['default']  # We only need the default queue for now
@@ -89,7 +96,7 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     """Testing configuration."""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or 'postgresql://localhost/test_christian_music_curation_test'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or 'sqlite:///:memory:'
     WTF_CSRF_ENABLED = False # Disable CSRF for tests
     LOG_LEVEL = logging.DEBUG
     RQ_REDIS_URL = os.environ.get('RQ_TEST_REDIS_URL') or 'redis://localhost:6379/1' # Use a different Redis DB for tests
@@ -98,14 +105,8 @@ class TestingConfig(Config):
     SQLALCHEMY_RECORD_QUERIES = True
     SLOW_QUERY_THRESHOLD = float(os.environ.get('TEST_SLOW_QUERY_THRESHOLD', '0.1'))  # 100ms for testing
     
-    # Testing-specific pool settings (smaller for tests)
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': int(os.environ.get('TEST_DB_POOL_SIZE', '5')),
-        'max_overflow': int(os.environ.get('TEST_DB_MAX_OVERFLOW', '10')),
-        'pool_recycle': int(os.environ.get('TEST_DB_POOL_RECYCLE', '300')),  # 5 minutes
-        'pool_pre_ping': True,
-        'pool_timeout': int(os.environ.get('TEST_DB_POOL_TIMEOUT', '10')),
-    }
+    # Empty engine options for testing to avoid SQLite issues with pool settings
+    SQLALCHEMY_ENGINE_OPTIONS = {}
 
     @classmethod
     def init_app(cls, app):

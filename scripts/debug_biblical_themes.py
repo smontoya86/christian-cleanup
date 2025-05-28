@@ -13,7 +13,27 @@ from app.extensions import db
 from app.utils.analysis_enhanced import create_enhanced_analyzer
 import json
 
-def test_biblical_themes():
+def get_user_by_identifier(identifier):
+    """Get user by ID, Spotify ID, or display name"""
+    from app.models import User
+    
+    try:
+        # Try as integer ID first
+        user_id = int(identifier)
+        user = User.query.filter_by(id=user_id).first()
+        if user:
+            return user
+    except ValueError:
+        # Not an integer, try as Spotify ID
+        user = User.query.filter_by(spotify_id=identifier).first()
+        if user:
+            return user
+    
+    # Try as display name
+    user = User.query.filter_by(display_name=identifier).first()
+    return user
+
+def test_biblical_themes(user_id=None):
     """Test biblical themes generation and storage"""
     app = create_app()
     
@@ -21,9 +41,19 @@ def test_biblical_themes():
         print("=== TESTING BIBLICAL THEMES GENERATION ===")
         print()
         
+        # Determine user ID to use
+        if user_id is None:
+            from app.models import User
+            user = User.query.first()
+            if not user:
+                print("❌ No users found in database")
+                return
+            user_id = user.id
+            print(f"⚠️  No user specified, using first available user: {user.display_name} (ID: {user_id})")
+        
         # Test the enhanced analyzer directly
         print("1. Testing Enhanced Analyzer Directly...")
-        analyzer = create_enhanced_analyzer(user_id=1)
+        analyzer = create_enhanced_analyzer(user_id=user_id)
         
         # Test with Christian lyrics
         test_lyrics = """
@@ -193,4 +223,23 @@ def test_biblical_themes():
         print("=== DIAGNOSIS COMPLETE ===")
 
 if __name__ == '__main__':
-    test_biblical_themes() 
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Test biblical themes generation and storage")
+    parser.add_argument("--user", type=str, help="User identifier (ID, Spotify ID, or display name)")
+    args = parser.parse_args()
+    
+    # Determine user ID
+    user_id = None
+    if args.user:
+        app = create_app()
+        with app.app_context():
+            user = get_user_by_identifier(args.user)
+            if user:
+                user_id = user.id
+                print(f"Using user: {user.display_name} (ID: {user_id})")
+            else:
+                print(f"❌ User not found with identifier: {args.user}")
+                exit(1)
+    
+    test_biblical_themes(user_id) 
