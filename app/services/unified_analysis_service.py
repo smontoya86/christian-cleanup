@@ -113,6 +113,12 @@ class UnifiedAnalysisService:
                 
                 # Save to database
                 db.session.add(analysis_result)
+                
+                # Update song's last_analyzed timestamp
+                song = db.session.get(Song, song_id)
+                if song:
+                    song.last_analyzed = datetime.utcnow()
+                
                 db.session.commit()
                 
                 elapsed = time.time() - start_time
@@ -231,6 +237,12 @@ class UnifiedAnalysisService:
             
             # Save to database
             db.session.add(analysis_result)
+            
+            # Update song's last_analyzed timestamp
+            song = db.session.get(Song, song_id)
+            if song:
+                song.last_analyzed = datetime.utcnow()
+                
             db.session.commit()
             
             elapsed = time.time() - start_time

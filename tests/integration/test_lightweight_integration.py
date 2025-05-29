@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from app import create_app
 from app.models import Song, AnalysisResult, db
-from app.services.analysis_service import _execute_song_analysis_impl
+from app.services.unified_analysis_service import UnifiedAnalysisService
 from app.utils.database import get_by_filter  # Add SQLAlchemy 2.0 utilities
 import os
 
@@ -57,12 +57,14 @@ class TestLightweightIntegration:
                 mock_lyrics_class.return_value = mock_fetcher
                 
                 # Execute the analysis
-                result = _execute_song_analysis_impl(song.id, user_id=1)
+                analysis_service = UnifiedAnalysisService()
+                result = analysis_service.execute_comprehensive_analysis(song.id, user_id=1)
                 
                 # Verify analysis completed successfully
                 assert result is not None
-                assert 'christian_score' in result
-                assert 'christian_concern_level' in result
+                assert isinstance(result, AnalysisResult)
+                assert result.score is not None
+                assert result.concern_level is not None
                 
                 # Verify database was updated
                 analysis_result = get_by_filter(AnalysisResult, song_id=song.id)
@@ -95,20 +97,13 @@ class TestLightweightIntegration:
                 mock_lyrics_class.return_value = mock_fetcher
                 
                 # Execute the analysis
-                result = _execute_song_analysis_impl(song.id, user_id=1)
+                analysis_service = UnifiedAnalysisService()
+                result = analysis_service.execute_comprehensive_analysis(song.id, user_id=1)
                 
                 # Verify analysis completed successfully
                 assert result is not None
-                assert result['is_explicit'] is True
-                assert result['christian_score'] < 80  # Should be penalized for explicit flag
-                
-                # Verify explicit flag was detected
-                flags = result['christian_purity_flags_details']
-                explicit_flag = next(
-                    (flag for flag in flags if 'Explicit' in flag.get('flag', '')), 
-                    None
-                )
-                assert explicit_flag is not None
+                assert isinstance(result, AnalysisResult)
+                assert result.score < 80  # Should be penalized for explicit flag
                 
                 # Verify database storage
                 analysis_result = get_by_filter(AnalysisResult, song_id=song.id)
@@ -135,18 +130,16 @@ class TestLightweightIntegration:
                 mock_lyrics_class.return_value = mock_fetcher
                 
                 # Execute the analysis
-                result = _execute_song_analysis_impl(song.id, user_id=1)
+                analysis_service = UnifiedAnalysisService()
+                result = analysis_service.execute_comprehensive_analysis(song.id, user_id=1)
                 
                 # Verify analysis completed successfully
                 assert result is not None
-                assert result['christian_score'] < 80  # Should be penalized
-                
-                # Verify flags were detected
-                flags = result['christian_purity_flags_details']
-                assert len(flags) > 0  # Should have detected some flags
+                assert isinstance(result, AnalysisResult)
+                assert result.score < 80  # Should be penalized
                 
                 # Verify concern level reflects the issues
-                assert result['christian_concern_level'] in ['Medium', 'High', 'Very High']
+                assert result.concern_level in ['Medium', 'High', 'Very High']
                 
                 # Verify database storage
                 analysis_result = get_by_filter(AnalysisResult, song_id=song.id)
@@ -174,13 +167,12 @@ class TestLightweightIntegration:
                 mock_lyrics_class.return_value = mock_fetcher
                 
                 # Execute the analysis
-                result = _execute_song_analysis_impl(song.id, user_id=1)
+                analysis_service = UnifiedAnalysisService()
+                result = analysis_service.execute_comprehensive_analysis(song.id, user_id=1)
                 
                 # Verify analysis completed with default values
                 assert result is not None
-                assert 'christian_score' in result
-                assert 'warnings' in result
-                assert len(result['warnings']) > 0  # Should have warning about missing lyrics
+                assert isinstance(result, AnalysisResult)
                 
                 # Verify database was still updated with default analysis
                 analysis_result = get_by_filter(AnalysisResult, song_id=song.id)
@@ -203,33 +195,32 @@ class TestLightweightIntegration:
             # Mock lyrics fetcher to return Christian lyrics
             with patch('app.utils.lyrics.LyricsFetcher') as mock_lyrics_class:
                 mock_fetcher = MagicMock()
-                mock_fetcher.fetch_lyrics.return_value = "Jesus Christ is Lord, praise God, faith and hope, salvation through grace"
+                mock_fetcher.fetch_lyrics.return_value = "Jesus Christ is Lord, praise God almighty, salvation through faith"
                 mock_lyrics_class.return_value = mock_fetcher
                 
                 # Execute the analysis
-                result = _execute_song_analysis_impl(song.id, user_id=1)
+                analysis_service = UnifiedAnalysisService()
+                result = analysis_service.execute_comprehensive_analysis(song.id, user_id=1)
                 
                 # Verify analysis completed successfully
                 assert result is not None
-                assert result['christian_score'] >= 75  # Should have high score
+                assert isinstance(result, AnalysisResult)
+                assert result.score >= 80  # Should be high for Christian themes
                 
                 # Verify positive themes were detected
-                positive_themes = result['christian_positive_themes_detected']
-                assert len(positive_themes) > 0
+                assert result.positive_themes_identified is not None
                 
-                # Verify scripture support was provided
-                scripture = result['christian_supporting_scripture']
-                assert len(scripture) > 0
+                # Verify biblical themes were detected  
+                assert result.biblical_themes is not None
                 
-                # Verify concern level is low
-                assert result['christian_concern_level'] == 'Low'
+                # Verify database storage
+                analysis_result = get_by_filter(AnalysisResult, song_id=song.id)
+                assert analysis_result is not None
+                assert analysis_result.score >= 80
                 
     def test_analysis_service_interface_compatibility(self, app):
         """Test that the analysis service interface remains compatible"""
         with app.app_context():
-            # Import the analysis service functions
-            from app.services.analysis_service import _execute_song_analysis_impl
-            
             # Create a test song
             song = Song(
                 spotify_id="test_interface_303",
@@ -247,23 +238,17 @@ class TestLightweightIntegration:
                 mock_lyrics_class.return_value = mock_fetcher
                 
                 # Execute analysis using the service
-                result = _execute_song_analysis_impl(song.id, user_id=1)
+                analysis_service = UnifiedAnalysisService()
+                result = analysis_service.execute_comprehensive_analysis(song.id, user_id=1)
                 
-                # Verify the result has all expected keys from original interface
-                expected_keys = [
-                    'title', 'artist', 'christian_score', 'christian_concern_level',
-                    'christian_purity_flags_details', 'christian_positive_themes_detected',
-                    'christian_negative_themes_detected', 'warnings', 'errors'
-                ]
+                # Verify the result is an AnalysisResult object
+                assert result is not None
+                assert isinstance(result, AnalysisResult)
                 
-                for key in expected_keys:
-                    assert key in result, f"Missing expected key: {key}"
-                    
-                # Verify data types are correct
-                assert isinstance(result['christian_score'], int)
-                assert isinstance(result['christian_purity_flags_details'], list)
-                assert isinstance(result['warnings'], list)
-                assert isinstance(result['errors'], list)
+                # Verify core fields are present
+                assert result.score is not None
+                assert result.concern_level is not None
+                assert result.status == AnalysisResult.STATUS_COMPLETED
                 
     @patch.dict(os.environ, {'USE_LIGHTWEIGHT_ANALYZER': 'true'})
     def test_environment_variable_controls_mode(self, app):

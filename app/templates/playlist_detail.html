@@ -181,14 +181,14 @@
                             <tr class="song-row {{ 'table-info' if item.is_whitelisted else '' }}" data-song-id="{{ item.song.id }}">
                                 <th scope="row" class="text-center">{{ loop.index + ((pagination.page - 1) * pagination.per_page) if pagination else loop.index }}</th>
                                 <td>
-                                    <a href="{{ url_for('main.song_detail', song_id=item.song.id) }}" class="text-decoration-none">
+                                    <a href="{{ url_for('song.song_detail', song_id=item.song.id) }}" class="text-decoration-none">
                                         <img src="{{ item.song.album_art_url or url_for('static', filename='images/default_album_art.png') }}" 
                                              alt="Album Art" class="img-thumbnail album-art" style="width: 50px; height: 50px; object-fit: cover;">
                                     </a>
                                 </td>
                                 <td>
                                     <div class="d-flex flex-column">
-                                        <a href="{{ url_for('main.song_detail', song_id=item.song.id) }}" class="text-decoration-none text-dark fw-bold">
+                                        <a href="{{ url_for('song.song_detail', song_id=item.song.id) }}" class="text-decoration-none text-dark fw-bold">
                                             {{ item.song.title }}
                                         </a>
                                         <span class="text-muted small">{{ item.song.artist }}</span>
@@ -230,7 +230,7 @@
                                                 <span class="badge bg-success px-2 py-1">
                                                     <i class="fas fa-check me-1"></i>Whitelisted
                                                 </span>
-                                                <form method="post" action="{{ url_for('main.remove_whitelist_song', playlist_id=playlist.spotify_id, track_id=item.song.spotify_id) }}" class="d-inline">
+                                                <form method="post" action="{{ url_for('whitelist.remove_whitelist_song', playlist_id=playlist.spotify_id, track_id=item.song.spotify_id) }}" class="d-inline">
                                                     <button type="submit" class="btn btn-sm btn-outline-secondary p-1" 
                                                             title="Remove from whitelist"
                                                             onclick="return confirm('Remove this song from whitelist?')">
@@ -242,7 +242,7 @@
                                             <!-- Analyzed songs: Review link for high/extreme concern, re-analyze option for all -->
                                             <div class="d-flex align-items-center gap-2">
                                                 {% if item.analysis_result.concern_level|lower in ['high', 'extreme'] %}
-                                                    <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist.spotify_id) }}" 
+                                                    <a href="{{ url_for('song.song_detail', song_id=item.song.id, playlist_id=playlist.spotify_id) }}" 
                                                        class="btn btn-sm btn-outline-warning"
                                                        title="Review this song's analysis details">
                                                         <i class="fas fa-eye me-1"></i>Review
@@ -297,7 +297,7 @@
                             <!-- First Page -->
                             {% if pagination.page > 1 %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id, page=1) }}" aria-label="First">
+                                <a class="page-link" href="{{ url_for('playlist.playlist_detail', playlist_id=playlist.spotify_id, page=1) }}" aria-label="First">
                                     <span aria-hidden="true">&laquo;</span>
                                 </a>
                             </li>
@@ -310,7 +310,7 @@
                             <!-- Previous Page -->
                             {% if pagination.has_prev %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id, page=pagination.prev_num) }}" aria-label="Previous">
+                                <a class="page-link" href="{{ url_for('playlist.playlist_detail', playlist_id=playlist.spotify_id, page=pagination.prev_num) }}" aria-label="Previous">
                                     <span aria-hidden="true">&lsaquo;</span>
                                 </a>
                             </li>
@@ -326,7 +326,7 @@
                             
                             {% if start_page > 1 %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id, page=1) }}">1</a>
+                                <a class="page-link" href="{{ url_for('playlist.playlist_detail', playlist_id=playlist.spotify_id, page=1) }}">1</a>
                             </li>
                             {% if start_page > 2 %}
                             <li class="page-item disabled">
@@ -342,7 +342,7 @@
                                 </li>
                                 {% else %}
                                 <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id, page=page_num) }}">{{ page_num }}</a>
+                                    <a class="page-link" href="{{ url_for('playlist.playlist_detail', playlist_id=playlist.spotify_id, page=page_num) }}">{{ page_num }}</a>
                                 </li>
                                 {% endif %}
                             {% endfor %}
@@ -354,14 +354,14 @@
                             </li>
                             {% endif %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id, page=pagination.total_pages) }}">{{ pagination.total_pages }}</a>
+                                <a class="page-link" href="{{ url_for('playlist.playlist_detail', playlist_id=playlist.spotify_id, page=pagination.total_pages) }}">{{ pagination.total_pages }}</a>
                             </li>
                             {% endif %}
                             
                             <!-- Next Page -->
                             {% if pagination.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id, page=pagination.next_num) }}" aria-label="Next">
+                                <a class="page-link" href="{{ url_for('playlist.playlist_detail', playlist_id=playlist.spotify_id, page=pagination.next_num) }}" aria-label="Next">
                                     <span aria-hidden="true">&rsaquo;</span>
                                 </a>
                             </li>
@@ -374,7 +374,7 @@
                             <!-- Last Page -->
                             {% if pagination.page < pagination.total_pages %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id, page=pagination.total_pages) }}" aria-label="Last">
+                                <a class="page-link" href="{{ url_for('playlist.playlist_detail', playlist_id=playlist.spotify_id, page=pagination.total_pages) }}" aria-label="Last">
                                     <span aria-hidden="true">&raquo;</span>
                                 </a>
                             </li>

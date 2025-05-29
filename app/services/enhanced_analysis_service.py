@@ -4,7 +4,7 @@ Enhanced analysis service with task prioritization for RQ background processing.
 import logging
 from flask import current_app
 from ..extensions import rq
-from ..worker_config import HIGH_QUEUE, DEFAULT_QUEUE, LOW_QUEUE
+from ..worker_config import HIGH_PRIORITY_QUEUE, DEFAULT_QUEUE, LOW_PRIORITY_QUEUE
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ def analyze_song_user_initiated(song_id, user_id=None):
     """
     try:
         # Use high priority queue for user-initiated analysis
-        job = rq.get_queue(HIGH_QUEUE).enqueue(
+        job = rq.get_queue(HIGH_PRIORITY_QUEUE).enqueue(
             'app.services.unified_analysis_service.execute_comprehensive_analysis_task',
             song_id,
             user_id=user_id,
@@ -81,7 +81,7 @@ def analyze_songs_batch(song_ids, user_id=None):
     jobs = []
     try:
         for song_id in song_ids:
-            job = rq.get_queue(LOW_QUEUE).enqueue(
+            job = rq.get_queue(LOW_PRIORITY_QUEUE).enqueue(
                 'app.services.unified_analysis_service.execute_comprehensive_analysis_task',
                 song_id,
                 user_id=user_id,
@@ -139,7 +139,7 @@ def sync_all_playlists_background(user_id):
         Job: RQ job object
     """
     try:
-        job = rq.get_queue(LOW_QUEUE).enqueue(
+        job = rq.get_queue(LOW_PRIORITY_QUEUE).enqueue(
             'app.services.playlist_sync_service.sync_all_playlists_job',
             user_id,
             job_timeout=3600,  # 1 hour
@@ -166,7 +166,7 @@ def get_job_status(job_id):
     """
     try:
         # Try to find the job in any queue
-        for queue_name in [HIGH_QUEUE, DEFAULT_QUEUE, LOW_QUEUE]:
+        for queue_name in [HIGH_PRIORITY_QUEUE, DEFAULT_QUEUE, LOW_PRIORITY_QUEUE]:
             try:
                 job = rq.get_queue(queue_name).fetch_job(job_id)
                 if job:
@@ -199,7 +199,7 @@ def get_queue_statistics():
     """
     try:
         stats = {}
-        for queue_name in [HIGH_QUEUE, DEFAULT_QUEUE, LOW_QUEUE]:
+        for queue_name in [HIGH_PRIORITY_QUEUE, DEFAULT_QUEUE, LOW_PRIORITY_QUEUE]:
             queue = rq.get_queue(queue_name)
             stats[queue_name] = {
                 'name': queue_name,

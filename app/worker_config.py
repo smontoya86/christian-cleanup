@@ -184,14 +184,3 @@ def print_worker_startup_info(worker):
             print(f"  {key}: {value}")
     
     print("="*60 + "\n")
-
-
-# Backward compatibility - maintain existing queue definitions
-QUEUE_HIGH = HIGH_PRIORITY_QUEUE
-QUEUE_DEFAULT = DEFAULT_QUEUE  
-QUEUE_LOW = LOW_PRIORITY_QUEUE
-
-# Legacy names for Flask app imports
-HIGH_QUEUE = HIGH_PRIORITY_QUEUE
-DEFAULT_QUEUE = DEFAULT_QUEUE
-LOW_QUEUE = LOW_PRIORITY_QUEUE

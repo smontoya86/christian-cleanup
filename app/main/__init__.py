@@ -2,4 +2,5 @@ from flask import Blueprint
 
 main_bp = Blueprint('main', __name__)
 
-from . import routes # Import routes at the end to avoid circular dependencies
+# Note: Routes have been migrated to modular blueprints
+# The main_bp is kept for backward compatibility but is no longer registered

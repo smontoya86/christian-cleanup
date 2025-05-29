@@ -12,7 +12,7 @@
                     <i class="fas fa-spinner fa-spin me-2"></i>Syncing...
                 </button>
             {% else %}
-                <form action="{{ url_for('main.sync_playlists') }}" method="POST" class="d-inline">
+                <form action="{{ url_for('playlist.sync_playlists') }}" method="POST" class="d-inline">
                     <button type="submit" class="btn btn-outline-primary" id="syncButton">
                         <i class="fas fa-sync-alt me-2"></i>Sync Playlists
                     </button>
@@ -334,27 +334,27 @@
                                         {% endif %}
                                     </li>
                                 </ul>
-                                <a href="{{ url_for('main.playlist_detail', playlist_id=playlist.spotify_id) }}" 
+                                <a href="{{ url_for('playlist.playlist_detail', playlist_id=playlist.spotify_id) }}" 
                                    class="btn btn-primary btn-sm w-100 mb-2">
                                     <i class="fas fa-eye me-1"></i>View Details
                                 </a>
                                 <div class="btn-group w-100 mb-1" role="group" aria-label="Playlist actions">
-                                    <form action="{{ url_for('main.whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
+                                    <form action="{{ url_for('whitelist.whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
                                         <button type="submit" class="btn btn-outline-success btn-sm w-100">
                                             <i class="fas fa-thumbs-up me-1"></i>Whitelist
                                         </button>
                                     </form>
-                                    <form action="{{ url_for('main.blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
+                                    <form action="{{ url_for('whitelist.blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
                                         <button type="submit" class="btn btn-outline-danger btn-sm w-100">
                                             <i class="fas fa-thumbs-down me-1"></i>Blacklist
                                         </button>
                                     </form>
                                 </div>
                                 <div class="btn-group w-100" role="group">
-                                    <form action="{{ url_for('main.remove_whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
+                                    <form action="{{ url_for('whitelist.remove_whitelist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
                                         <button type="submit" class="btn btn-link btn-sm text-success p-1 w-100 small">Remove WL</button>
                                     </form>
-                                    <form action="{{ url_for('main.remove_blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
+                                    <form action="{{ url_for('whitelist.remove_blacklist_playlist', playlist_id=playlist.spotify_id) }}" method="POST" class="flex-fill">
                                         <button type="submit" class="btn btn-link btn-sm text-danger p-1 w-100 small">Remove BL</button>
                                     </form>
                                 </div>
@@ -379,7 +379,7 @@
                         <!-- First Page -->
                         {% if pagination.page > 1 %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('main.dashboard', page=1) }}" aria-label="First">
+                            <a class="page-link" href="{{ url_for('core.dashboard', page=1) }}" aria-label="First">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
                         </li>
@@ -392,7 +392,7 @@
                         <!-- Previous Page -->
                         {% if pagination.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.prev_num) }}" aria-label="Previous">
+                            <a class="page-link" href="{{ url_for('core.dashboard', page=pagination.prev_num) }}" aria-label="Previous">
                                 <span aria-hidden="true">&lsaquo;</span>
                             </a>
                         </li>
@@ -408,7 +408,7 @@
                         
                         {% if start_page > 1 %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('main.dashboard', page=1) }}">1</a>
+                            <a class="page-link" href="{{ url_for('core.dashboard', page=1) }}">1</a>
                         </li>
                         {% if start_page > 2 %}
                         <li class="page-item disabled">
@@ -424,7 +424,7 @@
                             </li>
                             {% else %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('main.dashboard', page=page_num) }}">{{ page_num }}</a>
+                                <a class="page-link" href="{{ url_for('core.dashboard', page=page_num) }}">{{ page_num }}</a>
                             </li>
                             {% endif %}
                         {% endfor %}
@@ -436,14 +436,14 @@
                         </li>
                         {% endif %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.total_pages) }}">{{ pagination.total_pages }}</a>
+                            <a class="page-link" href="{{ url_for('core.dashboard', page=pagination.total_pages) }}">{{ pagination.total_pages }}</a>
                         </li>
                         {% endif %}
                         
                         <!-- Next Page -->
                         {% if pagination.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.next_num) }}" aria-label="Next">
+                            <a class="page-link" href="{{ url_for('core.dashboard', page=pagination.next_num) }}" aria-label="Next">
                                 <span aria-hidden="true">&rsaquo;</span>
                             </a>
                         </li>
@@ -456,7 +456,7 @@
                         <!-- Last Page -->
                         {% if pagination.page < pagination.total_pages %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.total_pages) }}" aria-label="Last">
+                            <a class="page-link" href="{{ url_for('core.dashboard', page=pagination.total_pages) }}" aria-label="Last">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>
@@ -1014,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Wait a moment then refresh to show new data
                         setTimeout(() => {
                             // Remove auto_sync_started session flag and refresh
-                            fetch('{{ url_for("main.dashboard") }}', {
+                            fetch('{{ url_for("core.dashboard") }}', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/x-www-form-urlencoded',

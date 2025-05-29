@@ -1,68 +1,53 @@
 from flask import current_app
 from .models import User # Assuming User model is in models
-from .services.spotify_service import SpotifyService # Assuming SpotifyService is importable
-import spotipy
+from .services.playlist_sync_service import enqueue_playlist_sync, get_sync_status # Use modern playlist sync
 
 
 def sync_all_playlists_job():
-    """Scheduled job to sync playlists for all users."""
+    """Scheduled job to sync playlists for all users using modern playlist sync service."""
     app = current_app._get_current_object() # Get the actual Flask app instance
     with app.app_context():
         # Import db and models *inside* the app context
         from .extensions import db
         from .models import User
         
-        current_app.logger.info("Starting scheduled playlist sync job.")
+        current_app.logger.info("Starting scheduled playlist sync job (refactored).")
         # Use modern SQLAlchemy query style with the session
         users = db.session.execute(db.select(User)).scalars().all()
         if not users:
             current_app.logger.info("No users found to sync.")
             return
 
-        # Get the SpotifyService instance from the app context if possible
-        # Or instantiate it if necessary (ensure configuration is available)
-        spotify_service = current_app.extensions.get('spotify_service')
-        if not spotify_service:
-            # Fallback: Instantiate a new one - requires proper config access
-            current_app.logger.warning("SpotifyService not found in app extensions, instantiating new one for job.")
-            # Note: This instantiation might need adjustment if the service relies
-            # on request-specific context or complex setup not available here.
-            # It's generally better to ensure services are accessible via app context.
-            spotify_service = SpotifyService(logger=current_app.logger)
-            # TODO: Verify if this fallback instantiation works correctly in the job context.
-
-        synced_count = 0
+        enqueued_count = 0
         failed_count = 0
 
         for user in users:
-            current_app.logger.debug(f"Syncing playlists for user {user.id} ({user.spotify_id})...")
+            current_app.logger.debug(f"Processing playlist sync for user {user.id} ({user.spotify_id})...")
             try:
                 # Ensure the user's token is likely valid before attempting sync
-                # This might require adding a check here or ensuring sync_user_playlists_with_db handles it
                 if not user.access_token or user.is_token_expired: 
                     current_app.logger.warning(f"Skipping sync for user {user.id}: Missing or expired token.")
                     failed_count += 1
                     continue
 
-                # The sync function needs the user ID
-                success = spotify_service.sync_user_playlists_with_db(user.id)
-                if success:
-                    current_app.logger.info(f"Successfully synced playlists for user {user.id}.")
-                    synced_count += 1
+                # Check if sync is already in progress for this user
+                sync_status = get_sync_status(user.id)
+                if sync_status.get('status') == 'in_progress':
+                    current_app.logger.info(f"Sync already in progress for user {user.id}, skipping.")
+                    continue
+
+                # Enqueue playlist sync job using modern service
+                job = enqueue_playlist_sync(user.id)
+                if job:
+                    current_app.logger.info(f"Successfully enqueued playlist sync for user {user.id}, job ID: {job.id}")
+                    enqueued_count += 1
                 else:
-                    # The function itself might log specifics, add a general failure log here
-                    current_app.logger.warning(f"Sync failed for user {user.id} (check service logs for details).")
+                    # Failed to enqueue
+                    current_app.logger.warning(f"Failed to enqueue playlist sync for user {user.id}")
                     failed_count += 1
 
-            except spotipy.SpotifyException as e:
-                current_app.logger.error(f"Spotify API error during sync for user {user.id}: {e}")
-                # Specific handling for auth errors might be needed if sync_user_playlists_with_db doesn't handle it
-                if e.http_status == 401:
-                    current_app.logger.warning(f"Spotify token expired for user {user.id}.")
-                    # Optionally: Mark user token as invalid in DB
-                failed_count += 1
             except Exception as e:
-                current_app.logger.error(f"Unexpected error during sync for user {user.id}: {e}", exc_info=True)
+                current_app.logger.error(f"Error processing playlist sync for user {user.id}: {e}", exc_info=True)
                 failed_count += 1
 
-        current_app.logger.info(f"Scheduled playlist sync job finished. Synced: {synced_count}, Failed/Skipped: {failed_count}")
+        current_app.logger.info(f"Scheduled playlist sync job finished. Enqueued: {enqueued_count}, Failed/Skipped: {failed_count}")

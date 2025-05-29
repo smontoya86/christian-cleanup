@@ -15,8 +15,7 @@ from sqlalchemy import inspect
 from app import create_app
 from app.extensions import db
 from app.models.models import Song, AnalysisResult, User, Playlist, PlaylistSong
-from app.services.analysis_service import _execute_song_analysis_impl
-from app.services.unified_analysis_service import execute_comprehensive_analysis_task
+from app.services.unified_analysis_service import UnifiedAnalysisService, execute_comprehensive_analysis_task
 
 
 class TestDetachedInstanceErrorAnalysis:

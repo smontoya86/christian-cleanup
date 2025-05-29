@@ -1,0 +1,158 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+trigger: always_on
+---
+
+# Development Workflow
+
+This document outlines the development workflow for the Spotify Cleanup project, which follows a test-driven development (TDD) approach using task-master for project management.
+
+## Test-Driven Development Workflow
+
+For each task, follow these steps:
+
+1. **Write Unit Tests First**
+   - Begin by writing tests that define the expected behavior
+   - Consider edge cases and error conditions
+   - Use appropriate testing framework (Jest for frontend/backend)
+
+2. **Implement the Code**
+   - Write the minimal code needed to fulfill the requirements
+   - Follow the project's architecture and coding standards
+   - Focus on making the tests pass
+
+3. **Run the Tests**
+   - Execute the tests to verify your implementation
+   - Identify any failing tests and their causes
+
+4. **Iterate Until Tests Pass**
+   - Refine the implementation to address any test failures
+   - Refactor code as needed while keeping tests passing
+   - Ensure code quality standards are met
+
+5. **Update Task Status**
+   - Mark the task as complete in task-master
+   - Document any important implementation notes
+
+6. **Update Documentation**
+   - Update relevant documentation if needed
+   - Add examples or usage notes to help other developers
+
+## Task Management with task-master
+
+We use task-master to track development progress:
+
+```bash
+# Start working on a task
+task-master set-status --id=<task_id> --status=in-progress
+
+# View task details
+task-master show <task_id>
+
+# Mark a task as complete
+task-master set-status --id=<task_id> --status=done
+
+# Add notes to a task 
+task-master add-notes --id=<task_id> --notes="Implementation notes here"
+```
+
+## Directory Structure for Tests
+
+Tests should mirror the structure of the code they're testing:
+
+```
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── Button.tsx
+│   │   └── __tests__/
+│   │       └── components/
+│   │           └── Button.test.tsx
+│   
+├── backend/
+│   ├── src/
+│   │   ├── controllers/
+│   │   │   └── auth.controller.ts
+│   │   └── __tests__/
+│   │       └── controllers/
+│   │           └── auth.controller.test.ts
+```
+
+## Testing Frameworks and Tools
+
+- **Frontend**: Jest + React Testing Library
+- **Backend**: Jest + Supertest
+- **Database**: Use in-memory database for tests (like SQLite)
+- **API Mocking**: Use MSW (Mock Service Worker) for API tests
+
+## Example TDD Workflow for a Task
+
+Consider task #2.1: "Implement Spotify OAuth Login Button Component"
+
+1. **Write Test First**:
+   ```typescript
+   // frontend/src/__tests__/components/SpotifyLoginButton.test.tsx
+   import { render, screen, fireEvent } from '@testing-library/react';
+   import SpotifyLoginButton from '../../components/SpotifyLoginButton';
+   
+   describe('SpotifyLoginButton', () => {
+     it('renders a button with Spotify branding', () => {
+       render(<SpotifyLoginButton />);
+       const button = screen.getByRole('button');
+       expect(button).toHaveTextContent('Login with Spotify');
+       expect(button).toHaveClass('spotify-login-btn');
+     });
+     
+     it('calls the login function when clicked', () => {
+       const mockLogin = jest.fn();
+       render(<SpotifyLoginButton onLogin={mockLogin} />);
+       const button = screen.getByRole('button');
+       fireEvent.click(button);
+       expect(mockLogin).toHaveBeenCalledTimes(1);
+     });
+   });
+   ```
+
+2. **Implement the Component**:
+   ```typescript
+   // frontend/src/components/SpotifyLoginButton.tsx
+   import { signIn } from 'next-auth/react';
+   
+   interface SpotifyLoginButtonProps {
+     onLogin?: () => void;
+   }
+   
+   const SpotifyLoginButton = ({ onLogin }: SpotifyLoginButtonProps) => {
+     const handleLogin = () => {
+       signIn('spotify', { callbackUrl: '/dashboard' });
+       if (onLogin) onLogin();
+     };
+     
+     return (
+       <button 
+         className="spotify-login-btn" 
+         onClick={handleLogin}
+       >
+         Login with Spotify
+       </button>
+     );
+   };
+   
+   export default SpotifyLoginButton;
+   ```
+
+3. **Run Tests and Iterate** until all tests pass
+
+4. **Update Task Status**:
+   ```bash
+   task-master set-status --id=2.1 --status=done
+   task-master add-notes --id=2.1 --notes="Implemented Spotify login button with TDD approach"
+   ```
+
+5. **Update Documentation** if needed
+
+Following this workflow ensures high-quality, well-tested code for each task in our project. 

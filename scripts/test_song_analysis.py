@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Test script to verify song analysis functionality.
+Updated to use UnifiedAnalysisService instead of deprecated analysis_service.
 """
 import os
 import sys
@@ -18,12 +19,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def test_song_analysis():
-    """Test song analysis functionality."""
+    """Test song analysis functionality using UnifiedAnalysisService."""
     try:
         from app import create_app
         from app.extensions import db
         from app.models import Song, AnalysisResult
-        from app.services.analysis_service import perform_christian_song_analysis_and_store
+        from app.services.unified_analysis_service import execute_comprehensive_analysis_task  # Updated import
         
         # Create Flask app and push app context
         app = create_app()
@@ -43,9 +44,9 @@ def test_song_analysis():
             
             logger.info(f"Created test song: {test_song.title} by {test_song.artist} (ID: {test_song.id})")
             
-            # Trigger analysis
-            logger.info("Triggering song analysis...")
-            job = perform_christian_song_analysis_and_store(test_song.id)
+            # Trigger analysis using unified analysis service
+            logger.info("Triggering song analysis using UnifiedAnalysisService...")
+            job = execute_comprehensive_analysis_task(test_song.id, user_id=1)  # Updated function call
             
             if not job:
                 logger.error("Failed to enqueue analysis job")
@@ -64,7 +65,7 @@ def test_song_analysis():
         return False
 
 if __name__ == "__main__":
-    print("Testing song analysis functionality...\n")
+    print("Testing song analysis functionality with UnifiedAnalysisService...\n")
     
     success = test_song_analysis()
     

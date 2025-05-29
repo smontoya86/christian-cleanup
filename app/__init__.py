@@ -110,15 +110,15 @@ def create_app(config_name=None, init_scheduler=True):
     rq.init_app(app)
     
     # Configure enhanced RQ with priority queues
-    from .worker_config import HIGH_QUEUE, DEFAULT_QUEUE, LOW_QUEUE
+    from .worker_config import HIGH_PRIORITY_QUEUE, DEFAULT_QUEUE, LOW_PRIORITY_QUEUE
     
     # Initialize task queues with priority support
-    app.task_queue = rq.get_queue()  # Default queue for backward compatibility
+    app.task_queue = rq.get_queue(DEFAULT_QUEUE)  # Use explicit default queue
     
     # Register priority queues for easy access
-    app.high_queue = rq.get_queue(HIGH_QUEUE)
+    app.high_queue = rq.get_queue(HIGH_PRIORITY_QUEUE)
     app.default_queue = rq.get_queue(DEFAULT_QUEUE) 
-    app.low_queue = rq.get_queue(LOW_QUEUE)
+    app.low_queue = rq.get_queue(LOW_PRIORITY_QUEUE)
 
     # Setup query monitoring
     from .utils.query_monitoring import setup_query_monitoring
@@ -162,14 +162,43 @@ def create_app(config_name=None, init_scheduler=True):
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
     app.logger.info("Auth blueprint registered.")
 
-    from .main import main_bp as main_blueprint # Import from app.main
-    app.register_blueprint(main_blueprint)
-    app.logger.info("Main blueprint registered.")
-
-    # Register admin blueprint
-    from .admin import admin_bp as admin_blueprint
-    app.register_blueprint(admin_blueprint)
+    # Register new modular blueprints
+    from .blueprints import (
+        core_bp, playlist_bp, song_bp, analysis_bp, 
+        whitelist_bp, user_bp, admin_bp, system_bp
+    )
+    
+    # Core blueprint (handles dashboard and main routes) - no URL prefix to maintain existing URLs
+    app.register_blueprint(core_bp)
+    app.logger.info("Core blueprint registered.")
+    
+    # Playlist blueprint - no URL prefix to maintain existing URLs like /playlist/<id>
+    app.register_blueprint(playlist_bp)
+    app.logger.info("Playlist blueprint registered.")
+    
+    # Song blueprint - no URL prefix to maintain existing URLs like /songs/<id>
+    app.register_blueprint(song_bp)
+    app.logger.info("Song blueprint registered.")
+    
+    # Analysis blueprint - no URL prefix to maintain existing URLs like /api/songs/<id>/analyze
+    app.register_blueprint(analysis_bp)
+    app.logger.info("Analysis blueprint registered.")
+    
+    # Whitelist blueprint - no URL prefix to maintain existing URLs like /whitelist_playlist/<id>
+    app.register_blueprint(whitelist_bp)
+    app.logger.info("Whitelist blueprint registered.")
+    
+    # User blueprint - no URL prefix to maintain existing URLs like /settings
+    app.register_blueprint(user_bp)
+    app.logger.info("User blueprint registered.")
+    
+    # Admin blueprint - no URL prefix to maintain existing URLs like /admin/*
+    app.register_blueprint(admin_bp)
     app.logger.info("Admin blueprint registered.")
+    
+    # System blueprint - no URL prefix to maintain existing URLs like /health
+    app.register_blueprint(system_bp)
+    app.logger.info("System blueprint registered.")
 
     # Context processor to inject current year
     @app.context_processor

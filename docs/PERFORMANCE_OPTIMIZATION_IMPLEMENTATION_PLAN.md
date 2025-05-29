@@ -235,9 +235,9 @@ class OptimizedAnalysisEngine:
 ```python
 class DistributedAnalysisService:
     def __init__(self):
-        self.high_priority_queue = Queue('analysis_high', connection=redis_conn)
-        self.normal_priority_queue = Queue('analysis_normal', connection=redis_conn)
-        self.batch_queue = Queue('analysis_batch', connection=redis_conn)
+        self.high_priority_queue = Queue('high', connection=redis_conn)
+        self.normal_priority_queue = Queue('default', connection=redis_conn)
+        self.batch_queue = Queue('low', connection=redis_conn)
     
     def queue_analysis_batch(self, song_ids: List[int], priority: str = 'normal'):
         """Queue batch analysis with priority handling"""
@@ -368,13 +368,13 @@ class ProductionConfig(Config):
 WORKER_CONFIGS = {
     'analysis_workers': {
         'count': 4,
-        'queues': ['analysis_high', 'analysis_normal'],
+        'queues': ['high', 'default'],
         'max_jobs': 100,
         'timeout': 600
     },
     'sync_workers': {
         'count': 2,
-        'queues': ['playlist_sync'],
+        'queues': ['low'],
         'max_jobs': 50,
         'timeout': 1200
     }
