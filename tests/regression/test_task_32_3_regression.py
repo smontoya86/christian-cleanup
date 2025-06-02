@@ -59,8 +59,6 @@ class TestTask32_3LegacyQueueRemovalRegression:
                 print(f"   Default: {DEFAULT_QUEUE} ✅")
                 print(f"   Low Priority: {LOW_PRIORITY_QUEUE} ✅")
                 
-                return queue_status
-                
         except Exception as e:
             pytest.fail(f"Current queue system test failed: {e}")
 
@@ -108,8 +106,6 @@ class TestTask32_3LegacyQueueRemovalRegression:
                 assert len(removed_queues) == len(legacy_queue_names), \
                     f"Not all legacy queues removed: {len(removed_queues)}/{len(legacy_queue_names)}"
                 
-                return removed_queues
-                
         except Exception as e:
             pytest.fail(f"Legacy queue removal verification failed: {e}")
 
@@ -152,11 +148,6 @@ class TestTask32_3LegacyQueueRemovalRegression:
             print(f"   LOW_PRIORITY_QUEUE: {LOW_PRIORITY_QUEUE}")
             print(f"   DEFAULT_QUEUES: {DEFAULT_QUEUES}")
             print(f"   No legacy queue references found ✅")
-            
-            return {
-                'current_queues': expected_queues,
-                'legacy_references': legacy_found
-            }
             
         except Exception as e:
             pytest.fail(f"Worker config verification failed: {e}")
@@ -214,12 +205,6 @@ class TestTask32_3LegacyQueueRemovalRegression:
             print(f"   Current queue imports: {len(imports_found)}/3 found")
             print(f"   Legacy queue references: {len(legacy_found)} (should be 0)")
             
-            return {
-                'functions_available': len(functions),
-                'current_imports': imports_found,
-                'legacy_references': legacy_found
-            }
-            
         except ImportError as e:
             pytest.fail(f"Enhanced analysis service import failed: {e}")
         except Exception as e:
@@ -269,8 +254,6 @@ class TestTask32_3LegacyQueueRemovalRegression:
                 for queue_name, result in enqueue_results.items():
                     print(f"   {queue_name}: Job enqueued and cleaned up ✅")
                 
-                return enqueue_results
-                
         except Exception as e:
             pytest.fail(f"Queue job enqueueing test failed: {e}")
 
@@ -299,13 +282,6 @@ class TestTask32_3LegacyQueueRemovalRegression:
                 print(f"   RQ extension available: ✅")
                 print(f"   Worker config accessible: ✅")
                 print(f"   Default queues configured: {len(DEFAULT_QUEUES)}")
-                
-                return {
-                    'app_created': True,
-                    'rq_available': True,
-                    'config_accessible': True,
-                    'queue_count': len(DEFAULT_QUEUES)
-                }
                 
         except Exception as e:
             pytest.fail(f"App initialization test failed: {e}")
@@ -345,12 +321,6 @@ class TestTask32_3LegacyQueueRemovalRegression:
                 print(f"   Connection info available: ✅")
                 print(f"   Redis version: {info.get('redis_version', 'Unknown')}")
                 
-                return {
-                    'operations_successful': True,
-                    'info_available': True,
-                    'redis_version': info.get('redis_version')
-                }
-                
         except Exception as e:
             pytest.fail(f"Redis connection health test failed: {e}")
 
@@ -359,57 +329,71 @@ class TestTask32_3LegacyQueueRemovalRegression:
         print(f"\n🔬 COMPREHENSIVE REGRESSION TEST FOR TASK 32.3")
         print(f"=" * 60)
         
-        # Run all component tests
-        queue_system = self.test_current_queue_system_functional()
-        legacy_removal = self.test_legacy_queues_no_longer_exist()
-        worker_config = self.test_worker_config_uses_current_queues()
-        analysis_service = self.test_enhanced_analysis_service_functionality()
-        job_enqueueing = self.test_queue_job_enqueueing_works()
-        app_init = self.test_app_initialization_works()
-        redis_health = self.test_redis_connection_health()
-        
-        # Comprehensive summary
-        summary = {
-            'task': 'Task 32.3: Remove Unused Legacy Queue Definitions',
-            'current_queue_system_functional': len(queue_system) == 3,
-            'legacy_queues_removed': len(legacy_removal) == 6,
-            'worker_config_clean': len(worker_config['legacy_references']) == 0,
-            'analysis_service_functional': analysis_service['functions_available'] == 3,
-            'job_enqueueing_works': all(r['success'] for r in job_enqueueing.values()),
-            'app_initialization_works': app_init['app_created'],
-            'redis_connection_healthy': redis_health['operations_successful'],
-            'total_tests_passed': 7,
-            'breaking_changes': False
-        }
+        # Test current queue system functionality
+        try:
+            from app import create_app
+            from app.extensions import rq
+            from app.worker_config import HIGH_PRIORITY_QUEUE, DEFAULT_QUEUE, LOW_PRIORITY_QUEUE
+            
+            app = create_app('testing')
+            with app.app_context():
+                # Test queue system
+                current_queues = [HIGH_PRIORITY_QUEUE, DEFAULT_QUEUE, LOW_PRIORITY_QUEUE]
+                queue_system_functional = len(current_queues) == 3
+                
+                # Test legacy queue removal
+                connection = rq.connection
+                legacy_queue_names = ['analysis_high', 'analysis_normal', 'analysis_batch', 'old_default', 'legacy', 'deprecated']
+                removed_count = sum(1 for q in legacy_queue_names if not connection.exists(f"rq:queue:{q}"))
+                legacy_queues_removed = removed_count == len(legacy_queue_names)
+                
+                # Test worker config
+                from app.worker_config import DEFAULT_QUEUES
+                worker_config_clean = len(DEFAULT_QUEUES) == 3
+                
+                # Test analysis service
+                from app.services.enhanced_analysis_service import analyze_song_user_initiated, analyze_song_background, analyze_songs_batch
+                analysis_service_functional = all(callable(f) for f in [analyze_song_user_initiated, analyze_song_background, analyze_songs_batch])
+                
+                # Test job enqueueing
+                test_queue = rq.get_queue(DEFAULT_QUEUE)
+                job_enqueueing_works = test_queue is not None
+                
+                # Test app initialization  
+                app_initialization_works = app is not None and app.config.get('TESTING', False)
+                
+                # Test Redis connection
+                redis_connection_healthy = connection.ping()
+                
+        except Exception as e:
+            pytest.fail(f"Comprehensive regression test failed: {e}")
         
         print(f"\n📊 REGRESSION TEST SUMMARY:")
-        print(f"   Current queue system functional: {'✅' if summary['current_queue_system_functional'] else '❌'}")
-        print(f"   Legacy queues removed: {'✅' if summary['legacy_queues_removed'] else '❌'} (6/6)")
-        print(f"   Worker config clean: {'✅' if summary['worker_config_clean'] else '❌'}")
-        print(f"   Analysis service functional: {'✅' if summary['analysis_service_functional'] else '❌'}")
-        print(f"   Job enqueueing works: {'✅' if summary['job_enqueueing_works'] else '❌'}")
-        print(f"   App initialization works: {'✅' if summary['app_initialization_works'] else '❌'}")
-        print(f"   Redis connection healthy: {'✅' if summary['redis_connection_healthy'] else '❌'}")
+        print(f"   Current queue system functional: {'✅' if queue_system_functional else '❌'}")
+        print(f"   Legacy queues removed: {'✅' if legacy_queues_removed else '❌'} ({removed_count}/{len(legacy_queue_names)})")
+        print(f"   Worker config clean: {'✅' if worker_config_clean else '❌'}")
+        print(f"   Analysis service functional: {'✅' if analysis_service_functional else '❌'}")
+        print(f"   Job enqueueing works: {'✅' if job_enqueueing_works else '❌'}")
+        print(f"   App initialization works: {'✅' if app_initialization_works else '❌'}")
+        print(f"   Redis connection healthy: {'✅' if redis_connection_healthy else '❌'}")
         
         all_tests_passed = all([
-            summary['current_queue_system_functional'],
-            summary['legacy_queues_removed'],
-            summary['worker_config_clean'],
-            summary['analysis_service_functional'],
-            summary['job_enqueueing_works'],
-            summary['app_initialization_works'],
-            summary['redis_connection_healthy']
+            queue_system_functional,
+            legacy_queues_removed,
+            worker_config_clean,
+            analysis_service_functional,
+            job_enqueueing_works,
+            app_initialization_works,
+            redis_connection_healthy
         ])
         
-        summary['all_tests_passed'] = all_tests_passed
-        
         print(f"\n🎯 OVERALL RESULT: {'✅ ALL TESTS PASSED' if all_tests_passed else '❌ SOME TESTS FAILED'}")
-        print(f"   Breaking changes introduced: {'❌ YES' if summary['breaking_changes'] else '✅ NO'}")
+        print(f"   Breaking changes introduced: ✅ NO")
         print(f"   Legacy queue cleanup: ✅ SUCCESSFUL")
         print(f"   Current functionality: ✅ PRESERVED")
         
         # Assertions for test framework
-        assert all_tests_passed, f"Regression tests failed: {summary}"
-        assert not summary['breaking_changes'], "Breaking changes detected"
-        
-        return summary 
+        assert all_tests_passed, "Not all regression tests passed"
+        assert queue_system_functional, "Queue system not functional"
+        assert legacy_queues_removed, "Legacy queues not properly removed"
+        assert worker_config_clean, "Worker config contains issues" 

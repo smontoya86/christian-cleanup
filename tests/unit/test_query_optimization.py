@@ -3,11 +3,11 @@ Tests for query optimization and N+1 pattern elimination.
 """
 import time
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from sqlalchemy import event
 from app import create_app, db
 from app.models.models import User, Playlist, Song, AnalysisResult, PlaylistSong
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class QueryCounter:
@@ -57,7 +57,7 @@ class TestQueryOptimization:
             email='test@example.com',
             access_token='test_token',
             refresh_token='test_refresh',
-            token_expiry=datetime.utcnow() + timedelta(hours=1)
+            token_expiry=datetime.now(timezone.utc) + timedelta(hours=1)
         )
         db.session.add(user)
         db.session.commit()
@@ -133,7 +133,7 @@ class TestQueryOptimization:
         # Should be more than 4 queries (1 for playlists + 3 for song associations + more for analysis)
         assert n_plus_one_query_count > 4, f"Expected N+1 pattern with >4 queries, got {n_plus_one_query_count}"
         
-        return n_plus_one_query_count
+        print(f"N+1 pattern detected: {n_plus_one_query_count} queries")
     
     def test_optimized_playlist_loading_with_eager_loading(self):
         """Test optimized playlist loading using eager loading."""
@@ -161,7 +161,7 @@ class TestQueryOptimization:
         # Should be significantly fewer queries (ideally 2-3: playlists + associations + songs)
         assert optimized_query_count <= 3, f"Expected ≤3 queries with eager loading, got {optimized_query_count}"
         
-        return optimized_query_count
+        print(f"Optimized query count: {optimized_query_count} queries")
     
     def test_query_optimization_performance_improvement(self):
         """Test that query optimization provides significant performance improvement."""
