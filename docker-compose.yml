@@ -11,9 +11,9 @@ services:
       - FLASK_ENV=development  # Fix session cookie security for HTTP
       - DEBUG=true
       - SECRET_KEY=HEkhWyjqZj15ZYHOyMb7sAo2oHQXNLWzB37Oht7C_Wo
-      - SPOTIFY_CLIENT_ID=7ee17d5e78f5429bb22bbe33fea77a6b
-      - SPOTIFY_CLIENT_SECRET=09b6217385ec4a738d67d188d78c6c66
-      - SPOTIFY_REDIRECT_URI=http://localhost:5001/auth/callback
+      - SPOTIPY_CLIENT_ID=${SPOTIPY_CLIENT_ID}
+      - SPOTIPY_CLIENT_SECRET=${SPOTIPY_CLIENT_SECRET}
+      - SPOTIPY_REDIRECT_URI=${SPOTIPY_REDIRECT_URI}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - RQ_REDIS_URL=redis://redis:6379/0
       - USE_LIGHTWEIGHT_ANALYZER=false  # Always use comprehensive analysis
@@ -33,7 +33,7 @@ services:
 
   worker:
     build: .
-    entrypoint: ["/app/docker-entrypoint-worker.sh"]
+    entrypoint: ["/app/scripts/docker-entrypoint-worker.sh"]
     volumes:
       - .:/app
     environment:
