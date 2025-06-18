@@ -1,0 +1,43 @@
+{# 
+Stats Card Component
+
+Parameters:
+- title: Card title
+- icon: Font Awesome icon class (without fas prefix)
+- value: Main value to display
+- subtitle: Additional text below value
+- color: Bootstrap color class (primary, success, info, etc.)
+- progress_value: Optional progress bar value (0-100)
+- extra_content: Optional additional content block
+#}
+
+<div class="col-md-4">
+    <div class="card text-center h-100 border-{{ color }}">
+        <div class="card-body">
+            <h5 class="card-title text-{{ color }}">
+                <i class="fas fa-{{ icon }} me-2"></i>{{ title }}
+            </h5>
+            <p class="card-text fs-2 fw-bold text-{{ color }}" 
+               {% if update_id %}id="{{ update_id }}"{% endif %}>
+                {{ value }}
+            </p>
+            {% if subtitle %}
+            <small class="text-muted">{{ subtitle }}</small>
+            {% endif %}
+            
+            {% if progress_value is not none %}
+            <div class="progress mt-2" style="height: 8px;">
+                <div class="progress-bar bg-{{ color }}" 
+                     role="progressbar" 
+                     style="width: {{ progress_value }}%"
+                     {% if progress_id %}id="{{ progress_id }}"{% endif %}>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if extra_content %}
+            {{ extra_content }}
+            {% endif %}
+        </div>
+    </div>
+</div> 

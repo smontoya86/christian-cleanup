@@ -1,0 +1,360 @@
+services:
+  # Nginx reverse proxy and load balancer
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/ssl:/etc/nginx/ssl:ro
+      - ./app/static:/app/app/static:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - web
+    restart: unless-stopped
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  # Main Flask application (scalable)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    command: gunicorn --bind 0.0.0.0:5000 --workers 4 --worker-class gevent --worker-connections 1000 --timeout 120 --max-requests 1000 --max-requests-jitter 100 --preload run:app
+    expose:
+      - "5000"
+    volumes:
+      - app_logs:/app/logs
+      - ./uploads:/app/uploads:rw
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=false
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - RQ_REDIS_URL=redis://redis:6379/0
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - SPOTIFY_REDIRECT_URI=${SPOTIFY_REDIRECT_URI}
+      - GENIUS_API_KEY=${GENIUS_API_KEY}
+      - BIBLE_API_KEY=${BIBLE_API_KEY}
+      - LOG_LEVEL=INFO
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  # Background workers (scalable)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    command: python -m rq worker --url redis://redis:6379/0 --with-scheduler --logging_level INFO analysis_queue default_queue
+    volumes:
+      - app_logs:/app/logs
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - RQ_REDIS_URL=redis://redis:6379/0
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - GENIUS_API_KEY=${GENIUS_API_KEY}
+      - BIBLE_API_KEY=${BIBLE_API_KEY}
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis; r = redis.from_url('redis://redis:6379/0'); r.ping()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  # PostgreSQL database with optimization
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./deploy/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - db_logs:/var/log/postgresql
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    restart: unless-stopped
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+    ports:
+      - "127.0.0.1:5432:5432"  # Only accessible from localhost
+
+  # Redis cache and queue (with persistence)
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+      - ./deploy/redis/redis.conf:/etc/redis/redis.conf:ro
+      - redis_logs:/var/log/redis
+    command: redis-server /etc/redis/redis.conf
+    restart: unless-stopped
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    ports:
+      - "127.0.0.1:6379:6379"  # Only accessible from localhost
+
+  # Prometheus monitoring
+  prometheus:
+    image: prom/prometheus:v2.40.7
+    container_name: christian-curator-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - backend
+    depends_on:
+      - web
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Grafana dashboards
+  grafana:
+    image: grafana/grafana:9.3.2
+    container_name: christian-curator-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_DOMAIN=${DOMAIN:-localhost}
+      - GF_SMTP_ENABLED=false
+    networks:
+      - backend
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Alertmanager
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: christian-curator-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager:/etc/alertmanager
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    networks:
+      - backend
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Log aggregation with Loki
+  loki:
+    image: grafana/loki:2.8.0
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./monitoring/loki/loki.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.3'
+
+  # Log shipping with Promtail
+  promtail:
+    image: grafana/promtail:2.8.0
+    volumes:
+      - ./monitoring/promtail/promtail.yml:/etc/promtail/config.yml:ro
+      - app_logs:/var/log/app:ro
+      - nginx_logs:/var/log/nginx:ro
+      - db_logs:/var/log/postgresql:ro
+      - redis_logs:/var/log/redis:ro
+      - grafana_logs:/var/log/grafana:ro
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+  # Backup service
+  backup:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data:ro
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      BACKUP_RETENTION_DAYS: 30
+    command: sh -c "chmod +x /backup.sh && crond -f"
+    restart: unless-stopped
+    networks:
+      - backend
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.1'
+
+# Network configuration
+networks:
+  frontend:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: christian_frontend
+  backend:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: christian_backend
+    internal: true  # Backend network is internal only
+  monitoring:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: christian_monitoring
+
+# Volume configuration
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/postgres
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/redis
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  loki_data:
+    driver: local
+  app_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+  db_logs:
+    driver: local
+  redis_logs:
+    driver: local
+  grafana_logs:
+    driver: local
+  alertmanager_data:
+    driver: local 

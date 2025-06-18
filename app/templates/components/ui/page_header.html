@@ -1,0 +1,65 @@
+{# 
+Page Header Component
+
+Parameters:
+- title: Main page title
+- subtitle: Optional subtitle/description
+- actions: List of action buttons with properties: text, icon, class, onclick, href, etc.
+- meta_info: Optional list of metadata items to display below subtitle
+#}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 mb-1">{{ title }}</h1>
+        {% if subtitle %}
+        <p class="text-muted mb-2">{{ subtitle }}</p>
+        {% endif %}
+        
+        {% if meta_info %}
+        <div class="d-flex flex-wrap gap-3 text-muted small">
+            {% for item in meta_info %}
+            <span>
+                {% if item.icon %}<i class="fas fa-{{ item.icon }} me-1"></i>{% endif %}
+                {{ item.text }}
+            </span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if actions %}
+    <div class="d-flex gap-2">
+        {% for action in actions %}
+        {% if action.href %}
+        <a href="{{ action.href }}" 
+           class="btn {{ action.class or 'btn-outline-primary' }}"
+           {% if action.target %}target="{{ action.target }}"{% endif %}
+           {% if action.title %}title="{{ action.title }}"{% endif %}
+           {% if action.rel %}rel="{{ action.rel }}"{% endif %}>
+            {% if action.icon %}<i class="fas fa-{{ action.icon }} me-1"></i>{% endif %}
+            {{ action.text }}
+        </a>
+        {% elif action.form_action %}
+        <form action="{{ action.form_action }}" method="{{ action.method or 'POST' }}" class="d-inline">
+            <button type="submit" 
+                    class="btn {{ action.class or 'btn-outline-primary' }}"
+                    {% if action.disabled %}disabled{% endif %}
+                    {% if action.id %}id="{{ action.id }}"{% endif %}
+                    {% if action.onclick %}onclick="{{ action.onclick }}"{% endif %}>
+                {% if action.icon %}<i class="fas fa-{{ action.icon }} me-2"></i>{% endif %}
+                {{ action.text }}
+            </button>
+        </form>
+        {% else %}
+        <button class="btn {{ action.class or 'btn-outline-primary' }}"
+                {% if action.disabled %}disabled{% endif %}
+                {% if action.id %}id="{{ action.id }}"{% endif %}
+                {% if action.onclick %}onclick="{{ action.onclick }}"{% endif %}>
+            {% if action.icon %}<i class="fas fa-{{ action.icon }} me-2"></i>{% endif %}
+            {{ action.text }}
+        </button>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div> 

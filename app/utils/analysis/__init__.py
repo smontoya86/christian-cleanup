@@ -20,13 +20,19 @@ from .legacy_adapter import BackwardCompatibilityAdapter
 from .analysis_result import AnalysisResult
 
 # For backward compatibility
-from .legacy_adapter import SongAnalyzer
+from .legacy_adapter import SongAnalyzer, analyze_song_legacy
+
+# Alias for backward compatibility
+def analyze_song_content(lyrics, title, artist):
+    """Backward compatibility wrapper for analyze_song_legacy."""
+    return analyze_song_legacy(title, artist, lyrics)
 
 __all__ = [
     'AnalysisOrchestrator',
     'BackwardCompatibilityAdapter', 
     'AnalysisResult',
-    'SongAnalyzer'  # Legacy compatibility
+    'SongAnalyzer',  # Legacy compatibility
+    'analyze_song_content'  # Function compatibility
 ]
 
 __version__ = '2.0.0' 

@@ -1,6 +1,10 @@
 import os
 import requests
 from dotenv import load_dotenv
+import logging
+from app.config import config
+
+logger = logging.getLogger(__name__)
 
 class BibleClient:
     # Preferred Bible IDs
@@ -10,10 +14,10 @@ class BibleClient:
     def __init__(self, preferred_bible_id=None):
         load_dotenv()
         
-        # Try to get the API key from the environment first
-        self.api_key = os.environ.get('BIBLE_API_KEY')
+        # Use centralized config first
+        self.api_key = config.BIBLE_API_KEY
         
-        # Then try to get from Flask app config if available
+        # Fallback to Flask app config if centralized config doesn't have it
         if not self.api_key:
             try:
                 from flask import current_app
@@ -22,14 +26,14 @@ class BibleClient:
             except (RuntimeError, ImportError):  # Not in Flask app context or Flask not available
                 pass
         
+        # Final fallback to environment variable for backwards compatibility
         if not self.api_key:
-            # Try to get from .env file as a last resort
-            self.api_key = os.getenv("BIBLE_API_KEY")
+            self.api_key = os.environ.get('BIBLE_API_KEY')
             
         if not self.api_key:
             raise ValueError(
                 "BIBLE_API_KEY not found. Set the BIBLE_API_KEY environment variable "
-                "or configure it in Flask's config."
+                "or configure it in the centralized config."
             )
             
         self.base_url = "https://api.scripture.api.bible/v1"
@@ -53,28 +57,25 @@ class BibleClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.HTTPError as http_err:
-            print(f"HTTP error occurred: {http_err} for URL: {full_url} with params: {params}")
-            # Attempt fallback if it's an error that might be version-specific (e.g., verse not in BSB)
-            # This basic fallback might not always be appropriate, e.g. if BSB itself is invalid.
-            # A more sophisticated retry/fallback would check the error type.
+            logger.error(f"HTTP error occurred: {http_err} for URL: {full_url} with params: {params}")
+            
+            # Fallback to KJV if BSB fails
             if bible_id_in_path and self.default_bible_id == self.BSB_ID and self.fallback_bible_id:
-                 # Construct fallback endpoint by replacing BSB_ID with KJV_ID in the endpoint string
-                if self.BSB_ID in endpoint:
-                    fallback_endpoint = endpoint.replace(self.BSB_ID, self.fallback_bible_id)
-                    print(f"Attempting fallback with KJV: {fallback_endpoint}")
-                    try:
-                        response = requests.get(f"{self.base_url}/{fallback_endpoint}", headers=headers, params=params)
-                        response.raise_for_status()
-                        return response.json()
-                    except requests.exceptions.HTTPError as fallback_http_err:
-                        print(f"Fallback HTTP error occurred: {fallback_http_err}")
-                        return None
-                    except Exception as fallback_err:
-                        print(f"Fallback other error occurred: {fallback_err}")
-                        return None
+                fallback_endpoint = endpoint.replace(self.BSB_ID, self.fallback_bible_id)
+                logger.info(f"Attempting fallback with KJV: {fallback_endpoint}")
+                try:
+                    response = requests.get(fallback_endpoint, headers=headers, params=params, timeout=10)
+                    response.raise_for_status()
+                    return response.json()
+                except requests.exceptions.HTTPError as fallback_http_err:
+                    logger.error(f"Fallback HTTP error occurred: {fallback_http_err}")
+                    return None
+                except Exception as fallback_err:
+                    logger.error(f"Fallback other error occurred: {fallback_err}")
+                    return None
             return None
         except Exception as err:
-            print(f"Other error occurred: {err} for URL: {full_url}")
+            logger.error(f"Other error occurred: {err} for URL: {full_url}")
             return None
 
     def get_available_bibles(self, language='eng'):
@@ -132,58 +133,47 @@ class BibleClient:
         return []
 
 
-if __name__ == '__main__':
+def test_client():
+    """Test the BibleClient functionality."""
     client = BibleClient()
-
-    # --- Test get_available_bibles ---
-    # print("Available English Bible Versions:")
-    # bibles = client.get_available_bibles(language='eng')
-    # if bibles:
-    #     for bible in bibles:
-    #         print(f"- ID: {bible.get('id')}, Name: {bible.get('name')}, Abbreviation: {bible.get('abbreviation')}")
-    # else:
-    #     print("Could not fetch Bible versions.")
-
-    # --- Test get_verse ---
-    print("\n--- Testing get_verse (John 3:16) ---")
-    verse_data_bsb = client.get_verse("JHN.3.16", bible_id=BibleClient.BSB_ID)
-    if verse_data_bsb:
-        print(f"BSB (JHN.3.16): {verse_data_bsb.get('content')}")
-    else:
-        print("Could not fetch John 3:16 from BSB.")
-
-    verse_data_kjv = client.get_verse("JHN.3.16", bible_id=BibleClient.KJV_ID)
-    if verse_data_kjv:
-        print(f"KJV (JHN.3.16): {verse_data_kjv.get('content')}")
-    else:
-        print("Could not fetch John 3:16 from KJV.")
     
-    # --- Test get_passage ---
-    print("\n--- Testing get_passage (Romans 12:1-2) ---")
-    passage_data_bsb = client.get_passage("ROM.12.1-ROM.12.2", bible_id=BibleClient.BSB_ID)
+    logger.info("--- Testing get_verse (John 3:16) ---")
+    verse_data_bsb = client.get_verse('JHN', 3, 16)
+    if verse_data_bsb:
+        logger.info(f"BSB (JHN.3.16): {verse_data_bsb.get('content')}")
+    else:
+        logger.info("Could not fetch John 3:16 from BSB.")
+    
+    verse_data_kjv = client.get_verse('JHN', 3, 16, bible_id='592420522e16049f-01')
+    if verse_data_kjv:
+        logger.info(f"KJV (JHN.3.16): {verse_data_kjv.get('content')}")
+    else:
+        logger.info("Could not fetch John 3:16 from KJV.")
+
+    logger.info("--- Testing get_passage (Romans 12:1-2) ---")
+    passage_data_bsb = client.get_passage('ROM', 12, 1, 2)
     if passage_data_bsb:
-        print(f"BSB (ROM.12.1-2): {passage_data_bsb.get('content')}")
+        logger.info(f"BSB (ROM.12.1-2): {passage_data_bsb.get('content')}")
     else:
-        print("Could not fetch Romans 12:1-2 from BSB.")
+        logger.info("Could not fetch Romans 12:1-2 from BSB.")
 
-    # --- Test search ---
-    print("\n--- Testing search ('love never fails') ---")
-    search_results_bsb = client.search("love never fails", bible_id=BibleClient.BSB_ID, limit=3)
+    logger.info("--- Testing search ('love never fails') ---")
+    search_results_bsb = client.search('love never fails')
     if search_results_bsb:
-        print("BSB Search results for 'love never fails':")
-        for item in search_results_bsb:
-            print(f"  - {item.get('reference')}: {item.get('text', item.get('content', 'N/A'))[:100]}...") # text or content field
+        logger.info("BSB Search results for 'love never fails':")
+        for item in search_results_bsb[:3]:  # Show first 3 results
+            logger.info(f"  - {item.get('reference')}: {item.get('text', item.get('content', 'N/A'))[:100]}...")
     else:
-        print("No search results from BSB or error.")
+        logger.info("No search results from BSB or error.")
 
-    print("\n--- Testing search ('faith hope love') ---")
-    search_results_kjv = client.search("faith hope love", bible_id=BibleClient.KJV_ID, limit=3)
+    logger.info("--- Testing search ('faith hope love') ---")
+    search_results_kjv = client.search('faith hope love', bible_id='592420522e16049f-01')
     if search_results_kjv:
-        print("KJV Search results for 'faith hope love':")
-        for item in search_results_kjv:
-            print(f"  - {item.get('reference')}: {item.get('text', item.get('content', 'N/A'))[:100]}...")
+        logger.info("KJV Search results for 'faith hope love':")
+        for item in search_results_kjv[:3]:  # Show first 3 results
+            logger.info(f"  - {item.get('reference')}: {item.get('text', item.get('content', 'N/A'))[:100]}...")
     else:
-        print("No search results from KJV or error.")
+        logger.info("No search results from KJV or error.")
 
     # Test fallback (using a verse that might not be in BSB or some other error)
     # For demonstration, let's assume a hypothetical verse "MAL.5.1" isn't in BSB

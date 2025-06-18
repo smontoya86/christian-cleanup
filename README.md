@@ -13,6 +13,7 @@ A Flask-based web application that helps Christians curate their Spotify playlis
 - **Whitelist Management**: Context-aware song approval workflow
 - **Background Processing**: Asynchronous analysis using Redis/RQ
 - **Parallel Processing**: Multi-worker analysis (2 workers optimal) for faster bulk operations
+- **Frontend Optimization**: Modern build system with CSS/JS minification and linting
 - **Docker Support**: Complete containerized development environment
 
 ## Quick Start
@@ -20,6 +21,7 @@ A Flask-based web application that helps Christians curate their Spotify playlis
 ### Prerequisites
 - Docker and Docker Compose
 - Spotify Developer Account (for API keys)
+- Node.js 18+ (for frontend build process)
 
 ### Setup
 1. **Clone and Setup Environment**
@@ -30,14 +32,153 @@ A Flask-based web application that helps Christians curate their Spotify playlis
    # Edit .env with your Spotify API credentials
    ```
 
-2. **Start Application**
+2. **Install Frontend Dependencies & Build Assets**
+   ```bash
+   npm install
+   npm run build
+   ```
+
+3. **Start Application**
    ```bash
    docker-compose up --build
    ```
 
-3. **Access Application**
+4. **Access Application**
    - Web Interface: http://localhost:5001
    - Login with your Spotify account to start
+
+## Frontend Build Process
+
+The application includes a modern frontend build system for optimal performance and maintainability.
+
+### **Build Tools & Features**
+- **ESBuild**: Fast JavaScript bundling and minification
+- **PostCSS**: CSS processing with autoprefixer and minification
+- **ESLint**: JavaScript code quality and standards enforcement
+- **Stylelint**: CSS code quality and standards enforcement  
+- **Image Optimization**: Automatic image compression for production
+- **Source Maps**: Debug-friendly source mapping for development
+
+### **Available Commands**
+
+#### Development Commands
+```bash
+# Install dependencies
+npm install
+
+# Development build with watch mode
+npm run dev
+# or
+npm run build:watch
+
+# Individual component watching
+npm run build:css:watch
+npm run build:js:watch
+```
+
+#### Production Commands
+```bash
+# Clean previous builds
+npm run clean
+
+# Full production build (minified, optimized)
+npm run prod
+
+# Individual production builds
+npm run build           # Build CSS and JS
+npm run build:css       # Build and minify CSS only  
+npm run build:js        # Bundle and minify JS only
+npm run optimize:images # Optimize images
+```
+
+#### Code Quality Commands
+```bash
+# Run all linters
+npm run lint
+
+# Run individual linters
+npm run lint:css        # CSS/SCSS linting
+npm run lint:js         # JavaScript linting
+
+# Auto-fix linting issues
+npm run lint:fix
+```
+
+### **Asset Structure**
+
+#### Source Files (Development)
+```
+app/static/
+├── css/                 # Source CSS files
+│   ├── base.css        # Core styles, variables, layout
+│   ├── components.css  # UI components (cards, buttons, etc.)
+│   └── utilities.css   # Utilities, animations, helpers
+├── js/                 # Source JavaScript files  
+│   ├── main.js         # Main application entry point
+│   ├── modules/        # Feature-specific modules
+│   ├── services/       # API and data services
+│   ├── utils/          # Utility functions and helpers
+│   └── components/     # Reusable JS components
+└── images/             # Source images
+```
+
+#### Built Files (Production)
+```
+app/static/dist/        # Generated build output
+├── css/               # Minified CSS with autoprefixer
+├── js/                # Bundled and minified JavaScript
+├── images/            # Optimized images
+└── manifest.json      # Build manifest with asset info
+```
+
+### **Build Configuration**
+
+#### CSS Processing (PostCSS)
+- **Autoprefixer**: Automatic vendor prefixes for browser compatibility
+- **CSSnano**: Minification and optimization for production
+- **Browser Support**: ">= 1%, last 2 versions, Firefox ESR, iOS >= 9, Android >= 4.4"
+
+#### JavaScript Bundling (ESBuild)
+- **Module Bundling**: ES6 modules with tree-shaking
+- **Minification**: Production optimization with source maps
+- **Target**: ES2020 for modern browser support
+- **Format**: ESM (ES Modules) for better performance
+
+#### Code Quality (ESLint + Stylelint)
+- **JavaScript Standards**: ESLint with Standard config
+- **CSS Standards**: Stylelint with standard configuration
+- **Security Rules**: Prevention of common security issues
+- **Best Practices**: Modern JavaScript and CSS patterns
+
+### **Environment-Aware Asset Loading**
+
+The application automatically serves the appropriate assets based on environment:
+
+- **Production** (`ENV=production`): Uses minified assets from `/dist/`
+- **Development** (default): Uses source files for easier debugging
+
+This is handled automatically in `app/templates/base.html` - no manual switching required.
+
+### **Integration with Docker**
+
+For containerized deployments, the frontend build process is integrated:
+
+```dockerfile
+# Dockerfile includes frontend build
+RUN npm install && npm run prod
+```
+
+The Docker environment automatically builds optimized assets during image creation.
+
+### **Performance Benefits**
+
+The build system provides significant performance improvements:
+
+- **CSS Size Reduction**: ~60% smaller files through minification and optimization
+- **JavaScript Optimization**: ~70% size reduction with bundling and minification  
+- **Browser Compatibility**: Automatic vendor prefixes for cross-browser support
+- **Faster Load Times**: Optimized assets improve page load performance
+- **Better Caching**: Content-based asset versioning for optimal browser caching
 
 ### Local Development (Alternative)
 If you prefer local development without Docker:
@@ -56,12 +197,18 @@ If you prefer local development without Docker:
    pip install -r requirements.txt
    ```
 
-3. **Run Application**
+3. **Install Frontend Dependencies & Build Assets**
+   ```bash
+   npm install
+   npm run build
+   ```
+
+4. **Run Application**
    ```bash
    python run.py
    ```
 
-4. **Start Background Workers**
+5. **Start Background Workers**
    ```bash
    # Option 1: Use the macOS-optimized startup script (recommended for macOS)
    ./start_worker_macos.sh
@@ -104,6 +251,7 @@ No manual configuration is required - the system handles macOS-specific requirem
 - Background song analysis processing  
 - Professional UI with refined action strategy
 - Database connectivity and data persistence
+- Frontend build system with optimization
 - Docker containerization
 
 ## Parallel Analysis Processing

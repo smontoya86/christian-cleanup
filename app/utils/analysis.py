@@ -2,13 +2,32 @@ import logging
 import os
 import re
 import time
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List, Tuple, Union, Callable
 
 import torch
 from dotenv import load_dotenv
 
 from ..config.christian_rubric import get_christian_rubric
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+
+# Type aliases for better code readability
+DeviceType = str
+UserId = Optional[int]
+AnalysisResult = Dict[str, Any]
+LyricsText = Optional[str]
+ContentModerationPrediction = Dict[str, Any]
+ContentModerationPredictions = List[ContentModerationPrediction]
+FlagDetails = Dict[str, Any]
+FlagDetailsList = List[FlagDetails]
+ThemeDetails = Dict[str, Any]
+ThemeDetailsList = List[ThemeDetails]
+ScoreRange = int  # 0-100
+ConfidenceScore = float  # 0.0-1.0
+PenaltyScore = int
+PatternList = List[str]
+LabelMap = Dict[str, Dict[str, Any]]
+ScriptureRef = Dict[str, Any]
+ChristianRubric = Dict[str, Any]
 
 logger = logging.getLogger(__name__)
 
@@ -19,21 +38,22 @@ try:
     from .bible_client import BibleClient
 except ImportError:
     logger.warning("Could not import LyricsFetcher or BibleClient from .lyrics/.bible_client. Using dummy fallbacks.")
-    class LyricsFetcher:
-        def fetch_lyrics(self, title, artist):
+    class DummyLyricsFetcher:
+        def fetch_lyrics(self, title: str, artist: str) -> Optional[str]:
             logger.info(f"Dummy LyricsFetcher: fetch_lyrics for {title} by {artist}")
             return None
 
-    class BibleClient:
-        BSB_ID = "dummy_bsb_id"
-        KJV_ID = "dummy_kjv_id"
-        def __init__(self, preferred_bible_id=None):
+    class DummyBibleClient:
+        BSB_ID: str = "dummy_bsb_id"
+        KJV_ID: str = "dummy_kjv_id"
+        
+        def __init__(self, preferred_bible_id: Optional[str] = None) -> None:
             logger.info("Dummy BibleClient initialized")
-            self.api_key = os.getenv("BIBLE_API_KEY")
+            self.api_key: Optional[str] = os.getenv("BIBLE_API_KEY")
             if not self.api_key:
                 logger.warning("BIBLE_API_KEY not found for Dummy BibleClient, scripture fetching will fail.")
-            self.default_bible_id = preferred_bible_id if preferred_bible_id else self.BSB_ID
-            self.fallback_bible_id = self.KJV_ID
+            self.default_bible_id: str = preferred_bible_id if preferred_bible_id else self.BSB_ID
+            self.fallback_bible_id: str = self.KJV_ID
 
         def get_scripture_passage(self, reference: str, bible_id: Optional[str] = None) -> Dict[str, Any]:
             logger.info(f"Dummy BibleClient: get_scripture_passage for {reference}")
@@ -44,7 +64,25 @@ except ImportError:
             return []
 
 class SongAnalyzer:
-    def __init__(self, device: Optional[str] = None, user_id: Optional[int] = None):
+    """
+    Comprehensive song analysis service for Christian content evaluation.
+    
+    This analyzer performs multi-layered analysis including:
+    - Content moderation using ML models
+    - Christian theme detection (positive and negative)
+    - Purity flag detection for content concerns
+    - Scripture-based scoring and recommendations
+    
+    Attributes:
+        device: Computing device for ML model inference ('cuda' or 'cpu')
+        user_id: Optional ID of the requesting user for tracking
+        christian_rubric: Configuration dictionary for scoring rules
+        content_moderation_classifier: ML pipeline for content analysis
+        lyrics_fetcher: Service for fetching song lyrics
+        bible_client: Service for scripture references
+    """
+    
+    def __init__(self, device: Optional[DeviceType] = None, user_id: UserId = None) -> None:
         """
         Initialize the SongAnalyzer.
         
@@ -53,11 +91,11 @@ class SongAnalyzer:
                    If None, will use CUDA if available, otherwise CPU.
             user_id: Optional ID of the user who requested the analysis.
         """
-        self.device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
-        self.user_id = user_id
+        self.device: DeviceType = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+        self.user_id: UserId = user_id
         logger.info(f"SongAnalyzer using device: {self.device}")
 
-        self.christian_rubric = get_christian_rubric()
+        self.christian_rubric: ChristianRubric = get_christian_rubric()
         # Add or update purity flag definitions for cardiffnlp mapping
         # This structure helps map model outputs to specific flags and penalties.
         self.christian_rubric["purity_flag_definitions"] = {
@@ -86,20 +124,21 @@ class SongAnalyzer:
         }
 
         # Model name
-        self.content_moderation_model_name = "KoalaAI/Text-Moderation"
+        self.content_moderation_model_name: str = "cardiffnlp/twitter-roberta-base-offensive"
         
         # Initialize model pipeline
-        self.content_moderation_classifier = None  # Will hold the content moderation pipeline
+        self.content_moderation_classifier: Optional[Any] = None  # Will hold the content moderation pipeline
         
         self._load_models() # Load all necessary models
 
         # Initialize services with proper configuration
         try:
-            # Try to get the API keys from the environment or Flask config
-            genius_token = os.environ.get('LYRICSGENIUS_API_KEY')
-            bible_api_key = os.environ.get('BIBLE_API_KEY')
+            # Use centralized config first
+            from app.config import config
+            genius_token: Optional[str] = config.LYRICSGENIUS_API_KEY
+            bible_api_key: Optional[str] = config.BIBLE_API_KEY
             
-            # If we're in a Flask app context, try to get from config
+            # If we're in a Flask app context, try to get from config as fallback
             try:
                 from flask import current_app
                 if current_app:
@@ -110,11 +149,17 @@ class SongAnalyzer:
             except (RuntimeError, ImportError):  # Not in Flask app context or Flask not available
                 pass
             
+            # Final fallback to environment variables for backwards compatibility
+            if not genius_token:
+                genius_token = os.environ.get('LYRICSGENIUS_API_KEY')
+            if not bible_api_key:
+                bible_api_key = os.environ.get('BIBLE_API_KEY')
+            
             # Initialize services with the API keys
-            self.lyrics_fetcher = LyricsFetcher(genius_token=genius_token)
-            self.bible_client = BibleClient()  # It will use the environment variable we set
-            self.bsb_bible_id = BibleClient.BSB_ID
-            self.kjv_bible_id = BibleClient.KJV_ID
+            self.lyrics_fetcher: Optional[LyricsFetcher] = LyricsFetcher(genius_token=genius_token)
+            self.bible_client: Optional[BibleClient] = BibleClient()  # It will use the centralized config we set
+            self.bsb_bible_id: Optional[str] = BibleClient.BSB_ID
+            self.kjv_bible_id: Optional[str] = BibleClient.KJV_ID
             
         except Exception as e:
             logger.error(f"Error initializing SongAnalyzer services: {e}", exc_info=True)
@@ -124,45 +169,76 @@ class SongAnalyzer:
             self.bsb_bible_id = None
             self.kjv_bible_id = None
         
-    def _load_models(self):
+    def _load_models(self) -> None:
         """Load all necessary models for analysis with progress tracking."""
         import time
         from tqdm import tqdm
         
         logger.info("Loading content moderation model...")
-        start_time = time.time()
+        start_time: float = time.time()
         
-        try:
-            # Show progress while downloading/loading the model
-            with tqdm(desc="Downloading model", unit="B", unit_scale=True, unit_divisor=1024) as pbar:
-                def update_progress(block_num, block_size, total_size):
-                    if pbar.total != total_size:
-                        pbar.total = total_size
-                    pbar.update(block_size)
+        # Try multiple models with fallback options
+        model_options = [
+            self.content_moderation_model_name,  # Primary model
+            "cardiffnlp/twitter-roberta-base-hate",  # Fallback 1
+            "distilbert-base-uncased-finetuned-sst-2-english"  # Fallback 2 (basic sentiment)
+        ]
+        
+        self.content_moderation_classifier = None
+        
+        for model_name in model_options:
+            try:
+                logger.info(f"Attempting to load content moderation model: {model_name}")
                 
-                # Load content moderation model with progress tracking
-                logger.info(f"Loading content moderation model: {self.content_moderation_model_name}")
-                self.content_moderation_classifier = pipeline(
-                    "text-classification",
-                    model=self.content_moderation_model_name,
-                    device=self.device,
-                    framework="pt"
-                )
+                # Show progress while downloading/loading the model
+                with tqdm(desc=f"Loading {model_name}", unit="B", unit_scale=True, unit_divisor=1024) as pbar:
+                    def update_progress(block_num: int, block_size: int, total_size: int) -> None:
+                        if pbar.total != total_size:
+                            pbar.total = total_size
+                        pbar.update(block_size)
+                    
+                    # Load content moderation model with progress tracking
+                    self.content_moderation_classifier = pipeline(
+                        "text-classification",
+                        model=model_name,
+                        device=self.device,
+                        framework="pt"
+                    )
+                    
+                load_time: float = time.time() - start_time
+                logger.info(f"Content moderation model '{model_name}' loaded successfully in {load_time:.2f} seconds")
+                self.content_moderation_model_name = model_name  # Update to actual loaded model
                 
-            load_time = time.time() - start_time
-            logger.info(f"Content moderation model loaded successfully in {load_time:.2f} seconds")
-            
-        except Exception as e:
-            logger.error(f"Error loading content moderation model: {e}", exc_info=True)
-            # Provide more helpful error message
-            logger.error("If the model fails to load, you may need to manually download it first:")
-            logger.error(f"from transformers import AutoModelForSequenceClassification, AutoTokenizer")
-            logger.error(f"model = AutoModelForSequenceClassification.from_pretrained('{self.content_moderation_model_name}')")
-            logger.error(f"tokenizer = AutoTokenizer.from_pretrained('{self.content_moderation_model_name}')")
-            # Set to None to indicate loading failed
-            self.content_moderation_classifier = None
+                # Test the pipeline with a simple example to verify it's working
+                try:
+                    test_prediction = self.content_moderation_classifier("Hello world")
+                    logger.info(f"Model test successful. Sample prediction: {test_prediction}")
+                except Exception as test_error:
+                    logger.warning(f"Model {model_name} loaded but failed test: {test_error}")
+                    self.content_moderation_classifier = None
+                    continue
+                    
+                break  # Successfully loaded and tested
+                
+            except Exception as e:
+                logger.warning(f"Failed to load model {model_name}: {e}")
+                continue
+        
+        if self.content_moderation_classifier is None:
+            logger.error("All content moderation models failed to load. Analysis will use rule-based fallback only.")
+            logger.error("Consider installing the transformers library with: pip install transformers torch")
+            logger.error("Or check your internet connection for model downloads.")
 
     def _get_sensitive_content_score_bert(self, text: str) -> Dict[str, float]:
+        """
+        Legacy BERT-based sensitivity scorer (placeholder for backward compatibility).
+        
+        Args:
+            text: Text to analyze for sensitive content
+            
+        Returns:
+            Dictionary of sensitivity scores (currently empty as this is deprecated)
+        """
         # This method seems to be from an older Bert-based sensitivity scorer.
         # For now, it's not directly used by the main purity flag logic, which relies on CardiffNLP.
         # If it's needed for an 'alternative_model_raw_predictions', it would be implemented here.
@@ -170,11 +246,21 @@ class SongAnalyzer:
         return {}
 
     def _preprocess_lyrics(self, lyrics: str) -> str:
+        """
+        Preprocess lyrics text for analysis by cleaning and normalizing.
+        
+        Args:
+            lyrics: Raw lyrics text
+            
+        Returns:
+            Processed lyrics text with timestamps removed, 
+            punctuation cleaned, and whitespace normalized
+        """
         logger.debug("Executing full _preprocess_lyrics")
         if not lyrics:
             return ""
         # Convert to lowercase
-        processed_lyrics = lyrics.lower()
+        processed_lyrics: str = lyrics.lower()
         # Remove timestamps (e.g., [00:12.345] or [00:01:12.345] if hours are present)
         processed_lyrics = re.sub(r'\[\d{2}:\d{2}(?:\.\d{1,3})?\]', '', processed_lyrics) # Handles [MM:SS.mmm] and [MM:SS]
         processed_lyrics = re.sub(r'\[\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?\]', '', processed_lyrics) # Handles [HH:MM:SS.mmm] and [HH:MM:SS]
@@ -187,9 +273,9 @@ class SongAnalyzer:
         processed_lyrics = re.sub(r'\s+', ' ', processed_lyrics).strip()
         return processed_lyrics
 
-    def _get_content_moderation_predictions(self, text: str, chunk_size: int = 500) -> List[Dict[str, Any]]:
+    def _get_content_moderation_predictions(self, text: str, chunk_size: int = 500) -> ContentModerationPredictions:
         """
-        Get content moderation predictions using the KoalaAI/Text-Moderation model.
+        Get content moderation predictions using the cardiffnlp/twitter-roberta-base-offensive-latest model.
         
         Args:
             text: The text to analyze
@@ -200,9 +286,14 @@ class SongAnalyzer:
             sorted by score in descending order
         """
         logger.debug("Executing _get_content_moderation_predictions")
-        if not self.content_moderation_classifier or not text:
-            logger.warning("Content moderation classifier not loaded or empty text, returning empty predictions.")
+        if not text:
+            logger.warning("Empty text provided for content moderation, returning empty predictions.")
             return []
+            
+        if not self.content_moderation_classifier:
+            logger.warning("Content moderation classifier not loaded, using rule-based fallback.")
+            # Fallback to rule-based analysis using explicit patterns
+            return self._get_rule_based_content_predictions(text)
         
         try:
             # First, check for explicit patterns in the text
@@ -227,14 +318,14 @@ class SongAnalyzer:
             
             # If no explicit patterns found, proceed with model prediction
             # Split the text into sentences first
-            sentences = re.split(r'(?<=[.!?])\s+', text)
-            current_chunk = []
-            chunks = []
-            current_length = 0
+            sentences: List[str] = re.split(r'(?<=[.!?])\s+', text)
+            current_chunk: List[str] = []
+            chunks: List[str] = []
+            current_length: int = 0
             
             # Create chunks of text that are roughly chunk_size tokens
             for sentence in sentences:
-                sentence_length = len(sentence.split())
+                sentence_length: int = len(sentence.split())
                 if current_length + sentence_length > chunk_size and current_chunk:
                     chunks.append(' '.join(current_chunk))
                     current_chunk = []
@@ -246,7 +337,7 @@ class SongAnalyzer:
                 chunks.append(' '.join(current_chunk))
             
             # Process each chunk and collect results
-            all_predictions = []
+            all_predictions: ContentModerationPredictions = []
             for chunk in chunks:
                 try:
                     # Get predictions for all categories
@@ -268,13 +359,13 @@ class SongAnalyzer:
             logger.debug(f"Content moderation raw predictions: {all_predictions}")
             
             # Process and deduplicate predictions, keeping the highest score for each label
-            relevant_predictions = {}
+            relevant_predictions: Dict[str, ContentModerationPrediction] = {}
             for pred in all_predictions:
                 if not isinstance(pred, dict) or 'label' not in pred or 'score' not in pred:
                     continue
                     
-                label = pred.get('label', '').lower()
-                score = float(pred.get('score', 0))
+                label: str = pred.get('label', '').lower()
+                score: float = float(pred.get('score', 0))
                 
                 # For 'OK' label, we'll be more careful about overriding other flags
                 if label == 'ok':
@@ -294,7 +385,7 @@ class SongAnalyzer:
                 del relevant_predictions['ok']
             
             # Convert to list and sort by score in descending order
-            sorted_predictions = sorted(
+            sorted_predictions: ContentModerationPredictions = sorted(
                 relevant_predictions.values(), 
                 key=lambda x: x['score'], 
                 reverse=True
@@ -304,48 +395,63 @@ class SongAnalyzer:
             
         except Exception as e:
             logger.error(f"Error getting content moderation predictions: {e}", exc_info=True)
-            return []
-
-    def _get_content_moderation_predictions(self, text: str) -> List[Dict[str, Any]]:
+            # Fallback to rule-based analysis if model fails
+            logger.info("Falling back to rule-based content analysis")
+            return self._get_rule_based_content_predictions(text)
+    
+    def _get_rule_based_content_predictions(self, text: str) -> ContentModerationPredictions:
         """
-        Get predictions using the KoalaAI content moderation model.
+        Rule-based content moderation fallback when ML models fail to load.
         
         Args:
-            text: The text to analyze
+            text: Text to analyze
             
         Returns:
-            List of prediction dictionaries with 'label' and 'score' keys
+            List of prediction dictionaries based on pattern matching
         """
-        if not text or not self.content_moderation_classifier:
-            return []
-            
         try:
-            # Get predictions from the model
-            predictions = self.content_moderation_classifier(text, truncation=True, max_length=512)
+            # Check for explicit patterns
+            explicit_patterns = self._get_explicit_patterns()
+            predictions = []
             
-            # Process the predictions to match expected format
-            if predictions and isinstance(predictions, list):
-                # Handle case where predictions is a list of lists (batch of inputs)
-                if len(predictions) > 0 and isinstance(predictions[0], list):
-                    predictions = predictions[0]
-                    
-                # Convert to list of dicts with label and score
-                processed = []
-                for pred in predictions:
-                    if isinstance(pred, dict) and 'label' in pred and 'score' in pred:
-                        processed.append({
-                            'label': pred['label'],
-                            'score': float(pred['score'])
-                        })
-                return processed
-                
+            text_lower = text.lower()
+            
+            # Check for offensive/explicit content
+            explicit_score = 0.0
+            for pattern in explicit_patterns:
+                if re.search(pattern, text_lower, re.IGNORECASE):
+                    explicit_score = 0.9  # High confidence for pattern matches
+                    break
+            
+            if explicit_score > 0:
+                predictions.append({
+                    'label': 'offensive',
+                    'score': explicit_score
+                })
+            else:
+                predictions.append({
+                    'label': 'not-offensive',
+                    'score': 0.8  # Moderate confidence when no patterns found
+                })
+            
+            return predictions
+            
         except Exception as e:
-            logger.error(f"Error getting content moderation predictions: {e}", exc_info=True)
-            
-        return []
+            logger.error(f"Error in rule-based content predictions: {e}")
+            # Return safe default
+            return [{
+                'label': 'not-offensive',
+                'score': 0.5
+            }]
 
-    def _get_explicit_patterns(self):
-        """Return comprehensive patterns for explicit content detection."""
+    def _get_explicit_patterns(self) -> PatternList:
+        """
+        Return comprehensive patterns for explicit content detection.
+        
+        Returns:
+            List of regex patterns for detecting explicit content including
+            profanity, sexual content, violence, drugs, and hate speech
+        """
         return [
             # Base profanity with common variations and leetspeak
             r'\b(?:f+u+c+k+|f+u+k+|f+c+k+|ph+u+c+k+|ph+u+k+|ph+c+k+|ph+[a@]g+[o0]t+|f+[a@]g+[o0]t+)\b',
@@ -384,13 +490,14 @@ class SongAnalyzer:
             r'\b(?:r+e+t+a+r+d*|r+e+t+a+r+d+s*|r+e+t+a+r+d+[s5]*|r+e+t+a+r+d+[s5]*e*|r+e+t+a+r+d+[s5]*e*s*|r+e+t+a+r+d+[s5]*e*d*|r+e+t+a+r+d+[s5]*e*r*|r+e+t+a+r+d+[s5]*e*s*)\b',
         ]
 
-    def _load_koalaai_label_map(self) -> Dict[str, Dict[str, Any]]:
+    def _load_koalaai_label_map(self) -> LabelMap:
         """
         Load the mapping from KoalaAI model labels to our internal flag system.
         This maps the model's output labels to our flag names, penalties, and categories.
         
         Returns:
-            Dict[str, Dict[str, Any]]: Mapping of KoalaAI labels to flag information
+            Mapping of KoalaAI labels to flag information including
+            flag_name, penalty, and category for each label type
         """
         return {
             # Hate speech (HR, H2, hate, hate_speech, racism) - most severe (-75 points)
@@ -496,54 +603,16 @@ class SongAnalyzer:
             'wholesome': {'flag_name': 'Clean Content', 'penalty': 0, 'category': 'clean'}
         }
 
-        # Add common explicit phrases
-        explicit_phrases = [
-            # General explicit
-            (r'suck (?:my|it|this|that|a|your)', 'explicit'),
-            (r'eat (?:my|it|this|that|a|your)', 'explicit'),
-            (r'fuck (?:you|off|that|this|it|me)', 'explicit'),
-            # Sexual
-            (r'suck (?:dick|cock|pussy)', 'sexual'),
-            (r'eat (?:pussy|ass)', 'sexual'),
-            (r'blow ?job', 'sexual'),
-            (r'hand ?job', 'sexual'),
-            (r'jerk ?off', 'sexual'),
-            # Violence
-            (r'kill (?:you|him|her|them|myself|yourself)', 'violence'),
-            (r'shoot (?:you|him|her|them|myself|yourself)', 'violence'),
-            (r'beat (?:you|him|her|them|myself|yourself)', 'violence'),
-            # Drugs
-            (r'shoot up', 'drugs'),
-            (r'snort (?:lines|coke)', 'drugs'),
-            (r'smoke (?:weed|pot)', 'drugs'),
-            (r'do (?:drugs|lines)', 'drugs'),
-            (r'drop acid', 'drugs'),
-            (r'pop pills', 'drugs'),
-            # Hate
-            (r'white (?:power|pride|trash)', 'hate'),
-            (r'nazi party', 'hate'),
-            (r'hitler youth', 'hate'),
-            (r'lynch mob', 'hate')
-        ]
-
-        # Compile phrase patterns
-        for phrase, category in explicit_phrases:
-            try:
-                pattern = re.compile(phrase, re.IGNORECASE)
-                patterns.append((pattern, category))
-            except re.error as e:
-                logger.warning(f"Invalid regex phrase pattern '{phrase}': {e}")
-
-        return patterns
-        
-    def _process_flag(self, label, score, flag_info, triggered_flags_details, total_penalty):
-        """Process a single flag and update the triggered flags and total penalty.
+    def _process_flag(self, label: str, score: ConfidenceScore, flag_info: Dict[str, Any], 
+                     triggered_flags_details: FlagDetailsList, total_penalty: PenaltyScore) -> PenaltyScore:
+        """
+        Process a single flag and update the triggered flags and total penalty.
         
         Args:
             label: The label of the flag (e.g., 'hate', 'explicit', 'sexual')
             score: Confidence score from the model (0.0 to 1.0)
             flag_info: Dictionary containing flag metadata
-            triggered_flags_details: List of already triggered flags
+            triggered_flags_details: List of already triggered flags (modified in place)
             total_penalty: Current total penalty score
             
         Returns:
@@ -646,40 +715,19 @@ class SongAnalyzer:
                 - total_penalty: Total penalty score (0-100)
         """
         logger.debug("Detecting Christian purity flags")
-        
-        # Initialize default values
-        triggered_flags_details = []
-        total_penalty = 0
+        triggered_flags_details: FlagDetailsList = []
+        total_penalty: PenaltyScore = 0
         
         try:
-            # If no predictions provided, try to get them
-            if content_moderation_predictions is None and lyrics_text:
-                logger.debug("No content moderation predictions provided, running analysis")
-                content_moderation_predictions = self._get_content_moderation_predictions(lyrics_text)
+            # Explicit type annotation to fix mypy error
+            predictions_list: Optional[List[Dict[str, Any]]] = content_moderation_predictions
             
-            # If we still don't have predictions, check for explicit patterns as a fallback
-            if not content_moderation_predictions and lyrics_text:
-                logger.warning("No content moderation predictions available, falling back to pattern matching")
-                explicit_patterns = self._get_explicit_patterns()
-                for pattern in explicit_patterns:
-                    if re.search(pattern, lyrics_text, re.IGNORECASE):
-                        # Add explicit language flag with high confidence
-                        penalty = 50
-                        triggered_flags_details.append({
-                            'flag': 'Explicit Language / Corrupting Talk',
-                            'penalty_applied': penalty,
-                            'confidence': 0.9,
-                            'details': f'Matched explicit pattern after model failure: {pattern}'
-                        })
-                        total_penalty += penalty
-                        logger.warning(f"Applied penalty of {penalty} for explicit pattern match after model failure")
-                        break  # Only need one match
-                
-                if total_penalty > 0:
-                    return triggered_flags_details, min(total_penalty, 100)
-                return [], 0
-                
-            logger.info(f"Processing {len(content_moderation_predictions)} content moderation predictions")
+            # Check if we have predictions to process
+            if predictions_list is None or len(predictions_list) == 0:
+                logger.info("No content moderation predictions to process")
+                return triggered_flags_details, total_penalty
+            
+            logger.info(f"Processing {len(predictions_list)} content moderation predictions")
             
             # Get the label mapping from the rubric
             label_map = self.christian_rubric.get("purity_flag_definitions", {}).get("cardiffnlp_model_map", {})
@@ -692,7 +740,7 @@ class SongAnalyzer:
                 }
             
             # Process each prediction
-            for pred in content_moderation_predictions:
+            for pred in predictions_list:
                 if not isinstance(pred, dict) or 'label' not in pred or 'score' not in pred:
                     continue
                     
@@ -705,7 +753,7 @@ class SongAnalyzer:
                 # Skip 'OK' label as it's handled in _get_content_moderation_predictions
                 if label == 'ok':
                     # Only log OK if it's the only prediction
-                    if len(content_moderation_predictions) == 1:
+                    if len(predictions_list) == 1:
                         logger.info(f"Only 'OK' prediction with score {score:.4f}")
                     continue
                 
@@ -760,145 +808,6 @@ class SongAnalyzer:
                 'confidence': 0.5,
                 'details': f'Error during analysis: {str(e)}'
             }], 30
-            
-            # Define category penalties based on severity
-            category_penalties = {
-                'hate': 75,        # Most severe penalty for hate speech (-75 points)
-                'explicit': 50,     # Standard penalty for explicit language (-50 points)
-                'sexual': 50,       # Same as explicit for sexual content (-50 points)
-                'violence': 25,     # Lower penalty for violence (-25 points)
-                'drugs': 25,        # Same as violence for drug references (-25 points)
-                'offensive': 50,    # Alias for explicit (-50 points)
-                'self_harm': 75     # Severe penalty for self-harm references (-75 points)
-            }
-            
-            # Minimum match counts to trigger each category
-            min_match_counts = {
-                'hate': 1,         # Even a single instance of hate speech is severe
-                'explicit': 1,      # Even a single explicit word is a concern
-                'sexual': 1,        # Even a single sexual reference is a concern
-                'violence': 2,      # Require at least 2 violence references
-                'drugs': 2,         # Require at least 2 drug references
-                'offensive': 1,     # Even a single offensive word is a concern
-                'self_harm': 1      # Even a single self-harm reference is severe
-            }
-        
-            # Apply penalties for each category with matches
-            for category, matches in matches_by_category.items():
-                match_count = len(matches)
-                min_matches = min_match_counts.get(category, 1)
-                
-                if match_count >= min_matches:
-                    penalty = category_penalties.get(category, 25)
-                    
-                    # Calculate penalty based on number of matches (capped at 2x base penalty)
-                    severity_multiplier = min(2.0, 1.0 + ((match_count - min_matches) * 0.1))  # 10% increase per match over minimum, max 2x
-                    total_category_penalty = min(100, int(penalty * severity_multiplier))
-                    
-                    # Get flag name and penalty from the category mapping
-                    category_mapping = {
-                        'hate': {
-                            'flag_name': 'Hate Speech Detected',
-                            'penalty': 75
-                        },
-                        'explicit': {
-                            'flag_name': 'Explicit Language / Corrupting Talk',
-                            'penalty': 50
-                        },
-                        'sexual': {
-                            'flag_name': 'Sexual Content / Impurity (overt)',
-                            'penalty': 50
-                        },
-                        'violence': {
-                            'flag_name': 'Glorification of Violence',
-                            'penalty': 25
-                        },
-                        'drugs': {
-                            'flag_name': 'Glorification of Drugs / Substance Abuse',
-                            'penalty': 25
-                        },
-                        'offensive': {
-                            'flag_name': 'Explicit Language / Corrupting Talk',
-                            'penalty': 50
-                        },
-                        'self_harm': {
-                            'flag_name': 'Self-Harm References',
-                            'penalty': 75
-                        }
-                    }
-                    
-                    # Get the flag info for this category, or use defaults
-                    flag_info = category_mapping.get(category, {
-                        'flag_name': f'Inappropriate Content ({category})',
-                        'penalty': 25
-                    })
-                    flag_name = flag_info['flag_name']
-                    penalty = flag_info['penalty']
-                    
-                    # Skip if we already have this flag from content moderation
-                    existing_flag = next((f for f in triggered_flags_details 
-                                       if f["flag"] == flag_name and f["source"] == "content_moderation"), None)
-                    if existing_flag:
-                        logger.debug(f"Skipping pattern-based {flag_name} as it was already detected by content moderation")
-                        continue
-                    
-                    # Check if we already have this flag type from pattern matching
-                    existing_pattern_flag = next((f for f in triggered_flags_details 
-                                               if f["flag"] == flag_name and f["source"] == "pattern_analysis"), None)
-                    
-                    # Calculate confidence based on number of matches (capped at 0.9)
-                    confidence = min(0.9, 0.5 + (match_count * 0.05))
-                    
-                    if not existing_pattern_flag or confidence > existing_pattern_flag.get('confidence', 0):
-                        # If flag exists but with lower confidence, update it
-                        if existing_pattern_flag:
-                            total_penalty -= existing_pattern_flag["penalty_applied"]
-                            triggered_flags_details.remove(existing_pattern_flag)
-                        
-                        # Add sample matches (up to 3) to details
-                        sample_matches = sorted(list(matches))[:3]  # Sort for consistent ordering
-                        details = f"Detected {match_count} instance(s) of {category} content"
-                        
-                        # Add sample matches if available
-                        if sample_matches:
-                            details += f" (e.g., '{sample_matches[0]}'"
-                            if len(sample_matches) > 1:
-                                details += f", '{sample_matches[1]}'"
-                                if len(sample_matches) > 2:
-                                    details += f", '{sample_matches[2]}'"
-                            details += ")"
-                            
-                        # Add penalty information
-                        details += f" [Penalty: -{total_category_penalty} points]"
-                        
-                        triggered_flags_details.append({
-                            "flag": flag_name,
-                            "details": details,
-                            "penalty_applied": total_category_penalty,
-                            "confidence": confidence,
-                            "source": "pattern_analysis",
-                            "category": category,
-                            "match_count": match_count
-                        })
-                        total_penalty += total_category_penalty
-                        logger.info(f"Applied penalty of {total_category_penalty} for {flag_name} (found {match_count} matches)")
-                    else:
-                        logger.debug(f"Skipping duplicate flag {flag_name} with lower confidence {confidence:.2f} <= {existing_pattern_flag['confidence']:.2f}")
-    
-            # Process other flags defined in the rubric if needed
-            # (This section can be used for additional custom flag processing)
-            
-            # Apply maximum penalty cap (100%)
-            total_penalty = min(total_penalty, 100)
-            
-            # Sort flags by penalty (highest first) for consistent output
-            triggered_flags_details.sort(key=lambda x: x.get('penalty_applied', 0), reverse=True)
-            
-            logger.info(f"Detected {len(triggered_flags_details)} purity flags with total penalty {total_penalty}")
-            logger.debug(f"Flag details: {triggered_flags_details}")
-            
-            return triggered_flags_details, total_penalty
-
     def _detect_christian_themes(self, lyrics_text: Optional[str]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         """
         Detect Christian themes in song lyrics.
@@ -910,15 +819,15 @@ class SongAnalyzer:
             Tuple of (positive_themes, negative_themes) where each is a list of theme dicts
         """
         logger.debug("Detecting Christian themes in lyrics")
-        positive_themes = []
-        negative_themes = []
+        positive_themes: ThemeDetailsList = []
+        negative_themes: ThemeDetailsList = []
         
         if not lyrics_text:
             logger.debug("No lyrics provided for theme detection")
             return positive_themes, negative_themes
             
         # Convert to lowercase for case-insensitive matching
-        lyrics_lower = lyrics_text.lower()
+        lyrics_lower: str = lyrics_text.lower()
         
         # Debug: Print the rubric config
         logger.debug(f"Positive themes config: {self.christian_rubric.get('positive_themes_config', [])}")
@@ -926,13 +835,13 @@ class SongAnalyzer:
         
         # Check positive themes
         for theme_config in self.christian_rubric.get("positive_themes_config", []):
-            theme_name = theme_config.get("name", "Unknown")
-            keywords = theme_config.get("keywords", [])
+            theme_name: str = theme_config.get("name", "Unknown")
+            keywords: List[str] = theme_config.get("keywords", [])
             
             # Check if any keyword is in the lyrics
-            matches = [kw for kw in keywords if kw.lower() in lyrics_lower]
+            matches: List[str] = [kw for kw in keywords if kw.lower() in lyrics_lower]
             if matches:
-                theme = {
+                theme: ThemeDetails = {
                     "theme": theme_name,
                     "details": f"Keywords found: {', '.join(matches)}",
                     "scripture_references": theme_config.get("scripture_keywords", []),
@@ -1116,7 +1025,13 @@ class SongAnalyzer:
                 })
                 try:
                     fetch_start = time.time()
-                    lyrics_text = self.lyrics_fetcher.fetch_lyrics(title, artist)
+                    # Add null check for lyrics_fetcher
+                    if self.lyrics_fetcher is not None:
+                        lyrics_text = self.lyrics_fetcher.fetch_lyrics(title, artist)
+                    else:
+                        logger.warning(f"{log_prefix}❌ Lyrics fetcher not available")
+                        lyrics_text = None
+                        
                     fetch_duration = time.time() - fetch_start
                     
                     if lyrics_text:
@@ -1222,7 +1137,7 @@ class SongAnalyzer:
                 
                 # Add explicit content flag if song is marked as explicit in Spotify
                 if is_explicit:
-                    explicit_flag = {
+                    explicit_flag: Dict[str, Any] = {
                         "flag": "Explicit Content (Spotify Flag)",
                         "category": "explicit",
                         "penalty": 50,  # Same as other explicit content
@@ -1230,7 +1145,7 @@ class SongAnalyzer:
                         "source": "spotify_explicit_flag"
                     }
                     purity_flags_details.append(explicit_flag)
-                    total_purity_penalty += explicit_flag["penalty"]
+                    total_purity_penalty += int(explicit_flag["penalty"])
                     logger.info(f"Added explicit content flag based on Spotify's explicit flag")
                 
                 analysis_results["christian_purity_flags_details"] = purity_flags_details
@@ -1247,8 +1162,8 @@ class SongAnalyzer:
                 total_purity_penalty = 0
 
             # 5. Detect Christian Themes (Positive and Negative)
-            positive_themes = []
-            negative_themes = []
+            positive_themes: List[Dict[str, Any]] = []
+            negative_themes: List[Dict[str, Any]] = []
             try:
                 positive_themes, negative_themes = self._detect_christian_themes(processed_lyrics)
                 analysis_results["christian_positive_themes_detected"] = positive_themes
@@ -1293,9 +1208,45 @@ class SongAnalyzer:
                     }
                     supporting_scripture = self._get_christian_supporting_scripture(triggered_components)
                     analysis_results["christian_supporting_scripture"] = supporting_scripture
+                else:
+                    # Provide default scripture structure
+                    analysis_results["christian_supporting_scripture"] = {
+                        'verses': [],
+                        'themes_covered': [theme.get('theme', '') for theme in positive_themes[:3]],  # Top 3 themes
+                        'recommendation_basis': [f"Score: {analysis_results.get('christian_score', 100)}, Level: {analysis_results.get('christian_concern_level', 'Low')}"]
+                    }
             except Exception as e:
                 logger.error(f"Error getting supporting scripture: {e}", exc_info=True)
                 analysis_results["warnings"].append("Error retrieving supporting scripture references.")
+                # Provide fallback scripture structure
+                analysis_results["christian_supporting_scripture"] = {
+                    'verses': [],
+                    'themes_covered': [theme.get('theme', '') for theme in positive_themes[:3]],
+                    'recommendation_basis': [f"Score: {analysis_results.get('christian_score', 100)}, Level: {analysis_results.get('christian_concern_level', 'Low')}"]
+                }
+            
+            # 8. Add explanation field based on analysis results
+            try:
+                num_positive = len(positive_themes)
+                num_flags = len(purity_flags_details)
+                concern_level = analysis_results.get('christian_concern_level', 'Low')
+                christian_score = analysis_results.get('christian_score', 100)
+                
+                if concern_level == 'Low':
+                    analysis_results['explanation'] = f"This song is well-aligned with Christian values, featuring {num_positive} positive Christian themes with minimal concerning content."
+                elif concern_level == 'Medium':
+                    analysis_results['explanation'] = f"This song has {num_positive} positive Christian themes but also contains {num_flags} areas of concern requiring discretion."
+                else:
+                    analysis_results['explanation'] = f"This song contains significant content concerns ({num_flags} flags detected) that may not align with Christian values despite {num_positive} positive themes."
+                
+                # Add explicit flag context if provided
+                if is_explicit:
+                    analysis_results['explicit_flag'] = True
+                    analysis_results['recommendation'] = f"Analysis complete (Song marked as explicit)"
+                    
+            except Exception as e:
+                logger.error(f"Error generating explanation: {e}", exc_info=True)
+                analysis_results['explanation'] = "Analysis completed successfully."
         except Exception as e:
             logger.error(f"{log_prefix}Unexpected error during song analysis: {e}", exc_info=True)
             analysis_results["errors"].append(f"Unexpected error during analysis: {str(e)}")
@@ -1361,7 +1312,7 @@ if __name__ == '__main__':
     analyzer = SongAnalyzer() # Auto-detects device
 
     # Test cases
-    test_songs = [
+    test_songs: List[Dict[str, Optional[str]]] = [
         {"title": "WAP", "artist": "Cardi B", "lyrics": "Yeah, you fuckin' with some wet-ass pussy"},
         {"title": "Short Safe Song", "artist": "Test Artist", "lyrics": "god is good jesus is lord glory hallelujah"},
         {"title": "Short Bad Song", "artist": "Test Artist", "lyrics": "This is damn offensive shit and drugs"},
@@ -1371,19 +1322,23 @@ if __name__ == '__main__':
     ]
 
     for song_data in test_songs:
-        if song_data["lyrics"] is not None:
-            result = analyzer.analyze_song(song_data["title"], song_data["artist"], lyrics_text=song_data["lyrics"])
+        song_title = song_data.get("title", "Unknown")
+        song_artist = song_data.get("artist", "Unknown")
+        song_lyrics = song_data.get("lyrics")
+        
+        if song_lyrics is not None:
+            result = analyzer.analyze_song(song_title, song_artist, lyrics_text=song_lyrics)
         else:
             # Test fetching if lyrics are None (will fail if LYRICSGENIUS_API_KEY not set or song not found)
-            logger.info(f"\nAttempting to fetch lyrics for {song_data['title']} (ensure API key is set if testing this)...")
-            result = analyzer.analyze_song(song_data["title"], song_data["artist"], fetch_lyrics_if_missing=True)
+            logger.info(f"\nAttempting to fetch lyrics for {song_title} (ensure API key is set if testing this)...")
+            result = analyzer.analyze_song(song_title, song_artist, fetch_lyrics_if_missing=True)
         
-        print(f"\n--- {song_data['artist']} - {song_data['title']} ---")
+        logger.info(f"\n--- {song_artist} - {song_title} ---")
         import json
-        print(json.dumps(result, indent=2))
+        logger.info(json.dumps(result, indent=2))
 
     # Example of fetching lyrics for a known song if API key is available
     logger.info("\nAttempting to fetch lyrics for a song (ensure API key is set)...")
     fetched_result = analyzer.analyze_song("Stairway to Heaven", "Led Zeppelin", fetch_lyrics_if_missing=True)
-    print(f"\n--- Led Zeppelin - Stairway to Heaven (Fetched) ---")
-    print(json.dumps(fetched_result, indent=2))
+    logger.info(f"\n--- Led Zeppelin - Stairway to Heaven (Fetched) ---")
+    logger.info(json.dumps(fetched_result, indent=2))

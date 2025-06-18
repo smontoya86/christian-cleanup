@@ -1,6 +1,6 @@
 # API Documentation
 
-This document provides details about the API endpoints for the Spotify Cleanup application.
+This document provides comprehensive details about all API endpoints for the Christian Music Curator application.
 
 ## Authentication
 
@@ -117,6 +117,215 @@ Base path: `/api/whitelist`
         }
         ```
 
+### Clear All Whitelist Items
+
+*   **Endpoint:** `POST /api/whitelist/clear`
+*   **Description:** Removes all items from the user's whitelist.
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "success": true,
+      "message": "Cleared 15 items from whitelist",
+      "deleted_count": 15
+    }
+    ```
+
+## Blacklist API
+
+Base path: `/api/blacklist`
+
+### Add/Update Blacklist Item
+
+*   **Endpoint:** `POST /api/blacklist`
+*   **Description:** Adds a new item to the user's blacklist or updates an existing item. If the item exists on the whitelist, it will be moved to the blacklist.
+*   **Request Body (JSON):**
+    ```json
+    {
+      "spotify_id": "<spotify_item_id>",
+      "item_type": "<song|artist|album>",
+      "name": "<Optional: Item Name>",
+      "reason": "<Optional: Reason for blacklisting>"
+    }
+    ```
+*   **Success Responses:**
+    *   `201 Created` (New item added):
+        ```json
+        {
+          "message": "Item added to blacklist",
+          "item": {
+            "id": <entry_id>,
+            "user_id": <user_id>,
+            "spotify_id": "<spotify_item_id>",
+            "item_type": "<item_type>",
+            "name": "<name>",
+            "reason": "<reason>",
+            "added_date": "<iso_timestamp>"
+          }
+        }
+        ```
+    *   `200 OK` (Item moved from whitelist):
+        ```json
+        {
+          "message": "Item moved from whitelist to blacklist",
+          "item": { ... }
+        }
+        ```
+
+### Get Blacklist Items
+
+*   **Endpoint:** `GET /api/blacklist`
+*   **Description:** Retrieves all items currently on the user's blacklist.
+*   **Query Parameters:**
+    *   `type` (Optional): Filters results by item type (`song`, `artist`, or `album`).
+*   **Success Response (`200 OK`):**
+    ```json
+    [
+      {
+        "id": <entry_id>,
+        "user_id": <user_id>,
+        "spotify_id": "<spotify_item_id>",
+        "item_type": "<item_type>",
+        "name": "<name>",
+        "reason": "<reason>",
+        "added_date": "<iso_timestamp>"
+      },
+      ...
+    ]
+    ```
+
+### Remove Blacklist Item
+
+*   **Endpoint:** `DELETE /api/blacklist/<int:entry_id>`
+*   **Description:** Removes a specific item from the user's blacklist.
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "success": true,
+      "message": "Removed 'Song Name' from blacklist",
+      "item": {
+        "name": "Song Name",
+        "type": "song",
+        "artist": "Artist Name"
+      }
+    }
+    ```
+
+### Clear All Blacklist Items
+
+*   **Endpoint:** `POST /api/blacklist/clear`
+*   **Description:** Removes all items from the user's blacklist.
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "success": true,
+      "message": "Cleared 8 items from blacklist",
+      "deleted_count": 8
+    }
+    ```
+
+## Analysis API
+
+Base path: `/api`
+
+### Get Song Analysis Status
+
+*   **Endpoint:** `GET /api/songs/<int:song_id>/analysis-status`
+*   **Description:** Retrieves the current analysis status for a specific song.
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "song_id": 123,
+      "analysis_status": "completed",
+      "last_analyzed": "2024-12-01T10:30:00Z",
+      "score": 85,
+      "concern_level": "low",
+      "has_concerns": false
+    }
+    ```
+
+### Analyze Single Song
+
+*   **Endpoint:** `POST /api/songs/<int:song_id>/analyze`
+*   **Description:** Initiates analysis for a single song. Analysis is performed asynchronously.
+*   **Success Response (`202 Accepted`):**
+    ```json
+    {
+      "success": true,
+      "message": "Song analysis started",
+      "song_id": 123,
+      "job_id": "abc123def456"
+    }
+    ```
+*   **Error Responses:**
+    *   `404 Not Found` - Song not found
+    *   `409 Conflict` - Song already being analyzed
+
+### Reanalyze Single Song
+
+*   **Endpoint:** `POST /api/songs/<int:song_id>/reanalyze`
+*   **Description:** Forces re-analysis of a song that has already been analyzed.
+*   **Success Response (`202 Accepted`):**
+    ```json
+    {
+      "success": true,
+      "message": "Song reanalysis started",
+      "song_id": 123,
+      "job_id": "def456ghi789"
+    }
+    ```
+
+### Get Playlist Analysis Status
+
+*   **Endpoint:** `GET /api/playlists/<playlist_id>/analysis-status`
+*   **Description:** Retrieves analysis status summary for all songs in a playlist.
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "playlist_id": "spotify_playlist_id",
+      "total_songs": 25,
+      "analyzed_songs": 23,
+      "pending_songs": 2,
+      "failed_songs": 0,
+      "analysis_progress": 92.0,
+      "last_updated": "2024-12-01T10:30:00Z"
+    }
+    ```
+
+### Analyze Unanalyzed Playlist Songs
+
+*   **Endpoint:** `POST /api/playlists/<playlist_id>/analyze-unanalyzed`
+*   **Description:** Starts analysis for all unanalyzed songs in a playlist.
+*   **Success Response (`202 Accepted`):**
+    ```json
+    {
+      "success": true,
+      "message": "Playlist analysis started for 5 unanalyzed songs",
+      "playlist_id": "spotify_playlist_id",
+      "songs_to_analyze": 5,
+      "job_ids": ["job1", "job2", "job3", "job4", "job5"]
+    }
+    ```
+
+### Get Analysis Data
+
+*   **Endpoint:** `GET /api/analysis/song/<int:song_id>`
+*   **Description:** Retrieves detailed analysis results for a song.
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "song_id": 123,
+      "analysis_result": {
+        "score": 85,
+        "concern_level": "low",
+        "concerns": [],
+        "biblical_themes": ["faith", "hope"],
+        "content_warnings": [],
+        "analyzed_at": "2024-12-01T10:30:00Z",
+        "analysis_version": "2.1"
+      }
+    }
+    ```
+
 ## Playlist Management API
 
 Base path: `/playlist`
@@ -163,7 +372,6 @@ Base path: `/playlist`
           "message": "Missing required fields: track_uris, expected_snapshot_id"
         }
         ```
-        _(Note: Specific error message may vary based on the missing field.)_
     *   `401 Unauthorized`: If the user is not authenticated.
         ```json
         {
@@ -184,10 +392,237 @@ Base path: `/playlist`
           "message": "Playlist not found."
         }
         ```
-    *   `500 Internal Server Error`: For unexpected errors during the process (e.g., issues communicating with the Spotify API not covered by specific conflict/auth errors).
+    *   `500 Internal Server Error`: For unexpected errors during the process.
         ```json
         {
           "success": false,
           "message": "An unexpected error occurred while updating the playlist."
         }
         ```
+
+### Sync Playlists with Spotify
+
+*   **Endpoint:** `POST /sync-playlists`
+*   **Description:** Synchronizes all user playlists with Spotify, importing new playlists and updating existing ones.
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "success": true,
+      "message": "Playlists synchronized successfully",
+      "stats": {
+        "total_playlists": 15,
+        "new_playlists": 2,
+        "updated_playlists": 3,
+        "total_songs": 432,
+        "new_songs": 25
+      }
+    }
+    ```
+
+### Analyze Playlist
+
+*   **Endpoint:** `POST /analyze_playlist_api/<playlist_id>`
+*   **Description:** Initiates content analysis for all songs in a playlist.
+*   **Success Response (`202 Accepted`):**
+    ```json
+    {
+      "success": true,
+      "message": "Playlist analysis started",
+      "playlist_id": "spotify_playlist_id",
+      "total_songs": 20,
+      "job_id": "playlist_analysis_abc123"
+    }
+    ```
+
+## System Status API
+
+### Sync Status
+
+*   **Endpoint:** `GET /api/sync-status`
+*   **Description:** Returns the current synchronization status with Spotify.
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "is_syncing": false,
+      "last_sync": "2024-12-01T10:15:30Z",
+      "sync_status": "completed",
+      "pending_jobs": 0,
+      "failed_jobs": 0
+    }
+    ```
+
+### Health Check
+
+*   **Endpoint:** `GET /health`
+*   **Description:** Basic health check endpoint for monitoring.
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "status": "UP",
+      "message": "Application is healthy.",
+      "timestamp": "2024-12-01T10:30:00Z"
+    }
+    ```
+
+### Authentication Status
+
+*   **Endpoint:** `GET /check_auth`
+*   **Description:** Checks if the current user is authenticated and has valid tokens.
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "authenticated": true,
+      "user_id": 123,
+      "spotify_connected": true,
+      "token_valid": true,
+      "expires_at": "2024-12-01T11:30:00Z"
+    }
+    ```
+
+## Administrative API
+
+### Admin Resync All Playlists
+
+*   **Endpoint:** `POST /admin/resync-all-playlists`
+*   **Description:** Admin endpoint to force resynchronization of all playlists for the current user.
+*   **Authentication:** Admin required
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "success": true,
+      "message": "All playlists resync initiated",
+      "job_id": "admin_resync_xyz789"
+    }
+    ```
+
+### Admin Reanalyze All Songs
+
+*   **Endpoint:** `POST /admin/reanalyze-all-songs`
+*   **Description:** Admin endpoint to force reanalysis of all songs for the current user.
+*   **Authentication:** Admin required
+*   **Success Response (`202 Accepted`):**
+    ```json
+    {
+      "success": true,
+      "message": "All songs reanalysis initiated",
+      "total_songs": 1250,
+      "job_id": "admin_reanalysis_abc456"
+    }
+    ```
+
+### Admin Reanalysis Status
+
+*   **Endpoint:** `GET /api/admin/reanalysis-status`
+*   **Description:** Check the status of admin-initiated reanalysis operations.
+*   **Authentication:** Admin required
+*   **Success Response (`200 OK`):**
+    ```json
+    {
+      "reanalysis_active": true,
+      "total_songs": 1250,
+      "completed_songs": 856,
+      "failed_songs": 12,
+      "progress_percentage": 68.5,
+      "started_at": "2024-12-01T09:00:00Z",
+      "estimated_completion": "2024-12-01T12:30:00Z"
+    }
+    ```
+
+## Error Responses
+
+### Common Error Formats
+
+All API endpoints follow consistent error response patterns:
+
+#### Authentication Error
+```json
+{
+  "error": "Unauthorized",
+  "message": "Authentication required"
+}
+```
+
+#### Validation Error
+```json
+{
+  "error": "Validation failed",
+  "details": {
+    "field_name": ["Field is required", "Field must be valid"]
+  }
+}
+```
+
+#### Resource Not Found
+```json
+{
+  "error": "Resource not found",
+  "message": "The requested resource could not be found"
+}
+```
+
+#### Server Error
+```json
+{
+  "error": "Internal server error",
+  "message": "An unexpected error occurred",
+  "error_id": "error_uuid_12345"
+}
+```
+
+### HTTP Status Codes
+
+- **200 OK** - Request successful
+- **201 Created** - Resource created successfully
+- **202 Accepted** - Request accepted for processing
+- **400 Bad Request** - Invalid request data
+- **401 Unauthorized** - Authentication required
+- **403 Forbidden** - Insufficient permissions
+- **404 Not Found** - Resource not found
+- **409 Conflict** - Resource conflict
+- **422 Unprocessable Entity** - Validation failed
+- **500 Internal Server Error** - Server error
+
+## Rate Limiting
+
+All API endpoints are subject to rate limiting to ensure fair usage:
+
+- **Authenticated users**: 1000 requests per hour
+- **Analysis endpoints**: 100 requests per hour (due to processing intensity)
+- **Admin endpoints**: 500 requests per hour
+
+When rate limits are exceeded, the API returns:
+
+```json
+{
+  "error": "Rate limit exceeded",
+  "message": "Too many requests. Please try again later.",
+  "retry_after": 3600
+}
+```
+
+## Pagination
+
+List endpoints support pagination using query parameters:
+
+- `page` - Page number (1-based, default: 1)
+- `per_page` - Items per page (default: 20, max: 100)
+
+Paginated responses include metadata:
+
+```json
+{
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "per_page": 20,
+    "total": 150,
+    "pages": 8,
+    "has_next": true,
+    "has_prev": false
+  }
+}
+```
+
+---
+
+**Note**: This API documentation reflects the current blueprint architecture. All endpoints have been migrated to the new blueprint structure while maintaining backward compatibility.

@@ -1,0 +1,64 @@
+# Alert Rules
+
+groups:
+  - name: christian_curator_alerts
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors per second"
+
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }} seconds"
+
+      # Application down
+      - alert: ApplicationDown
+        expr: up{job="christian-curator-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Application is down"
+          description: "Christian Music Curator application is not responding"
+
+      # Database connection issues
+      - alert: DatabaseUnhealthy
+        expr: health_check_status{component="database"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database health check failed"
+          description: "Database component is reporting unhealthy status"
+
+      # Redis connection issues
+      - alert: RedisUnhealthy
+        expr: health_check_status{component="redis"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis health check failed"
+          description: "Redis component is reporting unhealthy status"
+
+      # Spotify API issues
+      - alert: SpotifyAPIIssues
+        expr: rate(spotify_api_calls_total{status!="success"}[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Spotify API error rate high"
+          description: "Spotify API error rate is {{ $value }} errors per second"

@@ -1,90 +1,81 @@
-from app import create_app
-import os
-
-# Create the Flask application
-app = create_app()
-
-# Get the Redis URL from the app config
-redis_url = app.config.get('RQ_REDIS_URL', 'redis://localhost:6379/0')
-print(f"Flask app Redis URL: {redis_url}")
-
-# Test Redis connection using Flask-RQ2
-with app.app_context():
-    try:
-        from redis import Redis
-        from urllib.parse import urlparse
-        
-        # Parse the Redis URL
-        url = urlparse(redis_url)
-        
-        # Create Redis connection
-        r = Redis(
-            host=url.hostname or 'localhost',
-            port=url.port or 6379,
-            db=int(url.path.lstrip('/') or 0),
-            password=url.password,
-            socket_connect_timeout=5
-        )
-        
-        # Test connection
-        r.ping()
-        print("✓ Successfully connected to Redis via Flask app!")
-        
-        # Test setting and getting a value
-        test_key = "flask_test_key_123"
-        test_value = "flask_test_value_123"
-        r.set(test_key, test_value)
-        retrieved_value = r.get(test_key)
-        print(f"✓ Successfully set and retrieved test value: {retrieved_value.decode()}")
-        
-        # Clean up
-        r.delete(test_key)
-        
-    except Exception as e:
-        print(f"✗ Error connecting to Redis via Flask app: {str(e)}")
-        print("\nTroubleshooting steps:")
-        print(f"1. Check if the Redis URL in your Flask config is correct: {redis_url}")
-        print("2. Make sure Redis server is running and accessible")
-        print("3. Check for any authentication requirements in your Redis configuration")
-
 #!/usr/bin/env python3
 """
-Quick test to verify database connectivity and playlist access.
+Test Redis connectivity through Flask app configuration.
 """
 
 import os
 import sys
+import pytest
+from unittest.mock import patch, MagicMock
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import create_app, db
-from app.models.models import Playlist, Song, PlaylistSong, User
-from app.utils.database import get_by_filter  # Add SQLAlchemy 2.0 utilities
+from app import create_app
 
-def test_playlist_access():
+def test_flask_redis_configuration():
+    """Test that Flask app has Redis configuration."""
+    app = create_app()
+    
+    # Test that Redis URL is configured
+    redis_url = app.config.get('RQ_REDIS_URL', 'redis://localhost:6379/0')
+    assert redis_url is not None
+    assert 'redis://' in redis_url
+    print(f"Flask app Redis URL: {redis_url}")
+
+def test_redis_connection_with_flask_app():
+    """Test Redis connection using Flask app configuration."""
     app = create_app()
     
     with app.app_context():
-        # Test database connection
         try:
-            print("Testing playlist access with Flask-RQ2...")
+            from redis import Redis
+            from urllib.parse import urlparse
             
-            # Get a playlist using SQLAlchemy 2.0 pattern
-            playlist = get_by_filter(Playlist)  # Get first playlist
-            if playlist:
-                print(f"Found playlist: {playlist.name}")
-                print(f"Owner ID: {playlist.owner_id}")
-                print(f"Songs count: {len(playlist.songs)}")
-            else:
-                print("No playlists found in database")
-                return
+            # Parse the Redis URL
+            redis_url = app.config.get('RQ_REDIS_URL', 'redis://localhost:6379/0')
+            url = urlparse(redis_url)
             
-            # Try to access a specific playlist using SQLAlchemy 2.0 pattern
-            specific_playlist = get_by_filter(Playlist, spotify_id="1U8Fwac8vpvD1s98MVNK79")
+            # Create Redis connection
+            r = Redis(
+                host=url.hostname or 'localhost',
+                port=url.port or 6379,
+                db=int(url.path.lstrip('/') or 0),
+                password=url.password,
+                socket_connect_timeout=5
+            )
             
-            return True
+            # Test connection
+            r.ping()
+            print("✓ Successfully connected to Redis via Flask app!")
+            
+            # Test setting and getting a value
+            test_key = "flask_test_key_123"
+            test_value = "flask_test_value_123"
+            r.set(test_key, test_value)
+            retrieved_value = r.get(test_key)
+            assert retrieved_value.decode() == test_value
+            print(f"✓ Successfully set and retrieved test value: {retrieved_value.decode()}")
+            
+            # Clean up
+            r.delete(test_key)
+            
         except Exception as e:
-            print(f"Database connection error: {e}")
-            return False
+            pytest.skip(f"Redis not available: {str(e)}")
+
+class TestRedisConnection:
+    """Test class for Redis connection functionality."""
+    
+    def test_redis_connection_with_mock(self):
+        """Test Redis connection with mock."""
+        with patch('redis.Redis') as mock_redis:
+            mock_instance = MagicMock()
+            mock_redis.return_value = mock_instance
+            mock_instance.ping.return_value = True
+            
+            # Test connection
+            result = mock_instance.ping()
+            assert result is True
+            mock_instance.ping.assert_called_once()
 
 if __name__ == '__main__':
-    test_playlist_access()
+    test_flask_redis_configuration()
+    test_redis_connection_with_flask_app() 

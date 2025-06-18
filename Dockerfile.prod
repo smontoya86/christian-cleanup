@@ -1,0 +1,128 @@
+# Production Dockerfile for Christian Music Curator
+# Multi-stage build for optimized production image
+
+# Build stage for Python dependencies
+FROM python:3.11-slim AS python-builder
+
+# Install system dependencies for building
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy and install Python requirements
+COPY requirements.txt /tmp/
+RUN pip install --no-cache-dir --upgrade pip wheel setuptools && \
+    pip install --no-cache-dir -r /tmp/requirements.txt && \
+    pip install --no-cache-dir gunicorn[gevent] gevent
+
+# Node.js build stage for frontend assets
+FROM node:18-alpine AS node-builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install Node.js dependencies
+RUN npm ci --only=production && \
+    npm cache clean --force
+
+# Copy frontend source
+COPY app/static ./app/static
+COPY scripts/build.js ./scripts/
+
+# Build production assets
+ENV NODE_ENV=production
+RUN npm run build:prod
+
+# Production runtime stage
+FROM python:3.11-slim AS production
+
+# Create non-root user for security
+RUN groupadd -r christian && useradd -r -g christian christian
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get purge -y --auto-remove
+
+# Copy virtual environment from builder
+COPY --from=python-builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY --chown=christian:christian . .
+
+# Copy built frontend assets from node builder
+COPY --from=node-builder /app/app/static/dist ./app/static/dist
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/logs /app/uploads /app/instance && \
+    chown -R christian:christian /app/logs /app/uploads /app/instance
+
+# Create startup script
+RUN echo '#!/bin/bash' > /app/entrypoint.sh && \
+    echo 'set -e' >> /app/entrypoint.sh && \
+    echo '' >> /app/entrypoint.sh && \
+    echo '# Wait for database to be ready' >> /app/entrypoint.sh && \
+    echo 'echo "Waiting for database..."' >> /app/entrypoint.sh && \
+    echo 'while ! nc -z db 5432; do' >> /app/entrypoint.sh && \
+    echo '    sleep 0.1' >> /app/entrypoint.sh && \
+    echo 'done' >> /app/entrypoint.sh && \
+    echo 'echo "Database is ready!"' >> /app/entrypoint.sh && \
+    echo '' >> /app/entrypoint.sh && \
+    echo '# Wait for Redis to be ready' >> /app/entrypoint.sh && \
+    echo 'echo "Waiting for Redis..."' >> /app/entrypoint.sh && \
+    echo 'while ! nc -z redis 6379; do' >> /app/entrypoint.sh && \
+    echo '    sleep 0.1' >> /app/entrypoint.sh && \
+    echo 'done' >> /app/entrypoint.sh && \
+    echo 'echo "Redis is ready!"' >> /app/entrypoint.sh && \
+    echo '' >> /app/entrypoint.sh && \
+    echo '# Run database migrations' >> /app/entrypoint.sh && \
+    echo 'echo "Running database migrations..."' >> /app/entrypoint.sh && \
+    echo 'flask db upgrade' >> /app/entrypoint.sh && \
+    echo '' >> /app/entrypoint.sh && \
+    echo '# Start the application' >> /app/entrypoint.sh && \
+    echo 'echo "Starting application..."' >> /app/entrypoint.sh && \
+    echo 'exec "$@"' >> /app/entrypoint.sh
+
+RUN chmod +x /app/entrypoint.sh && \
+    chown christian:christian /app/entrypoint.sh
+
+# Security: remove potentially sensitive files
+RUN rm -rf /app/.git /app/.gitignore /app/tests /app/docs \
+    /app/scripts/create_*_mock_data.py /app/scripts/setup-docker-env.sh
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    FLASK_APP=run.py \
+    FLASK_ENV=production \
+    PATH="/opt/venv/bin:$PATH"
+
+# Expose port
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# Switch to non-root user
+USER christian
+
+# Use entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Default command
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--worker-class", "gevent", "--worker-connections", "1000", "--timeout", "120", "--max-requests", "1000", "--max-requests-jitter", "100", "--preload", "run:app"] 

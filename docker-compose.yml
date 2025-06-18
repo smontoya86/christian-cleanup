@@ -6,10 +6,14 @@ services:
       - "5001:5000"  # Changed external port to 5001 to avoid conflict with macOS Control Center
     volumes:
       - .:/app
-    env_file:
-      - .env.docker
     environment:
       - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES  # Required for macOS compatibility
+      - FLASK_ENV=development  # Fix session cookie security for HTTP
+      - DEBUG=true
+      - SECRET_KEY=HEkhWyjqZj15ZYHOyMb7sAo2oHQXNLWzB37Oht7C_Wo
+      - SPOTIFY_CLIENT_ID=7ee17d5e78f5429bb22bbe33fea77a6b
+      - SPOTIFY_CLIENT_SECRET=09b6217385ec4a738d67d188d78c6c66
+      - SPOTIFY_REDIRECT_URI=http://localhost:5001/auth/callback
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - RQ_REDIS_URL=redis://redis:6379/0
       - USE_LIGHTWEIGHT_ANALYZER=false  # Always use comprehensive analysis
@@ -32,8 +36,6 @@ services:
     entrypoint: ["/app/docker-entrypoint-worker.sh"]
     volumes:
       - .:/app
-    env_file:
-      - .env.docker
     environment:
       - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES  # Required for macOS compatibility
       - PYTHONUNBUFFERED=1
@@ -57,8 +59,6 @@ services:
       start_period: 10s
     networks:
       - app-network
-    deploy:
-      replicas: 6  # Scale to 6 workers for faster processing
 
   db:
     image: postgres:14-alpine
@@ -93,9 +93,50 @@ services:
     networks:
       - app-network
 
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      - web
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      - prometheus
+
 volumes:
   postgres_data:
   redis_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   app-network:

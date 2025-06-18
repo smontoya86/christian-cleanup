@@ -5,63 +5,212 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
     <title>{% block title %}Spotify Cleanup{% endblock %}</title>
-    <!-- Bootstrap CSS -->
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/icon-180x180.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='images/icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='images/icon-144x144.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('static', filename='images/icon-120x120.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='images/icon-114x114.png') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='images/favicon-16x16.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    
+    <!-- Mobile optimizations -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Christian Music Curator">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Christian Music Curator">
+    
+    <!-- Preload critical resources -->
+    {% if config.ENV == 'production' %}
+        <link rel="preload" href="{{ url_for('static', filename='dist/css/base.css') }}" as="style" crossorigin>
+        <link rel="preload" href="{{ url_for('static', filename='dist/js/main.js') }}" as="script" crossorigin>
+    {% else %}
+        <link rel="preload" href="{{ url_for('static', filename='css/base.css') }}" as="style" crossorigin>
+        <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script" crossorigin>
+    {% endif %}
+    
+    <!-- Preload web fonts for faster text rendering -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" as="style" crossorigin>
+    
+    <!-- Critical CSS - loaded synchronously in head -->
+    <!-- Bootstrap CSS - essential for layout -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
-    <!-- Font Awesome CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    {% block head_extra %}{% endblock %}
+    
+    <!-- Custom CSS - Use built assets in production, source files in development -->
+    {% if config.ENV == 'production' %}
+        <!-- Production: Use minified and optimized assets -->
+        <link href="{{ url_for('static', filename='dist/css/base.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='dist/css/components.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='dist/css/utilities.css') }}" rel="stylesheet">
+    {% else %}
+        <!-- Development: Use source files for easier debugging -->
+        <link href="{{ url_for('static', filename='css/base.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='css/components.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='css/utilities.css') }}" rel="stylesheet">
+    {% endif %}
+    
+    <!-- Load web fonts asynchronously -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"></noscript>
+    
+    <!-- Non-critical CSS - loaded asynchronously -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"></noscript>
+    
+    <!-- Additional head content for page-specific CSS -->
+    {% block styles %}{% endblock %}
+    
+    <!-- Performance and SEO meta tags -->
+    <meta name="description" content="Christian Music Curator - Analyze your Spotify playlists for alignment with Christian values">
+    <meta name="keywords" content="Christian music, Spotify, playlist analyzer, faith-based music, Christian values">
+    <meta name="author" content="Christian Music Curator">
+    <meta name="robots" content="noindex, nofollow"> <!-- Adjust for production -->
+    <meta name="theme-color" content="#6f42c1">
+    <meta name="msapplication-TileColor" content="#6f42c1">
+    <meta name="msapplication-config" content="{{ url_for('static', filename='browserconfig.xml') }}">
+    
+    <!-- Open Graph meta tags for social sharing -->
+    <meta property="og:title" content="{% block og_title %}Christian Music Curator{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Analyze your Spotify playlists for alignment with Christian values{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:image" content="{{ url_for('static', filename='images/og-image.png', _external=True) }}">
+    <meta property="og:site_name" content="Christian Music Curator">
+    
+    <!-- Twitter Card meta tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}Christian Music Curator{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Analyze your Spotify playlists for alignment with Christian values{% endblock %}">
+    <meta name="twitter:image" content="{{ url_for('static', filename='images/twitter-card.png', _external=True) }}">
+    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//accounts.spotify.com">
+    <link rel="dns-prefetch" href="//api.spotify.com">
+    
+    <!-- Preconnect to critical third-party origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    
+    <!-- Resource hints for likely next pages -->
+    {% if request.endpoint == 'main.index' %}
+        <link rel="prefetch" href="{{ url_for('auth.login') }}">
+        <link rel="prefetch" href="{{ url_for('main.dashboard') }}">
+    {% elif request.endpoint == 'auth.login' %}
+        <link rel="prefetch" href="{{ url_for('main.dashboard') }}">
+    {% elif request.endpoint == 'main.dashboard' %}
+        <link rel="prefetch" href="{{ url_for('main.settings') }}">
+    {% endif %}
 </head>
 <body>
-    <header class="site-header sticky-top py-1">
-        <nav class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
-            <a class="py-2 site-title" href="{{ url_for('core.index') }}" aria-label="Spotify Cleanup">
-                <i class="fas fa-music me-2"></i>Spotify Cleanup
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="skip-link sr-only sr-only-focusable">Skip to main content</a>
+    
+    <header class="site-header sticky-top py-1" role="banner">
+        <nav class="container d-flex flex-column flex-md-row justify-content-between align-items-center" role="navigation" aria-label="Main navigation">
+            <a class="py-2 site-title" href="{{ url_for('main.index') }}" aria-label="Christian Music Curator - Home">
+                <i class="fas fa-music me-2" aria-hidden="true"></i>Christian Music Curator
             </a>
             <div class="d-flex align-items-center">
-                <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('core.index') }}">Home</a>
-                <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="#">About</a> {# Placeholder for About page #}
+                <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.index') }}">Home</a>
+                <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="#" aria-label="About page (coming soon)">About</a>
                 {% if current_user.is_authenticated %}
-                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('core.dashboard') }}">Dashboard</a>
-                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('user.user_settings') }}">Settings</a>
-                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('auth.logout') }}">Logout</a>
+                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.settings') }}">Settings</a>
+                    <!-- Logout dropdown -->
+                    <div class="dropdown d-none d-md-inline-block">
+                        <a class="py-2 px-3 nav-link-custom dropdown-toggle" href="#" role="button" id="logoutDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Logout
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="logoutDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    <strong>Standard Logout</strong>
+                                    <small class="d-block text-muted">Quick logout (keeps tokens for easy re-login)</small>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.logout', force='true') }}">
+                                    <i class="fas fa-shield-alt me-2"></i>
+                                    <strong>Complete Logout</strong>
+                                    <small class="d-block text-muted">Clear all tokens (recommended for shared devices)</small>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <small class="dropdown-item-text text-muted px-3">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    For maximum security, also revoke access in your 
+                                    <a href="https://www.spotify.com/account/apps/" target="_blank" class="text-decoration-none">Spotify account settings</a>
+                                </small>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="alert('Logout guide coming soon!')">
+                                    <i class="fas fa-question-circle me-2"></i>
+                                    Learn about logout security
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 {% else %}
                      <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('auth.login') }}">Login</a>
-                     <a class="btn btn-primary btn-connect-spotify ms-3" href="{{ url_for('auth.login') }}">Connect to Spotify</a>
+                     <a class="btn btn-primary btn-connect-spotify ms-3" href="{{ url_for('auth.login') }}" data-analytics="connect_spotify_header">Connect to Spotify</a>
                 {% endif %}
             </div>
         </nav>
     </header>
 
-    <main role="main">
+    <main role="main" id="main-content">
         <div class="container mt-4">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    {% endfor %}
+                    <div class="flash-messages" role="alert" aria-live="polite">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close alert"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
                 {% endif %}
             {% endwith %}
         </div>
+        
+        <!-- Connection status indicator for offline functionality -->
+        <div id="connection-status" class="d-none position-fixed bottom-0 start-50 translate-middle-x mb-3" style="z-index: 1060;">
+            <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center" role="alert">
+                <i class="fas fa-wifi-slash me-2" aria-hidden="true"></i>
+                <span>You're offline. Some features may be limited.</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close offline notification"></button>
+            </div>
+        </div>
+        
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="site-footer mt-auto py-5">
+    <footer class="site-footer mt-auto py-5" role="contentinfo">
         <div class="container">
             <div class="row">
                 <div class="col-md-4 mb-3">
-                    <h5><i class="fas fa-music me-2"></i>Spotify Cleanup</h5>
+                    <h5><i class="fas fa-music me-2" aria-hidden="true"></i>Christian Music Curator</h5>
                     <p class="text-muted small">Empowering Christians to enjoy music that aligns with their faith and values.</p>
                     <div>
-                        <a href="#" class="text-muted me-2"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="text-muted me-2"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="text-muted"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-muted me-2" aria-label="Follow us on Facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i></a>
+                        <a href="#" class="text-muted me-2" aria-label="Follow us on Instagram"><i class="fab fa-instagram" aria-hidden="true"></i></a>
+                        <a href="#" class="text-muted" aria-label="Follow us on Twitter"><i class="fab fa-twitter" aria-hidden="true"></i></a>
                     </div>
                 </div>
                 <div class="col-md-2 offset-md-1 mb-3">
@@ -90,7 +239,7 @@
             </div>
             <div class="row mt-4">
                 <div class="col text-center text-muted small">
-                    <p>&copy; {{ current_year }} Spotify Cleanup. All rights reserved.</p>
+                    <p>&copy; {{ current_year or 2024 }} Christian Music Curator. All rights reserved.</p>
                 </div>
             </div>
         </div>
@@ -98,12 +247,91 @@
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Application JavaScript - loaded asynchronously -->
+    {% if config.ENV == 'production' %}
+        <!-- Production: Use bundled and minified JavaScript -->
+        <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}" defer></script>
+    {% else %}
+        <!-- Development: Use source files with proper module loading -->
+        <script type="module" src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+    {% endif %}
+    
+    <!-- Page-specific JavaScript -->
     {% block scripts %}{% endblock %}
 
-    <!-- Toast Container -->
-    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+    <!-- Toast Container for notifications -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;" aria-live="polite" aria-atomic="true">
         <!-- Toasts will be appended here by JavaScript -->
     </div>
 
+    <!-- PWA installation prompt -->
+    <div id="pwa-install-prompt" class="d-none position-fixed bottom-0 start-50 translate-middle-x mb-3" style="z-index: 1050;">
+        <div class="alert alert-info alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="fas fa-download me-2" aria-hidden="true"></i>
+            <span>Install this app for a better experience!</span>
+            <button type="button" class="btn btn-sm btn-primary ms-2" id="pwa-install-btn">Install</button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close installation prompt"></button>
+        </div>
+    </div>
+
+    <!-- Critical JavaScript for PWA and performance -->
+    <script>
+        // PWA installation prompt
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show installation prompt
+            const installPrompt = document.getElementById('pwa-install-prompt');
+            const installBtn = document.getElementById('pwa-install-btn');
+            
+            if (installPrompt && installBtn) {
+                installPrompt.classList.remove('d-none');
+                
+                installBtn.addEventListener('click', async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        console.log(`PWA installation: ${outcome}`);
+                        deferredPrompt = null;
+                        installPrompt.classList.add('d-none');
+                    }
+                });
+            }
+        });
+        
+        // Connection status monitoring
+        function updateConnectionStatus() {
+            const statusEl = document.getElementById('connection-status');
+            if (statusEl) {
+                if (navigator.onLine) {
+                    statusEl.classList.add('d-none');
+                } else {
+                    statusEl.classList.remove('d-none');
+                }
+            }
+        }
+        
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+        updateConnectionStatus();
+        
+        // Critical performance monitoring
+        if ('PerformanceObserver' in window) {
+            // Monitor LCP for performance insights
+            try {
+                new PerformanceObserver((list) => {
+                    const entries = list.getEntries();
+                    const lastEntry = entries[entries.length - 1];
+                    console.log('📊 LCP:', Math.round(lastEntry.startTime) + 'ms');
+                }).observe({ entryTypes: ['largest-contentful-paint'] });
+            } catch (e) {
+                // Performance monitoring is optional
+            }
+        }
+    </script>
 </body>
 </html>

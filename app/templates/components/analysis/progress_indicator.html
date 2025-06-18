@@ -1,0 +1,94 @@
+{# 
+Progress Indicator Component
+
+Parameters:
+- type: 'sync' or 'analysis' 
+- title: Display title for the progress
+- message: Current status message
+- show_elapsed: Whether to show elapsed time
+- show_eta: Whether to show ETA
+- show_stats: Whether to show detailed stats
+- stats: Dictionary with completed, in_progress, pending counts
+- job_id: Optional job ID for tracking
+#}
+
+{% set progress_id = type + 'Progress' %}
+{% set alert_id = type + 'ProgressAlert' %}
+
+<div id="{{ alert_id }}" class="alert alert-{{ 'info' if type == 'sync' else 'warning' }}" role="alert" 
+     {% if not show_by_default %}style="display: none;"{% endif %}>
+    <div class="d-flex align-items-center mb-3">
+        <i class="fas fa-{{ 'spinner fa-spin' if type == 'sync' else 'brain fa-pulse' }} me-2"></i>
+        <div class="flex-grow-1">
+            <strong>{{ title or (type|title + ' in Progress') }}</strong>
+            <div class="d-flex justify-content-between align-items-center mt-1">
+                <span id="{{ type }}Message">{{ message or 'Processing...' }}</span>
+                {% if show_elapsed or show_eta %}
+                <div class="text-end">
+                    <small class="text-muted">
+                        {% if show_elapsed %}
+                        <span id="{{ type }}Elapsed">0:00</span> elapsed
+                        {% endif %}
+                        {% if show_eta %}
+                        {% if show_elapsed %}• {% endif %}ETA: <span id="{{ type }}ETA">calculating...</span>
+                        {% endif %}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <button type="button" class="btn-close" 
+                onclick="hide{{ type|title }}Progress()" aria-label="Close"></button>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="progress mb-2" style="height: 25px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated bg-{{ 'primary' if type == 'sync' else 'warning' }}" 
+             role="progressbar" 
+             style="width: 25%" 
+             id="{{ progress_id }}">
+            <span class="progress-text fw-bold">Initializing...</span>
+        </div>
+    </div>
+    
+    {% if show_stats and stats %}
+    <!-- Progress Stats -->
+    <div class="row text-center mt-3">
+        <div class="col-4">
+            <div class="{{ type }}-stat">
+                <div class="{{ type }}-number text-success" id="{{ type }}Completed">{{ stats.completed or 0 }}</div>
+                <div class="{{ type }}-label">Completed</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="{{ type }}-stat">
+                <div class="{{ type }}-number text-primary" id="{{ type }}InProgress">{{ stats.in_progress or 0 }}</div>
+                <div class="{{ type }}-label">In Progress</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="{{ type }}-stat">
+                <div class="{{ type }}-number text-warning" id="{{ type }}Pending">{{ stats.pending or 0 }}</div>
+                <div class="{{ type }}-label">Pending</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if job_id %}
+    <small class="text-muted d-block mt-2">
+        Job ID: {{ job_id }}
+        • Started: <span id="{{ type }}Started">just now</span>
+    </small>
+    {% endif %}
+    
+    {% if type == 'analysis' %}
+    <!-- Analysis-specific details -->
+    <div class="mt-3">
+        <small class="text-muted">
+            <strong>Current:</strong> <span id="currentAnalysis">Preparing...</span><br>
+            <strong>Recent:</strong> <span id="recentAnalysis">None</span>
+        </small>
+    </div>
+    {% endif %}
+</div> 

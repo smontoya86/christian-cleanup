@@ -11,10 +11,14 @@ from .drug_detector import SubstanceDetector
 from .violence_detector import ViolenceDetector
 from .pattern_registry import PatternRegistry
 
+# Aliases for compatibility
+PatternDetectionRegistry = PatternRegistry
+
 __all__ = [
     'BasePatternDetector',
     'ProfanityDetector', 
     'SubstanceDetector',
     'ViolenceDetector',
-    'PatternRegistry'
+    'PatternRegistry',
+    'PatternDetectionRegistry'
 ] 

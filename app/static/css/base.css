@@ -1,0 +1,155 @@
+/* Base CSS - Core variables, typography, and layout */
+
+/* CSS Custom Properties (Variables) */
+:root {
+    /* Colors */
+    --primary-purple: #6f42c1;
+    --primary-color: #4361ee;
+    --light-purple: #e0d6f9;
+    --success-color: #2ecc71;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --info-color: #0dcaf0;
+    
+    /* Text Colors */
+    --dark-text: #333;
+    --light-text: #fff;
+    --muted-text: #6c757d;
+    
+    /* Background Colors */
+    --body-bg: #fff;
+    --card-bg: #fff;
+    --light-bg: #f8f9fa;
+    --footer-bg: #f8f9fa;
+    
+    /* Concern Level Colors */
+    --concern-extreme: #dc3545;
+    --concern-high: #ffc107;
+    --concern-medium: #0dcaf0;
+    --concern-low: #198754;
+    
+    /* Interactive */
+    --link-color: var(--primary-purple);
+    --border-color: #e9ecef;
+    --hover-bg: rgb(67 97 238 / 4%);
+    
+    /* Layout */
+    --border-radius: 8px;
+    --border-radius-sm: 6px;
+    --border-radius-lg: 12px;
+    --box-shadow: 0 2px 15px rgb(0 0 0 / 5%);
+    --box-shadow-hover: 0 5px 20px rgb(0 0 0 / 10%);
+    --box-shadow-card: 0 4px 15px rgb(0 0 0 / 10%);
+    
+    /* Transitions */
+    --transition: all 0.3s ease;
+    --transition-fast: all 0.15s ease-in-out;
+    
+    /* Typography */
+    --font-sans-serif: system-ui, -apple-system, "Segoe UI", roboto, "Helvetica Neue", arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+/* Base Typography and Layout */
+body {
+    font-family: var(--font-sans-serif);
+    background-color: var(--body-bg);
+    color: var(--dark-text);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+main {
+    flex-grow: 1;
+}
+
+/* Header Styles */
+.site-header {
+    background-color: var(--body-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.site-header .site-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-purple);
+    text-decoration: none;
+}
+
+.site-header .site-title i {
+    color: var(--primary-purple);
+}
+
+/* Navigation */
+.nav-link-custom {
+    color: var(--dark-text) !important;
+    font-weight: 500;
+}
+
+.nav-link-custom:hover {
+    color: var(--primary-purple) !important;
+}
+
+/* Footer Styles */
+.site-footer {
+    background-color: var(--footer-bg);
+    color: var(--muted-text);
+    font-size: 0.9rem;
+}
+
+.site-footer h5 {
+    color: var(--dark-text);
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.site-footer .list-unstyled a {
+    color: var(--muted-text);
+    transition: var(--transition-fast);
+}
+
+.site-footer .list-unstyled a:hover {
+    color: var(--primary-purple);
+}
+
+.site-footer .fab {
+    font-size: 1.25rem;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --dark-text: #fff;
+        --light-text: #000;
+        --body-bg: #1a1a1a;
+        --card-bg: #2d2d2d;
+        --light-bg: #333;
+        --footer-bg: #2d2d2d;
+        --border-color: #404040;
+        --muted-text: #ccc;
+        --hover-bg: rgb(255 255 255 / 5%);
+    }
+    
+    body {
+        background-color: var(--body-bg);
+        color: var(--dark-text);
+    }
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .site-header,
+    .site-footer {
+        display: none !important;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+} 

@@ -7,10 +7,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h2">Blacklist & Whitelist Management</h1>
         <div>
-            <a href="{{ url_for('main.user_settings') }}" class="btn btn-outline-secondary me-2">
+            <a href="{{ url_for('user.settings') }}" class="btn btn-outline-secondary me-2">
                 <i class="fas fa-cog me-1"></i>Settings
             </a>
-            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+            <a href="{{ url_for('core.dashboard') }}" class="btn btn-outline-primary">
                 <i class="fas fa-arrow-left me-1"></i>Dashboard
             </a>
         </div>
@@ -64,7 +64,8 @@
                             </h5>
                         </div>
                         <div class="card-body">
-                            <form method="POST" action="{{ url_for('main.add_whitelist_item') }}">
+                            <form method="POST" action="{{ url_for('whitelist.add_whitelist_item') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <div class="mb-3">
                                     <label for="wl_item_type" class="form-label">Item Type <span class="text-danger">*</span></label>
                                     <select class="form-select" id="wl_item_type" name="item_type" required>
@@ -148,7 +149,7 @@
                                                         <button type="button" class="btn btn-outline-primary" onclick="editWhitelistItem({{ item.id }}, '{{ item.name }}', '{{ item.reason or '' }}')">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <form method="POST" action="{{ url_for('main.remove_whitelist_item', item_id=item.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to remove this item from your whitelist?')">
+                                                        <form method="POST" action="{{ url_for('whitelist.remove_whitelist_item', item_id=item.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to remove this item from your whitelist?')">
                                                             <button type="submit" class="btn btn-outline-danger">
                                                                 <i class="fas fa-trash"></i>
                                                             </button>
@@ -188,7 +189,8 @@
                             </h5>
                         </div>
                         <div class="card-body">
-                            <form method="POST" action="{{ url_for('main.add_blacklist_item') }}">
+                            <form method="POST" action="{{ url_for('whitelist.add_blacklist_item') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <div class="mb-3">
                                     <label for="bl_item_type" class="form-label">Item Type <span class="text-danger">*</span></label>
                                     <select class="form-select" id="bl_item_type" name="item_type" required>
@@ -272,7 +274,7 @@
                                                         <button type="button" class="btn btn-outline-primary" onclick="editBlacklistItem({{ item.id }}, '{{ item.name }}', '{{ item.reason or '' }}')">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <form method="POST" action="{{ url_for('main.remove_blacklist_item', item_id=item.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to remove this item from your blacklist?')">
+                                                        <form method="POST" action="{{ url_for('whitelist.remove_blacklist_item', item_id=item.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to remove this item from your blacklist?')">
                                                             <button type="submit" class="btn btn-outline-danger">
                                                                 <i class="fas fa-trash"></i>
                                                             </button>
@@ -314,14 +316,13 @@
                         <div class="card-body">
                             <div class="mb-4">
                                 <h6>Import Whitelist</h6>
-                                <form method="POST" action="{{ url_for('main.bulk_import_whitelist') }}" enctype="multipart/form-data">
+                                <form method="POST" action="{{ url_for('whitelist.bulk_import_whitelist') }}" enctype="multipart/form-data">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <div class="mb-3">
-                                        <input type="file" class="form-control" name="csv_file" accept=".csv" required>
-                                        <div class="form-text">Upload a CSV file with columns: item_type, spotify_id, name, reason</div>
+                                        <label for="whitelist_file" class="form-label">Choose CSV file for whitelist import</label>
+                                        <input type="file" class="form-control" id="whitelist_file" name="file" accept=".csv" required>
                                     </div>
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="fas fa-upload me-1"></i>Import Whitelist
-                                    </button>
+                                    <button type="submit" class="btn btn-success">Import Whitelist</button>
                                 </form>
                             </div>
 
@@ -329,14 +330,13 @@
 
                             <div class="mb-4">
                                 <h6>Import Blacklist</h6>
-                                <form method="POST" action="{{ url_for('main.bulk_import_blacklist') }}" enctype="multipart/form-data">
+                                <form method="POST" action="{{ url_for('whitelist.bulk_import_blacklist') }}" enctype="multipart/form-data">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <div class="mb-3">
-                                        <input type="file" class="form-control" name="csv_file" accept=".csv" required>
-                                        <div class="form-text">Upload a CSV file with columns: item_type, spotify_id, name, reason</div>
+                                        <label for="blacklist_file" class="form-label">Choose CSV file for blacklist import</label>
+                                        <input type="file" class="form-control" id="blacklist_file" name="file" accept=".csv" required>
                                     </div>
-                                    <button type="submit" class="btn btn-danger">
-                                        <i class="fas fa-upload me-1"></i>Import Blacklist
-                                    </button>
+                                    <button type="submit" class="btn btn-danger">Import Blacklist</button>
                                 </form>
                             </div>
 
@@ -361,8 +361,8 @@
                             <div class="mb-4">
                                 <h6>Export Whitelist</h6>
                                 <p class="text-muted">Download your whitelist as a CSV file for backup or sharing.</p>
-                                <a href="{{ url_for('main.export_whitelist') }}" class="btn btn-success">
-                                    <i class="fas fa-download me-1"></i>Export Whitelist ({{ whitelist_items|length }} items)
+                                <a href="{{ url_for('whitelist.export_whitelist') }}" class="btn btn-success">
+                                    <i class="fas fa-download me-1"></i>Export Whitelist to CSV
                                 </a>
                             </div>
 
@@ -370,9 +370,9 @@
 
                             <div class="mb-4">
                                 <h6>Export Blacklist</h6>
-                                <p class="text-muted">Download your blacklist as a CSV file for backup or sharing.</p>
-                                <a href="{{ url_for('main.export_blacklist') }}" class="btn btn-danger">
-                                    <i class="fas fa-download me-1"></i>Export Blacklist ({{ blacklist_items|length }} items)
+                                <p class="text-muted small">Download your current blacklist as a CSV file.</p>
+                                <a href="{{ url_for('whitelist.export_blacklist') }}" class="btn btn-danger">
+                                    <i class="fas fa-download me-1"></i>Export Blacklist to CSV
                                 </a>
                             </div>
 
@@ -419,6 +419,7 @@ playlist,37i9dQZF1DXcBWIGoYBM5M,Today's Top Hits,Popular playlist</code></pre>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editWhitelistForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="edit_wl_name" class="form-label">Name <span class="text-danger">*</span></label>
@@ -451,6 +452,7 @@ playlist,37i9dQZF1DXcBWIGoYBM5M,Today's Top Hits,Popular playlist</code></pre>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editBlacklistForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="edit_bl_name" class="form-label">Name <span class="text-danger">*</span></label>
@@ -485,7 +487,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function editWhitelistItem(itemId, name, reason) {
     document.getElementById('edit_wl_name').value = name;
     document.getElementById('edit_wl_reason').value = reason;
-    document.getElementById('editWhitelistForm').action = '{{ url_for("main.edit_whitelist_item", item_id=0) }}'.replace('0', itemId);
+    document.getElementById('editWhitelistForm').action = '{{ url_for("whitelist.edit_whitelist_item", item_id=0) }}'.replace('0', itemId);
     
     const modal = new bootstrap.Modal(document.getElementById('editWhitelistModal'));
     modal.show();
@@ -495,7 +497,7 @@ function editWhitelistItem(itemId, name, reason) {
 function editBlacklistItem(itemId, name, reason) {
     document.getElementById('edit_bl_name').value = name;
     document.getElementById('edit_bl_reason').value = reason;
-    document.getElementById('editBlacklistForm').action = '{{ url_for("main.edit_blacklist_item", item_id=0) }}'.replace('0', itemId);
+    document.getElementById('editBlacklistForm').action = '{{ url_for("whitelist.edit_blacklist_item", item_id=0) }}'.replace('0', itemId);
     
     const modal = new bootstrap.Modal(document.getElementById('editBlacklistModal'));
     modal.show();

@@ -145,9 +145,9 @@ class TestLyricsFetcherRateDetection:
         
         assert 'tokens_available' in stats
         assert 'token_bucket_capacity' in stats
-        assert 'cache_valid_entries' in stats
-        assert 'cache_expired_entries' in stats
-        assert stats['tokens_available'] == 7  # 10 - 3
+        assert 'cache_size' in stats  # New database-based cache uses cache_size instead of cache_valid_entries
+        assert 'cache_sources' in stats  # New implementation includes cache_sources instead of expired entries
+        assert stats['tokens_available'] == 7  # 10 - 3 consumed
         assert stats['token_bucket_capacity'] == 10
     
     def test_token_bucket_throttling_integration(self):

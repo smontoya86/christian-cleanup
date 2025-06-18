@@ -3,7 +3,7 @@ Configuration management for LyricsFetcher rate limiting and caching
 """
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
 
 @dataclass
@@ -32,10 +32,10 @@ class LyricsFetcherConfig:
     cache_cleanup_interval: int = 60 * 60  # 1 hour between cleanup runs
     
     # Genius API configuration
-    genius_timeout: int = 5  # API timeout in seconds
+    genius_timeout: int = 15  # API timeout in seconds (increased from 5)
     genius_sleep_time: float = 0.1  # sleep between requests
     genius_retries: int = 2  # Genius client internal retries
-    genius_excluded_terms: list = None  # excluded terms for search
+    genius_excluded_terms: Optional[List[str]] = None  # excluded terms for search
     
     # Logging configuration
     log_rate_limit_events: bool = True

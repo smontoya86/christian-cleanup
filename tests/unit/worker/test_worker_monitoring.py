@@ -15,9 +15,12 @@ from dotenv import load_dotenv
 from redis import Redis
 from rq import Queue
 
-# Load environment variables
-env_path = os.path.join(os.path.dirname(__file__), '.env')
+# Load environment variables for testing
+env_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env')
 load_dotenv(env_path)
+
+# Get the Python executable path from current virtual environment
+PYTHON_EXECUTABLE = sys.executable
 
 
 def test_worker_startup_and_info():
@@ -26,7 +29,7 @@ def test_worker_startup_and_info():
     
     # Test fork mode info
     result = subprocess.run([
-        'python', 'worker.py', '--info'
+        PYTHON_EXECUTABLE, 'worker.py', '--info'
     ], capture_output=True, text=True, timeout=10)
     
     if result.returncode == 0:
@@ -39,7 +42,7 @@ def test_worker_startup_and_info():
     
     # Test threading mode info
     result = subprocess.run([
-        'python', 'worker.py', '--threading', '--info'
+        PYTHON_EXECUTABLE, 'worker.py', '--threading', '--info'
     ], capture_output=True, text=True, timeout=10)
     
     if result.returncode == 0:
@@ -57,7 +60,7 @@ def test_health_check_utility():
     
     # Test queue status
     result = subprocess.run([
-        'python', 'worker_health_check.py', '--queue-status'
+        PYTHON_EXECUTABLE, 'worker_health_check.py', '--queue-status'
     ], capture_output=True, text=True, timeout=10)
     
     if result.returncode == 0:
@@ -70,7 +73,7 @@ def test_health_check_utility():
     
     # Test worker health check (no workers running)
     result = subprocess.run([
-        'python', 'worker_health_check.py'
+        PYTHON_EXECUTABLE, 'worker_health_check.py'
     ], capture_output=True, text=True, timeout=10)
     
     if result.returncode == 0:
@@ -88,7 +91,7 @@ def test_job_processing():
     
     # Start a worker in test mode
     worker_process = subprocess.Popen([
-        'python', 'worker.py', '--test-mode'
+        PYTHON_EXECUTABLE, 'worker.py', '--test-mode'
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     
     # Give worker time to start
@@ -124,7 +127,7 @@ def test_signal_handling():
     
     # Start a worker
     worker_process = subprocess.Popen([
-        'python', 'worker.py', '--no-monitoring'
+        PYTHON_EXECUTABLE, 'worker.py', '--no-monitoring'
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     
     # Give worker time to start
@@ -200,7 +203,7 @@ def test_monitoring_features():
     
     # Start a worker with monitoring
     worker_process = subprocess.Popen([
-        'python', 'worker.py', '--health-check-interval', '2'
+        PYTHON_EXECUTABLE, 'worker.py', '--health-check-interval', '2'
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     
     # Give worker time to start and run a health check
@@ -209,7 +212,7 @@ def test_monitoring_features():
     # Check if worker is registered
     try:
         result = subprocess.run([
-            'python', 'worker_health_check.py'
+            PYTHON_EXECUTABLE, 'worker_health_check.py'
         ], capture_output=True, text=True, timeout=10)
         
         if result.returncode == 0:
@@ -217,8 +220,8 @@ def test_monitoring_features():
                 print("✅ Worker monitoring: PASSED")
                 print("   ✓ Health check utility can detect workers")
             else:
-                print("❌ Worker monitoring: PARTIAL")
-                print("   ⚠️  Worker detection may have timing issues")
+                print("❌ Worker monitoring: FAILED")
+                print(f"   Output: {result.stdout}")
         else:
             print("❌ Worker monitoring: FAILED")
             print(f"   Error: {result.stderr}")
@@ -226,12 +229,14 @@ def test_monitoring_features():
     except Exception as e:
         print(f"❌ Worker monitoring: FAILED - {e}")
     finally:
-        # Clean up
-        worker_process.terminate()
+        # Clean up worker process
         try:
+            worker_process.terminate()
             worker_process.wait(timeout=5)
         except subprocess.TimeoutExpired:
             worker_process.kill()
+        except Exception:
+            pass
 
 
 def main():

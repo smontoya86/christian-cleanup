@@ -7,6 +7,8 @@ import pytest
 import json
 from unittest.mock import patch, Mock
 from flask import url_for
+from flask_login import login_user
+from datetime import datetime, timedelta, timezone
 
 from app.models.models import User, Song, Playlist, AnalysisResult
 from app.services.unified_analysis_service import UnifiedAnalysisService
@@ -17,24 +19,26 @@ class TestAnalysisAPI:
     """Integration tests for analysis API endpoints."""
 
     @pytest.fixture
-    def authenticated_user(self, client, db_session):
+    def authenticated_user(self, app, client, db_session):
         """Create and authenticate a test user."""
-        from datetime import datetime, timedelta
-        
         user = User(
             spotify_id='test_user_api',
             display_name='API Test User',
             email='api_test@example.com',
             access_token='test_access_token_api',
             refresh_token='test_refresh_token_api',
-            token_expiry=datetime.utcnow() + timedelta(hours=1)
+            token_expiry=datetime.now(timezone.utc) + timedelta(hours=1)
         )
         db_session.add(user)
         db_session.commit()
         
-        # Simulate login by setting the user in session
+        # Properly authenticate the user using Flask-Login
+        with app.test_request_context():
+            login_user(user)
+            
+        # Also set session manually for the test client
         with client.session_transaction() as sess:
-            sess['user_id'] = user.id
+            sess['_user_id'] = str(user.id)
             sess['_fresh'] = True
         
         return user
@@ -61,8 +65,7 @@ class TestAnalysisAPI:
             spotify_id='test_playlist_api',
             name='Test Christian Playlist',
             description='Test playlist for API testing',
-            user_id=authenticated_user.id,
-            total_tracks=1
+            owner_id=authenticated_user.id
         )
         db_session.add(playlist)
         db_session.commit()
@@ -72,6 +75,26 @@ class TestAnalysisAPI:
     @pytest.mark.integration
     def test_analyze_song_endpoint_success(self, client, authenticated_user, test_song):
         """Test successful song analysis via API."""
+        # Create a playlist owned by the authenticated user
+        playlist = Playlist(
+            spotify_id='test_playlist_for_analysis',
+            name='Test Playlist for Analysis',
+            description='Test playlist for API testing',
+            owner_id=authenticated_user.id
+        )
+        db.session.add(playlist)
+        db.session.commit()
+        
+        # Associate the test song with the playlist so it passes authorization
+        from app.models.models import PlaylistSong
+        playlist_song = PlaylistSong(
+            playlist_id=playlist.id,
+            song_id=test_song.id,
+            track_position=0
+        )
+        db.session.add(playlist_song)
+        db.session.commit()
+        
         # Mock the analysis service
         with patch('app.services.unified_analysis_service.UnifiedAnalysisService.enqueue_analysis_job') as mock_enqueue:
             # Mock successful job enqueue
@@ -86,8 +109,8 @@ class TestAnalysisAPI:
             
             assert data['status'] == 'success'
             assert 'job_id' in data
-            # Verify the service was called correctly
-            mock_enqueue.assert_called_once_with(test_song.id, authenticated_user.id)
+            # Verify the service was called correctly with 'low' priority (not 'high')
+            mock_enqueue.assert_called_once_with(test_song.id, user_id=authenticated_user.id, priority='low')
 
     @pytest.mark.api
     @pytest.mark.integration
@@ -155,11 +178,30 @@ class TestAnalysisAPI:
     @pytest.mark.integration
     def test_get_analysis_result_endpoint_success(self, client, authenticated_user, test_song):
         """Test retrieving existing analysis result via API."""
+        # Create a playlist owned by the authenticated user
+        playlist = Playlist(
+            spotify_id='test_playlist_for_song',
+            name='Test Playlist for Song Analysis',
+            description='Test playlist for API testing',
+            owner_id=authenticated_user.id
+        )
+        db.session.add(playlist)
+        db.session.commit()
+        
+        # Associate the test song with the playlist so it passes authorization
+        from app.models.models import PlaylistSong
+        playlist_song = PlaylistSong(
+            playlist_id=playlist.id,
+            song_id=test_song.id,
+            track_position=0
+        )
+        db.session.add(playlist_song)
+        db.session.commit()
+        
         # Create an existing analysis result
         existing_result = AnalysisResult(
             song_id=test_song.id,
             score=75,
-            christian_score=75,
             concern_level='Medium',
             themes=['faith'],
             explanation='Test analysis result',
@@ -173,27 +215,67 @@ class TestAnalysisAPI:
         assert response.status_code == 200
         data = response.get_json()
         
-        assert data['status'] == 'success'
+        assert data['success'] == True
         assert 'analysis' in data
 
     @pytest.mark.api
     @pytest.mark.integration
     def test_get_analysis_result_endpoint_not_found(self, client, authenticated_user, test_song):
         """Test retrieving non-existent analysis result."""
+        # Create a playlist owned by the authenticated user
+        playlist = Playlist(
+            spotify_id='test_playlist_for_not_found',
+            name='Test Playlist for Not Found',
+            description='Test playlist for API testing',
+            owner_id=authenticated_user.id
+        )
+        db.session.add(playlist)
+        db.session.commit()
+        
+        # Associate the test song with the playlist so it passes authorization
+        from app.models.models import PlaylistSong
+        playlist_song = PlaylistSong(
+            playlist_id=playlist.id,
+            song_id=test_song.id,
+            track_position=0
+        )
+        db.session.add(playlist_song)
+        db.session.commit()
+        
         response = client.get(f'/api/songs/{test_song.id}/analysis-status')
         
         # This should return 200 with a status indicating no analysis exists
         assert response.status_code == 200
         data = response.get_json()
         
-        assert data['status'] == 'success'
+        assert data['success'] == True
         # Check that no analysis exists
-        assert data.get('analysis') is None or data.get('analysis', {}).get('status') == 'not_analyzed'
+        assert data.get('has_analysis') == False
 
     @pytest.mark.api
     @pytest.mark.integration
     def test_analyze_endpoint_service_error(self, client, authenticated_user, test_song):
         """Test analysis endpoint when service throws an error."""
+        # Create a playlist owned by the authenticated user
+        playlist = Playlist(
+            spotify_id='test_playlist_for_error',
+            name='Test Playlist for Service Error',
+            description='Test playlist for API testing',
+            owner_id=authenticated_user.id
+        )
+        db.session.add(playlist)
+        db.session.commit()
+        
+        # Associate the test song with the playlist so it passes authorization
+        from app.models.models import PlaylistSong
+        playlist_song = PlaylistSong(
+            playlist_id=playlist.id,
+            song_id=test_song.id,
+            track_position=0
+        )
+        db.session.add(playlist_song)
+        db.session.commit()
+        
         # Mock service error
         with patch('app.services.unified_analysis_service.UnifiedAnalysisService.enqueue_analysis_job') as mock_enqueue:
             mock_enqueue.side_effect = Exception("Analysis service error")

@@ -60,26 +60,25 @@ class TestDatabasePerformance:
                     spotify_id=f'playlist_{user.id}_{j}_{unique_suffix}',
                     name=f'Test Playlist {j} for User {user.id}',
                     owner_id=user.id,
-                    image_url=f'http://example.com/image_{user.id}_{j}.jpg',
-                    total_tracks=50
+                    image_url=f'http://example.com/image_{user.id}_{j}.jpg'
                 )
                 db.session.add(playlist)
                 playlists.append(playlist)
         
         db.session.flush()  # Get playlist IDs
         
-        # Create songs for each playlist
+        # Create test songs (100 songs)
         songs = []
-        for playlist in playlists:
-            for k in range(50):  # 50 songs per playlist
-                unique_suffix = str(uuid.uuid4())[:8]
+        for i in range(100):
                 song = Song(
-                    spotify_id=f'song_{playlist.id}_{k}_{unique_suffix}',
-                    title=f'Test Song {k}',
-                    artist=f'Test Artist {k % 10}',  # Reuse artists for realistic data
-                    album=f'Test Album {k % 20}',    # Reuse albums for realistic data
-                    duration_ms=180000 + (k * 1000),  # Varying durations
-                    preview_url=f'http://example.com/preview_{playlist.id}_{k}.mp3'
+                spotify_id=f'test_song_{i+1}',
+                title=f'Test Song {i}',
+                artist=f'Test Artist {i}',
+                album=f'Test Album {i}',
+                duration_ms=180000 + (i * 1000),
+                album_art_url=f'http://example.com/album_{i+1}.jpg',
+                explicit=i % 10 == 0,  # Every 10th song is explicit
+                lyrics=f'Lyrics for song {i}'
                 )
                 db.session.add(song)
                 songs.append(song)
@@ -88,7 +87,7 @@ class TestDatabasePerformance:
         
         # Create playlist-song associations
         for playlist in playlists:
-            playlist_songs = [s for s in songs if s.spotify_id.startswith(f'song_{playlist.id}_')]
+            playlist_songs = [s for s in songs if s.spotify_id.startswith(f'test_song_')]
             for i, song in enumerate(playlist_songs):
                 playlist_song = PlaylistSong(
                     playlist_id=playlist.id,
@@ -107,10 +106,15 @@ class TestDatabasePerformance:
                     concern_level=['low', 'medium', 'high'][i % 3],
                     explanation=f'Analysis explanation for song {song.title}',
                     status='completed',
-                    analysis_data={
-                        'lyrics': f'Sample lyrics for {song.title}',
-                        'keywords': [f'keyword{j}' for j in range(i % 5 + 1)],
-                        'sentiment_score': 0.5 + (i % 5) * 0.1
+                    themes={
+                        'worship': i % 2 == 0,
+                        'praise': i % 3 == 0,
+                        'faith': True
+                    },
+                    concerns=['keyword{j}' for j in range(i % 3)],
+                    positive_themes_identified={
+                        'biblical_references': i % 4 == 0,
+                        'christian_values': True
                     }
                 )
                 db.session.add(analysis)
@@ -141,8 +145,7 @@ class TestDatabasePerformance:
                 for playlist in playlists:
                     playlist_data = {
                         'id': playlist.id,
-                        'name': playlist.name,
-                        'total_tracks': playlist.total_tracks
+                        'name': playlist.name
                     }
                     result.append(playlist_data)
                 
@@ -187,7 +190,7 @@ class TestDatabasePerformance:
                 return result
             
             result = query_playlist_songs_with_analysis()
-            assert len(result) == 50  # 50 songs per playlist
+            assert len(result) == 100  # All 100 songs are added to the first playlist
     
     def test_analysis_aggregation_query_performance(self):
         """Test performance of aggregating analysis results."""
@@ -293,10 +296,9 @@ class TestDatabasePerformance:
                 # Create a new playlist for bulk insert test
                 unique_suffix = str(uuid.uuid4())[:8]
                 test_playlist = Playlist(
-                    spotify_id=f'bulk_test_playlist_{unique_suffix}',
+                    spotify_id=f'bulk_playlist_{unique_suffix}',
                     name=f'Bulk Test Playlist {unique_suffix}',
-                    owner_id=user.id,
-                    total_tracks=100
+                    owner_id=user.id
                 )
                 db.session.add(test_playlist)
                 db.session.flush()

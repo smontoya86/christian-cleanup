@@ -5,6 +5,7 @@ These tests verify that core components can be imported and basic operations wor
 import pytest
 from unittest.mock import patch, MagicMock
 import json
+from datetime import datetime, timedelta, timezone
 
 
 class TestBasicFunctionality:
@@ -39,9 +40,8 @@ class TestBasicFunctionality:
     @pytest.mark.smoke
     def test_user_can_be_created(self, app):
         """Test that a user model can be created."""
-        from app.models.models import User
-        from app.extensions import db
-        from datetime import datetime, timedelta
+        from app.models import User
+        from app import db
         
         with app.app_context():
             user = User(
@@ -50,7 +50,7 @@ class TestBasicFunctionality:
                 display_name='Smoke Test User',
                 access_token='test_token',
                 refresh_token='test_refresh',
-                token_expiry=datetime.utcnow() + timedelta(hours=1)
+                token_expiry=datetime.now(timezone.utc) + timedelta(hours=1)
             )
             db.session.add(user)
             db.session.commit()
@@ -63,8 +63,8 @@ class TestBasicFunctionality:
     @pytest.mark.smoke
     def test_song_can_be_created(self, app):
         """Test that a song model can be created."""
-        from app.models.models import Song
-        from app.extensions import db
+        from app.models import Song
+        from app import db
         
         with app.app_context():
             song = Song(
@@ -137,11 +137,10 @@ class TestBasicFunctionality:
         assert SpotifyService is not None
 
     @pytest.mark.smoke
-    def test_cache_management_can_be_imported(self):
-        """Test that cache management utilities can be imported."""
-        from app.utils.cache_management import get_cache_stats, clear_old_cache_entries
-        assert get_cache_stats is not None
-        assert clear_old_cache_entries is not None
+    def test_database_utilities_can_be_imported(self):
+        """Test that database utilities can be imported."""
+        from app.utils.database import get_by_id
+        assert get_by_id is not None
 
     @pytest.mark.smoke
     def test_lyrics_fetcher_can_be_imported(self):
@@ -152,7 +151,7 @@ class TestBasicFunctionality:
     @pytest.mark.smoke
     def test_models_have_required_fields(self):
         """Test that database models have required fields."""
-        from app.models.models import User, Song, Playlist, AnalysisResult
+        from app.models import User, Song, Playlist, AnalysisResult
 
         # Test User model
         user_columns = [column.name for column in User.__table__.columns]
@@ -185,18 +184,18 @@ class TestBasicFunctionality:
         """Test that Flask extensions are properly initialized."""
         with app.app_context():
             # Test that database extension is available
-            from app.extensions import db
+            from app import db
             assert db is not None
 
             # Test that RQ extension is available 
-            from app.extensions import rq
+            from app import rq
             assert rq is not None
 
     @pytest.mark.smoke
     def test_environment_variables_loaded(self, app):
         """Test that environment variables are loaded."""
         # Test that config values exist (even if mocked for testing)
-        assert app.config.get('SPOTIPY_CLIENT_ID') is not None
+        assert app.config.get('SPOTIFY_CLIENT_ID') is not None
         assert app.config.get('SECRET_KEY') is not None
 
     @pytest.mark.smoke
@@ -214,8 +213,8 @@ class TestBasicFunctionality:
     @pytest.mark.smoke
     def test_database_models_can_be_queried(self, app):
         """Test that database models can be queried."""
-        from app.models.models import User, Song, Playlist
-        from app.extensions import db
+        from app.models import User, Song, Playlist
+        from app import db
         
         with app.app_context():
             # These should not throw exceptions

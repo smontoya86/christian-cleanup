@@ -600,7 +600,7 @@ class EnhancedBiblicalDetector:
     
     def _generate_supporting_scripture(self, themes: List[Dict], scripture_refs: List[Dict]) -> Dict[str, Any]:
         """Generate supporting scripture based on detected themes"""
-        supporting_scripture = {}
+        supporting_scripture: Dict[str, List[Dict[str, Any]]] = {}
         
         # Add scripture from detected themes
         for theme in themes:

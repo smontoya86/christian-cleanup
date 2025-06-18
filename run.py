@@ -4,13 +4,14 @@ import logging
 
 # Create the Flask app instance using the factory
 # The FLASK_ENV environment variable will determine which config is loaded (e.g., 'development', 'production')
-# If FLASK_ENV is not set, it defaults to 'default' (which is DevelopmentConfig)
-app = create_app(os.getenv('FLASK_ENV'))
+# If FLASK_ENV is not set, it defaults to 'development'
+app = create_app(os.getenv('FLASK_ENV', 'development'))
 
 if __name__ == '__main__':
-    debug_mode = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
-    port = int(os.environ.get('PORT', 5001))  # Changed back to 5001
-    host = os.environ.get('HOST', '0.0.0.0')
+    # Simple configuration for our simplified structure
+    debug_mode = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
+    port = int(os.getenv('PORT', 5001))
+    host = os.getenv('HOST', '0.0.0.0')
     
     # Set up detailed logging for debugging
     if debug_mode:

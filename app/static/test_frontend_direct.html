@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Frontend Test</title>
+</head>
+<body>
+    <h1>Direct Frontend Reanalyze Test</h1>
+    <button id="testBtn" onclick="testReanalyze()">Test Reanalyze Song 6403</button>
+    <div id="result"></div>
+    
+    <script>
+    function testReanalyze() {
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = 'Testing...';
+        
+        console.log('🚀 Starting direct test of reanalyze endpoint');
+        
+        fetch('/api/songs/6403/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('📥 Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                redirected: response.redirected,
+                url: response.url
+            });
+            
+            if (response.redirected) {
+                resultDiv.innerHTML = `❌ REDIRECTED to: ${response.url}`;
+                return;
+            }
+            
+            return response.json();
+        })
+        .then(data => {
+            console.log('✅ Response data:', data);
+            resultDiv.innerHTML = `✅ SUCCESS: ${JSON.stringify(data, null, 2)}`;
+        })
+        .catch(error => {
+            console.error('💥 Error:', error);
+            resultDiv.innerHTML = `💥 ERROR: ${error.message}`;
+        });
+    }
+    </script>
+</body>
+</html> 

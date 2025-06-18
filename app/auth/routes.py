@@ -1,211 +1,39 @@
-from flask import Blueprint, render_template, redirect, url_for, request, session, current_app, flash
-from . import auth 
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-from datetime import datetime
-import os
+from flask import flash, redirect, url_for, render_template
+from flask_login import login_user
+from flask_app import auth_bp
+from flask_app.models.user import User
+from flask_app.utils import current_app
 
-from app.extensions import db
-from app.models.models import User, Playlist
-from flask_login import login_user, logout_user, login_required, current_user
-from ..utils.database import get_by_filter, count_by_filter  # Add SQLAlchemy 2.0 utilities
-
-def get_spotify_oauth():
-    client_id = current_app.config.get('SPOTIPY_CLIENT_ID')
-    client_secret = current_app.config.get('SPOTIPY_CLIENT_SECRET')
-    redirect_uri = current_app.config.get('SPOTIPY_REDIRECT_URI')
-    scopes = current_app.config.get('SPOTIFY_SCOPES')
-
-    # Debugging: Log the values
-    current_app.logger.debug(f"SPOTIPY_CLIENT_ID: {client_id}")
-    current_app.logger.debug(f"SPOTIPY_CLIENT_SECRET: {'*' * 5 + client_secret[-5:] if client_secret else None}") # Mask most of secret
-    current_app.logger.debug(f"SPOTIPY_REDIRECT_URI: {redirect_uri}")
-    current_app.logger.debug(f"SPOTIFY_SCOPES: {scopes}")
-
-    if not all([client_id, client_secret, redirect_uri, scopes]):
-        current_app.logger.error("Spotify API credentials, redirect URI, or scopes not configured.")
-        return None
+@auth_bp.route('/mock-login/<user_id>')
+def mock_login(user_id):
+    """Mock login for testing purposes - only works in development"""
+    if not current_app.debug:
+        flash('Mock login is only available in development mode', 'error')
+        return redirect(url_for('core.dashboard'))
     
-    # Check for placeholder values
-    if client_secret in ['c6c66', 'your-client-secret-here', 'placeholder']:
-        current_app.logger.error(f"SPOTIPY_CLIENT_SECRET appears to be a placeholder value: {client_secret}")
-        current_app.logger.error("Please update your .env file with a valid Spotify Client Secret from https://developer.spotify.com/dashboard")
-        return None
+    # Find the test user
+    user = User.query.filter_by(spotify_id=user_id).first()
+    if not user:
+        flash(f'Test user {user_id} not found. Please run the mock data script first.', 'error')
+        return redirect(url_for('core.index'))
     
-    if len(client_secret) < 20:
-        current_app.logger.error(f"SPOTIPY_CLIENT_SECRET appears to be too short: {len(client_secret)} characters")
-        current_app.logger.error("Spotify client secrets are typically 32+ characters long")
-        return None
+    # Log in the user
+    login_user(user)
+    flash(f'Logged in as test user: {user.display_name}', 'success')
+    return redirect(url_for('core.dashboard'))
 
-    return SpotifyOAuth(
-        client_id=client_id,
-        client_secret=client_secret,
-        redirect_uri=redirect_uri,
-        scope=scopes,
-        cache_path=None 
-    )
-
-@auth.route('/login')
-def login():
-    sp_oauth = get_spotify_oauth()
-    if not sp_oauth:
-        flash('Spotify authentication is not configured correctly. Please ensure SPOTIPY_CLIENT_SECRET is set with a valid value from your Spotify Developer Dashboard.', 'danger')
-        return redirect(url_for('main.index')) 
-
-    if current_user.is_authenticated:
-        logout_user() 
-        session.clear() 
-        current_app.logger.debug("User logged out and session cleared before new login attempt.")
-
-    # Generate and store state for CSRF protection
-    state = os.urandom(16).hex()
-    session['spotify_auth_state'] = state
-
-    # Enhanced Debugging for OAuth object
-    current_app.logger.debug(f"[AUTH LOGIN] SpotifyOAuth object state before get_authorize_url:")
-    current_app.logger.debug(f"[AUTH LOGIN]   Client ID: {getattr(sp_oauth, 'client_id', 'N/A')}")
-    current_app.logger.debug(f"[AUTH LOGIN]   Client Secret: {'SET' if getattr(sp_oauth, 'client_secret', None) else 'NOT SET'}") # Don't log secret itself
-    current_app.logger.debug(f"[AUTH LOGIN]   Redirect URI: {getattr(sp_oauth, 'redirect_uri', 'N/A')}")
-    current_app.logger.debug(f"[AUTH LOGIN]   Scope: {getattr(sp_oauth, 'scope', 'N/A')}")
-    current_app.logger.debug(f"[AUTH LOGIN]   State being sent: {state}")
-
-    auth_url = sp_oauth.get_authorize_url(state=state)
-    current_app.logger.info(f"Redirecting to Spotify for authorization (state: {state}, url: {auth_url})")
-    return redirect(auth_url)
-
-@auth.route('/callback')
-def callback():
-    sp_oauth = get_spotify_oauth()
-    if not sp_oauth:
-        flash('Spotify authentication is not configured correctly.', 'danger')
-        return redirect(url_for('main.index'))
-
-    error = request.args.get('error')
-    if error:
-        current_app.logger.error(f"Spotify authorization error: {error}")
-        flash(f"Spotify authorization failed: {error}. Please try again.", 'danger')
-        return redirect(url_for('auth.login'))
-
-    # Verify state parameter for CSRF protection
-    received_state = request.args.get('state')
-    expected_state = session.pop('spotify_auth_state', None)
-
-    if not received_state or received_state != expected_state:
-        current_app.logger.error(f"State mismatch. Received: {received_state}, Expected: {expected_state}")
-        flash('Authentication failed due to state mismatch. Please try logging in again.', 'danger')
-        return redirect(url_for('auth.login'))
-
-    code = request.args.get('code')
-    if not code:
-        current_app.logger.error("No authorization code received from Spotify.")
-        flash('Authorization code not received from Spotify. Please try again.', 'danger')
-        return redirect(url_for('auth.login'))
-
-    try:
-        token_info = sp_oauth.get_access_token(code, check_cache=False)
-    except Exception as e:
-        current_app.logger.error(f"Error getting access token from Spotify: {e}")
-        flash('Failed to get access token from Spotify. Please try again.', 'danger')
-        return redirect(url_for('auth.login'))
-
-    if not token_info or 'access_token' not in token_info:
-        current_app.logger.error("Failed to retrieve valid token_info from Spotify.")
-        flash('Authentication failed: Could not retrieve valid token information.', 'danger')
-        return redirect(url_for('auth.login'))
-
-    current_app.logger.debug(f"Token info received from Spotify: { {k: v for k, v in token_info.items() if k != 'access_token' and k != 'refresh_token'} }")
-
-    try:
-        sp = spotipy.Spotify(auth=token_info['access_token'])
-        spotify_user_profile = sp.current_user()
-    except Exception as e:
-        current_app.logger.error(f"Error fetching user profile from Spotify: {e}")
-        flash('Failed to fetch user profile from Spotify.', 'danger')
-        return redirect(url_for('auth.login'))
-
-    spotify_id = spotify_user_profile['id']
-    email = spotify_user_profile.get('email') 
-    display_name = spotify_user_profile.get('display_name') or spotify_id
-
-    user = get_by_filter(User, spotify_id=spotify_id)
-    is_new_user = user is None
-
-    token_expiry_timestamp = token_info['expires_at']
-    token_expiry_datetime = datetime.fromtimestamp(token_expiry_timestamp)
-
-    if user:
-        user.access_token = token_info['access_token']
-        user.refresh_token = token_info.get('refresh_token', user.refresh_token) 
-        user.token_expiry = token_expiry_datetime
-        user.email = email 
-        user.display_name = display_name
-        user.updated_at = datetime.utcnow()
-        current_app.logger.info(f"Existing user {user.id} ({user.spotify_id}) tokens and info updated.")
-    else:
-        user = User(
-            spotify_id=spotify_id,
-            email=email,
-            display_name=display_name,
-            access_token=token_info['access_token'],
-            refresh_token=token_info.get('refresh_token'),
-            token_expiry=token_expiry_datetime
-        )
-        db.session.add(user)
-        current_app.logger.info(f"New user {user.spotify_id} created.")
+@auth_bp.route('/mock-users')
+def mock_users():
+    """Show available mock users for testing"""
+    if not current_app.debug:
+        flash('Mock login is only available in development mode', 'error')
+        return redirect(url_for('core.dashboard'))
     
-    try:
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Database error during user upsert: {e}")
-        flash('An error occurred while saving user data. Please try again.', 'danger')
-        return redirect(url_for('auth.login'))
-
-    login_user(user, remember=True)
-    current_app.logger.info(f"User {user.id} ({user.spotify_id}) logged in successfully.")
+    # Get all test users
+    test_users = User.query.filter(User.spotify_id.like('test_user_%')).all()
     
-    # Check if user needs auto-sync (new user or user with no playlists)
-    should_auto_sync = False
-    if is_new_user:
-        should_auto_sync = True
-        current_app.logger.info(f"New user {user.id} - will auto-start playlist sync")
-    else:
-        # Check if existing user has any playlists
-        playlist_count = count_by_filter(Playlist, owner_id=user.id)
-        if playlist_count == 0:
-            should_auto_sync = True
-            current_app.logger.info(f"Existing user {user.id} has no playlists - will auto-start playlist sync")
+    if not test_users:
+        flash('No test users found. Please run the mock data script first.', 'info')
+        return redirect(url_for('core.index'))
     
-    if should_auto_sync:
-        try:
-            from app.services.playlist_sync_service import enqueue_playlist_sync
-            job = enqueue_playlist_sync(user.id)
-            if job:
-                flash('Welcome! We\'re syncing your playlists automatically. This may take a few minutes.', 'success')
-                session['auto_sync_started'] = True
-                current_app.logger.info(f"Auto-sync job {job.id} started for user {user.id}")
-            else:
-                flash('Welcome! Please click "Sync Playlists" to get started.', 'info')
-        except Exception as e:
-            current_app.logger.exception(f"Error starting auto-sync for user {user.id}: {e}")
-            flash('Welcome! Please click "Sync Playlists" to get started.', 'info')
-    else:
-        flash('Successfully logged in with Spotify!', 'success')
-    
-    next_url = session.pop('next_url', None) 
-    return redirect(next_url or url_for('main.dashboard'))
-
-@auth.route('/logout')
-@login_required
-def logout():
-    user_spotify_id = current_user.spotify_id if current_user.is_authenticated else "Unknown"
-    
-    logout_user()
-    current_app.logger.info(f"User {user_spotify_id} logged out successfully.")
-    flash('You have been logged out.', 'info')
-    return redirect(url_for('main.index'))
-
-@auth.route('/register')
-def register():
-    flash('To register, please log in with Spotify.', 'info')
-    return redirect(url_for('auth.login'))
+    return render_template('auth/mock_users.html', users=test_users) 

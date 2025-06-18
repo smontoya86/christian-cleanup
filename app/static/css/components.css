@@ -1,0 +1,337 @@
+/* Components CSS - Reusable UI components */
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 1.5rem;
+    transition: var(--transition);
+    background-color: var(--card-bg);
+}
+
+.card:hover {
+    box-shadow: var(--box-shadow-hover);
+}
+
+.card-header {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid rgb(0 0 0 / 5%);
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+}
+
+.card-purple-bg {
+    background-color: var(--light-purple);
+    border: none;
+}
+
+/* Enhanced card hover effects */
+#analysisResults .card:hover {
+    transform: translateY(-3px);
+}
+
+/* Buttons */
+.btn {
+    font-weight: 500;
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn i {
+    margin-right: 0.5rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-connect-spotify {
+    background-color: var(--primary-purple);
+    border-color: var(--primary-purple);
+    color: var(--light-text);
+    font-weight: bold;
+    padding: 0.5rem 1.5rem;
+    border-radius: var(--border-radius-sm);
+}
+
+.btn-connect-spotify:hover {
+    background-color: #5a359a;
+    border-color: #5a359a;
+    color: var(--light-text);
+}
+
+.btn-outline-secondary {
+    color: #495057;
+    border-color: #dee2e6;
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--light-bg);
+    border-color: #dee2e6;
+    color: #495057;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    border-radius: 50rem;
+}
+
+.badge.bg-success {
+    background-color: var(--success-color) !important;
+}
+
+.badge.bg-warning {
+    background-color: var(--warning-color) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--danger-color) !important;
+}
+
+/* Remove hourglass from status badges */
+.badge::after {
+    display: none !important;
+}
+
+/* Concern Level Badges */
+.concern-badge {
+    font-size: 0.9rem;
+    padding: 0.35em 0.65em;
+    font-weight: 600;
+    border-radius: var(--border-radius-sm);
+    display: inline-flex;
+    align-items: center;
+    transition: var(--transition-fast);
+}
+
+.concern-badge i {
+    margin-right: 0.35rem;
+    font-size: 0.9em;
+}
+
+/* Concern level specific styles */
+.bg-extreme {
+    background-color: var(--concern-extreme) !important;
+    color: white !important;
+}
+
+.bg-high {
+    background-color: var(--concern-high) !important;
+    color: #212529 !important;
+}
+
+.bg-medium {
+    background-color: var(--concern-medium) !important;
+    color: #000 !important;
+}
+
+.bg-low {
+    background-color: var(--concern-low) !important;
+    color: white !important;
+}
+
+/* Hover effects */
+.concern-badge:hover {
+    filter: brightness(0.9);
+    transform: translateY(-1px);
+}
+
+/* Text color helpers for concern levels */
+.text-bg-extreme { color: white !important; }
+.text-bg-high { color: #212529 !important; }
+.text-bg-medium { color: #000 !important; }
+.text-bg-low { color: white !important; }
+
+/* Make sure badges in tables have consistent height */
+td .concern-badge {
+    min-width: 70px;
+    justify-content: center;
+}
+
+/* Progress Bar */
+.progress {
+    height: 6px;
+    border-radius: 3px;
+    background-color: #e9ecef;
+    margin: 0.5rem 0;
+}
+
+.progress-bar {
+    transition: width 0.3s ease-in-out;
+    border-radius: 3px;
+}
+
+/* Tables */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: var(--muted-text);
+    border-top: none;
+    padding: 1rem;
+}
+
+.table td {
+    vertical-align: middle;
+    padding: 1rem;
+    border-color: #f1f3f7;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--hover-bg);
+}
+
+/* Status Cells */
+.status-cell {
+    min-width: 150px;
+    font-weight: 500;
+    vertical-align: middle;
+    padding: 0.75rem 1rem;
+}
+
+/* Alerts */
+.alert {
+    border-radius: var(--border-radius-sm);
+}
+
+/* Album Art */
+.playlist-cover-img-detail {
+    max-height: 300px;
+    width: auto;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow-card);
+    transition: var(--transition);
+}
+
+.playlist-cover-img-detail:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgb(0 0 0 / 15%);
+}
+
+/* Large Display Elements */
+#overallScore {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+/* Purity Flags */
+#purityFlags .badge {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive Design for Components */
+@media (width <= 768px) {
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .status-cell {
+        min-width: 100%;
+        text-align: left;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .table-responsive {
+        margin-bottom: 1rem;
+    }
+    
+    .table th, 
+    .table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    #analysisResults .card {
+        margin-bottom: 1rem;
+    }
+    
+    #overallScore {
+        font-size: 2rem;
+    }
+}
+
+/* Dark Mode for Components */
+@media (prefers-color-scheme: dark) {
+    .card {
+        background-color: var(--card-bg);
+        border-color: var(--border-color);
+    }
+    
+    .card-header {
+        background-color: var(--card-bg);
+        border-bottom-color: var(--border-color);
+    }
+    
+    .table {
+        color: var(--dark-text);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: var(--hover-bg);
+    }
+    
+    .table td, 
+    .table th {
+        border-color: var(--border-color);
+    }
+    
+    .text-muted {
+        color: var(--muted-text) !important;
+    }
+    
+    .btn-outline-secondary {
+        color: var(--muted-text);
+        border-color: var(--border-color);
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: var(--light-bg);
+        border-color: var(--border-color);
+        color: var(--dark-text);
+    }
+    
+    /* Dark mode improvements for concern badges */
+    .bg-high {
+        background-color: var(--concern-high) !important;
+        color: #000 !important;
+    }
+    
+    .bg-medium {
+        background-color: var(--concern-medium) !important;
+        color: #fff !important;
+    }
+    
+    /* Improve progress bar for dark mode */
+    .progress {
+        background-color: var(--border-color);
+    }
+    
+    /* Alert improvements for dark mode */
+    .alert-warning {
+        background-color: rgba(255, 193, 7, 0.15);
+        border-color: rgba(255, 193, 7, 0.3);
+        color: var(--dark-text);
+    }
+    
+    .alert-success {
+        background-color: rgba(25, 135, 84, 0.15);
+        border-color: rgba(25, 135, 84, 0.3);
+        color: var(--dark-text);
+    }
+} 

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Logout & Security Guide{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="card-title mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Logout & Security Guide
+                    </h1>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Understanding OAuth Logout:</strong> Since we use Spotify for authentication, there are different levels of logout security you should understand.
+                    </div>
+
+                    <h3 class="mt-4 mb-3">
+                        <i class="fas fa-sign-out-alt me-2"></i>
+                        Logout Options
+                    </h3>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">Standard Logout</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>What it does:</strong></p>
+                                    <ul>
+                                        <li>Logs you out of our app</li>
+                                        <li>Clears your session</li>
+                                        <li>Keeps Spotify tokens for convenience</li>
+                                    </ul>
+                                    <p><strong>Use when:</strong></p>
+                                    <ul>
+                                        <li>Using your own device</li>
+                                        <li>You want to log back in easily</li>
+                                        <li>Standard privacy needs</li>
+                                    </ul>
+                                    <a href="{{ url_for('auth.logout') }}" class="btn btn-success btn-sm">
+                                        <i class="fas fa-sign-out-alt me-1"></i>Standard Logout
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5 class="mb-0">Complete Logout</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>What it does:</strong></p>
+                                    <ul>
+                                        <li>Logs you out of our app</li>
+                                        <li>Clears all session data</li>
+                                        <li>Removes all stored tokens</li>
+                                        <li>Requires full re-authentication</li>
+                                    </ul>
+                                    <p><strong>Use when:</strong></p>
+                                    <ul>
+                                        <li>Using a shared/public device</li>
+                                        <li>Security concerns</li>
+                                        <li>Account troubleshooting</li>
+                                    </ul>
+                                    <a href="{{ url_for('auth.logout', force='true') }}" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-shield-alt me-1"></i>Complete Logout
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-4">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Important Security Information</h5>
+                        <p class="mb-2">
+                            <strong>Spotify OAuth Limitation:</strong> Spotify doesn't provide a way for apps to revoke tokens on your behalf. 
+                            This means that even after "Complete Logout," the theoretical possibility exists that cached tokens could be misused.
+                        </p>
+                        <p class="mb-0">
+                            <strong>For Maximum Security:</strong> After using "Complete Logout," especially on shared devices, 
+                            also revoke app access directly in your Spotify account.
+                        </p>
+                    </div>
+
+                    <h3 class="mt-4 mb-3">
+                        <i class="fab fa-spotify me-2"></i>
+                        Maximum Security: Manual Spotify Revocation
+                    </h3>
+
+                    <div class="card border-danger">
+                        <div class="card-body">
+                            <h5 class="card-title text-danger">
+                                <i class="fas fa-user-shield me-2"></i>
+                                Ultimate Security Step
+                            </h5>
+                            <p>For the highest level of security (recommended for shared/public devices):</p>
+                            <ol>
+                                <li>Use "Complete Logout" above</li>
+                                <li>Visit your <a href="https://www.spotify.com/account/apps/" target="_blank" class="text-decoration-none">Spotify Apps page</a></li>
+                                <li>Find "Christian Music Cleanup" in the list</li>
+                                <li>Click "Remove Access"</li>
+                            </ol>
+                            <p class="mb-0">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    This will require you to re-authorize the app the next time you want to use it.
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+
+                    <h3 class="mt-4 mb-3">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Security Best Practices
+                    </h3>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-laptop fa-2x text-primary mb-2"></i>
+                                <h6>Personal Devices</h6>
+                                <small class="text-muted">Standard logout is usually sufficient</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-users fa-2x text-warning mb-2"></i>
+                                <h6>Shared Devices</h6>
+                                <small class="text-muted">Always use complete logout + Spotify revocation</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-wifi fa-2x text-danger mb-2"></i>
+                                <h6>Public WiFi</h6>
+                                <small class="text-muted">Use complete logout for extra security</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('core.dashboard') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

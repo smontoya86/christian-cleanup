@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Mock Users - Testing{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">🧪 Mock Users for Testing</h4>
+                    <small class="text-muted">Development Mode Only</small>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" role="alert">
+                        <strong>Testing Mode:</strong> These are mock users created for testing the application without needing real Spotify credentials.
+                    </div>
+                    
+                    {% if users %}
+                        <div class="row">
+                            {% for user in users %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-primary">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ user.display_name }}</h5>
+                                        <p class="card-text">
+                                            <small class="text-muted">{{ user.email }}</small><br>
+                                            <small class="text-muted">ID: {{ user.spotify_id }}</small>
+                                        </p>
+                                        <a href="{{ url_for('auth.mock_login', user_id=user.spotify_id) }}" 
+                                           class="btn btn-primary btn-sm">
+                                            Login as {{ user.display_name }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning" role="alert">
+                            <strong>No Mock Users Found!</strong><br>
+                            Please run the mock data creation script first:
+                            <code>python scripts/create_mock_data.py</code>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <h6>Mock Data Features:</h6>
+                        <ul class="list-unstyled">
+                            <li>✅ Test users with different playlist types</li>
+                            <li>✅ Christian songs with high analysis scores</li>
+                            <li>✅ Questionable content with low scores</li>
+                            <li>✅ Clean secular songs with medium scores</li>
+                            <li>✅ Mixed playlists for curation testing</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
+                            ← Back to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

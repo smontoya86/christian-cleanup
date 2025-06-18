@@ -8,6 +8,8 @@
                 "task-master-ai"
             ],
             "env": {
+                "_comment": "NOTE: For Spotify analysis, NO API keys are required! Local HuggingFace models are used.",
+                "_comment2": "The following are only needed if using TaskMaster AI features:",
                 "ANTHROPIC_API_KEY": "ANTHROPIC_API_KEY_HERE",
                 "PERPLEXITY_API_KEY": "PERPLEXITY_API_KEY_HERE",
                 "OPENAI_API_KEY": "OPENAI_API_KEY_HERE",

@@ -1,63 +1,161 @@
+#!/usr/bin/env python3
 """
-Standalone Logging Utility for Scripts
-Provides structured logging for scripts that run outside the Flask application context.
+Script Logging Utilities
+
+Centralized logging utilities for converted scripts to ensure consistent
+logging configuration and behavior across all scripts.
 """
 
 import logging
+import sys
+import os
 import json
 import time
-import os
-import sys
-from typing import Dict, Any, Optional
-from logging.handlers import RotatingFileHandler
+from datetime import datetime
 
 
-class ScriptLogFormatter(logging.Formatter):
-    """Custom formatter that outputs structured JSON logs for scripts."""
+def get_logger(name, level=logging.INFO):
+    """
+    Get a configured logger for scripts.
     
-    def format(self, record):
-        """Format log record as structured JSON."""
-        log_record = {
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
-            "level": record.levelname,
-            "message": record.getMessage(),
-            "script": getattr(record, 'script_name', 'unknown'),
-            "module": record.module,
-            "function": record.funcName,
-            "line": record.lineno,
-            "logger": record.name
-        }
+    Args:
+        name (str): Logger name (typically __name__)
+        level (int): Logging level (default: INFO)
+    
+    Returns:
+        logging.Logger: Configured logger instance
+    """
+    logger = logging.getLogger(name)
+    
+    # Avoid adding multiple handlers
+    if not logger.handlers:
+        # Create console handler
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(level)
         
-        # Add exception info if present
-        if record.exc_info:
-            import traceback
-            log_record["exception"] = {
-                "type": record.exc_info[0].__name__,
-                "message": str(record.exc_info[1]),
-                "traceback": traceback.format_exception(*record.exc_info)
-            }
-            
-        # Add any extra fields from the log record
-        if hasattr(record, 'extra_fields'):
-            log_record.update(record.extra_fields)
-            
-        return json.dumps(log_record)
-
-
-class ScriptLoggerFilter(logging.Filter):
-    """Filter that adds script-specific context to log records."""
+        # Create formatter
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        handler.setFormatter(formatter)
+        
+        # Add handler to logger
+        logger.addHandler(handler)
+        logger.setLevel(level)
+        
+        # Prevent propagation to root logger to avoid duplicate messages
+        logger.propagate = False
     
-    def __init__(self, script_name):
-        super().__init__()
-        self.script_name = script_name
+    return logger
+
+
+def configure_basic_logging(level=logging.INFO):
+    """
+    Configure basic logging for scripts that don't use get_logger.
     
-    def filter(self, record):
-        """Add script context to the log record."""
-        record.script_name = self.script_name
-        return True
+    Args:
+        level (int): Logging level (default: INFO)
+    """
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        stream=sys.stdout
+    )
 
 
-def setup_script_logging(script_name: str = None, log_level: str = None) -> logging.Logger:
+def get_script_logger(script_name, level=logging.INFO):
+    """
+    Get a logger specifically configured for a script file.
+    
+    Args:
+        script_name (str): Name of the script (e.g., 'quick_test_converted')
+        level (int): Logging level (default: INFO)
+    
+    Returns:
+        logging.Logger: Configured logger instance
+    """
+    logger_name = f"scripts.{script_name}"
+    return get_logger(logger_name, level)
+
+
+def log_script_start(logger, script_name, description=None):
+    """
+    Log the start of a script execution.
+    
+    Args:
+        logger (logging.Logger): Logger instance
+        script_name (str): Name of the script
+        description (str, optional): Script description
+    """
+    logger.info("=" * 60)
+    logger.info(f"🚀 Starting {script_name}")
+    if description:
+        logger.info(f"📝 {description}")
+    logger.info(f"⏰ Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info("=" * 60)
+
+
+def log_script_end(logger, script_name, success=True, duration=None):
+    """
+    Log the end of a script execution.
+    
+    Args:
+        logger (logging.Logger): Logger instance
+        script_name (str): Name of the script
+        success (bool): Whether the script completed successfully
+        duration (float, optional): Execution duration in seconds
+    """
+    logger.info("=" * 60)
+    status = "✅ Completed successfully" if success else "❌ Completed with errors"
+    logger.info(f"{status}: {script_name}")
+    if duration is not None:
+        logger.info(f"⏱️ Duration: {duration:.2f} seconds")
+    logger.info(f"⏰ Ended at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info("=" * 60)
+
+
+def log_section(logger, section_name):
+    """
+    Log a section header.
+    
+    Args:
+        logger (logging.Logger): Logger instance
+        section_name (str): Name of the section
+    """
+    logger.info("")
+    logger.info(f"📋 {section_name}")
+    logger.info("-" * 40)
+
+
+# Default logger for quick access
+default_logger = get_logger('scripts.utils.script_logging')
+
+
+def log_operation_start(logger, operation, **context):
+    """Log the start of an operation with context."""
+    logger.info(f"🚀 Starting: {operation}")
+
+
+def log_operation_success(logger, operation, duration=None, **context):
+    """Log successful completion of an operation."""
+    message = f"✅ Completed: {operation}"
+    if duration:
+        message += f" (took {duration:.2f}s)"
+    logger.info(message)
+
+
+def log_operation_error(logger, operation, error, **context):
+    """Log an operation error."""
+    logger.error(f"❌ Failed: {operation} - {str(error)}", exc_info=True)
+
+
+def log_progress(logger, operation, current, total, **context):
+    """Log progress of a long-running operation."""
+    percentage = (current / total * 100) if total > 0 else 0
+    logger.info(f"📊 Progress: {operation} - {current}/{total} ({percentage:.1f}%)")
+
+
+def setup_script_logging(script_name=None, log_level=None):
     """
     Set up logging for a standalone script.
     
@@ -93,27 +191,31 @@ def setup_script_logging(script_name: str = None, log_level: str = None) -> logg
     # Clear existing handlers to avoid duplicates
     logger.handlers.clear()
     
-    # Create formatter
-    formatter = ScriptLogFormatter()
+    # Custom JSON formatter
+    class JSONFormatter(logging.Formatter):
+        def format(self, record):
+            log_record = {
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
+                "level": record.levelname,
+                "message": record.getMessage(),
+                "script": script_name,
+                "module": record.module,
+                "function": record.funcName,
+                "line": record.lineno,
+                "logger": record.name
+            }
+            
+            # Add extra fields if present
+            if hasattr(record, 'extra_fields'):
+                log_record.update(record.extra_fields)
+                
+            return json.dumps(log_record)
     
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-    console_handler.addFilter(ScriptLoggerFilter(script_name))
+    console_handler.setLevel(numeric_level)
+    console_handler.setFormatter(JSONFormatter())
     logger.addHandler(console_handler)
-    
-    # File handler (if logs directory exists)
-    log_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'logs')
-    if os.path.exists(log_dir):
-        log_file = os.path.join(log_dir, f'scripts.{script_name}.log')
-        file_handler = RotatingFileHandler(
-            log_file,
-            maxBytes=5242880,  # 5MB
-            backupCount=3
-        )
-        file_handler.setFormatter(formatter)
-        file_handler.addFilter(ScriptLoggerFilter(script_name))
-        logger.addHandler(file_handler)
     
     # Prevent propagation to avoid duplicate logs
     logger.propagate = False
@@ -121,90 +223,11 @@ def setup_script_logging(script_name: str = None, log_level: str = None) -> logg
     return logger
 
 
-def get_script_logger(name: str = None) -> logging.Logger:
-    """
-    Get or create a script logger.
-    
-    Args:
-        name: Logger name (auto-detected if None)
-        
-    Returns:
-        Logger instance
-    """
-    return setup_script_logging(name)
-
-
-def log_operation_start(logger: logging.Logger, operation: str, **context):
-    """Log the start of an operation with context."""
-    logger.info(f"🚀 Starting: {operation}", extra={
-        'extra_fields': {
-            'operation': operation,
-            'phase': 'start',
-            **context
-        }
-    })
-
-
-def log_operation_success(logger: logging.Logger, operation: str, duration: float = None, **context):
-    """Log successful completion of an operation."""
-    message = f"✅ Completed: {operation}"
-    if duration:
-        message += f" (took {duration:.2f}s)"
-    
-    logger.info(message, extra={
-        'extra_fields': {
-            'operation': operation,
-            'phase': 'success',
-            'duration': duration,
-            **context
-        }
-    })
-
-
-def log_operation_error(logger: logging.Logger, operation: str, error: Exception, **context):
-    """Log an operation error."""
-    logger.error(f"❌ Failed: {operation} - {str(error)}", extra={
-        'extra_fields': {
-            'operation': operation,
-            'phase': 'error',
-            'error_type': type(error).__name__,
-            'error_message': str(error),
-            **context
-        }
-    }, exc_info=True)
-
-
-def log_progress(logger: logging.Logger, operation: str, current: int, total: int, **context):
-    """Log progress of a long-running operation."""
-    percentage = (current / total * 100) if total > 0 else 0
-    logger.info(f"📊 Progress: {operation} - {current}/{total} ({percentage:.1f}%)", extra={
-        'extra_fields': {
-            'operation': operation,
-            'phase': 'progress',
-            'current': current,
-            'total': total,
-            'percentage': percentage,
-            **context
-        }
-    })
-
-
-def log_warning(logger: logging.Logger, message: str, **context):
+def log_warning(logger, message, **context):
     """Log a warning with context."""
-    logger.warning(f"⚠️ {message}", extra={
-        'extra_fields': {
-            'phase': 'warning',
-            **context
-        }
-    })
+    logger.warning(f"⚠️ {message}")
 
 
-def log_milestone(logger: logging.Logger, milestone: str, **context):
+def log_milestone(logger, milestone, **context):
     """Log a milestone or important checkpoint."""
-    logger.info(f"🎯 Milestone: {milestone}", extra={
-        'extra_fields': {
-            'phase': 'milestone',
-            'milestone': milestone,
-            **context
-        }
-    }) 
+    logger.info(f"🎯 Milestone: {milestone}") 

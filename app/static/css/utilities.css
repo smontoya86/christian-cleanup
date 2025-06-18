@@ -1,0 +1,314 @@
+/* Utilities CSS - Animations, loading states, and helper classes */
+
+/* Loading Animations */
+@keyframes loading {
+    0% { 
+        background-position: 200% 0; 
+    }
+
+    100% { 
+        background-position: -200% 0; 
+    }
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Skeleton Loading Styles */
+.skeleton-loader {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    height: 100%;
+    min-height: 20px;
+}
+
+.skeleton-row {
+    height: 20px;
+    margin-bottom: 10px;
+    width: 100%;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-row.short {
+    width: 60%;
+}
+
+.skeleton-row.medium {
+    width: 80%;
+}
+
+.skeleton-card {
+    padding: 15px;
+    border-radius: var(--border-radius);
+    margin-bottom: 15px;
+    box-shadow: var(--box-shadow);
+    background: var(--card-bg);
+}
+
+.skeleton-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+.skeleton-text {
+    height: 16px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.skeleton-text.title {
+    height: 24px;
+    width: 70%;
+    margin-bottom: 12px;
+}
+
+.skeleton-text.subtitle {
+    height: 18px;
+    width: 50%;
+    margin-bottom: 10px;
+}
+
+/* Analysis-specific Skeletons */
+.skeleton-analysis-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-radius: var(--border-radius);
+    background: var(--card-bg);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 10px;
+}
+
+.skeleton-score {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    flex-shrink: 0;
+}
+
+.skeleton-analysis-content {
+    flex: 1;
+}
+
+.skeleton-analysis-content .skeleton-row:first-child {
+    width: 80%;
+    height: 18px;
+    margin-bottom: 8px;
+}
+
+.skeleton-analysis-content .skeleton-row:last-child {
+    width: 60%;
+    height: 14px;
+}
+
+/* Playlist Summary Skeleton */
+.skeleton-playlist-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    background: var(--card-bg);
+    box-shadow: var(--box-shadow);
+}
+
+.skeleton-summary-score {
+    text-align: center;
+}
+
+.skeleton-summary-score .skeleton-circle {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 10px;
+}
+
+.skeleton-summary-score .skeleton-text {
+    width: 60px;
+    margin: 0 auto;
+}
+
+.skeleton-summary-stats {
+    flex: 1;
+    margin-left: 30px;
+}
+
+.skeleton-summary-stats .skeleton-row {
+    margin-bottom: 12px;
+}
+
+.skeleton-summary-stats .skeleton-row:first-child {
+    width: 90%;
+}
+
+.skeleton-summary-stats .skeleton-row:last-child {
+    width: 70%;
+}
+
+/* Error States */
+.error-container {
+    padding: 20px;
+    text-align: center;
+    border: 1px solid var(--danger-color);
+    border-radius: var(--border-radius);
+    background-color: #fdf2f2;
+    color: #721c24;
+}
+
+.error-container p {
+    margin: 0 0 15px;
+    font-weight: 500;
+}
+
+.retry-btn {
+    background-color: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: var(--transition-fast);
+}
+
+.retry-btn:hover {
+    background-color: #c0392b;
+}
+
+.retry-btn:focus {
+    outline: 2px solid var(--danger-color);
+    outline-offset: 2px;
+}
+
+/* Animation States */
+.analyzing {
+    animation: pulse 1.5s infinite;
+    color: var(--primary-color);
+}
+
+/* Container Helpers */
+.playlist-container {
+    padding-bottom: 3rem;
+}
+
+/* Accessibility Helpers */
+[aria-busy="true"] {
+    cursor: progress;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Lazy Loading States */
+.lazy-loading {
+    opacity: 0.7;
+}
+
+.lazy-loaded {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.lazy-error {
+    opacity: 0.5;
+}
+
+/* Responsive Utilities */
+@media (width <= 768px) {
+    .skeleton-playlist-summary {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .skeleton-summary-stats {
+        margin-left: 0;
+        margin-top: 20px;
+        width: 100%;
+    }
+    
+    .skeleton-analysis-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .skeleton-score {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Dark Mode for Utilities */
+@media (prefers-color-scheme: dark) {
+    .skeleton-loader,
+    .skeleton-row,
+    .skeleton-circle,
+    .skeleton-text,
+    .skeleton-score {
+        background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+    }
+    
+    .skeleton-card,
+    .skeleton-analysis-card,
+    .skeleton-playlist-summary {
+        background: var(--card-bg);
+        box-shadow: var(--box-shadow);
+    }
+    
+    .error-container {
+        background-color: #4a1d1d;
+        color: #ff6b6b;
+        border-color: var(--danger-color);
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    .skeleton-loader,
+    .skeleton-row,
+    .skeleton-circle,
+    .skeleton-text,
+    .skeleton-score {
+        animation: none;
+        opacity: 0.6;
+    }
+    
+    .analyzing {
+        animation: none;
+    }
+    
+    .card,
+    .btn,
+    .concern-badge,
+    .playlist-cover-img-detail {
+        transition: none;
+    }
+} 

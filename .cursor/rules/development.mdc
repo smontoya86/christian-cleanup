@@ -28,6 +28,8 @@ For each task, follow these steps:
 3. **Run the Tests**
    - Execute the tests to verify your implementation
    - Identify any failing tests and their causes
+   - Run full test suite after each item to ensure everything works as intended
+   - Ensure production and test code are aligned
 
 4. **Iterate Until Tests Pass**
    - Refine the implementation to address any test failures
@@ -41,6 +43,9 @@ For each task, follow these steps:
 6. **Update Documentation**
    - Update relevant documentation if needed
    - Add examples or usage notes to help other developers
+
+7. **Remove tests**
+   - Upon full passing, remove tests. 
 
 ## Task Management with task-master
 
