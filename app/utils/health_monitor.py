@@ -112,8 +112,7 @@ class HealthMonitor:
             pool_status = {
                 'size': pool.size(),
                 'checked_in': pool.checkedin(),
-                'checked_out': pool.checkedout(),
-                'invalidated': pool.invalidated()
+                'checked_out': pool.checkedout()
             }
             
             response_time = (time.time() - start_time) * 1000
@@ -225,17 +224,18 @@ class HealthMonitor:
                     'scheduled_jobs': len(queue.scheduled_job_registry)
                 }
             
-            # Check for stuck jobs (jobs running > 1 hour)
-            workers = rq.get_workers()
+            # Check for stuck jobs (jobs running > 1 hour) - simplified for compatibility
+            from rq import Worker
+            workers = Worker.all(connection=redis_client)
             stuck_jobs = 0
             active_workers = 0
             
             for worker in workers:
-                if worker.get_current_job():
+                current_job = worker.get_current_job()
+                if current_job:
                     active_workers += 1
-                    job = worker.get_current_job()
-                    if job and job.started_at:
-                        runtime = datetime.now(timezone.utc) - job.started_at.replace(tzinfo=None)
+                    if current_job.started_at:
+                        runtime = datetime.now(timezone.utc) - current_job.started_at.replace(tzinfo=timezone.utc)
                         if runtime > timedelta(hours=1):
                             stuck_jobs += 1
             
@@ -391,7 +391,10 @@ class HealthMonitor:
     def _check_worker_status(self) -> HealthCheck:
         """Check background worker status."""
         try:
-            workers = rq.get_workers()
+            from rq import Worker
+            import redis
+            redis_client = redis.from_url(current_app.config.get('RQ_REDIS_URL'))
+            workers = Worker.all(connection=redis_client)
             total_workers = len(workers)
             active_workers = sum(1 for w in workers if w.get_current_job())
             

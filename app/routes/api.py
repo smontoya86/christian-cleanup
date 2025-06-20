@@ -351,6 +351,300 @@ def metrics():
         return jsonify({'error': 'Metrics unavailable'}), 500
 
 
+@bp.route('/playlists/<int:playlist_id>/analysis-status')
+@login_required
+def get_playlist_analysis_status(playlist_id):
+    """Get playlist analysis status (frontend-expected endpoint)"""
+    # This maps to the existing analysis_progress endpoint functionality
+    playlist = Playlist.query.filter_by(
+        id=playlist_id,
+        owner_id=current_user.id
+    ).first_or_404()
+
+    # Get total songs and analyzed songs count
+    total_songs = PlaylistSong.query.filter_by(playlist_id=playlist_id).count()
+    analyzed_songs = db.session.query(Song).join(AnalysisResult).join(PlaylistSong).filter(
+        PlaylistSong.playlist_id == playlist_id,
+        AnalysisResult.status == 'completed'
+    ).count()
+    
+    progress_percentage = round((analyzed_songs / total_songs * 100) if total_songs > 0 else 0, 1)
+    
+    return jsonify({
+        'success': True,
+        'completed': progress_percentage == 100.0,
+        'progress': progress_percentage,
+        'analyzed_count': analyzed_songs,
+        'total_count': total_songs,
+        'message': f'Analysis {progress_percentage}% complete ({analyzed_songs}/{total_songs} songs)'
+    })
+
+
+@bp.route('/songs/<int:song_id>/analysis-status')
+@login_required
+def get_song_analysis_status(song_id):
+    """Get song analysis status (frontend-expected endpoint)"""
+    # Verify user has access to this song
+    song = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
+        Song.id == song_id,
+        Playlist.owner_id == current_user.id
+    ).first_or_404()
+
+    analysis = AnalysisResult.query.filter_by(song_id=song_id).order_by(
+        AnalysisResult.created_at.desc()
+    ).first()
+    
+    if analysis and analysis.status == 'completed':
+        return jsonify({
+            'success': True,
+            'completed': True,
+            'has_analysis': True,
+            'status': analysis.status,
+            'score': analysis.score,
+            'concern_level': analysis.concern_level,
+            'message': 'Analysis completed'
+        })
+    elif analysis and analysis.status == 'pending':
+        return jsonify({
+            'success': True,
+            'completed': False,
+            'has_analysis': False,
+            'status': 'pending',
+            'message': 'Analysis in progress'
+        })
+    elif analysis and analysis.status == 'failed':
+        return jsonify({
+            'success': False,
+            'completed': True,
+            'has_analysis': False,
+            'status': 'failed',
+            'error': True,
+            'message': 'Analysis failed'
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'completed': False,
+            'has_analysis': False,
+            'status': 'pending',
+            'message': 'Analysis not started'
+        })
+
+
+@bp.route('/playlists/<int:playlist_id>/analyze-unanalyzed', methods=['POST'])
+@login_required
+def start_playlist_analysis_unanalyzed(playlist_id):
+    """Start analysis for unanalyzed songs in playlist"""
+    try:
+        playlist = Playlist.query.filter_by(
+            id=playlist_id,
+            owner_id=current_user.id
+        ).first_or_404()
+
+        # Get unanalyzed songs
+        unanalyzed_songs = db.session.query(Song).join(PlaylistSong).outerjoin(AnalysisResult).filter(
+            PlaylistSong.playlist_id == playlist_id,
+            AnalysisResult.id.is_(None)
+        ).all()
+
+        if not unanalyzed_songs:
+            return jsonify({
+                'success': True,
+                'message': 'All songs already analyzed',
+                'queued_count': 0
+            })
+
+        # Queue analysis jobs (this would integrate with your worker system)
+        analysis_service = AnalysisService()
+        queued_count = 0
+        
+        for song in unanalyzed_songs:
+            try:
+                # Create pending analysis record
+                analysis = AnalysisResult(
+                    song_id=song.id,
+                    status='pending',
+                    created_at=datetime.now()
+                )
+                db.session.add(analysis)
+                queued_count += 1
+            except Exception as e:
+                current_app.logger.error(f'Failed to queue song {song.id}: {e}')
+
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Queued {queued_count} songs for analysis',
+            'queued_count': queued_count
+        })
+
+    except Exception as e:
+        current_app.logger.error(f'Playlist analysis error: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to start playlist analysis'
+        }), 500
+
+
+@bp.route('/playlists/<int:playlist_id>/reanalyze-all', methods=['POST'])
+@login_required
+def reanalyze_all_playlist_songs(playlist_id):
+    """Reanalyze all songs in playlist"""
+    try:
+        playlist = Playlist.query.filter_by(
+            id=playlist_id,
+            owner_id=current_user.id
+        ).first_or_404()
+
+        # Get all songs in playlist
+        songs = db.session.query(Song).join(PlaylistSong).filter(
+            PlaylistSong.playlist_id == playlist_id
+        ).all()
+
+        if not songs:
+            return jsonify({
+                'success': True,
+                'message': 'No songs found in playlist',
+                'queued_count': 0
+            })
+
+        # Reset existing analysis results to pending
+        db.session.query(AnalysisResult).filter(
+            AnalysisResult.song_id.in_([song.id for song in songs])
+        ).update({'status': 'pending'}, synchronize_session=False)
+
+        # Create analysis records for songs without them
+        existing_analyses = db.session.query(AnalysisResult.song_id).filter(
+            AnalysisResult.song_id.in_([song.id for song in songs])
+        ).all()
+        existing_song_ids = {row[0] for row in existing_analyses}
+
+        queued_count = len(songs)
+        for song in songs:
+            if song.id not in existing_song_ids:
+                analysis = AnalysisResult(
+                    song_id=song.id,
+                    status='pending',
+                    created_at=datetime.now()
+                )
+                db.session.add(analysis)
+
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Queued {queued_count} songs for reanalysis',
+            'queued_count': queued_count
+        })
+
+    except Exception as e:
+        current_app.logger.error(f'Playlist reanalysis error: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to start playlist reanalysis'
+        }), 500
+
+
+@bp.route('/songs/<int:song_id>/analyze', methods=['POST'])
+@login_required
+def analyze_single_song(song_id):
+    """Analyze a single song"""
+    try:
+        # Verify user has access to this song
+        song = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
+            Song.id == song_id,
+            Playlist.owner_id == current_user.id
+        ).first_or_404()
+
+        # Create or update analysis record
+        analysis = AnalysisResult.query.filter_by(song_id=song_id).first()
+        if analysis:
+            analysis.status = 'pending'
+            analysis.created_at = datetime.now()
+        else:
+            analysis = AnalysisResult(
+                song_id=song_id,
+                status='pending',
+                created_at=datetime.now()
+            )
+            db.session.add(analysis)
+
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Song queued for analysis',
+            'song_id': song_id,
+            'status': 'pending'
+        })
+
+    except Exception as e:
+        current_app.logger.error(f'Single song analysis error: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to start song analysis'
+        }), 500
+
+
+@bp.route('/analysis/status')
+@login_required
+def get_analysis_status():
+    """Get overall analysis status for the current user"""
+    try:
+        # Get all user's playlists
+        user_playlists = Playlist.query.filter_by(owner_id=current_user.id).all()
+        
+        total_songs = 0
+        analyzed_songs = 0
+        
+        for playlist in user_playlists:
+            playlist_total = PlaylistSong.query.filter_by(playlist_id=playlist.id).count()
+            playlist_analyzed = db.session.query(Song).join(AnalysisResult).join(PlaylistSong).filter(
+                PlaylistSong.playlist_id == playlist.id,
+                AnalysisResult.status == 'completed'
+            ).count()
+            
+            total_songs += playlist_total
+            analyzed_songs += playlist_analyzed
+        
+        progress_percentage = round((analyzed_songs / total_songs * 100) if total_songs > 0 else 0, 1)
+        
+        return jsonify({
+            'success': True,
+            'active': progress_percentage < 100.0,
+            'completed': progress_percentage == 100.0,
+            'progress': progress_percentage,
+            'analyzed_count': analyzed_songs,
+            'total_count': total_songs,
+            'message': f'Analysis {progress_percentage}% complete ({analyzed_songs}/{total_songs} songs)'
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Analysis status error: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to get analysis status'
+        }), 500
+
+
+@bp.route('/admin/reanalysis-status')
+@login_required
+def get_admin_reanalysis_status():
+    """Get admin reanalysis status (placeholder for now)"""
+    # For now, return no active reanalysis since this is admin-only functionality
+    return jsonify({
+        'active': False,
+        'completed': False,
+        'progress': 0,
+        'message': 'No active reanalysis'
+    })
+
+
 @bp.errorhandler(404)
 def api_not_found(error):
     """API 404 handler"""

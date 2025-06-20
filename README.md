@@ -47,6 +47,123 @@ A Flask-based web application that helps Christians curate their Spotify playlis
    - Web Interface: http://localhost:5001
    - Login with your Spotify account to start
 
+## Services & Monitoring
+
+The application includes a comprehensive suite of services for production-ready deployment and monitoring.
+
+### **Core Application Services**
+
+#### **Web Application**
+- **URL**: http://localhost:5001
+- **Service**: Flask web interface with Gunicorn WSGI server
+- **Features**: Spotify OAuth, playlist management, song analysis UI
+- **Health Check**: Built-in health monitoring endpoint
+
+#### **Background Workers**
+- **Service**: Redis Queue (RQ) workers for asynchronous processing
+- **Workers**: 6 parallel workers for optimal performance
+- **Tasks**: Song analysis, playlist synchronization, batch operations
+- **Monitoring**: Worker health checks and performance metrics
+
+#### **Database**
+- **Service**: PostgreSQL 14 with Alpine Linux
+- **Port**: 5432 (internal)
+- **Features**: Persistent data storage, automatic migrations
+- **Health Check**: Built-in health monitoring
+
+#### **Cache & Queue**
+- **Service**: Redis 7 with Alpine Linux  
+- **Port**: 6379 (external access available)
+- **Features**: Session storage, task queue, caching layer
+- **Health Check**: Built-in health monitoring
+
+### **Monitoring & Analytics Stack**
+
+#### **Prometheus Metrics**
+- **URL**: http://localhost:9090
+- **Service**: Time-series metrics collection and storage
+- **Features**: 
+  - HTTP request/response metrics
+  - Song analysis performance tracking
+  - User session analytics
+  - Spotify API call monitoring
+  - Database query performance
+  - Worker queue statistics
+  - Error rate tracking
+  - Custom business metrics
+
+#### **Grafana Dashboard**
+- **URL**: http://localhost:3000
+- **Credentials**: admin / admin123
+- **Service**: Advanced data visualization and alerting
+- **Features**:
+  - Real-time performance dashboards
+  - Christian music curation analytics
+  - System health monitoring
+  - Custom alert rules
+  - Historical trend analysis
+  - User behavior insights
+
+#### **Alertmanager** (Background Service)
+- **Service**: Alert routing and notification management
+- **Features**:
+  - Email notifications for critical issues
+  - Webhook integrations for Slack/Discord
+  - Alert rule management
+  - Escalation policies
+  - Silence management
+
+### **Metrics & Analytics Available**
+
+#### **Application Metrics**
+- **HTTP Performance**: Request latency, response times, status codes
+- **Song Analysis**: Processing times, success rates, quality scores
+- **User Activity**: Login rates, playlist sync frequency, user engagement
+- **Content Moderation**: Analysis accuracy, false positive rates
+- **API Integration**: Spotify API health, rate limiting, token refresh rates
+
+#### **Infrastructure Metrics**  
+- **Database Performance**: Query times, connection pools, slow queries
+- **Redis Performance**: Memory usage, operation latency, queue depth
+- **Worker Health**: Processing rates, error rates, queue backlog
+- **Memory & CPU**: Resource utilization across all services
+
+#### **Business Intelligence**
+- **Christian Content Analysis**: Biblical theme detection rates
+- **Playlist Curation**: Song approval/rejection patterns
+- **User Behavior**: Feature usage, engagement patterns
+- **Content Quality**: Analysis accuracy improvements over time
+
+### **Service Health Monitoring**
+
+All services include built-in health checks accessible via Docker:
+
+```bash
+# Check all service status
+docker-compose ps
+
+# View service logs
+docker-compose logs web
+docker-compose logs worker
+docker-compose logs prometheus
+docker-compose logs grafana
+
+# Monitor metrics
+curl http://localhost:5001/api/metrics  # Prometheus format
+curl http://localhost:5001/api/health   # Application health
+```
+
+### **Production Deployment Notes**
+
+The monitoring stack is production-ready and includes:
+- **Persistent Storage**: Grafana dashboards and Prometheus data persist across restarts
+- **Security**: Admin credentials configurable via environment variables
+- **Scalability**: Metrics collection designed for high-volume usage
+- **Alerting**: Pre-configured alert rules for common issues
+- **Backup**: Database and metrics data can be easily backed up
+
+This comprehensive monitoring solution provides complete visibility into both the technical performance and business metrics of your Christian music curation platform.
+
 ## Frontend Build Process
 
 The application includes a modern frontend build system for optimal performance and maintainability.

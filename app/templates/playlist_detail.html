@@ -6,153 +6,109 @@
 {% include "components/ui/analysis_styles.html" %}
 {% endblock %}
 
-{% block title %}{{ playlist['name'] if playlist else 'Playlist' }} - Christian Music Curator{% endblock %}
+{% block title %}{{ playlist.name }} - Christian Music Alignment{% endblock %}
 
 {% block content %}
-    <div class="container mt-4 playlist-container" 
-         data-playlist-id="{{ playlist['spotify_id'] if playlist['spotify_id'] else '' }}"
-         data-playlist-name="{{ playlist['name']|e if playlist['name'] else '' }}">
-    
-    <script>
-        // Make playlist ID available globally for debugging
-        window.currentPlaylistId = '{{ playlist['spotify_id'] if playlist['spotify_id'] else '' }}';
-    </script>
-        
-        <!-- Page Header -->
-        {% set title = playlist['name'] or 'Untitled Playlist' %}
-        {% set subtitle = playlist['description'] or 'No description' %}
-        {% set meta_info = [
-            {"icon": "user", "text": playlist['owner_name'] or 'Unknown'},
-            {"icon": "music", "text": playlist['total_tracks'] ~ ' tracks'},
-            {"icon": "clock", "text": 'N/A'},
-            {"icon": "sync-alt", "text": 'Never'}
-        ] %}
-        
-        {% set actions = [] %}
-        {% if playlist['spotify_id'] %}
-            {% set actions = actions + [{
-                "text": "Open in Spotify",
-                "icon": "spotify",
-                "href": "https://open.spotify.com/playlist/" ~ playlist['spotify_id'],
-                "class": "btn btn-outline-success",
-                "target": "_blank",
-                "title": "Open in Spotify",
-                "rel": "noopener noreferrer"
-            }] %}
-        {% endif %}
-        
-        {% include "components/ui/page_header.html" %}
-        
-        <div class="mb-4 text-center">
-            <img src="{{ playlist['image_url'] if playlist and playlist['image_url'] else url_for('static', filename='images/default_playlist_image.png') }}" 
-                 alt="{{ playlist['name'] or 'Playlist' }}" 
-                 class="img-fluid rounded shadow-sm playlist-cover-img-detail">
-        </div>
-
-        <!-- Analysis Controls -->
-        {% set show_analyze_new = true %}
-        {% set show_reanalyze_all = true %}
-        {% set show_view_analysis_link = true %}
-        {% include "components/analysis/analysis_controls.html" %}
-
-        <!-- Song List View -->
-        <div id="song-list-view" class="mt-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="mb-0">Songs</h3>
-                <div class="d-flex gap-2">
-                    <button id="toggleViewBtn" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-th-large me-1"></i> Switch to Grid View
-                    </button>
+<div class="container mt-4">
+    <!-- Playlist Header - SIMPLIFIED -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <img src="{{ playlist.image_url or url_for('static', filename='images/default_playlist_image.png') }}" 
+                                 alt="Playlist Cover" class="img-fluid rounded">
+                        </div>
+                        <div class="col-md-9">
+                            <h1 class="display-6">{{ playlist.name }}</h1>
+                            <p class="text-muted">{{ playlist.description or 'No description available' }}</p>
+                            <p class="text-muted">
+                                <strong>{{ songs|length }}</strong> songs
+                                • by {{ current_user.display_name }}
+                            </p>
+                            
+                            <!-- Simple Action Buttons -->
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                                </a>
+                                <form method="post" action="{{ url_for('main.analyze_playlist', playlist_id=playlist.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Analyze All Songs
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col" style="width: 5%;" class="text-center">#</th>
-                            <th scope="col" style="width: 10%;">Art</th>
-                            <th scope="col" style="width: 35%;">Title & Artist</th>
-                            <th scope="col" style="width: 20%;">Album</th>
-                            <th scope="col" style="width: 15%;">Score</th>
-                            <th scope="col" style="width: 15%;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if songs_with_status %}
-                            {% for item in songs_with_status %}
-                            {% include "components/playlist/song_row.html" %}
-                            {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
-                                    <i class="fas fa-music fa-2x mb-2"></i>
-                                    <div>No songs found in this playlist</div>
-                                </td>
-                            </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
         </div>
-
-        <!-- Pagination -->
-        {% if pagination and (pagination.pages > 1 if pagination.__class__.__name__ != 'dict' else pagination.get('total_pages', 0) > 1) %}
-        <nav aria-label="Song pagination" class="mt-4">
-            <ul class="pagination justify-content-center">
-                {% set has_prev = pagination.has_prev if pagination.__class__.__name__ != 'dict' else pagination.get('has_prev', false) %}
-                {% set has_next = pagination.has_next if pagination.__class__.__name__ != 'dict' else pagination.get('has_next', false) %}
-                {% set current_page = pagination.page if pagination.__class__.__name__ != 'dict' else pagination.get('page', 1) %}
-                {% set prev_num = pagination.prev_num if pagination.__class__.__name__ != 'dict' else pagination.get('prev_num') %}
-                {% set next_num = pagination.next_num if pagination.__class__.__name__ != 'dict' else pagination.get('next_num') %}
-                {% set total_pages = pagination.pages if pagination.__class__.__name__ != 'dict' else pagination.get('total_pages', 1) %}
-                
-                {% if has_prev %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('playlist.playlist_detail', playlist_id=playlist.spotify_id, page=prev_num) }}">Previous</a>
-                </li>
-                {% endif %}
-                
-                {# Generate page numbers - simplified for dict compatibility #}
-                {% for page_num in range(1, total_pages + 1) %}
-                    {% if page_num != current_page %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('playlist.playlist_detail', playlist_id=playlist.spotify_id, page=page_num) }}">{{ page_num }}</a>
-                    </li>
-                    {% else %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ page_num }}</span>
-                    </li>
-                    {% endif %}
-                {% endfor %}
-                
-                {% if has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('playlist.playlist_detail', playlist_id=playlist.spotify_id, page=next_num) }}">Next</a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
-        {% endif %}
-
-        <!-- Grid View (Hidden by default) -->
-        <div id="song-grid-view" class="mt-4" style="display: none;">
-            <div class="row">
-                {% if songs_with_status %}
-                    {% for item in songs_with_status %}
-                    {% include "components/playlist/song_card.html" %}
-                    {% endfor %}
-                {% else %}
-                    <div class="col-12 text-center text-muted py-4">
-                        <i class="fas fa-music fa-3x mb-3"></i>
-                        <h4>No songs found</h4>
-                        <p>This playlist doesn't have any songs yet.</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
     </div>
+    
+    <!-- Songs List - SIMPLIFIED -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Songs in this Playlist</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if songs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="50">#</th>
+                                        <th width="80">Art</th>
+                                        <th>Song</th>
+                                        <th>Album</th>
+                                        <th width="120">Score</th>
+                                        <th width="150">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in songs %}
+                                        {% include "components/playlist/song_row.html" %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-music fa-3x text-muted mb-3"></i>
+                            <h5>No songs in this playlist</h5>
+                            <p class="text-muted">This playlist appears to be empty.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Simple analyze function
+function analyzeSong(songId) {
+    // Create a form and submit it
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/analyze_song/${songId}`;
+    
+    // Add CSRF token if available
+    const csrfToken = document.querySelector('meta[name=csrf-token]');
+    if (csrfToken) {
+        const hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.name = 'csrf_token';
+        hiddenField.value = csrfToken.getAttribute('content');
+        form.appendChild(hiddenField);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
 {% endblock %}
 
 {% block scripts %}

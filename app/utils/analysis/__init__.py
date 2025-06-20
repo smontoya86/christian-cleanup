@@ -15,24 +15,19 @@ The main entry point is the AnalysisOrchestrator which coordinates
 between domains while maintaining backward compatibility.
 """
 
-from .orchestrator import AnalysisOrchestrator
-from .legacy_adapter import BackwardCompatibilityAdapter
 from .analysis_result import AnalysisResult
 
-# For backward compatibility
-from .legacy_adapter import SongAnalyzer, analyze_song_legacy
-
-# Alias for backward compatibility
+# Main analysis function used by production code
 def analyze_song_content(lyrics, title, artist):
-    """Backward compatibility wrapper for analyze_song_legacy."""
-    return analyze_song_legacy(title, artist, lyrics)
+    """Analyze song content using the orchestrator."""
+    # Import here to avoid circular imports
+    from .orchestrator import AnalysisOrchestrator
+    orchestrator = AnalysisOrchestrator()
+    return orchestrator.analyze(title, artist, lyrics)
 
 __all__ = [
-    'AnalysisOrchestrator',
-    'BackwardCompatibilityAdapter', 
     'AnalysisResult',
-    'SongAnalyzer',  # Legacy compatibility
-    'analyze_song_content'  # Function compatibility
+    'analyze_song_content'  # Main production function
 ]
 
 __version__ = '2.0.0' 

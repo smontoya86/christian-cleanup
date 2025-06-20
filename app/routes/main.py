@@ -29,7 +29,7 @@ def dashboard():
     # Get user's playlists with stats
     playlists = Playlist.query.filter_by(owner_id=current_user.id).all()
     
-    # Calculate stats
+    # Calculate stats (using simple, working queries)
     total_playlists = len(playlists)
     total_songs = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
         Playlist.owner_id == current_user.id
@@ -70,17 +70,17 @@ def dashboard():
     return render_template('dashboard.html', playlists=playlists, stats=stats)
 
 
-@bp.route('/sync_playlists')
+@bp.route('/sync_playlists', methods=['GET', 'POST'])
 @login_required
 def sync_playlists():
     """Sync user's playlists from Spotify"""
     try:
         spotify = SpotifyService(current_user)
         count = spotify.sync_user_playlists()
-        flash(f'Successfully synced {count} playlists from Spotify!', 'success')
+        flash(f'Successfully refreshed {count} playlists from Spotify!', 'success')
     except Exception as e:
         current_app.logger.error(f'Playlist sync error: {e}')
-        flash('Error syncing playlists. Please try again.', 'error')
+        flash('Error refreshing playlists. Please try again.', 'error')
     
     return redirect(url_for('main.dashboard'))
 
@@ -88,35 +88,43 @@ def sync_playlists():
 @bp.route('/playlist/<int:playlist_id>')
 @login_required
 def playlist_detail(playlist_id):
-    """Detailed view of a playlist with songs"""
+    """Detailed view of a playlist with songs - SIMPLIFIED"""
+    # Get the playlist (simple)
     playlist = Playlist.query.filter_by(
         id=playlist_id, 
         owner_id=current_user.id
     ).first_or_404()
     
-    # Get songs in playlist with analysis results
-    songs_query = db.session.query(Song, AnalysisResult, PlaylistSong).join(
+    # Get songs with their analysis (simple query)
+    songs = db.session.query(Song, AnalysisResult, PlaylistSong).join(
         PlaylistSong, Song.id == PlaylistSong.song_id
     ).outerjoin(
         AnalysisResult, Song.id == AnalysisResult.song_id
     ).filter(
         PlaylistSong.playlist_id == playlist_id
-    ).order_by(PlaylistSong.position)
+    ).order_by(PlaylistSong.track_position).all()
     
-    songs = []
-    for song, analysis, playlist_song in songs_query:
-        songs.append({
+    # Simple data structure for template
+    songs_data = []
+    for song, analysis, playlist_song in songs:
+        # Check if song is whitelisted (simple check)
+        is_whitelisted = Whitelist.query.filter_by(
+            user_id=current_user.id,
+            spotify_id=song.spotify_id,
+            item_type='song'
+        ).first() is not None
+        
+        songs_data.append({
             'song': song,
-            'analysis': analysis,
-            'position': playlist_song.position,
-            'is_whitelisted': Whitelist.query.filter_by(
-                user_id=current_user.id,
-                spotify_id=song.spotify_id,
-                item_type='song'
-            ).first() is not None
+            'analysis': analysis,  # Can be None
+            'position': playlist_song.track_position,
+            'is_whitelisted': is_whitelisted
         })
     
-    return render_template('playlist_detail.html', playlist=playlist, songs=songs)
+    # Simple template variables
+    return render_template('playlist_detail.html', 
+                         playlist=playlist,
+                         songs=songs_data)
 
 
 @bp.route('/song/<int:song_id>')
@@ -137,7 +145,14 @@ def song_detail(song_id):
         item_type='song'
     ).first() is not None
     
-    return render_template('song_detail.html', song=song, analysis=analysis, is_whitelisted=is_whitelisted)
+    # Check if song has lyrics (for Biblical sections display)
+    has_lyrics = bool(song.lyrics and song.lyrics.strip() and song.lyrics != "Lyrics not available")
+    
+    return render_template('song_detail.html', 
+                         song=song, 
+                         analysis=analysis, 
+                         is_whitelisted=is_whitelisted,
+                         has_lyrics=has_lyrics)
 
 
 @bp.route('/analyze_song/<int:song_id>', methods=['POST'])
@@ -276,4 +291,4 @@ def remove_song_from_playlist(playlist_id, song_id):
 @login_required
 def settings():
     """User settings page"""
-    return render_template('settings.html', user=current_user) 
+    return render_template('user_settings.html', user=current_user) 

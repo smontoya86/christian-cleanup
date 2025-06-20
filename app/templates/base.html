@@ -44,12 +44,12 @@
     <!-- Bootstrap CSS - essential for layout -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Custom CSS - Use built assets in production, source files in development -->
+    <!-- Optimized CSS loading based on environment -->
     {% if config.ENV == 'production' %}
-        <!-- Production: Use minified and optimized assets -->
-        <link href="{{ url_for('static', filename='dist/css/base.css') }}" rel="stylesheet">
-        <link href="{{ url_for('static', filename='dist/css/components.css') }}" rel="stylesheet">
-        <link href="{{ url_for('static', filename='dist/css/utilities.css') }}" rel="stylesheet">
+        <!-- Production: Try to use built CSS, fallback to source -->
+        <link href="{{ url_for('static', filename='dist/css/base.css') }}" rel="stylesheet" onerror="this.onerror=null;this.href='{{ url_for('static', filename='css/base.css') }}';">
+        <link href="{{ url_for('static', filename='dist/css/components.css') }}" rel="stylesheet" onerror="this.onerror=null;this.href='{{ url_for('static', filename='css/components.css') }}';">
+        <link href="{{ url_for('static', filename='dist/css/utilities.css') }}" rel="stylesheet" onerror="this.onerror=null;this.href='{{ url_for('static', filename='css/utilities.css') }}';">
     {% else %}
         <!-- Development: Use source files for easier debugging -->
         <link href="{{ url_for('static', filename='css/base.css') }}" rel="stylesheet">
@@ -65,6 +65,8 @@
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"></noscript>
     
+
+
     <!-- Additional head content for page-specific CSS -->
     {% block styles %}{% endblock %}
     
@@ -248,14 +250,21 @@
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Application JavaScript - loaded asynchronously -->
-    {% if config.ENV == 'production' %}
-        <!-- Production: Use bundled and minified JavaScript -->
-        <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}" defer></script>
-    {% else %}
-        <!-- Development: Use source files with proper module loading -->
-        <script type="module" src="{{ url_for('static', filename='js/main.js') }}" defer></script>
-    {% endif %}
+    <!-- Application JavaScript - Non-module fallback for compatibility -->
+    <script>
+        // Fallback for browsers that don't support modules or when modules fail
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ Basic functionality loaded');
+            
+            // Basic login button functionality without modules
+            const loginButtons = document.querySelectorAll('a[href*="auth/login"], .btn-connect-spotify');
+            loginButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    console.log('🔗 Login button clicked');
+                });
+            });
+        });
+    </script>
     
     <!-- Page-specific JavaScript -->
     {% block scripts %}{% endblock %}

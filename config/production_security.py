@@ -120,11 +120,11 @@ def setup_rate_limiting(app):
         from flask_limiter.util import get_remote_address
         
         limiter = Limiter(
-            app,
             key_func=get_remote_address,
             storage_uri=ProductionSecurityConfig.RATE_LIMIT_STORAGE_URL,
             default_limits=[ProductionSecurityConfig.API_RATE_LIMITS['default']]
         )
+        limiter.init_app(app)
         
         # Apply specific rate limits to routes
         for route_pattern, limit in ProductionSecurityConfig.API_RATE_LIMITS.items():

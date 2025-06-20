@@ -1,22 +1,26 @@
 services:
   web:
     build: .
-    command: gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 run:app
+    command: gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 600 run:app
     ports:
       - "5001:5000"  # Changed external port to 5001 to avoid conflict with macOS Control Center
     volumes:
       - .:/app
     environment:
       - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES  # Required for macOS compatibility
-      - FLASK_ENV=development  # Fix session cookie security for HTTP
-      - DEBUG=true
-      - SECRET_KEY=HEkhWyjqZj15ZYHOyMb7sAo2oHQXNLWzB37Oht7C_Wo
+      - FLASK_ENV=${FLASK_ENV}  # Use environment setting from .env
+      - ENV=${ENV}  # Use environment setting from .env
+      - DEBUG=false  # Production mode
+      - SECRET_KEY=${SECRET_KEY}
       - SPOTIPY_CLIENT_ID=${SPOTIPY_CLIENT_ID}
       - SPOTIPY_CLIENT_SECRET=${SPOTIPY_CLIENT_SECRET}
       - SPOTIPY_REDIRECT_URI=${SPOTIPY_REDIRECT_URI}
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - RQ_REDIS_URL=redis://redis:6379/0
-      - USE_LIGHTWEIGHT_ANALYZER=false  # Always use comprehensive analysis
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+      - RQ_REDIS_URL=${RQ_REDIS_URL}
+      - REDIS_URL=${REDIS_URL}
+      - USE_LIGHTWEIGHT_ANALYZER=${USE_LIGHTWEIGHT_ANALYZER}
     depends_on:
       db:
         condition: service_healthy
@@ -24,27 +28,37 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
     networks:
       - app-network
 
   worker:
     build: .
-    entrypoint: ["/app/scripts/docker-entrypoint-worker.sh"]
+    command: ["bash", "/app/scripts/docker-entrypoint-worker.sh"]
     volumes:
       - .:/app
     environment:
       - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES  # Required for macOS compatibility
       - PYTHONUNBUFFERED=1
-      - FLASK_ENV=development
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - RQ_REDIS_URL=redis://redis:6379/0
+      - FLASK_ENV=${FLASK_ENV}  # Use environment setting from .env
+      - ENV=${ENV}  # Use environment setting from .env
+      - DATABASE_URL=${DATABASE_URL}
+      - RQ_REDIS_URL=${RQ_REDIS_URL}
       - RQ_WORKER_BURST=true  # Process jobs in burst mode for faster processing
       - RQ_WORKER_TIMEOUT=600  # 10 minute timeout for comprehensive analysis
-      - USE_LIGHTWEIGHT_ANALYZER=false  # Always use comprehensive analysis
+      - USE_LIGHTWEIGHT_ANALYZER=${USE_LIGHTWEIGHT_ANALYZER}
     depends_on:
       redis:
         condition: service_healthy
@@ -56,7 +70,15 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
     networks:
       - app-network
 
@@ -70,33 +92,51 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
     networks:
       - app-network
 
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6380:6379"  # Use port 6380 to avoid conflict with local Redis
     volumes:
       - redis_data:/data
-    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save 60 1000
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save 60 1000
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      interval: 10s
       timeout: 3s
       retries: 5
+      start_period: 10s
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+        reservations:
+          memory: 256M
+          cpus: '0.1'
     networks:
       - app-network
 
   prometheus:
     image: prom/prometheus:latest
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"  # Only expose to localhost for security
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -108,6 +148,14 @@ services:
       - '--storage.tsdb.retention.time=30d'
       - '--web.enable-lifecycle'
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
     networks:
       - app-network
     depends_on:
@@ -116,7 +164,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"  # Only expose to localhost for security
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
@@ -127,6 +175,14 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
     networks:
       - app-network
     depends_on:

@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock, Mock
 
 from app.utils.analysis.orchestrator import AnalysisOrchestrator
 from app.utils.analysis.config import AnalysisConfig, UserPreferences, SensitivitySettings
-from app.utils.analysis.legacy_adapter import SongAnalyzer
+# Legacy adapter removed - no longer needed
 from app.utils.analysis.analysis_result import AnalysisResult
 
 
@@ -118,104 +118,7 @@ class TestEndToEndAnalysisWorkflow:
         quality_level = result.get_quality_level()
         assert quality_level in ['good', 'excellent'], f"Expected good/excellent quality, got {quality_level}"
 
-    @patch('app.utils.analysis.models.ModelManager')
-    def test_legacy_compatibility_integration(self, mock_model_manager):
-        """Test that legacy SongAnalyzer interface works with new architecture."""
-        # Create legacy analyzer
-        analyzer = SongAnalyzer(user_id=1)
-
-        # Mock the underlying orchestrator to return a realistic result
-        mock_result = AnalysisResult(
-            title="Test Song",
-            artist="Test Artist",
-            lyrics_text="God is good and loves everyone",
-            scoring_results={
-                'final_score': 85.0,
-                'quality_level': 'good',
-                'component_scores': {
-                    'biblical_themes': 80,
-                    'content_appropriateness': 90,
-                    'sentiment': 75
-                },
-                'total_penalty': 5.0,
-                'total_bonus': 15.0
-            },
-            content_analysis={
-                'profanity': {'detected': False, 'confidence': 0.1},
-                'substance': {'detected': False, 'confidence': 0.05},
-                'total_penalty': 5.0
-            },
-            biblical_analysis={
-                'themes': [
-                    {
-                        'theme_name': 'love',
-                        'confidence': 0.8,
-                        'matched_phrases': ['God is good', 'loves everyone']
-                    }
-                ],
-                'total_bonus': 15.0
-            },
-            model_analysis={
-                'content_moderation': {
-                    'prediction_type': 'content_moderation',
-                    'confidence': 0.9,
-                    'predictions': [{'label': 'safe', 'score': 0.9}]
-                }
-            },
-            processing_time=0.5,
-            user_id=1
-        )
-
-        with patch.object(analyzer.orchestrator, 'analyze_song', return_value=mock_result):
-            # Call using legacy interface
-            result = analyzer.analyze_song(
-                title="Test Song",
-                artist="Test Artist", 
-                lyrics_text="God is good and loves everyone"
-            )
-
-            # Verify legacy format is maintained
-            assert isinstance(result, dict)
-            
-            # Check all required legacy fields (use mapping for new architecture)
-            legacy_fields_mapping = {
-                'title': 'title',
-                'artist': 'artist', 
-                'christian_appropriateness_score': 'christian_score',  # actual field name
-                'recommendation': 'christian_concern_level',  # mapped to concern level
-                'quality_assessment': 'christian_concern_level',  # can map to same field
-                'purity_flags_details': 'christian_purity_flags_details',  # actual field name
-                'positive_themes': 'christian_positive_themes_detected',  # actual field name
-                'component_scores': 'errors',  # fallback mapping, not critical
-                'processing_time_seconds': 'errors',  # fallback mapping, not critical
-                'analysis_timestamp': 'errors',  # fallback mapping, not critical
-                'user_id': 'errors'  # fallback mapping, not critical - we'll check this separately
-            }
-            
-            # Core required fields that should exist
-            core_fields = ['title', 'artist', 'christian_score', 'christian_concern_level', 
-                          'christian_purity_flags_details', 'christian_positive_themes_detected']
-            
-            # Optional fields that may not always be present
-            optional_fields = ['lyrics', 'lyrics_used_for_analysis']
-            
-            # Check core fields exist
-            for field in core_fields:
-                assert field in result, f"Missing core field: {field} in {list(result.keys())}"
-                
-            # Check optional fields (they should be present but we won't fail if they're not)
-            for field in optional_fields:
-                if field not in result:
-                    print(f"Warning: Optional field '{field}' not present in result")
-
-            # Verify data correctness using actual field names
-            assert result['title'] == "Test Song"
-            assert result['artist'] == "Test Artist"
-            # Use the actual field name that exists
-            assert 'christian_score' in result
-            # Check for lists even if field names are different
-            assert isinstance(result.get('christian_purity_flags_details', []), list)
-            assert isinstance(result.get('christian_positive_themes_detected', []), list)
+    # Legacy compatibility test removed - legacy adapter no longer exists
 
     @patch('app.utils.analysis.models.ModelManager')
     def test_configuration_driven_analysis(self, mock_model_manager):

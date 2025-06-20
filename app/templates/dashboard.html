@@ -461,17 +461,30 @@
         {% endif %}
     {% else %}
         <div class="text-center py-5">
-            <i class="fas fa-folder-open fa-4x text-muted mb-4"></i>
-            <h4>No Playlists Found</h4>
+            <i class="fas fa-spotify fa-4x text-success mb-4"></i>
+            <h4>Ready to Sync Your Playlists!</h4>
             {% if error_message %}
                 <p class="text-muted">There was an error loading your playlists. Please try refreshing the page.</p>
+                <button class="btn btn-primary mt-3" onclick="location.reload()">
+                    <i class="fas fa-sync-alt me-2"></i>Try Again
+                </button>
             {% else %}
-                <p class="text-muted">It looks like you haven't connected any playlists yet, or there was an issue fetching them.</p>
-                <p class="text-muted">Try logging out and back in, or ensure your Spotify account is correctly linked.</p>
+                <p class="text-muted mb-3">You're successfully logged in to Spotify! Click "Sync Playlists" above to load your music library and start analyzing your songs.</p>
+                <div class="alert alert-info d-inline-block text-start" style="max-width: 500px;">
+                    <h6><i class="fas fa-info-circle me-2"></i>What happens when you sync?</h6>
+                    <ul class="mb-0 small">
+                        <li>We'll fetch all your Spotify playlists</li>
+                        <li>Import song information (titles, artists, albums)</li>
+                        <li>You can then analyze songs for content</li>
+                        <li>Get recommendations for playlist cleanup</li>
+                    </ul>
+                </div>
+                <div class="mt-4">
+                    <a href="{{ url_for('main.sync_playlists') }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-download me-2"></i>Sync My Playlists
+                    </a>
+                </div>
             {% endif %}
-            <button class="btn btn-primary mt-3" onclick="location.reload()">
-                <i class="fas fa-sync-alt me-2"></i>Try Again
-            </button>
         </div>
     {% endif %}
 </div>

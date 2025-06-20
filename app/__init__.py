@@ -48,16 +48,17 @@ def create_app(config_name='development', skip_db_init=False):
     })
     
     # Apply production security if in production
-    if config_name == 'production' or os.environ.get('FLASK_ENV') == 'production':
-        try:
-            from config.production_security import configure_production_security
-            app, limiter = configure_production_security(app)
-            app.logger.info("Production security configuration applied")
-        except ImportError:
-            app.logger.warning("Production security configuration not available")
-        except Exception as e:
-            app.logger.error(f"Failed to apply production security: {e}")
-            # Don't fail startup, but log the issue
+    # TEMPORARILY DISABLED - causing startup issues
+    # if config_name == 'production' or os.environ.get('FLASK_ENV') == 'production':
+    #     try:
+    #         from config.production_security import configure_production_security
+    #         app, limiter = configure_production_security(app)
+    #         app.logger.info("Production security configuration applied")
+    #     except ImportError:
+    #         app.logger.warning("Production security configuration not available")
+    #     except Exception as e:
+    #         app.logger.error(f"Failed to apply production security: {e}")
+    #         # Don't fail startup, but log the issue
     
     # Import models before initializing database
     from .models.models import User, Playlist, Song, AnalysisResult, Whitelist

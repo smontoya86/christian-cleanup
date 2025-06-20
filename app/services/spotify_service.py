@@ -75,13 +75,22 @@ class SpotifyService:
         return response.json()
     
     def get_user_playlists(self) -> List[Dict[str, Any]]:
-        """Get user's playlists from Spotify"""
+        """Get user's playlists from Spotify with optimized field selection"""
         playlists = []
         url = 'me/playlists'
         
+        # Use fields parameter to only fetch what we need
+        fields = 'items(id,name,description,images,owner(id),collaborative,tracks(total)),next,total'
+        
         while url:
-            data = self._make_request('GET', url, params={'limit': 50})
+            params = {
+                'limit': 50,  # Maximum allowed by Spotify API
+                'fields': fields
+            }
+            
+            data = self._make_request('GET', url, params=params)
             playlists.extend(data['items'])
+            
             url = data['next']
             if url:
                 # Extract just the endpoint from the full URL
@@ -90,15 +99,28 @@ class SpotifyService:
         return playlists
     
     def get_playlist_tracks(self, playlist_id: str) -> List[Dict[str, Any]]:
-        """Get tracks from a specific playlist"""
+        """Get tracks from a specific playlist with optimized field selection"""
         tracks = []
         url = f'playlists/{playlist_id}/tracks'
         
+        # Use fields parameter to only fetch what we need, following Spotify API best practices
+        fields = 'items(track(id,name,artists(name),album(name,images),duration_ms,explicit,type)),next,total'
+        
         while url:
-            data = self._make_request('GET', url, params={'limit': 50})
-            tracks.extend([item for item in data['items'] if item['track']])
+            params = {
+                'limit': 50,  # Maximum allowed by Spotify API
+                'fields': fields
+            }
+            
+            data = self._make_request('GET', url, params=params)
+            
+            # Filter out null/unavailable tracks immediately
+            valid_tracks = [item for item in data['items'] if item['track'] and item['track'].get('id')]
+            tracks.extend(valid_tracks)
+            
             url = data['next']
             if url:
+                # Extract just the endpoint from the full URL
                 url = url.replace(self.BASE_URL + '/', '')
         
         return tracks
@@ -146,38 +168,74 @@ class SpotifyService:
     
     def _sync_playlist_tracks(self, playlist: Playlist, spotify_playlist_id: str):
         """Sync tracks for a specific playlist"""
-        spotify_tracks = self.get_playlist_tracks(spotify_playlist_id)
-        
-        # Clear existing tracks
-        PlaylistSong.query.filter_by(playlist_id=playlist.id).delete()
-        
-        for position, track_item in enumerate(spotify_tracks):
-            track = track_item['track']
-            if not track or track['type'] != 'track':
-                continue
+        try:
+            spotify_tracks = self.get_playlist_tracks(spotify_playlist_id)
             
-            # Check if song already exists
-            song = Song.query.filter_by(spotify_id=track['id']).first()
+            # Clear existing tracks in a separate transaction
+            PlaylistSong.query.filter_by(playlist_id=playlist.id).delete()
+            db.session.flush()  # Ensure deletion is committed before adding new tracks
             
-            if not song:
-                song = Song(
-                    spotify_id=track['id'],
-                    title=track['name'],
-                    artist=', '.join([artist['name'] for artist in track['artists']]),
-                    album=track['album']['name'],
-                    duration_ms=track['duration_ms'],
-                    explicit=track.get('explicit', False)
-                )
-                db.session.add(song)
-                db.session.flush()  # Get the ID
+            # Track existing songs to avoid duplicate queries
+            existing_songs = {}
             
-            # Add to playlist
-            playlist_song = PlaylistSong(
-                playlist_id=playlist.id,
-                song_id=song.id,
-                track_position=position
-            )
-            db.session.add(playlist_song)
+            for position, track_item in enumerate(spotify_tracks):
+                track = track_item['track']
+                if not track or track['type'] != 'track':
+                    continue
+                
+                # Skip tracks without valid spotify_id (unavailable tracks)
+                spotify_id = track.get('id')
+                if not spotify_id:
+                    continue
+                
+                # Check if we've already processed this song in this sync
+                if spotify_id in existing_songs:
+                    song = existing_songs[spotify_id]
+                else:
+                    # Check if song already exists in database
+                    song = Song.query.filter_by(spotify_id=spotify_id).first()
+                    
+                    if not song:
+                        # Extract album art URL from the album images
+                        album_art_url = None
+                        if track['album'].get('images'):
+                            # Use the first (largest) image
+                            album_art_url = track['album']['images'][0]['url']
+                        
+                        song = Song(
+                            spotify_id=spotify_id,
+                            title=track['name'],
+                            artist=', '.join([artist['name'] for artist in track['artists']]),
+                            album=track['album']['name'],
+                            album_art_url=album_art_url,
+                            duration_ms=track['duration_ms'],
+                            explicit=track.get('explicit', False)
+                        )
+                        db.session.add(song)
+                        db.session.flush()  # Get the ID
+                    
+                    existing_songs[spotify_id] = song
+                
+                # Check if this playlist-song relationship already exists
+                existing_ps = PlaylistSong.query.filter_by(
+                    playlist_id=playlist.id,
+                    song_id=song.id
+                ).first()
+                
+                if not existing_ps:
+                    # Add to playlist
+                    playlist_song = PlaylistSong(
+                        playlist_id=playlist.id,
+                        song_id=song.id,
+                        track_position=position
+                    )
+                    db.session.add(playlist_song)
+                    
+        except Exception as e:
+            from flask import current_app
+            current_app.logger.error(f'Error syncing playlist tracks for playlist {playlist.id}: {e}')
+            db.session.rollback()
+            raise
     
     def remove_song_from_playlist(self, spotify_playlist_id: str, song_id: int) -> bool:
         """Remove a song from a Spotify playlist"""

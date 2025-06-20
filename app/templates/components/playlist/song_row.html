@@ -1,109 +1,58 @@
 {# 
-Song Row Component for Playlist Table
-
-Expected variables:
-- item: Song item with analysis_result, is_whitelisted properties
-- loop: Jinja loop context (optional)
-- pagination: Optional pagination object
-- playlist: Playlist object
-- row_number: Optional explicit row number (fallback if loop is not available)
+Song Row Component - SIMPLIFIED
+Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
 #}
 
 <tr class="song-row {{ 'table-info' if item.is_whitelisted else '' }}" data-song-id="{{ item.song.id }}">
-    <th scope="row" class="text-center">
-        {# Try to get row number from loop context, then pagination, then fallback to 1 #}
-        {% if loop is defined %}
-            {{ loop.index + ((pagination.page - 1) * pagination.per_page) if pagination else loop.index }}
-        {% elif row_number is defined %}
-            {{ row_number }}
-        {% else %}
-            1
-        {% endif %}
-    </th>
-    <td>
-        <a href="{{ url_for('song.song_detail', song_id=item.song.id) }}" class="text-decoration-none">
+    <!-- Position -->
+    <td class="text-center">{{ item.position }}</td>
+    
+    <!-- Album Art -->
+    <td class="text-center">
+        <a href="{{ url_for('main.song_detail', song_id=item.song.id) }}" class="text-decoration-none">
             <img src="{{ item.song.album_art_url or url_for('static', filename='images/default_album_art.png') }}" 
-                 alt="Album Art" class="img-thumbnail album-art">
+                 alt="Album Art" class="rounded" 
+                 style="width: 50px !important; height: 50px !important; object-fit: cover !important; display: block !important; margin: 0 auto !important;">
         </a>
     </td>
+    
+    <!-- Song Title & Artist -->
     <td>
         <div class="d-flex flex-column">
-            <a href="{{ url_for('song.song_detail', song_id=item.song.id) }}" class="text-decoration-none song-title-link fw-bold">
+            <a href="{{ url_for('main.song_detail', song_id=item.song.id) }}" class="text-decoration-none fw-bold">
                 {{ item.song.title }}
             </a>
             <span class="text-muted small">{{ item.song.artist }}</span>
         </div>
     </td>
+    
+    <!-- Album -->
+    <td>{{ item.song.album or 'Unknown Album' }}</td>
+    
+    <!-- Analysis Score -->
     <td>
-        <span class="song-album-text">{{ item.song.album or 'Unknown Album' }}</span>
-    </td>
-    <td class="song-score">
-        {% if item.analysis_result and item.analysis_result.score is not none %}
-            <div class="d-flex align-items-center">
-                <span class="concern-badge {% if item.analysis_result.concern_level|lower == 'extreme' %}bg-extreme{% elif item.analysis_result.concern_level|lower == 'high' %}bg-high{% elif item.analysis_result.concern_level|lower == 'medium' %}bg-medium{% else %}bg-low{% endif %}">
-                    <i class="fas {% if item.analysis_result.concern_level|lower == 'extreme' %}fa-exclamation-triangle{% elif item.analysis_result.concern_level|lower == 'high' %}fa-exclamation-circle{% elif item.analysis_result.concern_level|lower == 'medium' %}fa-info-circle{% else %}fa-check-circle{% endif %}"></i>
-                    {{ "%.0f"|format(item.analysis_result.score) }}
-                </span>
-            </div>
-            <small class="text-muted d-block">{{ item.analysis_result.concern_level|default('Unknown')|title }}</small>
+        {% if item.analysis and item.analysis.score is not none %}
+            <span class="badge bg-{{ 'danger' if item.analysis.concern_level|lower == 'high' else 'warning' if item.analysis.concern_level|lower == 'medium' else 'success' }}">
+                {{ "%.0f"|format(item.analysis.score) }}
+            </span>
+            <br><small class="text-muted">{{ item.analysis.concern_level|title }}</small>
         {% else %}
             <span class="text-muted">Not Analyzed</span>
         {% endif %}
     </td>
-    <td class="song-actions">
-        <div class="d-flex align-items-center gap-2">
-            {% if not item.analysis_result or item.analysis_result.status != 'completed' %}
-                <!-- Unanalyzed songs get an Analyze button -->
-                <button class="btn btn-sm btn-primary analyze-song-btn" 
-                        data-song-id="{{ item.song.id }}"
-                        data-song-title="{{ item.song.title }}"
-                        data-song-artist="{{ item.song.artist }}"
-                        title="Analyze this song for Christian content">
-                    <span class="analyze-btn-text">
-                        <i class="fas fa-search me-1"></i>Analyze
-                    </span>
-                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                </button>
-            {% elif item.is_whitelisted %}
-                <!-- Whitelisted songs show a badge with remove option -->
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-success px-2 py-1">
-                        <i class="fas fa-check me-1"></i>Whitelisted
-                    </span>
-                    <form method="post" action="{{ url_for('whitelist.remove_whitelist_song', playlist_id=playlist['spotify_id'], track_id=item.song.spotify_id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary p-1" 
-                                title="Remove from whitelist"
-                                onclick="return confirm('Remove this song from whitelist?')">
-                            <i class="fas fa-times" style="font-size: 0.75rem;"></i>
-                        </button>
-                    </form>
-                </div>
-            
-                <!-- Analyzed songs: Review link for high/extreme concern, re-analyze option for all -->
-                <div class="d-flex align-items-center gap-2">
-                    {% if item.analysis_result.concern_level|lower in ['high', 'extreme'] %}
-                        <a href="{{ url_for('song.song_detail', song_id=item.song.id, playlist_id=playlist['spotify_id']) }}" 
-                           class="btn btn-sm btn-outline-warning"
-                           title="Review this song's analysis details">
-                            <i class="fas fa-eye me-1"></i>Review
-                        </a>
-                    {% endif %}
-                    <!-- Re-analyze button for all analyzed songs -->
-                    <button class="btn btn-sm btn-outline-secondary analyze-song-btn" 
-                            data-song-id="{{ item.song.id }}"
-                            data-song-title="{{ item.song.title }}"
-                            data-song-artist="{{ item.song.artist }}"
-                            title="Re-analyze this song">
-                        <span class="analyze-btn-text">
-                            <i class="fas fa-redo me-1"></i>Re-analyze
-                        </span>
-                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                    </button>
-                </div>
-            {% else %}
-                <!-- Fallback for edge cases -->
-                <span class="text-muted small">—</span>
-            {% endif %}
-        </div>
+    
+    <!-- Actions -->
+    <td>
+        {% if item.is_whitelisted %}
+            <span class="badge bg-success">✓ Whitelisted</span>
+        {% elif item.analysis and item.analysis.concern_level|lower in ['high', 'extreme'] %}
+            <a href="{{ url_for('main.song_detail', song_id=item.song.id) }}" class="btn btn-sm btn-warning">
+                Review
+            </a>
+        {% else %}
+            <button class="btn btn-sm btn-primary" onclick="analyzeSong({{ item.song.id }})">
+                Analyze
+            </button>
+        {% endif %}
     </td>
 </tr> 

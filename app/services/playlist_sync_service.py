@@ -9,11 +9,70 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime, timezone
 
+from flask import current_app
+from rq import get_current_job
+
 from .. import db
 from ..models.models import User, Playlist, Song, PlaylistSong
 from .spotify_service import SpotifyService
 
 logger = logging.getLogger(__name__)
+
+
+def sync_user_playlists_task(user_id: int) -> Dict[str, Any]:
+    """
+    Background task function for syncing all user playlists.
+    
+    This function is executed by RQ workers.
+    
+    Args:
+        user_id (int): ID of the user whose playlists to sync
+        
+    Returns:
+        Dict containing sync results
+    """
+    try:
+        logger.info(f"Starting playlist sync for user {user_id}")
+        
+        # Get user
+        user = User.query.get(user_id)
+        if not user:
+            raise ValueError(f"User {user_id} not found")
+        
+        # Update job status
+        job = get_current_job()
+        if job:
+            job.meta['status'] = 'syncing_playlists'
+            job.meta['user_id'] = user_id
+            job.save_meta()
+        
+        # Sync playlists using the service
+        service = PlaylistSyncService()
+        result = service.sync_user_playlists(user)
+        
+        if job:
+            job.meta['status'] = 'completed'
+            job.meta['result'] = result
+            job.save_meta()
+        
+        logger.info(f"Playlist sync completed for user {user_id}: {result}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in playlist sync task for user {user_id}: {e}")
+        
+        job = get_current_job()
+        if job:
+            job.meta['status'] = 'failed'
+            job.meta['error'] = str(e)
+            job.save_meta()
+        
+        return {
+            'user_id': user_id,
+            'success': False,
+            'error': str(e),
+            'completed_at': datetime.now(timezone.utc).isoformat()
+        }
 
 
 class PlaylistSyncService:
@@ -168,6 +227,56 @@ class PlaylistSyncService:
             return None
 
 
+def enqueue_user_playlist_sync(user_id: int, priority: str = 'default') -> Dict[str, Any]:
+    """
+    Enqueue a user playlist sync job for background processing.
+    
+    Args:
+        user_id (int): ID of the user requesting sync
+        priority (str): Job priority ('high', 'default', 'low')
+        
+    Returns:
+        Dict containing job information:
+        - job_id: Unique identifier for the job
+        - status: Job status ('queued', 'processing', 'completed', 'failed')
+        - estimated_duration: Estimated completion time
+    """
+    try:
+        from ..extensions import rq
+        queue = rq.get_queue(priority)
+        
+        job = queue.enqueue(
+            sync_user_playlists_task,
+            user_id,
+            job_timeout=600,  # 10 minute timeout
+            meta={
+                'user_id': user_id,
+                'status': 'queued',
+                'queued_at': datetime.now(timezone.utc).isoformat()
+            }
+        )
+        
+        logger.info(f"User playlist sync job {job.id} enqueued for user {user_id}")
+        
+        return {
+            'job_id': job.id,
+            'status': 'queued',
+            'user_id': user_id,
+            'priority': priority,
+            'estimated_duration': 180,  # 3 minutes estimate
+            'queued_at': datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error enqueuing user playlist sync for user {user_id}: {e}")
+        return {
+            'job_id': None,
+            'status': 'failed',
+            'error': str(e),
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }
+
+
 def enqueue_playlist_sync(playlist_id: int, user_id: int, priority: str = 'normal') -> Dict[str, Any]:
     """
     Enqueue a playlist sync job for background processing.
@@ -225,18 +334,35 @@ def get_sync_status(job_id: Optional[str] = None, user_id: Optional[int] = None)
         - failed_count: Number of failed jobs
     """
     try:
-        # This would normally query RQ job status
-        # For now, return mock status for tests
+        from rq import Queue
+        from ..extensions import rq
+        
         if job_id:
-            # Return status for specific job
-            return {
-                'job_id': job_id,
-                'status': 'completed',  # Mock status
-                'progress': 100,
-                'started_at': datetime.now(timezone.utc).isoformat(),
-                'completed_at': datetime.now(timezone.utc).isoformat(),
-                'duration': 25
-            }
+            # Get specific job status
+            try:
+                job = rq.get_queue().fetch_job(job_id)
+                if job:
+                    return {
+                        'job_id': job_id,
+                        'status': job.get_status(),
+                        'progress': job.meta.get('progress', 0),
+                        'started_at': job.started_at.isoformat() if job.started_at else None,
+                        'ended_at': job.ended_at.isoformat() if job.ended_at else None,
+                        'result': job.result,
+                        'meta': job.meta
+                    }
+                else:
+                    return {
+                        'job_id': job_id,
+                        'status': 'not_found',
+                        'error': 'Job not found'
+                    }
+            except Exception as e:
+                return {
+                    'job_id': job_id,
+                    'status': 'error',
+                    'error': str(e)
+                }
         else:
             # Return overview for user
             return {
