@@ -19,10 +19,10 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
     <!-- Song Title & Artist -->
     <td>
         <div class="d-flex flex-column">
-            <a href="{{ url_for('main.song_detail', song_id=item.song.id) }}" class="text-decoration-none fw-bold">
+            <a href="{{ url_for('main.song_detail', song_id=item.song.id) }}" class="text-decoration-none fw-bold song-title">
                 {{ item.song.title }}
             </a>
-            <span class="text-muted small">{{ item.song.artist }}</span>
+            <span class="text-muted small song-artist">{{ item.song.artist }}</span>
         </div>
     </td>
     
@@ -30,12 +30,12 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
     <td>{{ item.song.album or 'Unknown Album' }}</td>
     
     <!-- Analysis Score -->
-    <td>
+    <td class="score-cell">
         {% if item.analysis and item.analysis.score is not none %}
-            <span class="badge bg-{{ 'danger' if item.analysis.concern_level|lower == 'high' else 'warning' if item.analysis.concern_level|lower == 'medium' else 'success' }}">
-                {{ "%.0f"|format(item.analysis.score) }}
+            <span class="badge bg-{{ 'danger' if item.analysis.concern_level|lower == 'high' else 'warning' if item.analysis.concern_level|lower == 'medium' else 'success' }} fs-6">
+                {{ "%.0f"|format(item.analysis.score) }}%
             </span>
-            <br><small class="text-muted">{{ item.analysis.concern_level|title }}</small>
+            <div class="small text-muted">{{ item.analysis.concern_level|title }}</div>
         {% else %}
             <span class="text-muted">Not Analyzed</span>
         {% endif %}
@@ -50,7 +50,10 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                 Review
             </a>
         {% else %}
-            <button class="btn btn-sm btn-primary" onclick="analyzeSong({{ item.song.id }})">
+            <button type="button" class="btn btn-sm btn-primary analyze-song-btn" 
+                    data-song-id="{{ item.song.id }}"
+                    data-song-title="{{ item.song.title }}"
+                    data-song-artist="{{ item.song.artist }}">
                 Analyze
             </button>
         {% endif %}

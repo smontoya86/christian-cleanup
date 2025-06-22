@@ -810,7 +810,7 @@ class LyricsFetcher:
                 
                 # Success or non-retryable error
                 total_duration = time.time() - start_time
-                self.metrics.record_event('request_completed', total_duration, attempts=attempt + 1, success=True)
+                self.metrics.record_event('request_completed', duration=total_duration, attempts=attempt + 1, success=True)
                 return response
                 
             except RequestException as e:
@@ -820,7 +820,7 @@ class LyricsFetcher:
                     if self.config.log_retry_attempts:
                         logger.error(f"Request failed after {max_retries} attempts: {e}")
                     total_duration = time.time() - start_time
-                    self.metrics.record_event('request_failed', total_duration, attempts=max_retries, error=str(e))
+                    self.metrics.record_event('request_failed', duration=total_duration, attempts=max_retries, error=str(e))
                     raise e
                 
                 # Exponential backoff for network errors
@@ -958,7 +958,7 @@ class LyricsFetcher:
                     total_duration = time.time() - start_time
                     self.metrics.record_event(
                         'lyrics_fetch_completed', 
-                        total_duration, 
+                        duration=total_duration, 
                         source=provider_name, 
                         success=True, 
                         lyrics_length=len(lyrics),
@@ -997,7 +997,7 @@ class LyricsFetcher:
         total_duration = time.time() - start_time
         self.metrics.record_event(
             'lyrics_fetch_completed', 
-            total_duration, 
+            duration=total_duration, 
             source='all_providers', 
             success=False, 
             reason='not_found_any_provider'

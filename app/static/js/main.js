@@ -71,23 +71,8 @@ class ChristianMusicCuratorApp {
      * Initialize stagewise toolbar for development
      */
     async initializeStagewiseToolbar() {
-        // Check if we're in development mode using browser-compatible methods
-        const isDevelopment = window.location.hostname === 'localhost' || 
-                            window.location.hostname === '127.0.0.1' ||
-                            window.location.hostname.includes('dev');
-        
-        if (isDevelopment) {
-            try {
-                const { initToolbar } = await import('@stagewise/toolbar');
-                const stagewiseConfig = {
-                    plugins: []
-                };
-                initToolbar(stagewiseConfig);
-                console.log('✅ Stagewise toolbar initialized');
-            } catch (error) {
-                console.warn('Failed to initialize stagewise toolbar:', error);
-            }
-        }
+        // Stagewise toolbar initialization disabled for now
+        console.log('📝 Stagewise toolbar initialization skipped');
     }
     
     /**
@@ -276,6 +261,9 @@ class ChristianMusicCuratorApp {
                     uiHelpers: this.modules.get('uiHelpers'),
                     apiService: this.modules.get('apiService')
                 });
+                
+                // Initialize the playlist analysis module
+                playlistAnalysis.init();
                 
                 this.modules.set('playlistAnalysis', playlistAnalysis);
                 console.log('✅ Playlist detail page initialized');

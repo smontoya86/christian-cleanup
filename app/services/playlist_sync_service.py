@@ -50,6 +50,20 @@ def sync_user_playlists_task(user_id: int) -> Dict[str, Any]:
         service = PlaylistSyncService()
         result = service.sync_user_playlists(user)
         
+        # Trigger auto-analysis after successful sync
+        if result.get('success'):
+            try:
+                from .unified_analysis_service import UnifiedAnalysisService
+                analysis_service = UnifiedAnalysisService()
+                analysis_result = analysis_service.auto_analyze_user_after_sync(user_id)
+                
+                # Add analysis info to result
+                result['auto_analysis'] = analysis_result
+                logger.info(f"Auto-analysis triggered for user {user_id}: {analysis_result}")
+            except Exception as e:
+                logger.warning(f"Auto-analysis failed for user {user_id}: {e}")
+                result['auto_analysis'] = {'success': False, 'error': str(e)}
+        
         if job:
             job.meta['status'] = 'completed'
             job.meta['result'] = result

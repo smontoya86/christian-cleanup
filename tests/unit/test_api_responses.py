@@ -8,7 +8,7 @@ ensuring consistent error response formatting and proper metadata inclusion.
 import pytest
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 from flask import Flask, request, jsonify
 
@@ -23,7 +23,12 @@ from app.utils.api_responses import (
     server_error,
     external_service_error,
     timeout_error,
-    conflict_error
+    conflict_error,
+    create_success_response,
+    create_error_response,
+    create_paginated_response,
+    format_song_for_ui,
+    format_analysis_status
 )
 
 
@@ -527,3 +532,169 @@ class TestResponseConsistency:
             assert status_code == 500
             data = json.loads(response.data)
             assert "error" in data
+
+
+class TestApiResponses:
+    """Test API response utilities."""
+    
+    def test_create_success_response(self):
+        """Test success response creation."""
+        data = {'test': 'value'}
+        response = create_success_response(data, 'Success message')
+        
+        assert response['success'] is True
+        assert response['message'] == 'Success message'
+        assert response['data'] == data
+    
+    def test_create_error_response(self):
+        """Test error response creation."""
+        response = create_error_response('Error message', 400)
+        
+        assert response['success'] is False
+        assert response['message'] == 'Error message'
+        assert response['status_code'] == 400
+    
+    def test_create_paginated_response(self):
+        """Test paginated response creation."""
+        items = [{'id': 1}, {'id': 2}]
+        response = create_paginated_response(items, 1, 2, 10)
+        
+        assert response['success'] is True
+        assert response['data'] == items
+        assert response['pagination']['page'] == 1
+        assert response['pagination']['per_page'] == 2
+        assert response['pagination']['total'] == 10
+
+    def test_format_song_for_ui_with_analysis_status(self):
+        """Test song formatting with enhanced analysis status indicators."""
+        from app.models.models import Song, AnalysisResult
+        from datetime import datetime, timezone
+        
+        # Create mock song
+        song = Mock(spec=Song)
+        song.id = 1
+        song.title = 'Test Song'
+        song.artist = 'Test Artist'
+        song.album = 'Test Album'
+        song.duration_ms = 180000
+        song.explicit = False
+        song.spotify_id = 'test_spotify_id'
+        
+        # Create mock analysis with 'completed' status
+        analysis = Mock(spec=AnalysisResult)
+        analysis.status = 'completed'
+        analysis.score = 85
+        analysis.concern_level = 'low'
+        analysis.created_at = datetime.now(timezone.utc)
+        
+        song.analysis_results = [analysis]
+        
+        result = format_song_for_ui(song)
+        
+        # Verify basic song data
+        assert result['id'] == 1
+        assert result['title'] == 'Test Song'
+        assert result['artist'] == 'Test Artist'
+        
+        # Verify enhanced analysis status
+        assert result['analysis_status'] == 'completed'
+        assert result['analysis_score'] == 85
+        assert result['concern_level'] == 'low'
+        assert result['can_reanalyze'] is True
+        assert 'analysis_date' in result
+
+    def test_format_song_for_ui_pending_analysis(self):
+        """Test song formatting with pending analysis status."""
+        from app.models.models import Song, AnalysisResult
+        
+        # Create mock song with pending analysis
+        song = Mock(spec=Song)
+        song.id = 2
+        song.title = 'Pending Song'
+        song.artist = 'Test Artist'
+        song.album = 'Test Album'
+        song.duration_ms = 200000
+        song.explicit = False
+        song.spotify_id = 'test_spotify_id_2'
+        
+        # Mock pending analysis
+        analysis = Mock(spec=AnalysisResult)
+        analysis.status = 'pending'
+        analysis.score = None
+        analysis.concern_level = None
+        analysis.created_at = datetime.now(timezone.utc)
+        
+        song.analysis_results = [analysis]
+        
+        result = format_song_for_ui(song)
+        
+        # Verify pending status indicators
+        assert result['analysis_status'] == 'pending'
+        assert result['analysis_score'] is None
+        assert result['concern_level'] is None
+        assert result['can_reanalyze'] is False  # Can't reanalyze while pending
+        assert result['status_display'] == 'Analysis pending...'
+
+    def test_format_song_for_ui_no_analysis(self):
+        """Test song formatting with no analysis."""
+        from app.models.models import Song
+        
+        # Create mock song with no analysis
+        song = Mock(spec=Song)
+        song.id = 3
+        song.title = 'Unanalyzed Song'
+        song.artist = 'Test Artist'
+        song.album = 'Test Album'
+        song.duration_ms = 150000
+        song.explicit = True
+        song.spotify_id = 'test_spotify_id_3'
+        song.analysis_results = []
+        
+        result = format_song_for_ui(song)
+        
+        # Verify no analysis indicators
+        assert result['analysis_status'] == 'not_analyzed'
+        assert result['analysis_score'] is None
+        assert result['concern_level'] is None
+        assert result['can_reanalyze'] is True  # Can start analysis
+        assert result['status_display'] == 'Not analyzed'
+
+    def test_format_analysis_status_utility(self):
+        """Test the analysis status formatting utility function."""
+        from app.models.models import AnalysisResult
+        
+        # Test completed analysis
+        analysis = Mock(spec=AnalysisResult)
+        analysis.status = 'completed'
+        analysis.score = 92
+        analysis.concern_level = 'low'
+        
+        status = format_analysis_status(analysis)
+        assert status['status'] == 'completed'
+        assert status['display'] == '✅ Completed (Score: 92)'
+        assert status['badge_class'] == 'badge-success'
+        
+        # Test pending analysis
+        analysis.status = 'pending'
+        analysis.score = None
+        
+        status = format_analysis_status(analysis)
+        assert status['status'] == 'pending'
+        assert status['display'] == '⏳ Analysis pending...'
+        assert status['badge_class'] == 'badge-warning'
+        
+        # Test failed analysis
+        analysis.status = 'failed'
+        analysis.score = None
+        
+        status = format_analysis_status(analysis)
+        assert status['status'] == 'failed'
+        assert status['display'] == '❌ Analysis failed'
+        assert status['badge_class'] == 'badge-danger'
+
+    def test_format_analysis_status_no_analysis(self):
+        """Test analysis status formatting when no analysis exists."""
+        status = format_analysis_status(None)
+        assert status['status'] == 'not_analyzed'
+        assert status['display'] == '⚪ Not analyzed'
+        assert status['badge_class'] == 'badge-secondary'

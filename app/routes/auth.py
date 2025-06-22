@@ -88,6 +88,7 @@ def callback():
         
         # Create or update user in database
         user = User.query.filter_by(spotify_id=spotify_user['id']).first()
+        is_new_user = False
         if not user:
             user = User(
                 spotify_id=spotify_user['id'],
@@ -96,6 +97,7 @@ def callback():
                 created_at=datetime.now(timezone.utc)
             )
             db.session.add(user)
+            is_new_user = True
         
         # Update tokens and user info
         user.access_token = token_info['access_token']
@@ -112,37 +114,55 @@ def callback():
         login_user(user, remember=True)
         current_app.logger.info(f'User {user.id} logged in successfully')
         
-        # Queue playlist sync as background job instead of synchronous sync
-        try:
-            from ..services.playlist_sync_service import enqueue_user_playlist_sync
-            job_info = enqueue_user_playlist_sync(user.id, priority='high')
-            
-            if job_info['status'] == 'queued':
-                current_app.logger.info(f'Queued playlist sync job {job_info["job_id"]} for user {user.id}')
-                flash(f'Welcome, {user.display_name}! Your playlists are being synced in the background. This may take a few minutes.', 'success')
-            else:
-                current_app.logger.error(f'Failed to queue playlist sync for user {user.id}: {job_info.get("error")}')
-                # Fall back to synchronous sync
-                try:
-                    from ..services.spotify_service import SpotifyService
-                    spotify = SpotifyService(user)
-                    count = spotify.sync_user_playlists()
-                    flash(f'Welcome, {user.display_name}! Successfully synced {count} playlists from Spotify.', 'success')
-                except Exception as sync_e:
-                    current_app.logger.error(f'Synchronous playlist sync failed for user {user.id}: {sync_e}')
-                    flash(f'Welcome, {user.display_name}! Login successful. You can manually sync playlists from the dashboard.', 'warning')
-                
-        except Exception as e:
-            current_app.logger.error(f'Error queueing playlist sync for user {user.id}: {e}')
-            # Fall back to synchronous sync
+        # Handle sync/analysis differently for new vs returning users
+        if is_new_user:
+            # New user: Full playlist sync (will trigger auto-analysis)
             try:
-                from ..services.spotify_service import SpotifyService
-                spotify = SpotifyService(user)
-                count = spotify.sync_user_playlists()
-                flash(f'Welcome, {user.display_name}! Successfully synced {count} playlists from Spotify.', 'success')
-            except Exception as sync_e:
-                current_app.logger.error(f'Synchronous playlist sync failed for user {user.id}: {sync_e}')
+                from ..services.playlist_sync_service import enqueue_user_playlist_sync
+                job_info = enqueue_user_playlist_sync(user.id, priority='high')
+                
+                if job_info['status'] == 'queued':
+                    current_app.logger.info(f'Queued playlist sync job {job_info["job_id"]} for new user {user.id}')
+                    flash(f'Welcome, {user.display_name}! Your playlists are being synced in the background. This may take a few minutes.', 'success')
+                else:
+                    current_app.logger.error(f'Failed to queue playlist sync for user {user.id}: {job_info.get("error")}')
+                    flash(f'Welcome, {user.display_name}! Login successful. You can manually sync playlists from the dashboard.', 'warning')
+                    
+            except Exception as e:
+                current_app.logger.error(f'Error queueing playlist sync for user {user.id}: {e}')
                 flash(f'Welcome, {user.display_name}! Login successful. You can manually sync playlists from the dashboard.', 'warning')
+        else:
+            # Returning user: Check for changes and analyze only changed playlists
+            try:
+                from ..services.unified_analysis_service import UnifiedAnalysisService
+                analysis_service = UnifiedAnalysisService()
+                
+                # Detect changes
+                change_result = analysis_service.detect_playlist_changes(user.id)
+                
+                if change_result['success'] and change_result['total_changed'] > 0:
+                    # Changes detected - sync changed playlists and analyze new songs
+                    current_app.logger.info(f'Detected {change_result["total_changed"]} changed playlists for user {user.id}')
+                    
+                    # Queue analysis for changed playlists
+                    analysis_result = analysis_service.analyze_changed_playlists(change_result['changed_playlists'])
+                    
+                    if analysis_result['success']:
+                        flash(f'Welcome back, {user.display_name}! Found {change_result["total_changed"]} updated playlists. Analyzing {analysis_result["analyzed_songs"]} new songs.', 'success')
+                    else:
+                        flash(f'Welcome back, {user.display_name}! Detected playlist changes but analysis failed.', 'warning')
+                        current_app.logger.error(f'Change analysis failed for user {user.id}: {analysis_result.get("error")}')
+                else:
+                    # No changes or detection failed
+                    if change_result['success']:
+                        flash(f'Welcome back, {user.display_name}! No playlist changes detected.', 'success')
+                    else:
+                        current_app.logger.error(f'Change detection failed for user {user.id}: {change_result.get("error")}')
+                        flash(f'Welcome back, {user.display_name}!', 'success')
+                        
+            except Exception as e:
+                current_app.logger.error(f'Error during change detection for user {user.id}: {e}')
+                flash(f'Welcome back, {user.display_name}!', 'success')
         
         # Redirect to dashboard
         return redirect(url_for('main.dashboard'))

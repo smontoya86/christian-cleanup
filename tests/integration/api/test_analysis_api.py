@@ -165,7 +165,7 @@ class TestAnalysisAPI:
             mock_job.id = 'test_job_123'
             mock_enqueue.return_value = mock_job
             
-            response = client.post(f'/api/playlists/{test_playlist.spotify_id}/analyze-unanalyzed')
+            response = client.post(f'/api/playlists/{test_playlist.id}/analyze-unanalyzed')
             
             assert response.status_code == 200
             data = response.get_json()
@@ -304,6 +304,26 @@ class TestAnalysisAPI:
     @pytest.mark.integration
     def test_api_response_headers(self, client, authenticated_user, test_song):
         """Test that API responses have correct headers."""
+        # Create a playlist owned by the authenticated user
+        playlist = Playlist(
+            spotify_id='test_playlist_for_headers',
+            name='Test Playlist for Headers',
+            description='Test playlist for API testing',
+            owner_id=authenticated_user.id
+        )
+        db.session.add(playlist)
+        db.session.commit()
+        
+        # Associate the test song with the playlist so it passes authorization
+        from app.models.models import PlaylistSong
+        playlist_song = PlaylistSong(
+            playlist_id=playlist.id,
+            song_id=test_song.id,
+            track_position=0
+        )
+        db.session.add(playlist_song)
+        db.session.commit()
+        
         with patch('app.services.unified_analysis_service.UnifiedAnalysisService.enqueue_analysis_job') as mock_enqueue:
             mock_job = Mock()
             mock_job.id = 'test_job_123'

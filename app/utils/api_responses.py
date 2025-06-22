@@ -429,13 +429,161 @@ def conflict_error(
     
     # Only pass details if there are actual details to include    
     details_to_pass = details if details else None
-    # Force include details when we have meaningful information
-    force_details = bool(details)
+    # Force include details for conflict errors when they exist
+    force_include = bool(details)
         
     return error_response(
         409,
         message,
         "ConflictError",
         details_to_pass,
-        force_include_details=force_details
-    ) 
+        force_include_details=force_include
+    )
+
+
+# UI Formatting Utilities for Enhanced Analysis Status Indicators
+
+def create_success_response(data: Any = None, message: str = "Success") -> Dict[str, Any]:
+    """Create a standardized success response for internal use."""
+    return {
+        "success": True,
+        "message": message,
+        "data": data,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+def create_error_response(message: str, status_code: int = 400) -> Dict[str, Any]:
+    """Create a standardized error response for internal use."""
+    return {
+        "success": False,
+        "message": message,
+        "status_code": status_code,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+def create_paginated_response(
+    items: List[Any], 
+    page: int, 
+    per_page: int, 
+    total: int
+) -> Dict[str, Any]:
+    """Create a paginated response with metadata."""
+    return {
+        "success": True,
+        "data": items,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "pages": (total + per_page - 1) // per_page  # Ceiling division
+        }
+    }
+
+
+def format_analysis_status(analysis) -> Dict[str, Any]:
+    """
+    Format analysis status for UI display with enhanced indicators.
+    
+    Args:
+        analysis: AnalysisResult object or None
+        
+    Returns:
+        Dict with formatted status information
+    """
+    if not analysis:
+        return {
+            "status": "not_analyzed",
+            "display": "⚪ Not analyzed",
+            "badge_class": "badge-secondary"
+        }
+    
+    status_map = {
+        "completed": {
+            "display": f"✅ Completed (Score: {analysis.score})" if analysis.score else "✅ Completed",
+            "badge_class": "badge-success"
+        },
+        "pending": {
+            "display": "⏳ Analysis pending...",
+            "badge_class": "badge-warning"
+        },
+        "processing": {
+            "display": "🔄 Processing...",
+            "badge_class": "badge-info"
+        },
+        "failed": {
+            "display": "❌ Analysis failed",
+            "badge_class": "badge-danger"
+        }
+    }
+    
+    status_info = status_map.get(analysis.status, {
+        "display": f"❓ {analysis.status.title()}",
+        "badge_class": "badge-secondary"
+    })
+    
+    return {
+        "status": analysis.status,
+        "display": status_info["display"],
+        "badge_class": status_info["badge_class"]
+    }
+
+
+def format_song_for_ui(song) -> Dict[str, Any]:
+    """
+    Format song data for UI display with enhanced analysis status indicators.
+    
+    Args:
+        song: Song model instance
+        
+    Returns:
+        Dict with formatted song data including analysis status
+    """
+    # Get the most recent analysis result
+    latest_analysis = None
+    if song.analysis_results:
+        latest_analysis = max(song.analysis_results, key=lambda a: a.created_at)
+    
+    # Format basic song information
+    song_data = {
+        "id": song.id,
+        "title": song.title,
+        "artist": song.artist,
+        "album": song.album,
+        "duration_ms": song.duration_ms,
+        "explicit": song.explicit,
+        "spotify_id": song.spotify_id
+    }
+    
+    # Add analysis status information
+    if latest_analysis:
+        song_data.update({
+            "analysis_status": latest_analysis.status,
+            "analysis_score": latest_analysis.score,
+            "concern_level": latest_analysis.concern_level,
+            "analysis_date": latest_analysis.created_at.isoformat() if latest_analysis.created_at else None,
+            "can_reanalyze": latest_analysis.status in ['completed', 'failed']
+        })
+        
+        # Add formatted status display
+        status_info = format_analysis_status(latest_analysis)
+        song_data["status_display"] = status_info["display"]
+        song_data["badge_class"] = status_info["badge_class"]
+        
+        # Special handling for pending status
+        if latest_analysis.status == 'pending':
+            song_data["status_display"] = "Analysis pending..."
+    else:
+        # No analysis exists
+        song_data.update({
+            "analysis_status": "not_analyzed",
+            "analysis_score": None,
+            "concern_level": None,
+            "analysis_date": None,
+            "can_reanalyze": True,
+            "status_display": "Not analyzed",
+            "badge_class": "badge-secondary"
+        })
+    
+    return song_data 

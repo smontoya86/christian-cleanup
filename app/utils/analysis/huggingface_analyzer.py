@@ -109,6 +109,44 @@ class HuggingFaceAnalyzer:
                 self._emotion_analyzer = None
         return self._emotion_analyzer
 
+    def _safe_truncate_text(self, text: str, max_tokens: int = 450) -> str:
+        """
+        Safely truncate text to ensure it fits within model token limits.
+        Uses conservative token estimation and handles edge cases.
+        
+        Args:
+            text: Input text to truncate
+            max_tokens: Maximum tokens (default 450 to stay well under 512 limit)
+            
+        Returns:
+            Truncated text that should fit within token limits
+        """
+        if not text:
+            return ""
+        
+        # Quick check for very short text
+        if len(text) <= 100:
+            return text
+        
+        # Conservative estimation: ~3-4 characters per token on average
+        # Use 3 chars/token for safety margin
+        estimated_chars = max_tokens * 3
+        
+        if len(text) <= estimated_chars:
+            return text
+            
+        # Truncate to estimated character limit
+        truncated = text[:estimated_chars]
+        
+        # Try to truncate at word boundary for better context
+        if ' ' in truncated:
+            # Find last complete word
+            last_space = truncated.rfind(' ')
+            if last_space > estimated_chars * 0.8:  # Don't lose too much text
+                truncated = truncated[:last_space]
+        
+        return truncated
+
     def analyze_song(self, title: str, artist: str, lyrics: str, user_id: Optional[int] = None) -> AnalysisResult:
         """
         Comprehensive song analysis using free Hugging Face models
@@ -133,11 +171,10 @@ class HuggingFaceAnalyzer:
             logger.info(f"Starting HuggingFace analysis for '{title}' by {artist}")
             
             # Combine all text for analysis
-            all_text = f"{title} {artist} {lyrics}".lower().strip()
+            full_text = f"{title} {artist} {lyrics}".lower().strip()
             
-            # Truncate if too long for models (most have 512 token limit)
-            if len(all_text) > 2000:  # Conservative estimate for tokens
-                all_text = all_text[:2000]
+            # Safe token-based truncation for AI models
+            all_text = self._safe_truncate_text(full_text)
             # 1. Keyword-based theme detection (fast)
             christian_themes = self._detect_christian_themes(all_text)
             concern_flags = self._detect_concerns(all_text)
@@ -258,9 +295,9 @@ class HuggingFaceAnalyzer:
             return None
             
         try:
-            # Truncate text to avoid token length issues (approximately 512 tokens)
-            truncated_text = text[:2000] if len(text) > 2000 else text
-            result = self.sentiment_analyzer(truncated_text)
+            # Safe token-based truncation
+            safe_text = self._safe_truncate_text(text)
+            result = self.sentiment_analyzer(safe_text)
             if result:
                 return {
                     'scores': result[0] if isinstance(result[0], list) else result,
@@ -277,9 +314,9 @@ class HuggingFaceAnalyzer:
             return None
             
         try:
-            # Truncate text to avoid token length issues (approximately 512 tokens)
-            truncated_text = text[:2000] if len(text) > 2000 else text
-            result = self.content_classifier(truncated_text)
+            # Safe token-based truncation
+            safe_text = self._safe_truncate_text(text)
+            result = self.content_classifier(safe_text)
             if result:
                 return {
                     'scores': result[0] if isinstance(result[0], list) else result,
@@ -296,9 +333,9 @@ class HuggingFaceAnalyzer:
             return None
             
         try:
-            # Truncate text to avoid token length issues (approximately 512 tokens)
-            truncated_text = text[:2000] if len(text) > 2000 else text
-            result = self.emotion_analyzer(truncated_text)
+            # Safe token-based truncation
+            safe_text = self._safe_truncate_text(text)
+            result = self.emotion_analyzer(safe_text)
             if result:
                 return {
                     'scores': result[0] if isinstance(result[0], list) else result,

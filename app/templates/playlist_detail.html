@@ -9,109 +9,72 @@
 {% block title %}{{ playlist.name }} - Christian Music Alignment{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <!-- Playlist Header - SIMPLIFIED -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <img src="{{ playlist.image_url or url_for('static', filename='images/default_playlist_image.png') }}" 
-                                 alt="Playlist Cover" class="img-fluid rounded">
-                        </div>
-                        <div class="col-md-9">
-                            <h1 class="display-6">{{ playlist.name }}</h1>
-                            <p class="text-muted">{{ playlist.description or 'No description available' }}</p>
-                            <p class="text-muted">
-                                <strong>{{ songs|length }}</strong> songs
-                                • by {{ current_user.display_name }}
-                            </p>
-                            
-                            <!-- Simple Action Buttons -->
-                            <div class="btn-group" role="group">
-                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                                </a>
-                                <form method="post" action="{{ url_for('main.analyze_playlist', playlist_id=playlist.id) }}" class="d-inline">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-search"></i> Analyze All Songs
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
+<div class="container-fluid" data-playlist-id="{{ playlist.id }}" data-playlist-name="{{ playlist.name }}">
+    <div class="row">
+        <!-- Main content area -->
+        <div class="col-lg-12">
+            <!-- Playlist header -->
+            <div class="row mb-4 align-items-center">
+                <div class="col-md-2">
+                    <img src="{{ url_for('static', filename='images/default_playlist_image.png') }}" 
+                         alt="Playlist Cover" class="img-fluid rounded shadow">
+                </div>
+                <div class="col-md-10">
+                    <h1 class="display-6 fw-bold">{{ playlist.name }}</h1>
+                    <p class="text-muted lead">{{ playlist.description or "No description available" }}</p>
+                    <p class="text-muted">
+                        <strong>{{ songs|length }}</strong> songs • by {{ current_user.display_name }}
+                    </p>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                        <button type="button" class="btn btn-primary analyze-playlist-btn">
+                            <i class="fas fa-search"></i> Analyze All Songs
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-    
-    <!-- Songs List - SIMPLIFIED -->
-    <div class="row">
-        <div class="col-md-12">
+
+            <!-- Songs table -->
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Songs in this Playlist</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-music me-2"></i>Songs in this Playlist</h5>
                 </div>
                 <div class="card-body p-0">
-                    {% if songs %}
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th width="50">#</th>
-                                        <th width="80">Art</th>
-                                        <th>Song</th>
-                                        <th>Album</th>
-                                        <th width="120">Score</th>
-                                        <th width="150">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in songs %}
-                                        {% include "components/playlist/song_row.html" %}
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-5">
-                            <i class="fas fa-music fa-3x text-muted mb-3"></i>
-                            <h5>No songs in this playlist</h5>
-                            <p class="text-muted">This playlist appears to be empty.</p>
-                        </div>
-                    {% endif %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Art</th>
+                                    <th scope="col">Song</th>
+                                    <th scope="col">Album</th>
+                                    <th scope="col">Score</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in songs %}
+                                    {% include 'components/playlist/song_row.html' %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-// Simple analyze function
-function analyzeSong(songId) {
-    // Create a form and submit it
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `/analyze_song/${songId}`;
-    
-    // Add CSRF token if available
-    const csrfToken = document.querySelector('meta[name=csrf-token]');
-    if (csrfToken) {
-        const hiddenField = document.createElement('input');
-        hiddenField.type = 'hidden';
-        hiddenField.name = 'csrf_token';
-        hiddenField.value = csrfToken.getAttribute('content');
-        form.appendChild(hiddenField);
-    }
-    
-    document.body.appendChild(form);
-    form.submit();
-}
-</script>
+<!-- Toast container for notifications -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+    <!-- Toast notifications will be dynamically added here -->
+</div>
+
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
-<!-- No individual script needed - main.js handles all functionality -->
+<!-- Song Analysis JavaScript -->
+<script src="{{ url_for('static', filename='js/song-analyzer.js') }}"></script>
 {% endblock %}

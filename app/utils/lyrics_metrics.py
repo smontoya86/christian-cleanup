@@ -31,6 +31,22 @@ class LyricsMetricsCollector:
         """Record an error event."""
         pass  # Simplified - no actual tracking
     
+    def record_cache_operation(self, operation: str, **kwargs):
+        """Record a cache operation."""
+        pass  # Simplified - no actual tracking
+    
+    def record_api_call(self, duration: float, **kwargs):
+        """Record an API call."""
+        pass  # Simplified - no actual tracking
+    
+    def record_retry_attempt(self, attempt: int, sleep_time: float, **kwargs):
+        """Record a retry attempt."""
+        pass  # Simplified - no actual tracking
+    
+    def record_rate_limit_event(self, event_type: str, sleep_time: float = 0.0, **kwargs):
+        """Record a rate limit event."""
+        pass  # Simplified - no actual tracking
+    
     def get_stats(self) -> Dict[str, Any]:
         """Get basic stats."""
         return {

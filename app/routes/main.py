@@ -4,12 +4,12 @@ Main application routes for playlist management and song analysis
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from flask_login import login_required, current_user
-from sqlalchemy import desc
+from sqlalchemy import desc, func, and_
 
 from .. import db
 from ..models import User, Playlist, Song, AnalysisResult, Whitelist, PlaylistSong
 from ..services.spotify_service import SpotifyService
-from ..services.analysis_service import AnalysisService
+from ..services.unified_analysis_service import UnifiedAnalysisService
 
 bp = Blueprint('main', __name__)
 
@@ -88,26 +88,27 @@ def sync_playlists():
 @bp.route('/playlist/<int:playlist_id>')
 @login_required
 def playlist_detail(playlist_id):
-    """Detailed view of a playlist with songs - SIMPLIFIED"""
-    # Get the playlist (simple)
+    """Detailed view of a playlist with songs and analysis"""
+    # Verify user has access to this playlist
     playlist = Playlist.query.filter_by(
-        id=playlist_id, 
+        id=playlist_id,
         owner_id=current_user.id
     ).first_or_404()
     
-    # Get songs with their analysis (simple query)
-    songs = db.session.query(Song, AnalysisResult, PlaylistSong).join(
+    # Get songs with playlist position (simple query)
+    songs_with_position = db.session.query(Song, PlaylistSong).join(
         PlaylistSong, Song.id == PlaylistSong.song_id
-    ).outerjoin(
-        AnalysisResult, Song.id == AnalysisResult.song_id
     ).filter(
         PlaylistSong.playlist_id == playlist_id
     ).order_by(PlaylistSong.track_position).all()
     
-    # Simple data structure for template
+    # Build data structure for template
     songs_data = []
-    for song, analysis, playlist_song in songs:
-        # Check if song is whitelisted (simple check)
+    for song, playlist_song in songs_with_position:
+        # Get the most recent analysis for this song (same approach as song_detail)
+        analysis = AnalysisResult.query.filter_by(song_id=song.id).order_by(desc(AnalysisResult.created_at)).first()
+        
+        # Check if song is whitelisted
         is_whitelisted = Whitelist.query.filter_by(
             user_id=current_user.id,
             spotify_id=song.spotify_id,
@@ -166,8 +167,8 @@ def analyze_song(song_id):
     ).first_or_404()
     
     try:
-        analyzer = AnalysisService()
-        analyzer.analyze_song(song)
+        analyzer = UnifiedAnalysisService()
+        analyzer.enqueue_analysis_job(song.id, user_id=current_user.id)
         flash(f'Analysis started for "{song.title}". Check back in a moment for results!', 'info')
     except Exception as e:
         current_app.logger.error(f'Song analysis error: {e}')
@@ -186,8 +187,25 @@ def analyze_playlist(playlist_id):
     ).first_or_404()
     
     try:
-        analyzer = AnalysisService()
-        job_count = analyzer.analyze_playlist(playlist)
+        analyzer = UnifiedAnalysisService()
+        # Get song count for playlist
+        song_count = db.session.query(Song).join(PlaylistSong).filter(
+            PlaylistSong.playlist_id == playlist.id
+        ).count()
+        
+        # Queue analysis for all songs in playlist
+        songs = db.session.query(Song).join(PlaylistSong).filter(
+            PlaylistSong.playlist_id == playlist.id
+        ).all()
+        
+        job_count = 0
+        for song in songs:
+            try:
+                analyzer.enqueue_analysis_job(song.id, user_id=current_user.id)
+                job_count += 1
+            except Exception as song_error:
+                current_app.logger.warning(f'Failed to queue song {song.id}: {song_error}')
+        
         flash(f'Analysis started for {job_count} songs in "{playlist.name}". Check back for results!', 'info')
     except Exception as e:
         current_app.logger.error(f'Playlist analysis error: {e}')

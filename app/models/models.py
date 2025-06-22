@@ -644,6 +644,40 @@ class Song(db.Model):
                 return []
         return []
     
+    @property
+    def positive_themes_identified(self):
+        """
+        Get the positive themes from the most recent analysis.
+        
+        Returns:
+            list: List of positive theme dictionaries, empty list if not analyzed.
+        """
+        result = self.analysis_results.filter_by(status='completed').order_by(AnalysisResult.analyzed_at.desc()).first()
+        if result and result.positive_themes_identified:
+            try:
+                import json
+                return json.loads(result.positive_themes_identified) if isinstance(result.positive_themes_identified, str) else result.positive_themes_identified
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return []
+    
+    @property
+    def purity_flags_details(self):
+        """
+        Get the purity flags details from the most recent analysis.
+        
+        Returns:
+            list: List of purity flag dictionaries, empty list if not analyzed.
+        """
+        result = self.analysis_results.filter_by(status='completed').order_by(AnalysisResult.analyzed_at.desc()).first()
+        if result and result.purity_flags_details:
+            try:
+                import json
+                return json.loads(result.purity_flags_details) if isinstance(result.purity_flags_details, str) else result.purity_flags_details
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return []
+    
     def __repr__(self):
         """
         Return a string representation of the Song instance.
@@ -817,6 +851,58 @@ class AnalysisResult(db.Model):
         self.supporting_scripture = supporting_scripture
         self.analyzed_at = datetime.now(timezone.utc)
         self.updated_at = datetime.now(timezone.utc)
+    
+    @property
+    def biblical_themes_parsed(self):
+        """
+        Get the biblical themes as parsed Python objects.
+        
+        Returns:
+            list: List of biblical theme dictionaries, empty list if not analyzed.
+        """
+        if self.biblical_themes:
+            # Already parsed since it's a JSON column
+            return self.biblical_themes if isinstance(self.biblical_themes, list) else []
+        return []
+    
+    @property
+    def supporting_scripture_parsed(self):
+        """
+        Get the supporting scripture as parsed Python objects.
+        
+        Returns:
+            list: List of scripture reference dictionaries, empty list if not analyzed.
+        """
+        if self.supporting_scripture:
+            # Already parsed since it's a JSON column
+            return self.supporting_scripture if isinstance(self.supporting_scripture, list) else []
+        return []
+    
+    @property
+    def positive_themes_identified_parsed(self):
+        """
+        Get the positive themes as parsed Python objects.
+        
+        Returns:
+            list: List of positive theme dictionaries, empty list if not analyzed.
+        """
+        if self.positive_themes_identified:
+            # Already parsed since it's a JSON column
+            return self.positive_themes_identified if isinstance(self.positive_themes_identified, list) else []
+        return []
+    
+    @property
+    def purity_flags_details_parsed(self):
+        """
+        Get the purity flags as parsed Python objects.
+        
+        Returns:
+            list: List of purity flag dictionaries, empty list if not analyzed.
+        """
+        if self.purity_flags_details:
+            # Already parsed since it's a JSON column
+            return self.purity_flags_details if isinstance(self.purity_flags_details, list) else []
+        return []
         
     def mark_failed(self, error_message):
         """

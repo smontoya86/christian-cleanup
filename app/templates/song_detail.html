@@ -133,13 +133,13 @@
                             
 
                             
-                            {% if analysis and analysis.purity_flags_triggered and (analysis.purity_flags_triggered | length > 0) %}
+                            {% if analysis and analysis.purity_flags_details and (analysis.purity_flags_details | length > 0) %}
                             <li class="list-group-item">
                                 <strong class="text-primary">Concerns Identified:</strong>
                                 <div class="mt-2">
-                                    {% for flag in analysis.purity_flags_triggered %}
+                                    {% for flag in analysis.purity_flags_details %}
                                     <div class="alert alert-warning alert-sm mb-2">
-                                        <strong>{{ flag.flag_type if flag.flag_type else (flag.get('flag_type', 'Unknown Flag') if flag is mapping else 'Unknown Flag') }}</strong>
+                                        <strong>{{ flag.type if flag.type else (flag.get('type', 'Unknown Flag') if flag is mapping else 'Unknown Flag') }}</strong>
                                         {% if flag is mapping %}
                                             {% if flag.description or flag.get('description') %}
                                             <br><small>{{ flag.description or flag.get('description') }}</small>
@@ -212,6 +212,8 @@
                                 {% endif %}
                             </div>
                             {% endfor %}
+                        {% elif analysis %}
+                            <p class="text-muted mb-0 fst-italic">No biblical themes found in this song's analysis.</p>
                         {% else %}
                             <p class="text-muted mb-0 fst-italic">No biblical themes identified yet. Analyze this song to discover any biblical content or themes.</p>
                         {% endif %}
@@ -267,6 +269,8 @@
                                     <p class="mb-0">{{ analysis.supporting_scripture }}</p>
                                 </div>
                             {% endif %}
+                        {% elif analysis %}
+                            <p class="text-muted mb-0 fst-italic">No scripture references found in this song's analysis.</p>
                         {% else %}
                             <p class="text-muted mb-0 fst-italic">No scripture references identified yet. Analyze this song to discover any biblical connections or verses.</p>
                         {% endif %}
@@ -294,18 +298,18 @@
                                 </button>
                             </div>
                             
-                            {% set calculated_concern = concern_level %}
+                            {% set calculated_concern = analysis.concern_level.lower() if analysis and analysis.concern_level else None %}
                             {% if calculated_concern in ['high', 'extreme'] %}
                                 <!-- High/Extreme concern songs show whitelist option after review -->
                                 <div class="alert alert-warning mb-3">
                                     <i class="fas fa-exclamation-triangle me-2"></i>
-                                    <strong>This song has {{ calculated_concern }} concern level.</strong><br>
+                                    <strong>This song has {{ analysis.concern_level }} concern level.</strong><br>
                                     <small>Review the analysis above, then decide if you want to whitelist this song.</small>
                                 </div>
                                 
                                 <form action="{{ url_for('main.whitelist_song', song_id=song.id) }}" method="POST" class="d-inline">
                                     <button type="submit" class="btn btn-success" 
-                                            onclick="return confirm('Are you sure you want to whitelist this song despite its {{ calculated_concern }} concern level?')"
+                                            onclick="return confirm('Are you sure you want to whitelist this song despite its {{ analysis.concern_level }} concern level?')"
                                             title="Add this song to your whitelist">
                                         <i class="fas fa-check me-2"></i>Whitelist This Song
                                     </button>
@@ -313,7 +317,7 @@
                                 
                             {% elif calculated_concern in ['low', 'medium'] %}
                                 <!-- Low/Medium concern songs can be whitelisted without warning -->
-                                <p class="text-muted mb-3">This song has {{ calculated_concern }} concern level and is generally suitable.</p>
+                                <p class="text-muted mb-3">This song has {{ analysis.concern_level }} concern level and is generally suitable.</p>
                                 
                                 <form action="{{ url_for('main.whitelist_song', song_id=song.id) }}" method="POST" class="d-inline">
                                     <button type="submit" class="btn btn-outline-success" 
