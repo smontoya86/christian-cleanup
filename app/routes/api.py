@@ -22,11 +22,12 @@ from datetime import datetime
 from sqlalchemy import text
 
 from .. import db
-from ..models.models import Playlist, Song, AnalysisResult, PlaylistSong
+from ..models.models import Playlist, Song, AnalysisResult, PlaylistSong, User, Blacklist, Whitelist
 from ..services.spotify_service import SpotifyService
 from ..services.unified_analysis_service import UnifiedAnalysisService
 from ..utils.health_monitor import health_monitor
 from ..utils.prometheus_metrics import get_metrics, metrics_collector
+from ..utils.auth import admin_required
 
 bp = Blueprint('api', __name__)
 
@@ -692,6 +693,7 @@ def get_analysis_status():
 
 @bp.route('/admin/reanalysis-status')
 @login_required
+@admin_required
 def get_admin_reanalysis_status():
     """Get admin reanalysis status (placeholder for now)"""
     # For now, return no active reanalysis since this is admin-only functionality
@@ -701,6 +703,343 @@ def get_admin_reanalysis_status():
         'progress': 0,
         'message': 'No active reanalysis'
     })
+
+
+@bp.route('/admin/reanalyze-user/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_reanalyze_user(user_id):
+    """
+    Admin endpoint to trigger account-wide re-analysis for a specific user.
+    
+    This endpoint allows administrators to force re-analysis of all songs
+    for a given user account. It resets existing analysis results to pending
+    and enqueues analysis jobs for all user's songs.
+    
+    Args:
+        user_id (int): The ID of the user account to re-analyze
+        
+    Returns:
+        JSON response with success status and queued song count
+        
+    Security:
+        - Requires admin authentication (@admin_required)
+        - Only admins can trigger re-analysis for other users
+    """
+    try:
+        # Verify target user exists
+        target_user = User.query.get(user_id)
+        if not target_user:
+            return jsonify({
+                'success': False,
+                'error': f'User with ID {user_id} not found'
+            }), 404
+
+        # Get all songs from all playlists owned by the target user
+        user_songs = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
+            Playlist.owner_id == user_id
+        ).all()
+
+        if not user_songs:
+            return jsonify({
+                'success': True,
+                'message': f'No songs found for user {target_user.display_name or target_user.email}',
+                'queued_count': 0,
+                'user_id': user_id
+            })
+
+        # Reset existing analysis results to pending status
+        song_ids = [song.id for song in user_songs]
+        db.session.query(AnalysisResult).filter(
+            AnalysisResult.song_id.in_(song_ids)
+        ).update({
+            'status': 'pending',
+            'score': None,
+            'concern_level': None,
+            'explanation': None,
+            'themes': None,
+            'concerns': None,
+            'analyzed_at': datetime.now()
+        }, synchronize_session=False)
+
+        # Create analysis records for songs without existing analysis
+        existing_analyses = db.session.query(AnalysisResult.song_id).filter(
+            AnalysisResult.song_id.in_(song_ids)
+        ).all()
+        existing_song_ids = {row[0] for row in existing_analyses}
+
+        for song in user_songs:
+            if song.id not in existing_song_ids:
+                analysis = AnalysisResult(
+                    song_id=song.id,
+                    status='pending',
+                    created_at=datetime.now()
+                )
+                db.session.add(analysis)
+
+        # Enqueue analysis jobs (using UnifiedAnalysisService)
+        analysis_service = UnifiedAnalysisService()
+        queued_jobs = []
+        
+        for song in user_songs:
+            try:
+                job = analysis_service.enqueue_analysis_job(
+                    song.id, 
+                    user_id=user_id, 
+                    priority='normal'  # Admin-triggered jobs get normal priority
+                )
+                queued_jobs.append(job)
+            except Exception as e:
+                current_app.logger.warning(f'Failed to enqueue analysis for song {song.id}: {e}')
+                # Continue with other songs even if one fails
+
+        db.session.commit()
+
+        current_app.logger.info(
+            f'Admin {current_user.id} triggered re-analysis for user {user_id}: '
+            f'{len(user_songs)} songs queued'
+        )
+
+        return jsonify({
+            'success': True,
+            'message': f'Successfully queued {len(user_songs)} songs for re-analysis',
+            'queued_count': len(user_songs),
+            'user_id': user_id,
+            'user_name': target_user.display_name or target_user.email,
+            'jobs_enqueued': len(queued_jobs)
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Admin re-analysis failed for user {user_id}: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to start admin re-analysis'
+        }), 500
+
+
+# Blacklist Management API
+@bp.route('/blacklist', methods=['POST'])
+@login_required
+def add_blacklist_item():
+    """
+    Add an item to the user's blacklist.
+    
+    If the item exists on the whitelist, it will be moved to the blacklist.
+    If the item already exists on the blacklist, the reason will be updated.
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'No JSON data provided'
+            }), 400
+            
+        # Validate required fields
+        spotify_id = data.get('spotify_id')
+        item_type = data.get('item_type')
+        
+        if not spotify_id:
+            return jsonify({
+                'success': False,
+                'error': 'spotify_id is required'
+            }), 400
+            
+        if not item_type:
+            return jsonify({
+                'success': False,
+                'error': 'item_type is required'
+            }), 400
+            
+        # Validate item_type
+        valid_types = ['song', 'artist', 'playlist']
+        if item_type not in valid_types:
+            return jsonify({
+                'success': False,
+                'error': f'item_type must be one of: {", ".join(valid_types)}'
+            }), 400
+            
+        name = data.get('name', '')
+        reason = data.get('reason', '')
+        
+        # Check if item exists in whitelist
+        whitelist_entry = Whitelist.query.filter_by(
+            user_id=current_user.id,
+            spotify_id=spotify_id,
+            item_type=item_type
+        ).first()
+        
+        if whitelist_entry:
+            # Move from whitelist to blacklist
+            db.session.delete(whitelist_entry)
+            
+            blacklist_entry = Blacklist(
+                user_id=current_user.id,
+                spotify_id=spotify_id,
+                item_type=item_type,
+                name=name,
+                reason=reason
+            )
+            db.session.add(blacklist_entry)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Item moved from whitelist to blacklist',
+                'item': blacklist_entry.to_dict()
+            }), 200
+            
+        # Check if item already exists in blacklist
+        existing_entry = Blacklist.query.filter_by(
+            user_id=current_user.id,
+            spotify_id=spotify_id,
+            item_type=item_type
+        ).first()
+        
+        if existing_entry:
+            # Update existing entry's reason
+            existing_entry.reason = reason
+            if name:
+                existing_entry.name = name
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Blacklist item reason updated',
+                'item': existing_entry.to_dict()
+            }), 200
+            
+        # Create new blacklist entry
+        blacklist_entry = Blacklist(
+            user_id=current_user.id,
+            spotify_id=spotify_id,
+            item_type=item_type,
+            name=name,
+            reason=reason
+        )
+        
+        db.session.add(blacklist_entry)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Item added to blacklist',
+            'item': blacklist_entry.to_dict()
+        }), 201
+        
+    except Exception as e:
+        current_app.logger.error(f'Error adding blacklist item: {e}')
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to add item to blacklist'
+        }), 500
+
+
+@bp.route('/blacklist', methods=['GET'])
+@login_required
+def get_blacklist_items():
+    """
+    Get all items in the user's blacklist.
+    
+    Optional query parameter:
+    - item_type: Filter by specific item type (song, artist, playlist)
+    """
+    try:
+        item_type_filter = request.args.get('item_type')
+        
+        query = Blacklist.query.filter_by(user_id=current_user.id)
+        
+        if item_type_filter:
+            valid_types = ['song', 'artist', 'playlist']
+            if item_type_filter not in valid_types:
+                return jsonify({
+                    'success': False,
+                    'error': f'Invalid item_type. Must be one of: {", ".join(valid_types)}'
+                }), 400
+            query = query.filter_by(item_type=item_type_filter)
+            
+        blacklist_items = query.order_by(Blacklist.added_date.desc()).all()
+        
+        return jsonify({
+            'success': True,
+            'items': [item.to_dict() for item in blacklist_items],
+            'total_count': len(blacklist_items)
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f'Error retrieving blacklist items: {e}')
+        return jsonify({
+            'success': False,
+            'error': 'Failed to retrieve blacklist items'
+        }), 500
+
+
+@bp.route('/blacklist/<int:entry_id>', methods=['DELETE'])
+@login_required
+def remove_blacklist_item(entry_id):
+    """
+    Remove a specific item from the user's blacklist.
+    """
+    try:
+        blacklist_entry = Blacklist.query.filter_by(
+            id=entry_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not blacklist_entry:
+            return jsonify({
+                'success': False,
+                'error': 'Blacklist entry not found'
+            }), 404
+            
+        item_name = blacklist_entry.name or f"{blacklist_entry.item_type} {blacklist_entry.spotify_id}"
+        
+        db.session.delete(blacklist_entry)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Removed \'{item_name}\' from blacklist'
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f'Error removing blacklist item {entry_id}: {e}')
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to remove item from blacklist'
+        }), 500
+
+
+@bp.route('/blacklist/clear', methods=['POST'])
+@login_required  
+def clear_blacklist():
+    """
+    Remove all items from the user's blacklist.
+    """
+    try:
+        items_count = Blacklist.query.filter_by(user_id=current_user.id).count()
+        
+        deleted_count = Blacklist.query.filter_by(user_id=current_user.id).delete()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Cleared {deleted_count} items from blacklist',
+            'items_removed': deleted_count
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f'Error clearing blacklist: {e}')
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to clear blacklist'
+        }), 500
 
 
 @bp.errorhandler(404)
