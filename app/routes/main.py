@@ -188,6 +188,9 @@ def analyze_playlist(playlist_id):
         owner_id=current_user.id
     ).first_or_404()
     
+    # Check if this is an AJAX request
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
     try:
         analyzer = UnifiedAnalysisService()
         # Get song count for playlist
@@ -201,19 +204,139 @@ def analyze_playlist(playlist_id):
         ).all()
         
         job_count = 0
-        for song in songs:
-            try:
-                analyzer.enqueue_analysis_job(song.id, user_id=current_user.id)
-                job_count += 1
-            except Exception as song_error:
-                current_app.logger.warning(f'Failed to queue song {song.id}: {song_error}')
+        errors = []
         
-        flash(f'Analysis started for {job_count} songs in "{playlist.name}". Check back for results!', 'info')
+        # For AJAX requests, create pending analysis records first for progress tracking
+        if is_ajax:
+            from ..models.models import AnalysisResult
+            from datetime import datetime
+            
+            for song in songs:
+                try:
+                    # Check if analysis already exists
+                    existing_analysis = AnalysisResult.query.filter_by(song_id=song.id).first()
+                    if not existing_analysis:
+                        # Create pending analysis record for progress tracking
+                        pending_analysis = AnalysisResult(
+                            song_id=song.id,
+                            status='pending',
+                            created_at=datetime.utcnow()
+                        )
+                        db.session.add(pending_analysis)
+                        job_count += 1
+                    else:
+                        # If already analyzed, count it as queued for progress calculation
+                        job_count += 1
+                except Exception as song_error:
+                    error_msg = f'Failed to create pending analysis for song {song.id}: {song_error}'
+                    current_app.logger.warning(error_msg)
+                    errors.append(error_msg)
+            
+            # Commit pending analyses
+            db.session.commit()
+            
+            # Start background processing (we'll do this synchronously but with progress updates)
+            if job_count > 0:
+                # Import here to avoid circular imports
+                from threading import Thread
+                
+                # Capture context before thread starts
+                app = current_app._get_current_object()
+                user_id = current_user.id  # Capture user_id before thread starts
+                song_ids = [song.id for song in songs]  # Get song IDs instead of objects
+                
+                def process_playlist_analysis():
+                    """Process playlist analysis in background thread"""
+                    with app.app_context():
+                        try:
+                            app.logger.info(f'Starting background analysis for playlist {playlist_id} with {len(song_ids)} songs')
+                            
+                            for i, song_id in enumerate(song_ids, 1):
+                                try:
+                                    # Get fresh song object in this thread's context
+                                    song = Song.query.get(song_id)
+                                    if not song:
+                                        app.logger.warning(f'Song {song_id} not found, skipping')
+                                        continue
+                                        
+                                    app.logger.info(f'Processing song {i}/{len(song_ids)}: {song.title}')
+                                    
+                                    # Check if this song needs analysis
+                                    analysis = AnalysisResult.query.filter_by(song_id=song_id).first()
+                                    if analysis and analysis.status == 'pending':
+                                        # Update status to in_progress
+                                        analysis.status = 'in_progress'
+                                        db.session.commit()
+                                        
+                                        # Perform the actual analysis
+                                        analyzer.enqueue_analysis_job(song_id, user_id=user_id)
+                                        
+                                        app.logger.info(f'Completed analysis for song {i}/{len(song_ids)}: {song.title}')
+                                    else:
+                                        app.logger.info(f'Skipping song {i}/{len(song_ids)}: {song.title} (already analyzed)')
+                                        
+                                except Exception as song_error:
+                                    app.logger.error(f'Failed to analyze song {song_id}: {song_error}')
+                                    # Mark as failed
+                                    try:
+                                        analysis = AnalysisResult.query.filter_by(song_id=song_id).first()
+                                        if analysis:
+                                            analysis.status = 'failed'
+                                            db.session.commit()
+                                    except Exception as db_error:
+                                        app.logger.error(f'Failed to update analysis status: {db_error}')
+                            
+                            app.logger.info(f'Completed background analysis for playlist {playlist_id}')
+                        except Exception as e:
+                            app.logger.error(f'Background analysis thread failed: {e}')
+                
+                # Start background thread
+                thread = Thread(target=process_playlist_analysis)
+                thread.daemon = True
+                thread.start()
+        else:
+            # For non-AJAX requests, do synchronous analysis
+            for song in songs:
+                try:
+                    analyzer.enqueue_analysis_job(song.id, user_id=current_user.id)
+                    job_count += 1
+                except Exception as song_error:
+                    error_msg = f'Failed to queue song {song.id}: {song_error}'
+                    current_app.logger.warning(error_msg)
+                    errors.append(error_msg)
+        
+        if is_ajax:
+            if job_count > 0:
+                return jsonify({
+                    'success': True,
+                    'message': f'Analysis started for {job_count} songs',
+                    'jobs_queued': job_count,
+                    'total_songs': len(songs),
+                    'errors': errors
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'No songs could be queued for analysis',
+                    'errors': errors
+                }), 400
+        else:
+            flash(f'Analysis started for {job_count} songs in "{playlist.name}". Check back for results!', 'info')
+            return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+            
     except Exception as e:
-        current_app.logger.error(f'Playlist analysis error: {e}')
-        flash('Error starting playlist analysis. Please try again.', 'error')
-    
-    return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+        error_msg = f'Playlist analysis error: {e}'
+        current_app.logger.error(error_msg)
+        
+        if is_ajax:
+            return jsonify({
+                'success': False,
+                'message': 'Error starting playlist analysis. Please try again.',
+                'error': str(e)
+            }), 500
+        else:
+            flash('Error starting playlist analysis. Please try again.', 'error')
+            return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
 
 
 @bp.route('/whitelist_song/<int:song_id>', methods=['POST'])

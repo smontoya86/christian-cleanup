@@ -18,6 +18,19 @@ document.addEventListener('DOMContentLoaded', function() {
             
             analyzeSong(songId, songTitle, songArtist, e.target);
         }
+        
+        // Handle playlist analysis button
+        if (e.target.classList.contains('analyze-playlist-btn')) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            
+            const playlistId = e.target.getAttribute('data-playlist-id');
+            const playlistName = e.target.getAttribute('data-playlist-name') || 'Unknown Playlist';
+            
+            console.log(`🎯 Starting playlist analysis for Playlist ID: ${playlistId}, Name: ${playlistName}`);
+            
+            analyzePlaylist(playlistId, playlistName, e.target);
+        }
     }, true); // Use capture phase to get priority over other event handlers
     
     console.log('✅ Song Analyzer Event Listeners Ready');
@@ -204,6 +217,265 @@ function updateSongRow(songId, result) {
 function resetButton(buttonElement) {
     buttonElement.disabled = false;
     buttonElement.textContent = 'Analyze';
+}
+
+function analyzePlaylist(playlistId, playlistName, buttonElement) {
+    console.log(`🔬 analyzePlaylist called: ${playlistId} - ${playlistName}`);
+    
+    // Show ETA toast immediately
+    showPlaylistEtaToast(playlistName);
+    
+    // Disable the button and show loading state
+    buttonElement.disabled = true;
+    const originalText = buttonElement.innerHTML;
+    buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing Playlist...';
+    
+    // Start the playlist analysis
+    console.log(`📤 Starting AJAX request to /analyze_playlist/${playlistId}`);
+    fetch(`/analyze_playlist/${playlistId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        console.log(`📡 Playlist analysis response status: ${response.status}`);
+        
+        if (response.redirected) {
+            // The server redirected us (typical for non-AJAX requests)
+            console.log('✅ Playlist analysis started successfully (redirected)');
+            showPlaylistStartedToast(playlistName);
+            
+            // Start polling for progress instead of just reloading
+            pollPlaylistProgress(playlistId, playlistName, buttonElement, originalText);
+            
+            return { success: true };
+        } else {
+            // AJAX request - parse JSON response
+            return response.json();
+        }
+    })
+    .then(data => {
+        if (data && data.success === false) {
+            console.error('❌ Playlist analysis failed:', data);
+            showErrorToast('Playlist Analysis Failed', data.message || 'Unknown error');
+            resetPlaylistButton(buttonElement, originalText);
+        } else if (data && data.success === true) {
+            console.log('✅ Playlist analysis started successfully (AJAX)');
+            showPlaylistStartedToast(playlistName);
+            
+            // Start polling for progress
+            pollPlaylistProgress(playlistId, playlistName, buttonElement, originalText);
+        }
+    })
+    .catch(error => {
+        console.error('💥 Error starting playlist analysis:', error);
+        showErrorToast('Error Starting Analysis', 'Failed to start playlist analysis. Please try again.');
+        resetPlaylistButton(buttonElement, originalText);
+    });
+}
+
+function pollPlaylistProgress(playlistId, playlistName, buttonElement, originalText) {
+    console.log(`🔄 Starting progress polling for playlist ${playlistId}`);
+    
+    let lastProgress = 0;
+    let progressToastId = null;
+    
+    const updateProgress = (progress, message) => {
+        console.log(`🎯 updateProgress called: ${progress}% - ${message}`);
+        
+        // Update button text with progress
+        const newButtonText = `<i class="fas fa-spinner fa-spin"></i> ${progress}% Complete`;
+        console.log(`🔄 Updating button text to: ${newButtonText}`);
+        buttonElement.innerHTML = newButtonText;
+        
+        // Update or create progress toast
+        if (progressToastId) {
+            console.log(`📝 Updating existing toast: ${progressToastId}`);
+            const existingToast = document.getElementById(progressToastId);
+            if (existingToast) {
+                const toastBody = existingToast.querySelector('.toast-body');
+                if (toastBody) {
+                    toastBody.innerHTML = `<strong>Analysis Progress</strong><br>${message}`;
+                    console.log(`✅ Toast updated with: ${message}`);
+                } else {
+                    console.log(`❌ Toast body not found in existing toast`);
+                }
+            } else {
+                console.log(`❌ Existing toast not found: ${progressToastId}`);
+            }
+        } else {
+            console.log(`🆕 Creating new progress toast`);
+            progressToastId = 'progress-toast-' + Date.now();
+            createProgressToast(progressToastId, 'Analysis Progress', message, 'info');
+            console.log(`✅ Created new toast: ${progressToastId}`);
+        }
+    };
+    
+    const pollInterval = setInterval(() => {
+        fetch(`/api/playlists/${playlistId}/analysis-status`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            console.log(`📡 Poll response status: ${response.status}, redirected: ${response.redirected}, url: ${response.url}`);
+            if (response.status === 302 || response.redirected) {
+                console.error('🚨 Authentication issue: API request redirected to login');
+                clearInterval(pollInterval);
+                showErrorToast('Authentication Error', 'Session expired. Please refresh the page and log in again.');
+                resetPlaylistButton(buttonElement, originalText);
+                return null;
+            }
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data) return; // Skip if no data (authentication error)
+            console.log(`📊 Progress poll data:`, data);
+            
+            if (data.success) {
+                const progress = data.progress || 0;
+                const analyzedCount = data.analyzed_count || 0;
+                const totalCount = data.total_count || 0;
+                const message = data.message || `${analyzedCount}/${totalCount} songs analyzed`;
+                
+                console.log(`🔍 Progress details: ${progress}% (${analyzedCount}/${totalCount}), last: ${lastProgress}%`);
+                
+                // Update progress if it has changed
+                if (progress !== lastProgress) {
+                    console.log(`📈 Updating progress from ${lastProgress}% to ${progress}%`);
+                    updateProgress(progress, message);
+                    lastProgress = progress;
+                } else {
+                    console.log(`⏸️ No progress change (still ${progress}%)`);
+                }
+                
+                // Check if completed
+                if (data.completed && progress >= 100) {
+                    clearInterval(pollInterval);
+                    console.log('🎉 Playlist analysis completed');
+                    
+                    // Remove progress toast
+                    if (progressToastId) {
+                        const progressToast = document.getElementById(progressToastId);
+                        if (progressToast && window.bootstrap && window.bootstrap.Toast) {
+                            const toast = window.bootstrap.Toast.getInstance(progressToast);
+                            if (toast) toast.hide();
+                        }
+                    }
+                    
+                    // Show completion toast
+                    showPlaylistCompletionToast(playlistName, analyzedCount, totalCount);
+                    
+                    // Reset button
+                    resetPlaylistButton(buttonElement, originalText);
+                    
+                    // Refresh page to show updated results
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                }
+            } else {
+                console.error('❌ Error polling progress:', data);
+                clearInterval(pollInterval);
+                showErrorToast('Progress Error', 'Unable to track analysis progress');
+                resetPlaylistButton(buttonElement, originalText);
+            }
+        })
+        .catch(error => {
+            console.error('💥 Error polling playlist progress:', error);
+            clearInterval(pollInterval);
+            showErrorToast('Progress Error', 'Lost connection while tracking progress');
+            resetPlaylistButton(buttonElement, originalText);
+        });
+    }, 5000); // Poll every 5 seconds
+    
+    // Set a timeout to stop polling after reasonable time (15 minutes)
+    setTimeout(() => {
+        clearInterval(pollInterval);
+        if (buttonElement.disabled) {
+            console.log('⏰ Polling timeout - stopping progress tracking');
+            showErrorToast('Analysis Timeout', 'Analysis is taking longer than expected. Please refresh the page to check status.');
+            resetPlaylistButton(buttonElement, originalText);
+        }
+    }, 15 * 60 * 1000); // 15 minutes
+}
+
+function showPlaylistEtaToast(playlistName) {
+    const message = `Starting analysis for all songs in "${playlistName}". Progress will be shown in real-time. This may take several minutes depending on playlist size.`;
+    
+    console.log('📢 Showing playlist ETA toast:', message);
+    createToast('Playlist Analysis Started', message, 'info', 10000);
+}
+
+function showPlaylistStartedToast(playlistName) {
+    const message = `Analysis jobs queued for "${playlistName}". Watch the button and notifications for real-time progress updates.`;
+    
+    console.log('🎉 Showing playlist started toast:', message);
+    createToast('Analysis Jobs Queued', message, 'success', 8000);
+}
+
+function showPlaylistCompletionToast(playlistName, analyzedCount, totalCount) {
+    const message = `Analysis completed for "${playlistName}". ${analyzedCount}/${totalCount} songs analyzed.`;
+    
+    console.log('🎉 Showing playlist completion toast:', message);
+    createToast('Analysis Complete', message, 'success', 6000);
+}
+
+function createProgressToast(toastId, title, message, type = 'info') {
+    // Find or create toast container
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '1055';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create persistent progress toast (no auto-hide)
+    const toastHtml = `
+        <div class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="polite" aria-atomic="true" id="${toastId}">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong><br>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    // Initialize and show toast (persistent, no auto-hide)
+    const toastElement = document.getElementById(toastId);
+    if (window.bootstrap && window.bootstrap.Toast) {
+        const toast = new window.bootstrap.Toast(toastElement, {
+            autohide: false  // Don't auto-hide progress toasts
+        });
+        toast.show();
+        
+        // Remove from DOM when manually dismissed
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            toastElement.remove();
+        });
+    } else {
+        console.warn('Bootstrap Toast not available, using fallback display');
+    }
+}
+
+function resetPlaylistButton(buttonElement, originalText) {
+    buttonElement.disabled = false;
+    buttonElement.innerHTML = originalText;
 }
 
 console.log('📝 Song Analyzer Script Loaded'); 

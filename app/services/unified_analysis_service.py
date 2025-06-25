@@ -67,7 +67,7 @@ class UnifiedAnalysisService:
             raise ValueError(f"Song with ID {song_id} not found")
         
         # Use the analyze_song_complete method for consistent analysis
-        analysis_data = self.analyze_song_complete(song, force=True)
+        analysis_data = self.analyze_song_complete(song, force=True, user_id=user_id)
         
         # Create analysis record with results using mark_completed for proper field population
         analysis = AnalysisResult(song_id=song_id)
@@ -87,18 +87,65 @@ class UnifiedAnalysisService:
         
         return analysis
     
-    def analyze_song_complete(self, song, force=False):
+    def analyze_song(self, song_id, user_id=None):
+        """
+        Analyze a song by ID with user-specific blacklist/whitelist checking.
+        
+        Args:
+            song_id (int): ID of the song to analyze
+            user_id (int, optional): ID of the user requesting analysis
+            
+        Returns:
+            AnalysisResult: Analysis result object
+        """
+        from ..models import Song, AnalysisResult
+        from .. import db
+        
+        song = Song.query.get(song_id)
+        if not song:
+            raise ValueError(f"Song with ID {song_id} not found")
+        
+        # Get analysis data using the complete method
+        analysis_data = self.analyze_song_complete(song, force=True, user_id=user_id)
+        
+        # Create and save analysis result
+        analysis = AnalysisResult(song_id=song_id)
+        analysis.mark_completed(
+            score=analysis_data.get('score', 85),
+            concern_level=analysis_data.get('concern_level', 'low'),
+            themes=analysis_data.get('themes', []),
+            concerns=analysis_data.get('detailed_concerns', []),
+            explanation=analysis_data.get('explanation', 'Analysis completed'),
+            purity_flags_details=analysis_data.get('detailed_concerns', []),
+            positive_themes_identified=analysis_data.get('positive_themes', []),
+            biblical_themes=analysis_data.get('biblical_themes', []),
+            supporting_scripture=analysis_data.get('supporting_scripture', [])
+        )
+        db.session.add(analysis)
+        db.session.commit()
+        
+        return analysis
+    
+    def analyze_song_complete(self, song, force=False, user_id=None):
         """
         Complete analysis for a song object.
         
         Args:
             song: Song object to analyze
             force (bool): Whether to force re-analysis
+            user_id (int, optional): ID of the user requesting analysis (for blacklist/whitelist checks)
             
         Returns:
             dict: Analysis results in expected format
         """
         try:
+            # Check blacklist first (highest priority)
+            if user_id and self._is_blacklisted(song, user_id):
+                return self._create_blacklisted_result(song, user_id)
+            
+            # Check whitelist (second priority)
+            if user_id and self._is_whitelisted(song, user_id):
+                return self._create_whitelisted_result(song, user_id)
             # Use the SimplifiedChristianAnalysisService for analysis
             analysis_result = self.analysis_service.analyze_song(
                 song.title or song.name,
@@ -172,6 +219,66 @@ class UnifiedAnalysisService:
                 'explanation': f'Analysis failed: {str(e)}',
                 'detailed_concerns': [],
                 'positive_themes': [],
+                'biblical_themes': [],
+                'supporting_scripture': []
+            }
+    
+    def _is_blacklisted(self, song, user_id):
+        """Check if a song or its artist is blacklisted by the user."""
+        from ..models import Blacklist
+        
+        # Check if song is directly blacklisted
+        song_blacklisted = Blacklist.query.filter_by(
+            user_id=user_id,
+            spotify_id=song.spotify_id,
+            item_type='song'
+        ).first() is not None
+        
+        if song_blacklisted:
+            return True
+        
+        # Check if artist is blacklisted (assuming we support this)
+        # Note: We'd need the artist's Spotify ID for this to work properly
+        # For now, we'll just check song-level blacklisting
+        return False
+    
+    def _is_whitelisted(self, song, user_id):
+        """Check if a song or its artist is whitelisted by the user."""
+        from ..models import Whitelist
+        
+        # Check if song is directly whitelisted
+        song_whitelisted = Whitelist.query.filter_by(
+            user_id=user_id,
+            spotify_id=song.spotify_id,
+            item_type='song'
+        ).first() is not None
+        
+        return song_whitelisted
+    
+    def _create_blacklisted_result(self, song, user_id):
+        """Create analysis result for blacklisted song."""
+        return {
+            'score': 0,
+            'concern_level': 'high',
+            'themes': [],
+            'status': 'completed',
+            'explanation': f'This song has been blacklisted by you and will not be analyzed further. Blacklisted songs are considered inappropriate regardless of their content.',
+            'detailed_concerns': ['User blacklisted'],
+            'positive_themes': [],
+            'biblical_themes': [],
+            'supporting_scripture': []
+        }
+    
+    def _create_whitelisted_result(self, song, user_id):
+        """Create analysis result for whitelisted song."""
+        return {
+            'score': 100,
+            'concern_level': 'low',
+            'themes': ['user_approved'],
+            'status': 'completed',
+            'explanation': f'This song has been whitelisted by you and is considered appropriate for Christian listening without further analysis.',
+            'detailed_concerns': [],
+            'positive_themes': [{'theme': 'User Approved', 'description': 'Song has been pre-approved by the user'}],
                 'biblical_themes': [],
                 'supporting_scripture': []
             }

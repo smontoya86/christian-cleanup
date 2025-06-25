@@ -35,7 +35,9 @@
                         <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left"></i> Back to Dashboard
                         </a>
-                        <button type="button" class="btn btn-primary analyze-playlist-btn">
+                        <button type="button" class="btn btn-primary analyze-playlist-btn" 
+                                data-playlist-id="{{ playlist.id }}" 
+                                data-playlist-name="{{ playlist.name }}">
                             <i class="fas fa-search"></i> Analyze All Songs
                         </button>
                         {% if playlist.score and playlist.score >= 0.75 %}
