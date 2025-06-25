@@ -129,14 +129,30 @@ def playlist_detail(playlist_id):
 
 
 @bp.route('/song/<int:song_id>')
+@bp.route('/song/<int:song_id>/<int:playlist_id>')
 @login_required
-def song_detail(song_id):
+def song_detail(song_id, playlist_id=None):
     """Detailed view of a song with analysis"""
     # Verify user has access to this song
     song = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
         Song.id == song_id,
         Playlist.owner_id == current_user.id
     ).first_or_404()
+    
+    # Get playlist info if playlist_id is provided
+    playlist = None
+    if playlist_id:
+        playlist = Playlist.query.filter_by(
+            id=playlist_id,
+            owner_id=current_user.id
+        ).first()
+    
+    # If no specific playlist provided, try to find one this song belongs to
+    if not playlist:
+        playlist = db.session.query(Playlist).join(PlaylistSong).filter(
+            PlaylistSong.song_id == song_id,
+            Playlist.owner_id == current_user.id
+        ).first()
     
     analysis = AnalysisResult.query.filter_by(song_id=song_id).order_by(desc(AnalysisResult.created_at)).first()
     
@@ -155,7 +171,8 @@ def song_detail(song_id):
                          song=song, 
                          analysis=analysis, 
                          is_whitelisted=is_whitelisted,
-                         has_lyrics=has_lyrics)
+                         has_lyrics=has_lyrics,
+                         playlist=playlist)
 
 
 @bp.route('/analyze_song/<int:song_id>', methods=['POST'])

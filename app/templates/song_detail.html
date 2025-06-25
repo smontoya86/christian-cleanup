@@ -8,7 +8,6 @@
         <!-- Song Header -->
         <div class="row mb-4 align-items-center">
             <div class="col-md-2 text-center text-md-start mb-3 mb-md-0">
-                {# Placeholder for song album art #}
                 {% if song.album_art_url %}
                     <img src="{{ song.album_art_url }}" alt="{{ song.album }} cover" class="rounded shadow-sm"
                      style="width: 150px !important; height: 150px !important; object-fit: cover !important;">
@@ -22,338 +21,333 @@
                 <h1 class="display-6">{{ song.title }}</h1>
                 <p class="lead text-muted mb-1">By {{ song.artist }}</p>
                 <p class="text-muted"><small>Album: {{ song.album }}</small></p>
+                
+                <!-- Quick Score Display -->
+                {% if analysis and analysis.score is not none %}
+                    <div class="mt-3">
+                        {% set score = analysis.score if analysis.score > 1 else (analysis.score * 100) %}
+                        {% set concern_level = analysis.concern_level if analysis and analysis.concern_level and analysis.concern_level != 'unknown' else ('high' if score < 70 else ('medium' if score < 85 else 'low')) %}
+                        
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="score-circle {% if score >= 85 %}score-good{% elif score >= 70 %}score-medium{% else %}score-poor{% endif %}">
+                                {{ "%.0f" | format(score) }}%
+                            </div>
+                            <div>
+                                <div class="fw-bold">
+                                    {% if concern_level == 'low' %}
+                                        ✅ Great Choice
+                                    {% elif concern_level == 'medium' %}
+                                        ⚠️ Use Discretion
+                                    {% else %}
+                                        ❌ High Concern
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Purity Score</small>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
         <div class="row g-4">
-            <!-- Left Column: Lyrics & Actions -->
-            <div class="col-lg-7">
-                <!-- Only show lyrics section if lyrics exist -->
-                {% set has_lyrics = (lyrics and lyrics.strip() and lyrics != "Lyrics not available") or (song.lyrics and song.lyrics.strip() and song.lyrics != "Lyrics not available") %}
-                {% if has_lyrics %}
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-file-lines me-2"></i>Lyrics</h5>
-                    </div>
-                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                        {% if lyrics and lyrics.strip() and lyrics != "Lyrics not available" %}
-                            <pre class="mb-0 lyrics-content">{{ lyrics }}</pre>
-                        {% elif song.lyrics and song.lyrics.strip() %}
-                            <pre class="mb-0 lyrics-content">{{ song.lyrics }}</pre>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-                
-                <div class="mb-3">
-                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Back to Dashboard</a>
-                </div>
-            </div>
-
-            <!-- Right Column: Analysis & Score -->
-            <div class="col-lg-5">
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Purity Score & Concern</h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <h2 class="display-4 fw-bold score-display">
-                            {% if analysis and analysis.score is not none %}
-                                {% if analysis.score > 1 %}
-                                    {{ "%.1f" | format(analysis.score) }}%
-                                {% else %}
-                                    {{ "%.1f" | format(analysis.score * 100) }}%
+            <!-- Left Column: Analysis Summary -->
+            <div class="col-lg-8">
+                {% if analysis %}
+                    <!-- Summary Card -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Analysis Summary</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if analysis.explanation %}
+                                {% set explanation = analysis.explanation %}
+                                
+                                <!-- Clean up and simplify the explanation -->
+                                {% set clean_explanation = explanation | replace('This song demonstrates', 'This song shows') | replace('discernment score', 'purity score') | replace('Key themes identified include:', 'Main themes:') %}
+                                
+                                <!-- Extract the main summary -->
+                                {% set summary_parts = clean_explanation.split('Key themes identified') %}
+                                {% if summary_parts[0] %}
+                                    {% set summary = summary_parts[0].strip().rstrip('.') %}
+                                    <!-- Make it more conversational -->
+                                    {% set friendly_summary = summary | replace('demonstrates positive sentiment', 'has positive content') | replace('with a discernment score', 'with a purity score') %}
+                                    <div class="mb-3">
+                                        <p class="lead">{{ friendly_summary }}.</p>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Extract and simplify concerns -->
+                                {% if 'area(s) requiring discernment:' in explanation %}
+                                    {% set concern_part = explanation.split('area(s) requiring discernment:')[1].split('.')[0] %}
+                                    {% set clean_concerns = concern_part.strip() | replace('Pride and Self-Focus', 'Pride/Self-Focus') | replace('Language and Expression', 'Language') | replace('Rebellion Against Authority', 'Rebellion') | replace('Occult and Spiritual Darkness', 'Spiritual Concerns') %}
+                                    <div class="alert alert-warning">
+                                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Things to Consider</h6>
+                                        <p class="mb-0">{{ clean_concerns }}</p>
+                                    </div>
+                                {% elif 'high concern level' in explanation.lower() %}
+                                    <div class="alert alert-danger">
+                                        <h6><i class="fas fa-exclamation-triangle me-2"></i>High Concern Content</h6>
+                                        <p class="mb-0">This song contains content that may not align with Christian values. Review carefully.</p>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Add helpful guidance -->
+                                {% if analysis.score %}
+                                    {% set score = analysis.score if analysis.score > 1 else (analysis.score * 100) %}
+                                    {% if score >= 85 %}
+                                        <div class="alert alert-success">
+                                            <h6><i class="fas fa-check-circle me-2"></i>Great for Christian Listening</h6>
+                                            <p class="mb-0">This song aligns well with biblical values and supports spiritual growth.</p>
+                                        </div>
+                                    {% elif score >= 70 %}
+                                        <div class="alert alert-info">
+                                            <h6><i class="fas fa-info-circle me-2"></i>Generally Good Choice</h6>
+                                            <p class="mb-0">This song is mostly appropriate with only minor concerns to consider.</p>
+                                        </div>
+                                    {% endif %}
                                 {% endif %}
                             {% else %}
-                                N/A
+                                <p class="text-muted">Analysis data is available but no detailed explanation was provided.</p>
                             {% endif %}
-                        </h2>
-                        <div class="mt-3">
-                            {% set concern_level = analysis.concern_level if analysis and analysis.concern_level and analysis.concern_level != 'unknown' else ('high' if analysis and analysis.score and analysis.score < 70 else ('medium' if analysis and analysis.score and analysis.score < 85 else 'low')) %}
-                            <span class="concern-badge concern-badge-large {% if concern_level == 'extreme' %}bg-extreme{% elif concern_level == 'high' %}bg-high{% elif concern_level == 'medium' %}bg-medium{% else %}bg-low{% endif %}">
-                                <i class="fas {% if concern_level == 'extreme' %}fa-exclamation-triangle{% elif concern_level == 'high' %}fa-exclamation-circle{% elif concern_level == 'medium' %}fa-info-circle{% else %}fa-check-circle{% endif %}"></i>
-                                <span class="fw-bold">{{ concern_level | title }}</span>
-                            </span>
                         </div>
                     </div>
-                </div>
 
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-tags me-2"></i>Analysis Breakdown</h5>
+                    <!-- Concerns & Positive Themes -->
+                    <div class="row g-3 mb-4">
+                        <!-- Concerns -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Concerns Found</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if analysis.purity_flags_details and (analysis.purity_flags_details | length > 0) %}
+                                        {% for flag in analysis.purity_flags_details %}
+                                            <div class="mb-2">
+                                                <span class="badge bg-warning text-dark me-2">
+                                                    {{ (flag.type if flag.type else 'Content Issue') | replace('_', ' ') | title }}
+                                                </span>
+                                                {% if flag is mapping and (flag.severity or flag.get('severity')) %}
+                                                    <small class="text-muted">{{ (flag.severity or flag.get('severity')).title() }} Level</small>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-success">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            <span class="fw-semibold">No major concerns identified</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Positive Themes -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="fas fa-heart me-2"></i>Positive Themes</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if analysis.positive_themes_identified and (analysis.positive_themes_identified | length > 0) %}
+                                        {% for theme in analysis.positive_themes_identified %}
+                                            <div class="mb-2">
+                                                <span class="badge bg-success me-2">
+                                                    {{ (theme.theme if theme.theme else 'Positive Content') | title }}
+                                                </span>
+                                            </div>
+                                        {% endfor %}
+                                    {% elif analysis.biblical_themes and (analysis.biblical_themes | length > 0) %}
+                                        {% for theme in analysis.biblical_themes %}
+                                            <div class="mb-2">
+                                                <span class="badge bg-success me-2">
+                                                    {{ (theme.theme if theme.theme else 'Biblical Theme') | title }}
+                                                </span>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-muted fst-italic">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            No specific positive themes identified
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body p-0">
-                        <ul class="list-group list-group-flush">
-                            {% if analysis and analysis.explanation %}
-                            <li class="list-group-item">
-                                <strong class="text-primary">Analysis Explanation:</strong>
-                                <div class="mt-3 analysis-explanation">
-                                    {% set explanation_parts = analysis.explanation.split('**') %}
-                                    {% for part in explanation_parts %}
-                                        {% if loop.index is odd %}
-                                            {% if part.strip() %}
-                                                <p class="mb-2">{{ part.strip() }}</p>
-                                            {% endif %}
-                                        {% else %}
-                                            {% if part.strip() %}
-                                                <div class="mt-3 mb-2">
-                                                    <h6 class="text-primary mb-2">
-                                                        {% if ':' in part %}
-                                                            {{ part.split(':', 1)[0] }}
-                                                        {% else %}
-                                                            {{ part }}
+
+                    <!-- Biblical Content (if any) -->
+                    {% if analysis.biblical_themes or analysis.supporting_scripture %}
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-cross me-2"></i>Biblical Content</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if analysis.biblical_themes and (analysis.biblical_themes | length > 0) %}
+                                    <h6 class="text-primary mb-3">Themes Found:</h6>
+                                    <div class="row g-2 mb-4">
+                                        {% for theme in analysis.biblical_themes %}
+                                            <div class="col-auto">
+                                                <span class="badge bg-primary">
+                                                    {{ (theme.theme if theme.theme else 'Biblical Theme') | title }}
+                                                </span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                {% if analysis.supporting_scripture %}
+                                    <h6 class="text-primary mb-3">Related Scripture:</h6>
+                                    <div class="scripture-references">
+                                        {% if analysis.supporting_scripture is mapping %}
+                                            {% for key, scripture in analysis.supporting_scripture.items() %}
+                                                <div class="mb-3 p-3 border rounded bg-light">
+                                                    {% if scripture is mapping %}
+                                                        <strong class="text-primary">{{ scripture.get('reference', key) }}</strong>
+                                                        {% if scripture.get('text') %}
+                                                            <blockquote class="blockquote-sm mt-2 mb-0">
+                                                                <em>"{{ scripture.get('text') }}"</em>
+                                                            </blockquote>
                                                         {% endif %}
-                                                    </h6>
-                                                    {% if ':' in part %}
-                                                        <div class="ms-3">
-                                                            {% set content = part.split(':', 1)[1].strip() %}
-                                                            {% if content.startswith('-') %}
-                                                                <ul class="list-unstyled mb-0">
-                                                                    {% for line in content.split('- ')[1:] %}
-                                                                        {% if line.strip() %}
-                                                                            <li class="mb-1">
-                                                                                <i class="fas fa-circle text-warning me-2" style="font-size: 0.5em;"></i>
-                                                                                {{ line.strip() }}
-                                                                            </li>
-                                                                        {% endif %}
-                                                                    {% endfor %}
-                                                                </ul>
-                                                            {% else %}
-                                                                <p class="mb-0">{{ content }}</p>
-                                                            {% endif %}
-                                                        </div>
+                                                    {% else %}
+                                                        <strong class="text-primary">{{ key }}</strong>
+                                                        <p class="mb-0 mt-1">{{ scripture }}</p>
                                                     {% endif %}
                                                 </div>
-                                            {% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            </li>
-                            {% endif %}
-                            
-
-                            
-                            {% if analysis and analysis.purity_flags_details and (analysis.purity_flags_details | length > 0) %}
-                            <li class="list-group-item">
-                                <strong class="text-primary">Concerns Identified:</strong>
-                                <div class="mt-2">
-                                    {% for flag in analysis.purity_flags_details %}
-                                    <div class="alert alert-warning alert-sm mb-2">
-                                        <strong>{{ flag.type if flag.type else (flag.get('type', 'Unknown Flag') if flag is mapping else 'Unknown Flag') }}</strong>
-                                        {% if flag is mapping %}
-                                            {% if flag.description or flag.get('description') %}
-                                            <br><small>{{ flag.description or flag.get('description') }}</small>
-                                            {% endif %}
-                                            {% if flag.severity or flag.get('severity') %}
-                                            <span class="badge bg-{{ 'danger' if (flag.severity or flag.get('severity')) == 'high' else 'warning' }} ms-2">
-                                                {{ (flag.severity or flag.get('severity')).title() }}
-                                            </span>
-                                            {% endif %}
+                                            {% endfor %}
+                                        {% elif analysis.supporting_scripture is iterable and analysis.supporting_scripture is not string %}
+                                            {% for scripture in analysis.supporting_scripture %}
+                                                <div class="mb-3 p-3 border rounded bg-light">
+                                                    {% if scripture is mapping %}
+                                                        <strong class="text-primary">{{ scripture.get('reference', 'Scripture') }}</strong>
+                                                        {% if scripture.get('text') %}
+                                                            <blockquote class="blockquote-sm mt-2 mb-0">
+                                                                <em>"{{ scripture.get('text') }}"</em>
+                                                            </blockquote>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <p class="mb-0">{{ scripture }}</p>
+                                                    {% endif %}
+                                                </div>
+                                            {% endfor %}
                                         {% else %}
-                                            <br><small>{{ flag if flag is string else 'No description available' }}</small>
+                                            <div class="p-3 border rounded bg-light">
+                                                <p class="mb-0">{{ analysis.supporting_scripture }}</p>
+                                            </div>
                                         {% endif %}
                                     </div>
-                                    {% endfor %}
-                                </div>
-                            </li>
-                            {% else %}
-                            <li class="list-group-item">
-                                <strong class="text-primary">Concerns Identified:</strong>
-                                <span class="text-success fw-semibold">
-                                    <i class="fas fa-check-circle me-1"></i>None Identified
-                                </span>
-                            </li>
-                            {% endif %}
-                            
-                            {% if analysis and analysis.positive_themes_identified and (analysis.positive_themes_identified | length > 0) %}
-                            <li class="list-group-item">
-                                <strong class="text-primary">Positive Themes:</strong>
-                                <div class="mt-2">
-                                    {% for theme in analysis.positive_themes_identified %}
-                                    <div class="alert alert-success alert-sm mb-2">
-                                        <strong>{{ theme.theme if theme.theme else (theme.get('theme', 'Unknown Theme') if theme is mapping else 'Unknown Theme') }}</strong>
-                                        {% if theme is mapping %}
-                                            {% if theme.description or theme.get('description') %}
-                                            <br><small>{{ theme.description or theme.get('description') }}</small>
-                                            {% endif %}
-                                        {% else %}
-                                            <br><small>{{ theme if theme is string else 'No description available' }}</small>
-                                        {% endif %}
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </li>
-                            {% else %}
-                            <li class="list-group-item">
-                                <strong class="text-primary">Positive Themes:</strong>
-                                <span class="text-muted fst-italic">None Identified</span>
-                            </li>
-                            {% endif %}
-                        </ul>
-                    </div>
-                </div>
-
-                {# Biblical Themes Section - Always show for analysis functionality #}
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-cross me-2"></i>Biblical Themes</h5>
-                    </div>
-                    <div class="card-body">
-                        {% if analysis and analysis.biblical_themes and (analysis.biblical_themes | length > 0) %}
-                            {% for theme in analysis.biblical_themes %}
-                            <div class="mb-3 p-3 border rounded bg-light-subtle">
-                                <h6 class="text-primary mb-2">{{ theme.theme if theme.theme else (theme.get('theme', 'Unknown Theme') if theme is mapping else 'Unknown Theme') }}</h6>
-                                {% if theme is mapping %}
-                                    {% if theme.relevance or theme.get('relevance') %}
-                                    <p class="mb-0">{{ theme.relevance or theme.get('relevance') }}</p>
-                                    {% endif %}
-                                {% else %}
-                                    <p class="mb-0">{{ theme if theme is string else 'No description available' }}</p>
                                 {% endif %}
                             </div>
-                            {% endfor %}
-                        {% elif analysis %}
-                            <p class="text-muted mb-0 fst-italic">No biblical themes found in this song's analysis.</p>
-                        {% else %}
-                            <p class="text-muted mb-0 fst-italic">No biblical themes identified yet. Analyze this song to discover any biblical content or themes.</p>
-                        {% endif %}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <!-- No Analysis Available -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5>No Analysis Available</h5>
+                            <p class="text-muted">This song hasn't been analyzed yet. Click the button below to analyze it now.</p>
+                            <button id="analyzeSongBtn" class="btn btn-primary" 
+                                    data-song-id="{{ song.id }}"
+                                    data-song-title="{{ song.title }}"
+                                    data-song-artist="{{ song.artist }}">
+                                <i class="fas fa-search me-2"></i>Analyze This Song
+                            </button>
+                        </div>
                     </div>
-                </div>
+                {% endif %}
 
-                {# Supporting Scripture Section - Always show for analysis functionality #}
+                <!-- Lyrics Section -->
+                {% set has_lyrics = (lyrics and lyrics.strip() and lyrics != "Lyrics not available") or (song.lyrics and song.lyrics.strip() and song.lyrics != "Lyrics not available") %}
+                {% if has_lyrics %}
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-file-lines me-2"></i>Lyrics</h5>
+                        </div>
+                        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                            {% if lyrics and lyrics.strip() and lyrics != "Lyrics not available" %}
+                                <pre class="mb-0 lyrics-content">{{ lyrics }}</pre>
+                            {% elif song.lyrics and song.lyrics.strip() %}
+                                <pre class="mb-0 lyrics-content">{{ song.lyrics }}</pre>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column: Actions & Navigation -->
+            <div class="col-lg-4">
+                <!-- Actions Card -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-book-open me-2"></i>Supporting Scripture</h5>
+                        <h6 class="mb-0"><i class="fas fa-cog me-2"></i>Actions</h6>
                     </div>
                     <div class="card-body">
-                        {% if analysis and analysis.supporting_scripture and (analysis.supporting_scripture | length > 0) %}
-                            {% if analysis.supporting_scripture is mapping %}
-                                {% for key, scripture in analysis.supporting_scripture.items() %}
-                                <div class="mb-3 p-3 border rounded bg-light-subtle">
-                                    {% if scripture is mapping %}
-                                        <h6 class="text-primary mb-2">{{ scripture.get('reference', 'Unknown Reference') }}</h6>
-                                        {% if scripture.get('relevance') %}
-                                        <p class="mb-2"><strong>Relevance:</strong> {{ scripture.get('relevance') }}</p>
-                                        {% endif %}
-                                        {% if scripture.get('text') %}
-                                        <blockquote class="blockquote border-start border-primary ps-3 mb-0">
-                                            <p class="mb-0 fst-italic">"{{ scripture.get('text') }}"</p>
-                                        </blockquote>
-                                        {% endif %}
-                                    {% else %}
-                                        <h6 class="text-primary mb-2">{{ key }}</h6>
-                                        <p class="mb-0">{{ scripture }}</p>
-                                    {% endif %}
-                                </div>
-                                {% endfor %}
-                            {% elif analysis.supporting_scripture is iterable and analysis.supporting_scripture is not string %}
-                                {% for scripture in analysis.supporting_scripture %}
-                                <div class="mb-3 p-3 border rounded bg-light-subtle">
-                                    {% if scripture is mapping %}
-                                        <h6 class="text-primary mb-2">{{ scripture.get('reference', 'Scripture Reference') }}</h6>
-                                        {% if scripture.get('relevance') %}
-                                        <p class="mb-2"><strong>Relevance:</strong> {{ scripture.get('relevance') }}</p>
-                                        {% endif %}
-                                        {% if scripture.get('text') %}
-                                        <blockquote class="blockquote border-start border-primary ps-3 mb-0">
-                                            <p class="mb-0 fst-italic">"{{ scripture.get('text') }}"</p>
-                                        </blockquote>
-                                        {% endif %}
-                                    {% else %}
-                                        <p class="mb-0">{{ scripture }}</p>
-                                    {% endif %}
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="mb-3 p-3 border rounded bg-light-subtle">
-                                    <p class="mb-0">{{ analysis.supporting_scripture }}</p>
-                                </div>
-                            {% endif %}
-                        {% elif analysis %}
-                            <p class="text-muted mb-0 fst-italic">No scripture references found in this song's analysis.</p>
-                        {% else %}
-                            <p class="text-muted mb-0 fst-italic">No scripture references identified yet. Analyze this song to discover any biblical connections or verses.</p>
-                        {% endif %}
-                    </div>
-                </div>
-            
-                {# Song Whitelist Actions #}
-                <div class="mt-3">
-                    <div class="card">
-                        <div class="card-header">
-                            <h6 class="mb-0"><i class="fas fa-user-check me-2"></i>Song Actions</h6>
-                        </div>
-                        <div class="card-body text-center">
-                            <!-- Re-analyze button for any song -->
-                            <div class="mb-3">
+                        <!-- Re-analyze button -->
+                        {% if analysis %}
+                            <div class="d-grid mb-3">
                                 <button id="reanalyzeSongBtn" class="btn btn-outline-primary" 
                                         data-song-id="{{ song.id }}"
                                         data-song-title="{{ song.title }}"
-                                        data-song-artist="{{ song.artist }}"
-                                        title="Re-analyze this song">
-                                    <span class="analyze-btn-text">
-                                        <i class="fas fa-redo me-1"></i>Re-analyze Song
-                                    </span>
-                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                        data-song-artist="{{ song.artist }}">
+                                    <i class="fas fa-redo me-2"></i>Re-analyze Song
                                 </button>
                             </div>
-                            
-                            {% set calculated_concern = analysis.concern_level.lower() if analysis and analysis.concern_level else None %}
-                            {% if not is_whitelisted %}
-                                {% if calculated_concern in ['high', 'extreme'] %}
-                                    <!-- High/Extreme concern songs show whitelist option with warning -->
-                                    <div class="alert alert-warning mb-3">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        <strong>This song has {{ analysis.concern_level }} concern level.</strong><br>
-                                        <small>Review the analysis above carefully. You can still whitelist if you find the content appropriate.</small>
-                                    </div>
-                                    
-                                    <div class="d-flex gap-2 flex-wrap justify-content-center">
-                                        <form action="{{ url_for('main.whitelist_song', song_id=song.id) }}" method="POST" class="d-inline">
-                                            <button type="submit" class="btn btn-success" 
-                                                    onclick="return confirm('Are you sure you want to whitelist this song despite its {{ analysis.concern_level }} concern level?')"
-                                                    title="Add this song to your whitelist">
-                                                <i class="fas fa-check me-2"></i>Whitelist This Song
-                                            </button>
-                                        </form>
-                                    </div>
-                                    
-                                {% elif calculated_concern in ['low', 'medium'] %}
-                                    <!-- Low/Medium concern songs can be whitelisted easily -->
-                                    <p class="text-muted mb-3">This song has {{ analysis.concern_level }} concern level and is generally suitable.</p>
-                                    
-                                    <div class="d-flex gap-2 flex-wrap justify-content-center">
-                                        <form action="{{ url_for('main.whitelist_song', song_id=song.id) }}" method="POST" class="d-inline">
-                                            <button type="submit" class="btn btn-outline-success" 
-                                                    title="Add this song to your whitelist">
-                                                <i class="fas fa-check me-2"></i>Whitelist This Song
-                                            </button>
-                                        </form>
-                                    </div>
-                                    
-                                {% else %}
-                                    <!-- Song not analyzed yet -->
-                                    <p class="text-muted mb-3">This song has not been analyzed yet.</p>
-                                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
-                                        <i class="fas fa-arrow-left me-2"></i>Return to Playlist
-                                    </a>
-                                {% endif %}
-                            {% endif %}
-                            
-                            <!-- Status display for whitelisted songs -->
-                            {% if is_whitelisted %}
-                                <div class="mt-3 pt-3 border-top">
-                                    <span class="badge bg-success mb-2">
-                                        <i class="fas fa-check me-1"></i>Already Whitelisted
-                                    </span><br>
-                                    <form action="{{ url_for('main.remove_whitelist', song_id=song.id) }}" method="POST" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-outline-secondary" 
-                                                onclick="return confirm('Remove this song from your whitelist?')"
-                                                title="Remove from Whitelist">
-                                            <i class="fas fa-times me-1"></i>Remove from Whitelist
+                        {% endif %}
+                        
+                        <!-- Whitelist Actions -->
+                        {% set calculated_concern = analysis.concern_level.lower() if analysis and analysis.concern_level else None %}
+                        {% if not is_whitelisted and analysis %}
+                            {% if calculated_concern in ['high', 'extreme'] %}
+                                <div class="alert alert-warning p-2 mb-3">
+                                    <small><strong>⚠️ High Concern:</strong> Review carefully before whitelisting</small>
+                                </div>
+                                <div class="d-grid">
+                                    <form action="{{ url_for('main.whitelist_song', song_id=song.id) }}" method="POST">
+                                        <button type="submit" class="btn btn-warning w-100" 
+                                                onclick="return confirm('This song has high concern level. Are you sure?')">
+                                            <i class="fas fa-check me-2"></i>Whitelist Anyway
                                         </button>
                                     </form>
                                 </div>
+                            {% elif calculated_concern in ['low', 'medium'] %}
+                                <div class="d-grid">
+                                    <form action="{{ url_for('main.whitelist_song', song_id=song.id) }}" method="POST">
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="fas fa-check me-2"></i>Add to Whitelist
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        {% elif is_whitelisted %}
+                            <div class="alert alert-success p-2 mb-3">
+                                <small><strong>✅ Whitelisted:</strong> This song is approved</small>
+                            </div>
+                            <div class="d-grid">
+                                <form action="{{ url_for('main.remove_whitelist', song_id=song.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-outline-secondary w-100" 
+                                            onclick="return confirm('Remove from whitelist?')">
+                                        <i class="fas fa-times me-2"></i>Remove from Whitelist
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-grid">
+                            {% if playlist %}
+                                <a href="{{ url_for('main.playlist_detail', playlist_id=playlist.id) }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Playlist
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                                </a>
                             {% endif %}
                         </div>
                     </div>
@@ -366,723 +360,134 @@
             <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
             <h4>Song Not Found</h4>
             <p class="text-muted">The requested song could not be found or its details are unavailable.</p>
-                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary mt-3">Return to Dashboard</a>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary mt-3">Return to Dashboard</a>
         </div>
     {% endif %}
 </div>
 
-<!-- Custom styles for better dark mode support -->
+<!-- Custom Styles -->
 <style>
+/* Score circle styling */
+.score-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.4rem;
+    color: white;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.score-excellent {
+    background: linear-gradient(135deg, #28a745, #20c997);
+}
+
+.score-good {
+    background: linear-gradient(135deg, #17a2b8, #20c997);
+}
+
+.score-caution {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+}
+
+.score-avoid {
+    background: linear-gradient(135deg, #dc3545, #e74c3c);
+}
+
+/* Enhanced readability */
+.lead {
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.card-header h5, .card-header h6 {
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.85rem;
+    padding: 0.5em 0.75em;
+    border-radius: 0.5rem;
+}
+
+/* Better spacing for concerns and themes */
+.alert-warning, .alert-success {
+    border-left: 4px solid;
+    border-radius: 0.5rem;
+}
+
+.alert-warning {
+    border-left-color: #ffc107;
+}
+
+.alert-success {
+    border-left-color: #28a745;
+}
+
 /* Lyrics content styling */
 .lyrics-content {
     white-space: pre-wrap;
     font-family: inherit;
-    line-height: 1.5;
+    line-height: 1.6;
     background: transparent;
     border: none;
     color: inherit;
+    font-size: 0.95rem;
 }
 
-/* Enhanced concern badge for song details */
-.concern-badge-large {
-    font-size: 1rem;
-    padding: 0.5em 1em;
-    min-width: 100px;
+/* Scripture blockquotes */
+.blockquote-sm {
+    font-size: 0.9rem;
+    margin: 0;
+    padding-left: 1rem;
+    border-left: 3px solid #007bff;
 }
 
-/* Score display styling */
-.score-display {
-    color: inherit;
+/* Badge styling */
+.badge {
+    font-size: 0.8rem;
+    padding: 0.4em 0.6em;
 }
 
-/* Dark mode improvements */
+/* Card hover effects */
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* Dark mode support */
 @media (prefers-color-scheme: dark) {
-    .bg-light-subtle {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border-color: var(--border-color) !important;
+    .bg-light {
+        background-color: var(--bs-dark) !important;
+        color: var(--bs-light) !important;
     }
     
-    .alert-warning {
-        background-color: rgba(255, 193, 7, 0.15);
-        border-color: rgba(255, 193, 7, 0.3);
-        color: var(--dark-text);
-    }
-    
-    .alert-success {
-        background-color: rgba(25, 135, 84, 0.15);
-        border-color: rgba(25, 135, 84, 0.3);
-        color: var(--dark-text);
-    }
-    
-    .blockquote {
-        color: var(--muted-text);
-    }
-    
-    .border-start {
-        border-left-color: var(--primary-color) !important;
-    }
-    
-    .text-primary {
-        color: var(--primary-color) !important;
+    .border {
+        border-color: var(--bs-border-color-translucent) !important;
     }
 }
 
-/* Improve text contrast in all modes */
-.list-group-item strong {
-    color: var(--primary-color);
-}
-
-.card-header h5, .card-header h6 {
-    margin-bottom: 0;
-}
-
-/* Better spacing for analysis sections */
-.analysis-explanation p {
-    margin-bottom: 0.75rem;
-}
-
-.analysis-explanation h6 {
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .score-circle {
+        width: 50px;
+        height: 50px;
+        font-size: 1rem;
+    }
+    
+    .display-6 {
+        font-size: 1.75rem;
+    }
 }
 </style>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Check for any ongoing analysis state when page loads
-    checkAnalysisState();
-    
-    const reanalyzeSongBtn = document.getElementById('reanalyzeSongBtn');
-    
-    if (reanalyzeSongBtn) {
-        reanalyzeSongBtn.addEventListener('click', function() {
-            const songId = this.dataset.songId;
-            const songTitle = this.dataset.songTitle;
-            const songArtist = this.dataset.songArtist;
-            
-            if (confirm(`Re-analyze "${songTitle}" by ${songArtist}? This will update the current analysis.`)) {
-                startSongAnalysis(songId, this);
-            }
-        });
-    }
-    
-    // Function to check and restore analysis state after page refresh
-    function checkAnalysisState() {
-        const analysisState = sessionStorage.getItem('analysis_in_progress');
-        if (analysisState) {
-            try {
-                const state = JSON.parse(analysisState);
-                const elapsedTime = Math.floor((Date.now() - state.startedAt) / 1000);
-                
-                console.log('Detected previous analysis state:', state, 'elapsed time:', elapsedTime + 's');
-                
-                if (state.completed) {
-                    // Analysis was completed, show completion message and clear state
-                    const completionTime = state.duration || Math.floor((state.completedAt - state.startedAt) / 1000);
-                    showAnalysisToast(`🎉 Analysis completed in ${completionTime}s! Results now visible on page.`, 'success', 6000);
-                    sessionStorage.removeItem('analysis_in_progress');
-                } else if (state.jobStarted && elapsedTime < 300) { // Continue monitoring if less than 5 minutes
-                    // Resume monitoring analysis that was in progress
-                    showAnalysisToast(`🔄 Resuming analysis monitoring... (${elapsedTime}s elapsed)`, 'info', 0); // Persistent
-                    
-                    // Resume polling for the song
-                    const reanalyzeSongBtn = document.getElementById('reanalyzeSongBtn');
-                    if (reanalyzeSongBtn) {
-                        const textSpan = reanalyzeSongBtn.querySelector('.analyze-btn-text');
-                        const spinner = reanalyzeSongBtn.querySelector('.spinner-border');
-                        
-                        if (textSpan && spinner) {
-                            textSpan.classList.add('d-none');
-                            spinner.classList.remove('d-none');
-                            reanalyzeSongBtn.disabled = true;
-                            pollSongAnalysis(state.songId, reanalyzeSongBtn);
-                        }
-                    }
-                } else {
-                    // Analysis was started but took too long or failed, clear state
-                    console.log('Analysis state expired or failed, clearing...');
-                    sessionStorage.removeItem('analysis_in_progress');
-                }
-            } catch (e) {
-                console.error('Error parsing analysis state:', e);
-                sessionStorage.removeItem('analysis_in_progress');
-            }
-        }
-    }
-    
-    function startSongAnalysis(songId, buttonElement) {
-        console.log('🚀 Starting song analysis for song ID:', songId);
-        
-        const textSpan = buttonElement.querySelector('.analyze-btn-text');
-        const spinner = buttonElement.querySelector('.spinner-border');
-        
-        const analysisState = {
-            songId: songId,
-            startedAt: Date.now(),
-            jobStarted: false,
-            songTitle: buttonElement.dataset.songTitle || 'Unknown',
-            songArtist: buttonElement.dataset.songArtist || 'Unknown'
-        };
-        sessionStorage.setItem('analysis_in_progress', JSON.stringify(analysisState));
-        
-        if (textSpan && spinner) {
-            textSpan.classList.add('d-none');
-            spinner.classList.remove('d-none');
-        }
-        buttonElement.disabled = true;
-        
-        const apiUrl = `/api/songs/${songId}/analyze`;
-        const fetchOptions = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ force: true }), // Force re-analysis
-            credentials: 'same-origin'
-        };
-
-        console.log('📡 Making API call to:', apiUrl);
-        console.log('📡 Request details:', fetchOptions);
-        
-        const fetchWithTimeout = (url, options, timeout = 30000) => {
-            return Promise.race([
-                fetch(url, options),
-                new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('Request timed out after 30 seconds')), timeout);
-                })
-            ]);
-        };
-        
-        fetchWithTimeout(apiUrl, fetchOptions)
-        .then(response => {
-            console.log('📥 Raw response received:', {
-                status: response.status,
-                statusText: response.statusText,
-                ok: response.ok,
-                headers: Object.fromEntries(response.headers.entries()),
-                url: response.url,
-                redirected: response.redirected,
-                type: response.type
-            });
-            
-            // Check for authentication redirects
-            if (response.redirected && response.url.includes('/auth/')) {
-                throw new Error('Authentication session expired. Please refresh page and log in again.');
-            }
-            
-            // Check content type
-            const contentType = response.headers.get('content-type');
-            console.log('📄 Response content type:', contentType);
-            
-            if (!contentType || !contentType.includes('application/json')) {
-                console.warn('⚠️ Non-JSON response received');
-                return response.text().then(text => {
-                    console.log('📄 Response text preview:', text.substring(0, 500));
-                    if (text.includes('<html') || text.includes('<!DOCTYPE')) {
-                        throw new Error('Received HTML page instead of JSON (likely authentication redirect)');
-                    }
-                    throw new Error(`Expected JSON response but got ${contentType}`);
-                });
-            }
-            
-            return response.json();
-        })
-        .then(data => {
-            console.log('✅ Analysis API response:', data);
-            
-            if (data && data.status === 'success') {
-                console.log('🎯 Analysis started successfully, beginning polling...');
-                
-                // Update stored state with job info
-                const analysisState = JSON.parse(sessionStorage.getItem('analysis_in_progress') || '{}');
-                analysisState.jobStarted = true;
-                analysisState.jobId = data.job_id || 'unknown';
-                sessionStorage.setItem('analysis_in_progress', JSON.stringify(analysisState));
-                
-                // Show success notification (only toast, no alert)
-                showAnalysisToast('✅ Analysis queued successfully! Monitoring progress...', 'success', 0); // Persistent until completion
-                
-                // Update button text to show progress
-                if (textSpan) {
-                    textSpan.textContent = 'Analyzing...';
-                }
-                
-                // Poll for this specific song's analysis completion
-                pollSongAnalysis(songId, buttonElement);
-            } else {
-                console.error('❌ Analysis start failed:', data);
-                throw new Error(data.message || data.error || 'Failed to start song analysis');
-            }
-        })
-        .catch(error => {
-            console.error('💥 Analysis start error:', error);
-            console.error('📊 Error details:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack,
-                timestamp: new Date().toISOString()
-            });
-            
-            // Clear stored state
-            sessionStorage.removeItem('analysis_in_progress');
-            
-            // Reset button state
-            if (textSpan && spinner) {
-                textSpan.classList.remove('d-none');
-                textSpan.textContent = 'Re-analyze Song';
-                spinner.classList.add('d-none');
-            }
-            buttonElement.disabled = false;
-            
-            let errorMessage = `Failed to analyze song: ${error.message}`;
-            
-            // Special handling for authentication errors
-            if (error.message.includes('Authentication') || error.message.includes('log in') || error.message.includes('session expired')) {
-                errorMessage += ` <a href="/auth/login" class="alert-link">Click here to log in</a>`;
-                console.log('🔄 Suggested action: User should refresh page and log in again');
-            }
-            
-            // Show error notification (only toast, no alert)
-            showAnalysisToast('❌ Failed to start analysis. Please try again.', 'danger', 8000);
-            
-            // Log to console for debugging
-            console.log('🛠️ Debugging info:', {
-                songId: songId,
-                timestamp: new Date().toISOString(),
-                userAgent: navigator.userAgent,
-                currentUrl: window.location.href,
-                errorMessage: error.message,
-                errorType: error.name,
-                sessionStorage: sessionStorage.getItem('analysis_in_progress')
-            });
-        });
-    }
-    
-    function pollSongAnalysis(songId, buttonElement) {
-        const checkInterval = 3000; // Check every 3 seconds
-        let attempts = 0;
-        const maxAttempts = 60; // 3 minutes max
-        const textSpan = buttonElement.querySelector('.analyze-btn-text');
-        const spinner = buttonElement.querySelector('.spinner-border');
-        const startTime = Date.now(); // Track actual start time for real duration
-        
-        console.log('Starting polling for song', songId);
-        
-        const poll = setInterval(() => {
-            attempts++;
-            const elapsed = Math.round((Date.now() - startTime) / 1000); // Calculate real elapsed time
-            console.log(`Polling attempt ${attempts}/${maxAttempts} for song ${songId} (${elapsed}s elapsed)`);
-            
-            // Update button text to show progress with real-time elapsed time
-            if (textSpan) {
-                textSpan.textContent = `Analyzing... (${elapsed}s)`;
-            }
-            
-            fetch(`/api/songs/${songId}/analysis-status`)
-            .then(response => {
-                console.log('Status check response:', response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Status check data:', data);
-                
-                if (data.success && (data.completed || data.has_analysis)) {
-                    console.log('Analysis completed! Updating page content...');
-                    clearInterval(poll);
-                    
-                    // Calculate actual duration using real elapsed time
-                    const actualDuration = Math.round((Date.now() - startTime) / 1000);
-                    
-                    // Update stored state to show completion
-                    const analysisState = JSON.parse(sessionStorage.getItem('analysis_in_progress') || '{}');
-                    analysisState.completed = true;
-                    analysisState.completedAt = Date.now();
-                    analysisState.duration = actualDuration;
-                    sessionStorage.setItem('analysis_in_progress', JSON.stringify(analysisState));
-                    
-                    // Show completion notification with actual duration
-                    showAnalysisToast(`🎉 Analysis completed in ${actualDuration}s! Updating results...`, 'success', 3000);
-                    
-                    // Update the page content with new analysis data instead of reloading
-                    setTimeout(() => {
-                        updateAnalysisDisplay(songId);
-                    }, 1000);
-                } else if (data.error || attempts >= maxAttempts) {
-                    console.log('Analysis failed or timed out:', data.error || 'timeout');
-                    clearInterval(poll);
-                    throw new Error(data.message || 'Analysis timed out after 3 minutes');
-                } else {
-                    console.log('Analysis still in progress...');
-                    
-                    // Show periodic progress updates (persistent toasts, no auto-hide)
-                    if (attempts === 10) { // 30 seconds
-                        showAnalysisToast('Still analyzing... This can take up to 60 seconds.', 'info', 0); // Persistent
-                    } else if (attempts === 20) { // 60 seconds
-                        showAnalysisToast('Analysis taking longer than usual... Please wait.', 'warning', 0); // Persistent
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Polling error:', error);
-                clearInterval(poll);
-                
-                // Clear stored state
-                sessionStorage.removeItem('analysis_in_progress');
-                
-                // Reset button state
-                if (textSpan && spinner) {
-                    textSpan.classList.remove('d-none');
-                    textSpan.textContent = 'Re-analyze Song';
-                    spinner.classList.add('d-none');
-                    buttonElement.disabled = false;
-                }
-                
-                // Show error notification (only toast, no alert)
-                showAnalysisToast('❌ Analysis monitoring failed. Please try again.', 'danger', 8000);
-            });
-        }, checkInterval);
-    }
-    
-    // Function to update analysis display with new data (instead of page reload)
-    function updateAnalysisDisplay(songId) {
-        console.log('🔄 Updating analysis display for song', songId);
-        
-        // Fetch fresh analysis data with cache-busting timestamp
-        const cacheBuster = new Date().getTime();
-        fetch(`/api/analysis/song/${songId}?_t=${cacheBuster}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('✅ Fresh analysis data received:', data);
-            
-            if (data && data.analysis) {
-                // Update the analysis sections with new data
-                updateAnalysisSection(data.analysis);
-                
-                // Reset button state
-                resetAnalysisButton();
-                
-                // Clear session storage
-                sessionStorage.removeItem('analysis_in_progress');
-                
-                // Show success message
-                showAnalysisToast('✅ Analysis results updated successfully!', 'success', 5000);
-                
-            } else {
-                throw new Error('Invalid analysis data received');
-            }
-        })
-        .catch(error => {
-            console.error('❌ Failed to fetch updated analysis:', error);
-            
-            // Reset button state
-            resetAnalysisButton();
-            
-            // Show error but suggest manual refresh
-            showAnalysisToast('⚠️ Results updated but display refresh failed. Please refresh the page to see new analysis.', 'warning', 10000);
-        });
-    }
-    
-    // Function to update the analysis section with new data
-    function updateAnalysisSection(analysisData) {
-        console.log('📊 Updating analysis section with:', analysisData);
-        
-        // Update score display
-        const scoreElement = document.querySelector('.score-display');
-        if (scoreElement && analysisData.score !== undefined) {
-            scoreElement.textContent = `${analysisData.score}%`;
-            scoreElement.className = `display-4 fw-bold score-display ${getScoreClass(analysisData.score)}`;
-        }
-        
-        // Update concern level
-        const concernBadge = document.querySelector('.concern-badge span.fw-bold');
-        if (concernBadge && analysisData.concern_level) {
-            concernBadge.textContent = analysisData.concern_level.charAt(0).toUpperCase() + analysisData.concern_level.slice(1);
-            
-            // Update the parent badge classes
-            const parentBadge = concernBadge.closest('.concern-badge');
-            if (parentBadge) {
-                parentBadge.className = `concern-badge concern-badge-large bg-${analysisData.concern_level.toLowerCase()}`;
-            }
-        }
-        
-        // Update biblical themes
-        if (analysisData.biblical_themes && Array.isArray(analysisData.biblical_themes)) {
-            updateBiblicalThemes(analysisData.biblical_themes);
-        }
-        
-        // Update supporting scripture
-        if (analysisData.supporting_scripture && typeof analysisData.supporting_scripture === 'object') {
-            updateSupportingScripture(analysisData.supporting_scripture);
-        }
-        
-        // Update explanation
-        const explanationElement = document.querySelector('.analysis-explanation');
-        if (explanationElement && analysisData.explanation) {
-            let explanationHtml = '';
-            const explanation_parts = analysisData.explanation.split('**');
-            explanation_parts.forEach((part, index) => {
-                const trimmedPart = part.trim();
-                if (trimmedPart) {
-                    if ((index + 1) % 2 !== 0) { // Odd parts are plain text
-                        explanationHtml += `<p class="mb-2">${trimmedPart}</p>`;
-                    } else { // Even parts are formatted sections
-                        const sectionParts = trimmedPart.split(':');
-                        const title = sectionParts[0];
-                        const content = sectionParts.slice(1).join(':').trim();
-                        
-                        explanationHtml += `<div class="mt-3 mb-2"><h6 class="text-primary mb-2">${title}</h6>`;
-                        if (content) {
-                            explanationHtml += `<div class="ms-3">`;
-                            if (content.startsWith('-')) {
-                                explanationHtml += `<ul class="list-unstyled mb-0">`;
-                                content.split('- ').slice(1).forEach(line => {
-                                    if (line.trim()) {
-                                        explanationHtml += `<li class="mb-1"><i class="fas fa-circle text-warning me-2" style="font-size: 0.5em;"></i>${line.trim()}</li>`;
-                                    }
-                                });
-                                explanationHtml += `</ul>`;
-                            } else {
-                                explanationHtml += `<p class="mb-0">${content}</p>`;
-                            }
-                            explanationHtml += `</div>`;
-                        }
-                        explanationHtml += `</div>`;
-                    }
-                }
-            });
-            explanationElement.innerHTML = explanationHtml;
-        }
-    }
-    
-    // Function to update biblical themes display
-    function updateBiblicalThemes(themes) {
-        // Find the Biblical Themes card body by looking for the card header with "Biblical Themes"
-        const biblicalThemesCard = Array.from(document.querySelectorAll('.card-header')).find(header => 
-            header.textContent.includes('Biblical Themes')
-        );
-        if (!biblicalThemesCard) return;
-        
-        const themesContainer = biblicalThemesCard.parentElement.querySelector('.card-body');
-        if (!themesContainer) return;
-        
-        if (themes.length === 0) {
-            themesContainer.innerHTML = '<p class="text-muted">No biblical themes identified.</p>';
-            return;
-        }
-        
-        let themesHtml = '<div class="row">';
-        themes.forEach(theme => {
-            const confidencePercent = Math.round((theme.confidence || 0) * 100);
-            themesHtml += `
-                <div class="col-md-6 mb-3">
-                    <div class="card border-primary">
-                        <div class="card-body">
-                            <h6 class="card-title text-primary">${theme.theme.replace(/_/g, ' ').toUpperCase()}</h6>
-                            <p class="card-text">${theme.description || 'No description available'}</p>
-                            <small class="text-muted">Confidence: ${confidencePercent}%</small>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        themesHtml += '</div>';
-        
-        themesContainer.innerHTML = themesHtml;
-    }
-    
-    // Function to update supporting scripture display
-    function updateSupportingScripture(scripture) {
-        // Find the Supporting Scripture card body by looking for the card header with "Supporting Scripture"
-        const scriptureCard = Array.from(document.querySelectorAll('.card-header')).find(header => 
-            header.textContent.includes('Supporting Scripture')
-        );
-        if (!scriptureCard) return;
-        
-        const scriptureContainer = scriptureCard.parentElement.querySelector('.card-body');
-        if (!scriptureContainer) return;
-        
-        const scriptureKeys = Object.keys(scripture);
-        if (scriptureKeys.length === 0) {
-            scriptureContainer.innerHTML = '<p class="text-muted">No supporting scripture found.</p>';
-            return;
-        }
-        
-        let scriptureHtml = '<div class="row">';
-        scriptureKeys.forEach(reference => {
-            const text = scripture[reference];
-            scriptureHtml += `
-                <div class="col-12 mb-3">
-                    <div class="card border-success">
-                        <div class="card-body">
-                            <h6 class="card-title text-success">${reference}</h6>
-                            <p class="card-text">"${text}"</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        scriptureHtml += '</div>';
-        
-        scriptureContainer.innerHTML = scriptureHtml;
-    }
-    
-    // Function to reset analysis button state
-    function resetAnalysisButton() {
-        const reanalyzeSongBtn = document.getElementById('reanalyzeSongBtn');
-        if (reanalyzeSongBtn) {
-            const textSpan = reanalyzeSongBtn.querySelector('.analyze-btn-text');
-            const spinner = reanalyzeSongBtn.querySelector('.spinner-border');
-            
-            if (textSpan && spinner) {
-                textSpan.classList.remove('d-none');
-                textSpan.textContent = 'Re-analyze Song';
-                spinner.classList.add('d-none');
-            }
-            reanalyzeSongBtn.disabled = false;
-        }
-    }
-    
-    // Helper functions for styling
-    function getScoreClass(score) {
-        if (score >= 80) return 'text-success';
-        if (score >= 60) return 'text-warning';
-        return 'text-danger';
-    }
-    
-    function getConcernClass(level) {
-        switch(level.toLowerCase()) {
-            case 'low': return 'badge bg-success';
-            case 'medium': return 'badge bg-warning';
-            case 'high': return 'badge bg-danger';
-            default: return 'badge bg-secondary';
-        }
-    }
-    
-    function showError(message) {
-        // Create or update error alert
-        let errorDiv = document.querySelector('.alert-danger');
-        if (!errorDiv) {
-            errorDiv = document.createElement('div');
-            errorDiv.className = 'alert alert-danger alert-dismissible fade show';
-            errorDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `;
-            
-            // Insert at the top of the container
-            const container = document.querySelector('.container');
-            const firstChild = container.firstElementChild;
-            container.insertBefore(errorDiv, firstChild);
-        } else {
-            errorDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `;
-        }
-    }
-
-    // Function to show toast notifications
-    function showAnalysisToast(message, type = 'info', duration = 8000) {
-        console.log('showAnalysisToast called:', message, type, 'duration:', duration);
-        
-        // Remove any existing analysis toast
-        const existingToast = document.getElementById('analysis-toast');
-        if (existingToast) {
-            existingToast.remove();
-        }
-
-        // Create toast container if it doesn't exist
-        let toastContainer = document.getElementById('toast-container');
-        if (!toastContainer) {
-            toastContainer = document.createElement('div');
-            toastContainer.id = 'toast-container';
-            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-            toastContainer.style.zIndex = '9999';
-            document.body.appendChild(toastContainer);
-        }
-
-        // Create toast element
-        const toastElement = document.createElement('div');
-        toastElement.id = 'analysis-toast';
-        toastElement.className = `toast show align-items-center text-bg-${type === 'info' ? 'primary' : type} border-0`;
-        toastElement.setAttribute('role', 'alert');
-        
-        // Show spinner for in-progress states, check mark for success, X for error
-        let icon = '';
-        if (type === 'success') {
-            icon = '<i class="fas fa-check me-2"></i>';
-        } else if (type === 'danger') {
-            icon = '<i class="fas fa-times me-2"></i>';
-        } else {
-            icon = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>';
-        }
-        
-        toastElement.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    ${icon}
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
-
-        toastContainer.appendChild(toastElement);
-
-        // Auto-hide after specified duration (duration=0 means persistent)
-        if (duration > 0) {
-            setTimeout(() => {
-                if (toastElement.parentNode) {
-                    toastElement.remove();
-                }
-            }, duration);
-        }
-        // For persistent toasts (duration=0), don't auto-hide - they'll be manually removed when analysis completes
-    }
-
-    // Simpler alert-based notification as fallback
-    function showAnalysisAlert(message, type = 'info') {
-        console.log('showAnalysisAlert called:', message, type);
-        
-        // Remove any existing analysis alert
-        const existingAlert = document.getElementById('analysis-alert');
-        if (existingAlert) {
-            existingAlert.remove();
-        }
-
-        // Create alert element
-        const alertElement = document.createElement('div');
-        alertElement.id = 'analysis-alert';
-        alertElement.className = `alert alert-${type === 'info' ? 'primary' : type} alert-dismissible fade show mt-3`;
-        alertElement.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                <span>${message}</span>
-                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-
-        // Insert after the song header
-        const container = document.querySelector('.container');
-        const firstChild = container.firstElementChild;
-        container.insertBefore(alertElement, firstChild);
-
-        // Auto-hide after 10 seconds for info alerts
-        if (type === 'info') {
-            setTimeout(() => {
-                if (alertElement.parentNode) {
-                    alertElement.remove();
-                }
-            }, 10000);
-        }
-    }
-});
-</script>
+<!-- Include the song analyzer JavaScript -->
+<script src="{{ url_for('static', filename='js/song-analyzer.js') }}"></script>
 {% endblock %}
 
