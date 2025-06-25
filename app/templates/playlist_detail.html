@@ -16,8 +16,14 @@
             <!-- Playlist header -->
             <div class="row mb-4 align-items-center">
                 <div class="col-md-2">
-                    <img src="{{ url_for('static', filename='images/default_playlist_image.png') }}" 
-                         alt="Playlist Cover" class="img-fluid rounded shadow">
+                    {% if playlist.image_url %}
+                        <img src="{{ playlist.image_url }}" 
+                             alt="{{ playlist.name }} Cover" class="img-fluid rounded shadow">
+                    {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center rounded shadow" style="height: 150px;">
+                            <i class="fas fa-music text-muted fa-3x"></i>
+                        </div>
+                    {% endif %}
                 </div>
                 <div class="col-md-10">
                     <h1 class="display-6 fw-bold">{{ playlist.name }}</h1>
@@ -32,6 +38,13 @@
                         <button type="button" class="btn btn-primary analyze-playlist-btn">
                             <i class="fas fa-search"></i> Analyze All Songs
                         </button>
+                        {% if playlist.score and playlist.score >= 0.75 %}
+                            <form method="post" action="{{ url_for('main.whitelist_playlist', playlist_id=playlist.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-check me-1"></i>Whitelist Playlist
+                                </button>
+                            </form>
+                        {% endif %}
                     </div>
                 </div>
             </div>

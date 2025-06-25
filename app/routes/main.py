@@ -146,6 +146,8 @@ def song_detail(song_id):
         item_type='song'
     ).first() is not None
     
+
+    
     # Check if song has lyrics (for Biblical sections display)
     has_lyrics = bool(song.lyrics and song.lyrics.strip() and song.lyrics != "Lyrics not available")
     
@@ -271,6 +273,9 @@ def remove_whitelist(song_id):
     return redirect(request.referrer or url_for('main.dashboard'))
 
 
+
+
+
 @bp.route('/remove_song/<int:playlist_id>/<int:song_id>', methods=['POST'])
 @login_required
 def remove_song_from_playlist(playlist_id, song_id):
@@ -303,6 +308,71 @@ def remove_song_from_playlist(playlist_id, song_id):
         flash('Error removing song from playlist.', 'error')
     
     return redirect(url_for('main.playlist_detail', playlist_id=playlist_id))
+
+
+@bp.route('/whitelist_playlist/<int:playlist_id>', methods=['POST'])
+@login_required  
+def whitelist_playlist(playlist_id):
+    """Add a playlist to user's whitelist and cascade to all songs"""
+    # Verify user has access to this playlist
+    playlist = Playlist.query.filter_by(
+        id=playlist_id,
+        owner_id=current_user.id
+    ).first_or_404()
+    
+    # Check if already whitelisted
+    existing = Whitelist.query.filter_by(
+        user_id=current_user.id,
+        spotify_id=playlist.spotify_id,
+        item_type='playlist'
+    ).first()
+    
+    if not existing:
+        # Calculate the score percentage for the reason
+        score_percent = (playlist.score * 100) if playlist.score else 0
+        
+        # Whitelist the playlist
+        whitelist_entry = Whitelist(
+            user_id=current_user.id,
+            spotify_id=playlist.spotify_id,
+            item_type='playlist',
+            name=playlist.name,
+            reason=f'High scoring playlist ({score_percent:.1f}%)'
+        )
+        db.session.add(whitelist_entry)
+        
+        # CASCADE: Whitelist all songs in the playlist
+        songs = db.session.query(Song).join(PlaylistSong).filter(
+            PlaylistSong.playlist_id == playlist.id
+        ).all()
+        
+        songs_whitelisted = 0
+        for song in songs:
+            # Check if song is already whitelisted
+            existing_song = Whitelist.query.filter_by(
+                user_id=current_user.id,
+                spotify_id=song.spotify_id,
+                item_type='song'
+            ).first()
+            
+            if not existing_song:
+                song_whitelist_entry = Whitelist(
+                    user_id=current_user.id,
+                    spotify_id=song.spotify_id,
+                    item_type='song',
+                    name=f"{song.artist} - {song.title}",
+                    reason=f'Whitelisted with playlist "{playlist.name}"'
+                )
+                db.session.add(song_whitelist_entry)
+                songs_whitelisted += 1
+        
+        db.session.commit()
+        
+        flash(f'"{playlist.name}" and {songs_whitelisted} songs added to your whitelist!', 'success')
+    else:
+        flash(f'"{playlist.name}" is already in your whitelist.', 'info')
+    
+    return redirect(request.referrer or url_for('main.dashboard'))
 
 
 @bp.route('/settings')

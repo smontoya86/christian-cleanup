@@ -22,7 +22,7 @@ from datetime import datetime
 from sqlalchemy import text
 
 from .. import db
-from ..models.models import Playlist, Song, AnalysisResult, PlaylistSong, User, Blacklist, Whitelist
+from ..models.models import Playlist, Song, AnalysisResult, PlaylistSong, User, Whitelist
 from ..services.spotify_service import SpotifyService
 from ..services.unified_analysis_service import UnifiedAnalysisService
 from ..utils.health_monitor import health_monitor
@@ -819,15 +819,18 @@ def admin_reanalyze_user(user_id):
         }), 500
 
 
-# Blacklist Management API
-@bp.route('/blacklist', methods=['POST'])
+
+
+
+# Whitelist Management API
+@bp.route('/whitelist', methods=['POST'])
 @login_required
-def add_blacklist_item():
+def add_whitelist_item():
     """
-    Add an item to the user's blacklist.
+    Add an item to the user's whitelist.
     
-    If the item exists on the whitelist, it will be moved to the blacklist.
-    If the item already exists on the blacklist, the reason will be updated.
+    If the item exists on the blacklist, it will be moved to the whitelist.
+    If the item already exists on the whitelist, the reason will be updated.
     """
     try:
         data = request.get_json()
@@ -865,35 +868,10 @@ def add_blacklist_item():
         name = data.get('name', '')
         reason = data.get('reason', '')
         
-        # Check if item exists in whitelist
-        whitelist_entry = Whitelist.query.filter_by(
-            user_id=current_user.id,
-            spotify_id=spotify_id,
-            item_type=item_type
-        ).first()
-        
-        if whitelist_entry:
-            # Move from whitelist to blacklist
-            db.session.delete(whitelist_entry)
+
             
-            blacklist_entry = Blacklist(
-                user_id=current_user.id,
-                spotify_id=spotify_id,
-                item_type=item_type,
-                name=name,
-                reason=reason
-            )
-            db.session.add(blacklist_entry)
-            db.session.commit()
-            
-            return jsonify({
-                'success': True,
-                'message': 'Item moved from whitelist to blacklist',
-                'item': blacklist_entry.to_dict()
-            }), 200
-            
-        # Check if item already exists in blacklist
-        existing_entry = Blacklist.query.filter_by(
+        # Check if item already exists in whitelist
+        existing_entry = Whitelist.query.filter_by(
             user_id=current_user.id,
             spotify_id=spotify_id,
             item_type=item_type
@@ -908,12 +886,12 @@ def add_blacklist_item():
             
             return jsonify({
                 'success': True,
-                'message': 'Blacklist item reason updated',
+                'message': 'Whitelist item reason updated',
                 'item': existing_entry.to_dict()
             }), 200
             
-        # Create new blacklist entry
-        blacklist_entry = Blacklist(
+        # Create new whitelist entry
+        whitelist_entry = Whitelist(
             user_id=current_user.id,
             spotify_id=spotify_id,
             item_type=item_type,
@@ -921,29 +899,29 @@ def add_blacklist_item():
             reason=reason
         )
         
-        db.session.add(blacklist_entry)
+        db.session.add(whitelist_entry)
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': 'Item added to blacklist',
-            'item': blacklist_entry.to_dict()
+            'message': 'Item added to whitelist',
+            'item': whitelist_entry.to_dict()
         }), 201
         
     except Exception as e:
-        current_app.logger.error(f'Error adding blacklist item: {e}')
+        current_app.logger.error(f'Error adding whitelist item: {e}')
         db.session.rollback()
         return jsonify({
             'success': False,
-            'error': 'Failed to add item to blacklist'
+            'error': 'Failed to add item to whitelist'
         }), 500
 
 
-@bp.route('/blacklist', methods=['GET'])
+@bp.route('/whitelist', methods=['GET'])
 @login_required
-def get_blacklist_items():
+def get_whitelist_items():
     """
-    Get all items in the user's blacklist.
+    Get all items in the user's whitelist.
     
     Optional query parameter:
     - item_type: Filter by specific item type (song, artist, playlist)
@@ -951,7 +929,7 @@ def get_blacklist_items():
     try:
         item_type_filter = request.args.get('item_type')
         
-        query = Blacklist.query.filter_by(user_id=current_user.id)
+        query = Whitelist.query.filter_by(user_id=current_user.id)
         
         if item_type_filter:
             valid_types = ['song', 'artist', 'playlist']
@@ -962,83 +940,81 @@ def get_blacklist_items():
                 }), 400
             query = query.filter_by(item_type=item_type_filter)
             
-        blacklist_items = query.order_by(Blacklist.added_date.desc()).all()
+        whitelist_items = query.order_by(Whitelist.added_date.desc()).all()
         
         return jsonify({
             'success': True,
-            'items': [item.to_dict() for item in blacklist_items],
-            'total_count': len(blacklist_items)
+            'items': [item.to_dict() for item in whitelist_items],
+            'total_count': len(whitelist_items)
         }), 200
         
     except Exception as e:
-        current_app.logger.error(f'Error retrieving blacklist items: {e}')
+        current_app.logger.error(f'Error retrieving whitelist items: {e}')
         return jsonify({
             'success': False,
-            'error': 'Failed to retrieve blacklist items'
+            'error': 'Failed to retrieve whitelist items'
         }), 500
 
 
-@bp.route('/blacklist/<int:entry_id>', methods=['DELETE'])
+@bp.route('/whitelist/<int:entry_id>', methods=['DELETE'])
 @login_required
-def remove_blacklist_item(entry_id):
+def remove_whitelist_item(entry_id):
     """
-    Remove a specific item from the user's blacklist.
+    Remove a specific item from the user's whitelist.
     """
     try:
-        blacklist_entry = Blacklist.query.filter_by(
+        whitelist_entry = Whitelist.query.filter_by(
             id=entry_id,
             user_id=current_user.id
         ).first()
         
-        if not blacklist_entry:
+        if not whitelist_entry:
             return jsonify({
                 'success': False,
-                'error': 'Blacklist entry not found'
+                'error': 'Whitelist entry not found'
             }), 404
             
-        item_name = blacklist_entry.name or f"{blacklist_entry.item_type} {blacklist_entry.spotify_id}"
+        item_name = whitelist_entry.name or f"{whitelist_entry.item_type} {whitelist_entry.spotify_id}"
         
-        db.session.delete(blacklist_entry)
+        db.session.delete(whitelist_entry)
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': f'Removed \'{item_name}\' from blacklist'
+            'message': 'Item removed from whitelist'
         }), 200
         
     except Exception as e:
-        current_app.logger.error(f'Error removing blacklist item {entry_id}: {e}')
+        current_app.logger.error(f'Error removing whitelist item {entry_id}: {e}')
         db.session.rollback()
         return jsonify({
             'success': False,
-            'error': 'Failed to remove item from blacklist'
+            'error': 'Failed to remove item from whitelist'
         }), 500
 
 
-@bp.route('/blacklist/clear', methods=['POST'])
+@bp.route('/whitelist/clear', methods=['POST'])
 @login_required  
-def clear_blacklist():
+def clear_whitelist():
     """
-    Remove all items from the user's blacklist.
+    Remove all items from the user's whitelist.
     """
     try:
-        items_count = Blacklist.query.filter_by(user_id=current_user.id).count()
-        
-        deleted_count = Blacklist.query.filter_by(user_id=current_user.id).delete()
+        deleted_count = Whitelist.query.filter_by(user_id=current_user.id).delete()
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': f'Cleared {deleted_count} items from blacklist',
+            'message': 'All whitelist items cleared',
             'items_removed': deleted_count
         }), 200
         
     except Exception as e:
-        current_app.logger.error(f'Error clearing blacklist: {e}')
+        current_app.logger.error(f'Error clearing whitelist: {e}')
         db.session.rollback()
         return jsonify({
             'success': False,
-            'error': 'Failed to clear blacklist'
+            'error': 'Failed to clear whitelist'
         }), 500
 
 
