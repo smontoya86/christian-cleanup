@@ -417,10 +417,27 @@ class UnifiedAnalysisService:
         from ..models.models import Song, AnalysisResult as DBAnalysisResult
         from .. import db
         from datetime import datetime, timezone
+        import time
         
         song = Song.query.get(song_id)
         if not song:
             raise ValueError(f"Song with ID {song_id} not found")
+
+        # Check if there's an existing analysis record (for playlist progress tracking)
+        existing_analysis = DBAnalysisResult.query.filter_by(song_id=song_id).first()
+        
+        # For playlist analysis workflow: if there's a pending/in_progress record, 
+        # we need to respect the status transitions for progress tracking
+        if existing_analysis and existing_analysis.status in ['pending', 'in_progress']:
+            # This is part of a playlist analysis workflow
+            # Update status to processing if it was pending
+            if existing_analysis.status == 'pending':
+                existing_analysis.status = 'in_progress'
+                db.session.commit()
+                
+                # Add a small delay to make the in_progress status visible to frontend
+                # This allows the progress tracking to show the transition
+                time.sleep(0.5)
         
         # For integration tests - simulate job enqueue
         # In real implementation, this would queue a background job
@@ -513,7 +530,6 @@ class UnifiedAnalysisService:
 
             
             # Save results to database using mark_completed for proper field population
-            existing_analysis = DBAnalysisResult.query.filter_by(song_id=song_id).first()
             if existing_analysis:
     
                 # Update existing analysis using mark_completed
@@ -565,6 +581,11 @@ class UnifiedAnalysisService:
             # Log to Flask logger as well
             from flask import current_app
             current_app.logger.error(f'Analysis failed for song {song_id}: {e}\nTraceback: {error_details}')
+            
+            # Mark analysis as failed if it exists
+            if existing_analysis:
+                existing_analysis.mark_failed(str(e))
+                db.session.commit()
             
             # Still return a job object to match API expectations
             class MockJob:
