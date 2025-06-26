@@ -58,20 +58,26 @@ class SimplifiedChristianAnalysisService:
             # 2. Enhanced concern detection with educational explanations
             concern_analysis = self.concern_detector.analyze_content_concerns(title, artist, lyrics)
             
-            # 3. Map to relevant scripture for education
+            # 3. Map to relevant scripture for education (positive themes)
             scripture_refs = self.scripture_mapper.find_relevant_passages(ai_analysis['themes'])
             
-            # 4. Calculate final score (incorporating concern analysis)
+            # 4. Add scriptural foundations for detected concerns (NEW ENHANCEMENT)
+            concern_scripture_refs = self._extract_scriptural_foundations_from_concerns(concern_analysis)
+            
+            # 5. Combine positive theme scriptures with concern-based scriptures
+            comprehensive_scripture_refs = scripture_refs + concern_scripture_refs
+            
+            # 6. Calculate final score (incorporating concern analysis)
             final_score = self._calculate_unified_score(ai_analysis, concern_analysis)
             
-            # 5. Determine concern level (using enhanced analysis)
+            # 7. Determine concern level (using enhanced analysis)
             concern_level = self._determine_concern_level(final_score, ai_analysis, concern_analysis)
             
-            # 6. Generate educational explanation
+            # 8. Generate educational explanation
             explanation = self._generate_educational_explanation(ai_analysis, concern_analysis, final_score)
             
-            # 7. Create educational insights
-            educational_insights = self._create_educational_insights(ai_analysis, scripture_refs, concern_analysis)
+            # 9. Create educational insights (using comprehensive scripture references)
+            educational_insights = self._create_educational_insights(ai_analysis, comprehensive_scripture_refs, concern_analysis)
             
             # Create compatible AnalysisResult
             result = AnalysisResult(
@@ -88,7 +94,7 @@ class SimplifiedChristianAnalysisService:
                 },
                 biblical_analysis={
                     'themes': [{'theme': theme, 'score': 1.0} for theme in ai_analysis['themes']],
-                    'supporting_scripture': scripture_refs,
+                    'supporting_scripture': comprehensive_scripture_refs,
                     'biblical_themes_count': len(ai_analysis['themes']),
                     'educational_insights': educational_insights
                 },
@@ -373,6 +379,41 @@ class SimplifiedChristianAnalysisService:
                 }
             }
         )
+    
+    def _extract_scriptural_foundations_from_concerns(self, concern_analysis: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Extract scriptural foundations from detected concerns and map them to comprehensive scripture references.
+        
+        This bridges the gap between concern detection and biblical education by providing
+        scriptural context for understanding why certain content is concerning.
+        """
+        if not concern_analysis or not concern_analysis.get('detailed_concerns'):
+            return []
+        
+        scripture_references = []
+        processed_concerns = set()  # Avoid duplicate scriptures for same concern types
+        
+        for concern in concern_analysis['detailed_concerns']:
+            concern_type = concern.get('type', '')
+            
+            # Skip if we've already processed this concern type
+            if concern_type in processed_concerns:
+                continue
+            processed_concerns.add(concern_type)
+            
+            # Use enhanced scripture mapper to find comprehensive biblical foundation
+            concern_scripture = self.scripture_mapper.find_scriptural_foundation_for_concern(concern_type)
+            
+            if concern_scripture:
+                # Enhance with context from the detected concern
+                for ref in concern_scripture:
+                    enhanced_ref = ref.copy()
+                    enhanced_ref['concern_category'] = concern.get('category', 'General')
+                    enhanced_ref['concern_explanation'] = concern.get('explanation', '')
+                    enhanced_ref['educational_context'] = f"Biblical foundation for understanding {concern_type} concerns"
+                    scripture_references.append(enhanced_ref)
+        
+        return scripture_references
 
 
 class EnhancedAIAnalyzer:

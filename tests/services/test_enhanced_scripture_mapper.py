@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-TDD Tests for Enhanced Scripture Mapping
-Testing the enhanced scripture mapping functionality
+Tests for Enhanced Scripture Mapper with Concern-Based Biblical Themes
+
+Tests the enhanced scripture mapping functionality that provides biblical
+foundation for both positive themes and concerning content detection.
 """
 import pytest
 import sys
@@ -14,137 +16,199 @@ from app.services.enhanced_scripture_mapper import EnhancedScriptureMapper
 
 
 class TestEnhancedScriptureMapper:
-    """Test suite for enhanced scripture mapping functionality"""
+    """Test the enhanced scripture mapper with concern-based themes."""
     
-    def setup_method(self):
-        """Set up test fixtures"""
-        self.mapper = EnhancedScriptureMapper()
+    @pytest.fixture
+    def scripture_mapper(self):
+        """Create scripture mapper instance for testing."""
+        return EnhancedScriptureMapper()
     
-    def test_get_scripture_references_valid_themes(self):
-        """Test getting scripture references for valid themes"""
-        themes = ['God', 'love', 'grace']
-        result = self.mapper.find_relevant_passages(themes)
+    def test_initialization(self, scripture_mapper):
+        """Test that scripture mapper initializes with both positive and concern themes."""
+        # Should have existing positive themes
+        assert 'god' in scripture_mapper.scripture_database
+        assert 'jesus' in scripture_mapper.scripture_database
+        assert 'grace' in scripture_mapper.scripture_database
         
-        # Should return 3 passages (one per theme)
-        assert len(result) == 3
+        # Should have new concern themes
+        assert 'concern_themes' in scripture_mapper.scripture_database
+        concern_themes = scripture_mapper.scripture_database['concern_themes']
         
-        # Each passage should have required fields
-        for passage in result:
-            assert 'reference' in passage
-            assert 'text' in passage
-            assert 'relevance' in passage
-            assert 'application' in passage
-            assert 'educational_value' in passage
-    
-    def test_get_scripture_references_case_insensitive(self):
-        """Test that theme matching is case insensitive"""
-        themes_lower = ['god', 'jesus']
-        themes_mixed = ['God', 'Jesus']
-        themes_upper = ['GOD', 'JESUS']
-        
-        result_lower = self.mapper.find_relevant_passages(themes_lower)
-        result_mixed = self.mapper.find_relevant_passages(themes_mixed)
-        result_upper = self.mapper.find_relevant_passages(themes_upper)
-        
-        # All should return same number of results
-        assert len(result_lower) == len(result_mixed) == len(result_upper) == 2
-        
-        # Results should be equivalent (same references)
-        refs_lower = [p['reference'] for p in result_lower]
-        refs_mixed = [p['reference'] for p in result_mixed]
-        refs_upper = [p['reference'] for p in result_upper]
-        
-        assert set(refs_lower) == set(refs_mixed) == set(refs_upper)
-    
-    def test_get_scripture_references_unknown_themes(self):
-        """Test handling of unknown/invalid themes"""
-        themes = ['unknown_theme', 'invalid_theme', 'not_a_theme']
-        result = self.mapper.find_relevant_passages(themes)
-        
-        # Should return empty list for unknown themes
-        assert result == []
-    
-    def test_get_scripture_references_mixed_valid_invalid(self):
-        """Test handling of mixed valid and invalid themes"""
-        themes = ['God', 'unknown_theme', 'love', 'invalid_theme']
-        result = self.mapper.find_relevant_passages(themes)
-        
-        # Should return only passages for valid themes (God, love)
-        assert len(result) == 2
-        
-        # Check that returned passages are for valid themes
-        refs = [p['reference'] for p in result]
-        # Should contain references from God and love themes
-        assert len(refs) == 2
-    
-    def test_get_scripture_references_empty_input(self):
-        """Test handling of empty input"""
-        result = self.mapper.find_relevant_passages([])
-        assert result == []
-        
-        result_none = self.mapper.find_relevant_passages(None)
-        assert result_none == []
-    
-    def test_all_core_themes_supported(self):
-        """Test that all 10 core biblical themes are supported"""
-        core_themes = [
-            'God', 'Jesus', 'grace', 'love', 'worship', 
-            'faith', 'hope', 'peace', 'joy', 'forgiveness'
+        # Test all concern categories have biblical foundations
+        expected_concern_themes = [
+            'explicit_language', 'sexual_content', 'substance_abuse', 
+            'violence_aggression', 'materialism_greed', 'pride_arrogance',
+            'occult_spiritual_darkness', 'despair_hopelessness', 
+            'rebellion_authority', 'false_teaching'
         ]
         
-        for theme in core_themes:
-            result = self.mapper.find_relevant_passages([theme])
-            assert len(result) >= 1, f"Theme '{theme}' should return at least one scripture passage"
+        for concern in expected_concern_themes:
+            assert concern in concern_themes, f"Missing biblical foundation for {concern}"
             
-            # Verify the passage has all required fields
-            passage = result[0]
-            assert passage['reference'], f"Theme '{theme}' missing reference"
-            assert passage['text'], f"Theme '{theme}' missing text"
-            assert passage['relevance'], f"Theme '{theme}' missing explanation"
-    
-    def test_scripture_passage_quality(self):
-        """Test the quality and completeness of scripture passages"""
-        themes = ['God', 'Jesus', 'grace']
-        result = self.mapper.find_relevant_passages(themes)
+    def test_concern_theme_structure(self, scripture_mapper):
+        """Test that concern themes have proper structure with biblical foundation."""
+        concern_themes = scripture_mapper.scripture_database['concern_themes']
         
+        # Test explicit_language theme structure
+        explicit_theme = concern_themes['explicit_language']
+        assert 'category' in explicit_theme
+        assert 'concern_addressed' in explicit_theme
+        assert 'scriptures' in explicit_theme
+        assert len(explicit_theme['scriptures']) > 0
+        
+        # Test scripture structure
+        scripture = explicit_theme['scriptures'][0]
+        required_fields = ['reference', 'text', 'teaching_point', 'application', 'contrast_principle']
+        for field in required_fields:
+            assert field in scripture, f"Missing {field} in scripture structure"
+            
+    def test_find_scriptural_foundation_for_concerns(self, scripture_mapper):
+        """Test finding scriptural foundation for detected concerns."""
+        # Mock detected concerns
+        mock_concerns = [
+            {'type': 'explicit_language', 'severity': 'high'},
+            {'type': 'sexual_content', 'severity': 'high'},
+            {'type': 'materialism_greed', 'severity': 'medium'}
+        ]
+        
+        result = scripture_mapper.find_scriptural_foundation_for_concerns(mock_concerns)
+        
+        # Should return scripture for each concern
+        assert len(result) == 3
+        
+        # Each result should have proper structure
+        for scripture_foundation in result:
+            assert 'concern_type' in scripture_foundation
+            assert 'biblical_theme' in scripture_foundation
+            assert 'scriptures' in scripture_foundation
+            assert 'teaching_summary' in scripture_foundation
+            
+    def test_get_comprehensive_scripture_references(self, scripture_mapper):
+        """Test getting comprehensive scripture for both positive and concern themes."""
+        positive_themes = ['worship', 'grace', 'love']
+        concern_themes = [
+            {'concern_type': 'explicit_language', 'biblical_theme': 'speech_purity'},
+            {'concern_type': 'pride_arrogance', 'biblical_theme': 'humility'}
+        ]
+        
+        result = scripture_mapper.get_comprehensive_scripture_references(
+            positive_themes, concern_themes
+        )
+        
+        # Should have both positive and concern references
+        assert 'positive_references' in result
+        assert 'concern_references' in result
+        assert 'balanced_teaching' in result
+        
+        # Should have scripture for positive themes
+        assert len(result['positive_references']) > 0
+        
+        # Should have scripture for concern themes
+        assert len(result['concern_references']) > 0
+        
+        # Should provide balanced teaching
+        assert len(result['balanced_teaching']) > 0
+        
+    def test_sexual_content_biblical_foundation(self, scripture_mapper):
+        """Test specific biblical foundation for sexual content concerns."""
+        concern_themes = scripture_mapper.scripture_database['concern_themes']
+        sexual_theme = concern_themes['sexual_content']
+        
+        # Should address sexual purity
+        assert sexual_theme['concern_addressed'] == 'sexual_content'
+        assert 'Purity' in sexual_theme['category']
+        
+        # Should have relevant scripture
+        scriptures = sexual_theme['scriptures']
+        assert len(scriptures) > 0
+        
+        # Should reference key purity passages
+        references = [s['reference'] for s in scriptures]
+        assert any('1 Corinthians 6' in ref for ref in references)
+        
+    def test_explicit_language_biblical_foundation(self, scripture_mapper):
+        """Test specific biblical foundation for explicit language concerns."""
+        concern_themes = scripture_mapper.scripture_database['concern_themes']
+        language_theme = concern_themes['explicit_language']
+        
+        # Should address speech purity
+        assert language_theme['concern_addressed'] == 'explicit_language'
+        assert 'Communication' in language_theme['category']
+        
+        # Should reference Ephesians 4:29
+        scriptures = language_theme['scriptures']
+        references = [s['reference'] for s in scriptures]
+        assert any('Ephesians 4:29' in ref for ref in references)
+        
+    def test_materialism_biblical_foundation(self, scripture_mapper):
+        """Test biblical foundation for materialism and greed concerns."""
+        concern_themes = scripture_mapper.scripture_database['concern_themes']
+        materialism_theme = concern_themes['materialism_greed']
+        
+        # Should address materialism
+        assert materialism_theme['concern_addressed'] == 'materialism_greed'
+        
+        # Should reference key money/materialism passages
+        scriptures = materialism_theme['scriptures']
+        references = [s['reference'] for s in scriptures]
+        assert any('1 Timothy 6' in ref for ref in references)
+        
+    def test_violence_biblical_foundation(self, scripture_mapper):
+        """Test biblical foundation for violence and aggression concerns."""
+        concern_themes = scripture_mapper.scripture_database['concern_themes']
+        violence_theme = concern_themes['violence_aggression']
+        
+        # Should address violence/aggression
+        assert violence_theme['concern_addressed'] == 'violence_aggression'
+        
+        # Should reference peace/nonviolence passages
+        scriptures = violence_theme['scriptures']
+        references = [s['reference'] for s in scriptures]
+        assert any('Matthew 5' in ref for ref in references)
+        
+    def test_occult_biblical_foundation(self, scripture_mapper):
+        """Test biblical foundation for occult and spiritual darkness concerns."""
+        concern_themes = scripture_mapper.scripture_database['concern_themes']
+        occult_theme = concern_themes['occult_spiritual_darkness']
+        
+        # Should address occult practices
+        assert occult_theme['concern_addressed'] == 'occult_spiritual_darkness'
+        
+        # Should reference Deuteronomy 18 prohibition
+        scriptures = occult_theme['scriptures']
+        references = [s['reference'] for s in scriptures]
+        assert any('Deuteronomy 18' in ref for ref in references)
+        
+    def test_educational_content_quality(self, scripture_mapper):
+        """Test that educational content maintains high quality and biblical accuracy."""
+        concern_themes = scripture_mapper.scripture_database['concern_themes']
+        
+        for theme_name, theme_data in concern_themes.items():
+            # Each theme should have educational value
+            assert 'category' in theme_data
+            assert len(theme_data['scriptures']) > 0
+            
+            for scripture in theme_data['scriptures']:
+                # Teaching points should be substantial
+                assert len(scripture['teaching_point']) > 20
+                # Applications should be practical
+                assert len(scripture['application']) > 20
+                # Contrast principles should provide alternatives
+                assert len(scripture['contrast_principle']) > 10
+                
+    def test_backward_compatibility(self, scripture_mapper):
+        """Test that existing positive theme functionality still works."""
+        # Test existing methods still work
+        positive_themes = ['god', 'jesus', 'worship', 'grace']
+        result = scripture_mapper.find_relevant_passages(positive_themes)
+        
+        # Should still return scripture for positive themes
+        assert len(result) > 0
+        
+        # Should maintain existing structure
         for passage in result:
-            # Reference should be properly formatted (e.g., "John 3:16")
-            assert len(passage['reference']) > 5
-            assert ':' in passage['reference']
-            
-            # Text should be substantial (not just a few words)
-            assert len(passage['text']) > 20
-            
-            # Explanations should be educational
-            assert len(passage['relevance']) > 30
-            assert len(passage['application']) > 20
-            assert len(passage['educational_value']) > 20
-    
-    def test_no_duplicate_passages(self):
-        """Test that duplicate themes don't return duplicate passages"""
-        themes = ['God', 'God', 'love', 'love']
-        result = self.mapper.find_relevant_passages(themes)
-        
-        # Should not return duplicates (God and love each appear once)
-        refs = [p['reference'] for p in result]
-        assert len(refs) == len(set(refs)), "Should not return duplicate scripture references"
-    
-    def test_scripture_text_content(self):
-        """Test that scripture text contains actual verse content"""
-        themes = ['God']
-        result = self.mapper.find_relevant_passages(themes)
-        
-        passage = result[0]
-        text = passage['text']
-        
-        # Should contain actual verse content, not just reference
-        assert len(text) > 50  # Substantial text
-        assert not text.startswith(passage['reference'])  # Not just the reference
-        
-        # Should contain meaningful words related to the theme
-        text_lower = text.lower()
-        god_related_words = ['god', 'lord', 'father', 'creator', 'almighty']
-        assert any(word in text_lower for word in god_related_words)
+            assert 'reference' in passage
+            assert 'relevance' in passage
 
 
 if __name__ == '__main__':

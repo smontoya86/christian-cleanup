@@ -197,47 +197,121 @@
                                     </div>
                                 {% endif %}
 
-                                {% if analysis.supporting_scripture %}
-                                    <h6 class="text-primary mb-3">Related Scripture:</h6>
-                                    <div class="scripture-references">
-                                        {% if analysis.supporting_scripture is mapping %}
-                                            {% for key, scripture in analysis.supporting_scripture.items() %}
-                                                <div class="mb-3 p-3 border rounded bg-light">
-                                                    {% if scripture is mapping %}
-                                                        <strong class="text-primary">{{ scripture.get('reference', key) }}</strong>
-                                                        {% if scripture.get('text') %}
-                                                            <blockquote class="blockquote-sm mt-2 mb-0">
-                                                                <em>"{{ scripture.get('text') }}"</em>
-                                                            </blockquote>
-                                                        {% endif %}
-                                                    {% else %}
-                                                        <strong class="text-primary">{{ key }}</strong>
-                                                        <p class="mb-0 mt-1">{{ scripture }}</p>
-                                                    {% endif %}
-                                                </div>
-                                            {% endfor %}
-                                        {% elif analysis.supporting_scripture is iterable and analysis.supporting_scripture is not string %}
-                                            {% for scripture in analysis.supporting_scripture %}
-                                                <div class="mb-3 p-3 border rounded bg-light">
-                                                    {% if scripture is mapping %}
-                                                        <strong class="text-primary">{{ scripture.get('reference', 'Scripture') }}</strong>
-                                                        {% if scripture.get('text') %}
-                                                            <blockquote class="blockquote-sm mt-2 mb-0">
-                                                                <em>"{{ scripture.get('text') }}"</em>
-                                                            </blockquote>
-                                                        {% endif %}
-                                                    {% else %}
-                                                        <p class="mb-0">{{ scripture }}</p>
-                                                    {% endif %}
-                                                </div>
-                                            {% endfor %}
-                                        {% else %}
-                                            <div class="p-3 border rounded bg-light">
-                                                <p class="mb-0">{{ analysis.supporting_scripture }}</p>
+                                                {% if analysis.supporting_scripture %}
+                    <!-- Enhanced Biblical Content with Categorized Scripture References -->
+                    {% if analysis.supporting_scripture is iterable and analysis.supporting_scripture is not string %}
+                        {% set positive_scriptures = [] %}
+                        {% set concern_scriptures = [] %}
+                        
+                        {% for scripture in analysis.supporting_scripture %}
+                            {% if scripture is mapping %}
+                                {% if scripture.get('concern_type') %}
+                                    {% set _ = concern_scriptures.append(scripture) %}
+                                {% else %}
+                                    {% set _ = positive_scriptures.append(scripture) %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <!-- Section for Positive Theme Scriptures -->
+                        {% if positive_scriptures %}
+                            <div class="mb-4">
+                                <h6 class="text-success mb-3">
+                                    <i class="fas fa-heart me-2"></i>Supporting Positive Themes
+                                    <span class="badge bg-success ms-2">{{ positive_scriptures|length }}</span>
+                                </h6>
+                                <div class="scripture-references">
+                                    {% for scripture in positive_scriptures %}
+                                        <div class="mb-3 p-3 border rounded bg-light border-success">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <strong class="text-success">{{ scripture.get('reference', 'Scripture') }}</strong>
+                                                {% if scripture.get('theme') %}
+                                                    <span class="badge bg-success">{{ scripture.get('theme') }}</span>
+                                                {% endif %}
                                             </div>
+                                            {% if scripture.get('text') %}
+                                                <blockquote class="blockquote-sm mt-2 mb-2">
+                                                    <em>"{{ scripture.get('text') }}"</em>
+                                                </blockquote>
+                                            {% endif %}
+                                            {% if scripture.get('application') %}
+                                                <small class="text-muted d-block mt-2">
+                                                    <i class="fas fa-lightbulb me-1"></i>{{ scripture.get('application') }}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Section for Concern-Based Scriptures -->
+                        {% if concern_scriptures %}
+                            <div class="mb-4">
+                                <h6 class="text-warning mb-3">
+                                    <i class="fas fa-shield-alt me-2"></i>Biblical Foundation for Concerns
+                                    <span class="badge bg-warning text-dark ms-2">{{ concern_scriptures|length }}</span>
+                                </h6>
+                                <div class="alert alert-warning p-3 mb-3">
+                                    <small>
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Understanding Biblical Discernment:</strong> These scriptures help explain why certain content may be concerning from a biblical perspective, supporting your growth in spiritual discernment.
+                                    </small>
+                                </div>
+                                <div class="scripture-references">
+                                    {% for scripture in concern_scriptures %}
+                                        <div class="mb-3 p-3 border rounded bg-light border-warning">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <strong class="text-warning">{{ scripture.get('reference', 'Scripture') }}</strong>
+                                                {% if scripture.get('concern_type') %}
+                                                    <span class="badge bg-warning text-dark">{{ scripture.get('concern_type').replace('_', ' ').title() }}</span>
+                                                {% endif %}
+                                            </div>
+                                            {% if scripture.get('text') %}
+                                                <blockquote class="blockquote-sm mt-2 mb-2">
+                                                    <em>"{{ scripture.get('text') }}"</em>
+                                                </blockquote>
+                                            {% endif %}
+                                            {% if scripture.get('educational_value') %}
+                                                <small class="text-muted d-block mt-2">
+                                                    <i class="fas fa-graduation-cap me-1"></i>{{ scripture.get('educational_value') }}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Fallback for non-categorized scriptures -->
+                        {% if not positive_scriptures and not concern_scriptures %}
+                            <h6 class="text-primary mb-3">Related Scripture:</h6>
+                            <div class="scripture-references">
+                                {% for scripture in analysis.supporting_scripture %}
+                                    <div class="mb-3 p-3 border rounded bg-light">
+                                        {% if scripture is mapping %}
+                                            <strong class="text-primary">{{ scripture.get('reference', 'Scripture') }}</strong>
+                                            {% if scripture.get('text') %}
+                                                <blockquote class="blockquote-sm mt-2 mb-0">
+                                                    <em>"{{ scripture.get('text') }}"</em>
+                                                </blockquote>
+                                            {% endif %}
+                                        {% else %}
+                                            <p class="mb-0">{{ scripture }}</p>
                                         {% endif %}
                                     </div>
-                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                    {% else %}
+                        <!-- Legacy format support -->
+                        <h6 class="text-primary mb-3">Related Scripture:</h6>
+                        <div class="p-3 border rounded bg-light">
+                            <p class="mb-0">{{ analysis.supporting_scripture }}</p>
+                        </div>
+                    {% endif %}
+                {% endif %}
                             </div>
                         </div>
                     {% endif %}
