@@ -404,7 +404,7 @@ class UnifiedAnalysisService:
     
     def enqueue_analysis_job(self, song_id: int, user_id=None, priority: str = 'default'):
         """
-        Enqueue analysis job for a song.
+        Enqueue analysis job for a song using the priority queue system.
         
         Args:
             song_id (int): ID of the song to analyze
@@ -412,13 +412,13 @@ class UnifiedAnalysisService:
             priority (str): Priority level for the job ('high', 'low', 'default')
             
         Returns:
-            Mock job object with job ID
+            Mock job object with job ID for API compatibility
         """
         from ..models.models import Song, AnalysisResult as DBAnalysisResult
         from .. import db
-        from datetime import datetime, timezone
-        import time
+        from .priority_analysis_queue import enqueue_song_analysis, JobPriority
         
+        # Validate song exists
         song = Song.query.get(song_id)
         if not song:
             raise ValueError(f"Song with ID {song_id} not found")
@@ -426,148 +426,49 @@ class UnifiedAnalysisService:
         # Check if there's an existing analysis record (for playlist progress tracking)
         existing_analysis = DBAnalysisResult.query.filter_by(song_id=song_id).first()
         
-        # For playlist analysis workflow: if there's a pending/in_progress record, 
-        # we need to respect the status transitions for progress tracking
-        if existing_analysis and existing_analysis.status in ['pending', 'in_progress']:
-            # This is part of a playlist analysis workflow
-            # Update status to processing if it was pending
-            if existing_analysis.status == 'pending':
-                existing_analysis.status = 'in_progress'
-                db.session.commit()
-                
-                # Add a small delay to make the in_progress status visible to frontend
-                # This allows the progress tracking to show the transition
-                time.sleep(0.5)
+        # Create or update analysis record to 'pending' status for progress tracking
+        if existing_analysis:
+            # Reset to pending for re-analysis
+            existing_analysis.status = 'pending'
+            existing_analysis.updated_at = db.func.now()
+        else:
+            # Create new pending analysis record
+            new_analysis = DBAnalysisResult(song_id=song_id, status='pending')
+            db.session.add(new_analysis)
         
-        # For integration tests - simulate job enqueue
-        # In real implementation, this would queue a background job
+        db.session.commit()
+        
+        # Map priority string to JobPriority enum
+        priority_map = {
+            'high': JobPriority.HIGH,
+            'default': JobPriority.MEDIUM,
+            'medium': JobPriority.MEDIUM,
+            'low': JobPriority.LOW
+        }
+        queue_priority = priority_map.get(priority.lower(), JobPriority.MEDIUM)
+        
         try:
-            # Fetch lyrics if not already available
-            lyrics = song.lyrics
-            if not lyrics or lyrics.strip() == "":
-                print(f"🎵 Fetching lyrics for '{song.title}' by {song.artist}")
-                fetched_lyrics = self.lyrics_fetcher.fetch_lyrics(song.title or song.name, song.artist)
-                if fetched_lyrics:
-                    lyrics = fetched_lyrics
-                    # Update the song record with fetched lyrics
-                    song.lyrics = lyrics
-                    db.session.commit()
-                    print(f"✅ Lyrics fetched and saved ({len(lyrics)} characters)")
-                else:
-                    lyrics = ""
-                    print(f"❌ No lyrics found")
-            else:
-                print(f"📝 Using existing lyrics ({len(lyrics)} characters)")
-            
-            # Execute analysis with actual lyrics
-            analysis_result = self.analysis_service.analyze_song(
-                song.title or song.name,
-                song.artist,
-                lyrics
+            # Enqueue the job in our priority queue
+            job = enqueue_song_analysis(
+                song_id=song_id,
+                user_id=user_id,
+                priority=queue_priority,
+                metadata={
+                    'song_title': song.title or song.name,
+                    'artist': song.artist,
+                    'requested_at': db.func.now().isoformat() if hasattr(db.func.now(), 'isoformat') else str(db.func.now())
+                }
             )
             
-            # Extract detailed information for database storage
-            biblical_themes = []
-            positive_themes = []
-            detailed_concerns = []
-            supporting_scripture = []
-            
-            if analysis_result.biblical_analysis:
-                if 'themes' in analysis_result.biblical_analysis and analysis_result.biblical_analysis['themes']:
-                    biblical_themes = []
-                    for theme in analysis_result.biblical_analysis['themes']:
-                        if theme and (theme.get('theme') if isinstance(theme, dict) else theme):
-                            theme_name = theme.get('theme') if isinstance(theme, dict) else str(theme)
-                            # Capitalize theme names properly
-                            theme_name = theme_name.capitalize()
-                            if theme_name.lower() == 'god':
-                                theme_name = 'God'
-                            
-                            # Generate meaningful relevance based on lyrics analysis
-                            if lyrics and len(lyrics) > 50:
-                                relevance = f"Found in lyrics: '{theme_name}' appears in song content and reflects biblical values"
-                            elif lyrics and len(lyrics) > 0:
-                                relevance = f"Detected from song content: '{theme_name}' identified through lyrical analysis"
-                            else:
-                                relevance = f"Identified from song title/artist: '{theme_name}' suggests Christian/biblical content"
-                            
-                            biblical_themes.append({
-                                'theme': theme_name,
-                                'relevance': relevance
-                            })
-                            
-
-                            
-                if 'supporting_scripture' in analysis_result.biblical_analysis and analysis_result.biblical_analysis['supporting_scripture']:
-                    scripture_refs = analysis_result.biblical_analysis['supporting_scripture']
-                    supporting_scripture = []
-                    for ref in scripture_refs:
-                        if isinstance(ref, dict):
-                            # Already in the correct format with detailed information
-                            supporting_scripture.append(ref)
-                        elif isinstance(ref, str) and ref.strip():
-                            # Simple string reference, wrap it
-                            supporting_scripture.append({'reference': ref, 'relevance': 'Related to identified themes'})
-                        else:
-                            # Convert other types to string
-                            supporting_scripture.append({'reference': str(ref), 'relevance': 'Related to identified themes'})
-                            
-
-            
-            if analysis_result.model_analysis and 'sentiment' in analysis_result.model_analysis:
-                sentiment = analysis_result.model_analysis['sentiment']
-                if sentiment.get('label') == 'POSITIVE':
-                    positive_themes = [
-                        {'theme': 'Positive Sentiment', 
-                         'description': f"Song demonstrates positive emotional content (confidence: {sentiment.get('score', 0):.2f})"}
-                    ]
-                    
-            
-            
-            if analysis_result.content_analysis and 'concern_flags' in analysis_result.content_analysis:
-                detailed_concerns = analysis_result.content_analysis['concern_flags']
-                
-
-            
-            # Save results to database using mark_completed for proper field population
-            if existing_analysis:
-    
-                # Update existing analysis using mark_completed
-                existing_analysis.mark_completed(
-                    score=analysis_result.scoring_results['final_score'],
-                    concern_level=analysis_result.scoring_results['quality_level'],
-                    themes=analysis_result.biblical_analysis.get('themes', []),
-                    explanation=analysis_result.scoring_results['explanation'],
-                    purity_flags_details=detailed_concerns,
-                    positive_themes_identified=positive_themes,
-                    biblical_themes=biblical_themes,
-                    supporting_scripture=supporting_scripture
-                )
-            else:
-    
-                # Create new analysis record using mark_completed
-                new_analysis = DBAnalysisResult(song_id=song_id)
-                new_analysis.mark_completed(
-                    score=analysis_result.scoring_results['final_score'],
-                    concern_level=analysis_result.scoring_results['quality_level'],
-                    themes=analysis_result.biblical_analysis.get('themes', []),
-                    explanation=analysis_result.scoring_results['explanation'],
-                    purity_flags_details=detailed_concerns,
-                    positive_themes_identified=positive_themes,
-                    biblical_themes=biblical_themes,
-                    supporting_scripture=supporting_scripture
-                )
-                db.session.add(new_analysis)
-            
-            # Commit the changes
-            db.session.commit()
+            print(f"🎵 Queued analysis job for '{song.title}' by {song.artist} "
+                  f"(priority: {queue_priority.name}, job_id: {job.job_id})")
             
             # Create mock job result for API compatibility
             class MockJob:
                 def __init__(self, job_id):
                     self.id = job_id
             
-            return MockJob(f'analysis_job_{song_id}_{user_id or "anon"}')
+            return MockJob(job.job_id)
             
         except Exception as e:
             # Enhanced error logging for debugging
@@ -575,12 +476,12 @@ class UnifiedAnalysisService:
             error_details = traceback.format_exc()
             
             # Print to console for immediate visibility
-            print(f"🚨 ANALYSIS ERROR FOR SONG {song_id}: {str(e)}")
+            print(f"🚨 QUEUE ERROR FOR SONG {song_id}: {str(e)}")
             print(f"🚨 FULL TRACEBACK: {error_details}")
             
             # Log to Flask logger as well
             from flask import current_app
-            current_app.logger.error(f'Analysis failed for song {song_id}: {e}\nTraceback: {error_details}')
+            current_app.logger.error(f'Failed to queue analysis for song {song_id}: {e}\nTraceback: {error_details}')
             
             # Mark analysis as failed if it exists
             if existing_analysis:
@@ -593,6 +494,195 @@ class UnifiedAnalysisService:
                     self.id = job_id
             
             return MockJob(f'failed_job_{song_id}_{user_id or "anon"}')
+    
+    def enqueue_playlist_analysis(self, playlist_id: int, user_id: int, priority: str = 'medium'):
+        """
+        Enqueue analysis job for all songs in a playlist using the priority queue system.
+        
+        Args:
+            playlist_id (int): ID of the playlist to analyze
+            user_id (int): ID of the user requesting analysis
+            priority (str): Priority level for the job ('high', 'medium', 'low')
+            
+        Returns:
+            Mock job object with job ID for API compatibility
+        """
+        from ..models.models import Playlist, Song, AnalysisResult as DBAnalysisResult
+        from .. import db
+        from .priority_analysis_queue import enqueue_playlist_analysis, JobPriority
+        
+        # Validate playlist exists and belongs to user
+        playlist = Playlist.query.filter_by(id=playlist_id, user_id=user_id).first()
+        if not playlist:
+            raise ValueError(f"Playlist with ID {playlist_id} not found for user {user_id}")
+        
+        # Get all songs in the playlist
+        song_ids = [song.id for song in playlist.songs]
+        if not song_ids:
+            raise ValueError(f"Playlist {playlist_id} has no songs to analyze")
+        
+        # Create pending analysis records for progress tracking
+        for song_id in song_ids:
+            existing_analysis = DBAnalysisResult.query.filter_by(song_id=song_id).first()
+            if existing_analysis:
+                existing_analysis.status = 'pending'
+                existing_analysis.updated_at = db.func.now()
+            else:
+                new_analysis = DBAnalysisResult(song_id=song_id, status='pending')
+                db.session.add(new_analysis)
+        
+        db.session.commit()
+        
+        # Map priority string to JobPriority enum
+        priority_map = {
+            'high': JobPriority.HIGH,
+            'medium': JobPriority.MEDIUM,
+            'default': JobPriority.MEDIUM,
+            'low': JobPriority.LOW
+        }
+        queue_priority = priority_map.get(priority.lower(), JobPriority.MEDIUM)
+        
+        try:
+            # Enqueue the playlist analysis job
+            job = enqueue_playlist_analysis(
+                playlist_id=playlist_id,
+                song_ids=song_ids,
+                user_id=user_id,
+                priority=queue_priority,
+                metadata={
+                    'playlist_name': playlist.name,
+                    'total_songs': len(song_ids),
+                    'requested_at': db.func.now().isoformat() if hasattr(db.func.now(), 'isoformat') else str(db.func.now())
+                }
+            )
+            
+            print(f"🎵 Queued playlist analysis for '{playlist.name}' "
+                  f"({len(song_ids)} songs, priority: {queue_priority.name}, job_id: {job.job_id})")
+            
+            # Create mock job result for API compatibility
+            class MockJob:
+                def __init__(self, job_id):
+                    self.id = job_id
+            
+            return MockJob(job.job_id)
+            
+        except Exception as e:
+            # Enhanced error logging
+            import traceback
+            error_details = traceback.format_exc()
+            
+            print(f"🚨 PLAYLIST QUEUE ERROR FOR {playlist_id}: {str(e)}")
+            print(f"🚨 FULL TRACEBACK: {error_details}")
+            
+            from flask import current_app
+            current_app.logger.error(f'Failed to queue playlist analysis for {playlist_id}: {e}\nTraceback: {error_details}')
+            
+            # Mark all analyses as failed
+            for song_id in song_ids:
+                existing_analysis = DBAnalysisResult.query.filter_by(song_id=song_id).first()
+                if existing_analysis:
+                    existing_analysis.mark_failed(str(e))
+            db.session.commit()
+            
+            class MockJob:
+                def __init__(self, job_id):
+                    self.id = job_id
+            
+            return MockJob(f'failed_playlist_job_{playlist_id}_{user_id}')
+    
+    def enqueue_background_analysis(self, song_ids: list, user_id: int, priority: str = 'low'):
+        """
+        Enqueue background analysis job for multiple songs using the priority queue system.
+        
+        Args:
+            song_ids (list): List of song IDs to analyze
+            user_id (int): ID of the user requesting analysis
+            priority (str): Priority level for the job (typically 'low' for background)
+            
+        Returns:
+            Mock job object with job ID for API compatibility
+        """
+        from ..models.models import Song, AnalysisResult as DBAnalysisResult
+        from .. import db
+        from .priority_analysis_queue import enqueue_background_analysis, JobPriority
+        
+        if not song_ids:
+            raise ValueError("No song IDs provided for background analysis")
+        
+        # Validate songs exist
+        existing_songs = Song.query.filter(Song.id.in_(song_ids)).all()
+        existing_song_ids = [song.id for song in existing_songs]
+        
+        if not existing_song_ids:
+            raise ValueError("None of the provided song IDs exist")
+        
+        # Create pending analysis records for progress tracking
+        for song_id in existing_song_ids:
+            existing_analysis = DBAnalysisResult.query.filter_by(song_id=song_id).first()
+            if existing_analysis:
+                existing_analysis.status = 'pending'
+                existing_analysis.updated_at = db.func.now()
+            else:
+                new_analysis = DBAnalysisResult(song_id=song_id, status='pending')
+                db.session.add(new_analysis)
+        
+        db.session.commit()
+        
+        # Map priority string to JobPriority enum
+        priority_map = {
+            'high': JobPriority.HIGH,
+            'medium': JobPriority.MEDIUM,
+            'default': JobPriority.MEDIUM,
+            'low': JobPriority.LOW
+        }
+        queue_priority = priority_map.get(priority.lower(), JobPriority.LOW)
+        
+        try:
+            # Enqueue the background analysis job
+            job = enqueue_background_analysis(
+                song_ids=existing_song_ids,
+                user_id=user_id,
+                priority=queue_priority,
+                metadata={
+                    'total_songs': len(existing_song_ids),
+                    'requested_at': db.func.now().isoformat() if hasattr(db.func.now(), 'isoformat') else str(db.func.now()),
+                    'analysis_type': 'background'
+                }
+            )
+            
+            print(f"🎵 Queued background analysis for {len(existing_song_ids)} songs "
+                  f"(priority: {queue_priority.name}, job_id: {job.job_id})")
+            
+            # Create mock job result for API compatibility
+            class MockJob:
+                def __init__(self, job_id):
+                    self.id = job_id
+            
+            return MockJob(job.job_id)
+            
+        except Exception as e:
+            # Enhanced error logging
+            import traceback
+            error_details = traceback.format_exc()
+            
+            print(f"🚨 BACKGROUND QUEUE ERROR: {str(e)}")
+            print(f"🚨 FULL TRACEBACK: {error_details}")
+            
+            from flask import current_app
+            current_app.logger.error(f'Failed to queue background analysis: {e}\nTraceback: {error_details}')
+            
+            # Mark all analyses as failed
+            for song_id in existing_song_ids:
+                existing_analysis = DBAnalysisResult.query.filter_by(song_id=song_id).first()
+                if existing_analysis:
+                    existing_analysis.mark_failed(str(e))
+            db.session.commit()
+            
+            class MockJob:
+                def __init__(self, job_id):
+                    self.id = job_id
+            
+            return MockJob(f'failed_background_job_{user_id}')
     
     def detect_playlist_changes(self, user_id):
         """

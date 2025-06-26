@@ -5,7 +5,16 @@ from typing import Dict, List, Optional, Tuple
 import re
 from .analysis_result import AnalysisResult
 from .rate_limit_monitor import rate_monitor
-from app.services.exceptions import RateLimitException
+# Import RateLimitException locally to avoid circular imports
+try:
+    from app.services.exceptions import RateLimitException
+except ImportError:
+    # Fallback definition to avoid circular import issues
+    class RateLimitException(Exception):
+        def __init__(self, message, service_name=None, retry_after=None):
+            super().__init__(message)
+            self.service_name = service_name
+            self.retry_after = retry_after
 
 logger = logging.getLogger(__name__)
 

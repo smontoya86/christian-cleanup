@@ -106,12 +106,8 @@ class PriorityAnalysisQueue:
         Args:
             redis_client: Optional Redis client. If None, creates from app config.
         """
-        if redis_client:
-            self.redis = redis_client
-        else:
-            # Get Redis connection from Flask app config
-            redis_url = current_app.config.get('REDIS_URL', 'redis://localhost:6379/0')
-            self.redis = redis.from_url(redis_url, decode_responses=True)
+        self._redis_client = redis_client
+        self._redis = None
         
         # Redis key names
         self.queue_key = "analysis_queue"  # Sorted set for priority queue
@@ -119,6 +115,25 @@ class PriorityAnalysisQueue:
         self.active_key = "analysis_active"  # Key for currently active job
         
         logger.info("PriorityAnalysisQueue initialized")
+    
+    @property
+    def redis(self) -> redis.Redis:
+        """Lazy Redis client initialization"""
+        if self._redis is None:
+            if self._redis_client:
+                self._redis = self._redis_client
+            else:
+                # Get Redis connection from Flask app config or environment
+                try:
+                    redis_url = current_app.config.get('REDIS_URL', 'redis://localhost:6379/0')
+                except RuntimeError:
+                    # Fallback when outside app context
+                    import os
+                    redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+                
+                self._redis = redis.from_url(redis_url, decode_responses=True)
+        
+        return self._redis
     
     def enqueue(self, job_type: JobType, user_id: int, target_id: int, 
                 priority: JobPriority, metadata: Dict[str, Any] = None) -> str:
@@ -403,46 +418,57 @@ class PriorityAnalysisQueue:
 
 
 # Convenience functions for common operations
-def enqueue_song_analysis(user_id: int, song_id: int, 
-                         metadata: Dict[str, Any] = None) -> str:
-    """Enqueue a high-priority song analysis job"""
+def enqueue_song_analysis(song_id: int, user_id: int, priority: JobPriority = JobPriority.HIGH,
+                         metadata: Dict[str, Any] = None) -> AnalysisJob:
+    """Enqueue a song analysis job"""
     queue = PriorityAnalysisQueue()
-    return queue.enqueue(
+    job_id = queue.enqueue(
         job_type=JobType.SONG_ANALYSIS,
         user_id=user_id,
         target_id=song_id,
-        priority=JobPriority.HIGH,
+        priority=priority,
         metadata=metadata
     )
+    return queue.get_job(job_id)
 
 
-def enqueue_playlist_analysis(user_id: int, playlist_id: int,
-                             metadata: Dict[str, Any] = None) -> str:
-    """Enqueue a medium-priority playlist analysis job"""
+def enqueue_playlist_analysis(playlist_id: int, song_ids: List[int], user_id: int, 
+                             priority: JobPriority = JobPriority.MEDIUM,
+                             metadata: Dict[str, Any] = None) -> AnalysisJob:
+    """Enqueue a playlist analysis job"""
     queue = PriorityAnalysisQueue()
-    return queue.enqueue(
+    
+    # Add song_ids to metadata
+    if metadata is None:
+        metadata = {}
+    metadata['song_ids'] = song_ids
+    
+    job_id = queue.enqueue(
         job_type=JobType.PLAYLIST_ANALYSIS,
         user_id=user_id,
         target_id=playlist_id,
-        priority=JobPriority.MEDIUM,
+        priority=priority,
         metadata=metadata
     )
+    return queue.get_job(job_id)
 
 
-def enqueue_background_analysis(user_id: int, song_ids: List[int],
-                               metadata: Dict[str, Any] = None) -> List[str]:
-    """Enqueue low-priority background analysis jobs for multiple songs"""
+def enqueue_background_analysis(song_ids: List[int], user_id: int,
+                               priority: JobPriority = JobPriority.LOW,
+                               metadata: Dict[str, Any] = None) -> AnalysisJob:
+    """Enqueue a background analysis job for multiple songs"""
     queue = PriorityAnalysisQueue()
-    job_ids = []
     
-    for song_id in song_ids:
-        job_id = queue.enqueue(
-            job_type=JobType.BACKGROUND_ANALYSIS,
-            user_id=user_id,
-            target_id=song_id,
-            priority=JobPriority.LOW,
-            metadata=metadata
-        )
-        job_ids.append(job_id)
+    # Add song_ids to metadata
+    if metadata is None:
+        metadata = {}
+    metadata['song_ids'] = song_ids
     
-    return job_ids 
+    job_id = queue.enqueue(
+        job_type=JobType.BACKGROUND_ANALYSIS,
+        user_id=user_id,
+        target_id=0,  # Not used for background analysis
+        priority=priority,
+        metadata=metadata
+    )
+    return queue.get_job(job_id) 

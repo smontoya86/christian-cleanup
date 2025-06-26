@@ -255,7 +255,7 @@ class TestProgressAPI:
         # Mock Flask-Login current_user for the API request
         with patch('flask_login.current_user', sample_user):
             with patch('app.routes.api.current_user', sample_user):
-                response = client.get(f'/api/playlist/{other_user_playlist.id}/analysis_progress')
+                response = client.get(f'/api/playlists/{other_user_playlist.id}/analysis-status')
         
         assert response.status_code == 404
         
@@ -300,14 +300,14 @@ class TestProgressAPI:
         # Mock Flask-Login current_user for the API request
         with patch('flask_login.current_user', sample_user):
             with patch('app.routes.api.current_user', sample_user):
-                response = client.get(f'/api/playlist/{sample_playlist.id}/analysis_progress')
+                response = client.get(f'/api/playlists/{sample_playlist.id}/analysis-status')
         
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data['total_songs'] == 5
-        assert data['completed'] == 3
-        assert data['pending'] == 2
-        assert data['progress_percent'] == 60.0
+        assert data['total_count'] == 5
+        assert data['detailed_status']['completed'] == 3
+        assert data['detailed_status']['pending'] == 2
+        assert data['progress'] == 60.0
 
 
 class TestSearchAPI:

@@ -69,6 +69,12 @@ def create_app(config_name='development', skip_db_init=False):
     rq.init_app(app)
     bootstrap.init_app(app)
     
+    # Initialize priority queue worker (but don't start it during testing)
+    if config_name != 'testing':
+        from .services.priority_queue_worker import init_worker, start_worker
+        init_worker(app)
+        start_worker(background=True)
+    
     # Configure login manager
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in with Spotify to access this page.'
