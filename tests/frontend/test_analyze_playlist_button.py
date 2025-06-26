@@ -2,6 +2,8 @@ import pytest
 from flask import url_for
 from bs4 import BeautifulSoup
 from unittest.mock import patch, MagicMock
+from app.models.models import Playlist, Song, PlaylistSong, AnalysisResult
+from app import db
 
 @pytest.fixture
 def sample_playlist_with_songs(app, db, sample_user, sample_playlist, sample_song, sample_analysis):
@@ -47,6 +49,156 @@ class TestAnalyzePlaylistButton:
         analyze_btn = soup.find('button', class_='analyze-playlist-btn')
         assert analyze_btn is not None
         assert 'btn' in analyze_btn.get('class', [])
+        assert 'btn-primary' in analyze_btn.get('class', [])
+        assert analyze_btn.get('data-playlist-id') == str(sample_playlist.id)
+        assert analyze_btn.get('data-playlist-name') == sample_playlist.name
+        
+    def test_button_shows_analyze_for_unanalyzed_playlist(self, authenticated_client, sample_user, db_session):
+        """Test that button shows 'Analyze All Songs' for playlist with unanalyzed songs"""
+        # Create playlist with unanalyzed songs
+        playlist = Playlist(
+            name="Unanalyzed Playlist",
+            spotify_id="unanalyzed_123",
+            owner_id=sample_user.id
+        )
+        db_session.add(playlist)
+        db_session.flush()
+        
+        # Add songs without analysis
+        for i in range(3):
+            song = Song(
+                title=f"Song {i+1}",
+                artist="Test Artist",
+                spotify_id=f"song_{i+1}",
+                duration_ms=180000
+            )
+            db_session.add(song)
+            db_session.flush()
+            
+            playlist_song = PlaylistSong(
+                playlist_id=playlist.id,
+                song_id=song.id,
+                track_position=i
+            )
+            db_session.add(playlist_song)
+        
+        db_session.commit()
+        
+        response = authenticated_client.get(url_for('main.playlist_detail', playlist_id=playlist.id))
+        assert response.status_code == 200
+        
+        soup = BeautifulSoup(response.data, 'html.parser')
+        analyze_btn = soup.find('button', class_='analyze-playlist-btn')
+        
+        assert analyze_btn is not None
+        assert 'Analyze All Songs' in analyze_btn.get_text()
+        assert 'btn-primary' in analyze_btn.get('class', [])
+
+    def test_button_shows_reanalyze_for_analyzed_playlist(self, authenticated_client, sample_user, db_session):
+        """Test that button shows 'Re-analyze All Songs' for playlist with all songs analyzed"""
+        # Create playlist with analyzed songs
+        playlist = Playlist(
+            name="Analyzed Playlist",
+            spotify_id="analyzed_123",
+            owner_id=sample_user.id
+        )
+        db_session.add(playlist)
+        db_session.flush()
+        
+        # Add songs with completed analysis
+        for i in range(3):
+            song = Song(
+                title=f"Analyzed Song {i+1}",
+                artist="Test Artist",
+                spotify_id=f"analyzed_song_{i+1}",
+                duration_ms=180000
+            )
+            db_session.add(song)
+            db_session.flush()
+            
+            # Add completed analysis
+            analysis = AnalysisResult(
+                song_id=song.id,
+                status='completed',
+                score=85.5,
+                concern_level='low',
+                positive_themes_identified={'love': True, 'hope': True},
+                concerns=[],
+                biblical_themes={'Love': True, 'Grace': True}
+            )
+            db_session.add(analysis)
+            
+            playlist_song = PlaylistSong(
+                playlist_id=playlist.id,
+                song_id=song.id,
+                track_position=i
+            )
+            db_session.add(playlist_song)
+        
+        db_session.commit()
+        
+        response = authenticated_client.get(url_for('main.playlist_detail', playlist_id=playlist.id))
+        assert response.status_code == 200
+        
+        soup = BeautifulSoup(response.data, 'html.parser')
+        analyze_btn = soup.find('button', class_='analyze-playlist-btn')
+        
+        assert analyze_btn is not None
+        assert 'Re-analyze All Songs' in analyze_btn.get_text()
+        assert 'btn-outline-secondary' in analyze_btn.get('class', [])
+
+    def test_button_shows_analyze_for_partially_analyzed_playlist(self, authenticated_client, sample_user, db_session):
+        """Test that button shows 'Analyze All Songs' for playlist with some unanalyzed songs"""
+        # Create playlist with mix of analyzed and unanalyzed songs
+        playlist = Playlist(
+            name="Partially Analyzed Playlist",
+            spotify_id="partial_123",
+            owner_id=sample_user.id
+        )
+        db_session.add(playlist)
+        db_session.flush()
+        
+        # Add 2 analyzed songs and 1 unanalyzed song
+        for i in range(3):
+            song = Song(
+                title=f"Mixed Song {i+1}",
+                artist="Test Artist",
+                spotify_id=f"mixed_song_{i+1}",
+                duration_ms=180000
+            )
+            db_session.add(song)
+            db_session.flush()
+            
+            # Only analyze first 2 songs
+            if i < 2:
+                analysis = AnalysisResult(
+                    song_id=song.id,
+                    status='completed',
+                    score=85.5,
+                    concern_level='low',
+                    positive_themes_identified={'love': True},
+                    concerns=[],
+                    biblical_themes={'Love': True}
+                )
+                db_session.add(analysis)
+            
+            playlist_song = PlaylistSong(
+                playlist_id=playlist.id,
+                song_id=song.id,
+                track_position=i
+            )
+            db_session.add(playlist_song)
+        
+        db_session.commit()
+        
+        response = authenticated_client.get(url_for('main.playlist_detail', playlist_id=playlist.id))
+        assert response.status_code == 200
+        
+        soup = BeautifulSoup(response.data, 'html.parser')
+        analyze_btn = soup.find('button', class_='analyze-playlist-btn')
+        
+        assert analyze_btn is not None
+        assert 'Analyze All Songs' in analyze_btn.get_text()
         assert 'btn-primary' in analyze_btn.get('class', [])
         
     @patch('app.routes.main.UnifiedAnalysisService')

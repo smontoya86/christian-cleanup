@@ -30,16 +30,27 @@
                     <p class="text-muted lead">{{ playlist.description or "No description available" }}</p>
                     <p class="text-muted">
                         <strong>{{ songs|length }}</strong> songs • by {{ current_user.display_name }}
+                        {% if analysis_state.total_songs > 0 %}
+                            • <span class="text-success">{{ analysis_state.analyzed_songs }}</span>/{{ analysis_state.total_songs }} analyzed ({{ analysis_state.analysis_percentage }}%)
+                        {% endif %}
                     </p>
                     <div class="d-flex gap-2">
                         <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left"></i> Back to Dashboard
                         </a>
-                        <button type="button" class="btn btn-primary analyze-playlist-btn" 
-                                data-playlist-id="{{ playlist.id }}" 
-                                data-playlist-name="{{ playlist.name }}">
-                            <i class="fas fa-search"></i> Analyze All Songs
-                        </button>
+                        {% if analysis_state.is_fully_analyzed %}
+                            <button type="button" class="btn btn-outline-secondary analyze-playlist-btn" 
+                                    data-playlist-id="{{ playlist.id }}" 
+                                    data-playlist-name="{{ playlist.name }}">
+                                <i class="fas fa-redo"></i> Re-analyze All Songs
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-primary analyze-playlist-btn" 
+                                    data-playlist-id="{{ playlist.id }}" 
+                                    data-playlist-name="{{ playlist.name }}">
+                                <i class="fas fa-search"></i> Analyze All Songs
+                            </button>
+                        {% endif %}
                         {% if playlist.score and playlist.score >= 0.75 %}
                             <form method="post" action="{{ url_for('main.whitelist_playlist', playlist_id=playlist.id) }}" class="d-inline">
                                 <button type="submit" class="btn btn-success">

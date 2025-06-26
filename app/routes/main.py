@@ -102,11 +102,18 @@ def playlist_detail(playlist_id):
         PlaylistSong.playlist_id == playlist_id
     ).order_by(PlaylistSong.track_position).all()
     
-    # Build data structure for template
+    # Build data structure for template and calculate analysis statistics
     songs_data = []
+    total_songs = len(songs_with_position)
+    analyzed_songs = 0
+    
     for song, playlist_song in songs_with_position:
         # Get the most recent analysis for this song (same approach as song_detail)
         analysis = AnalysisResult.query.filter_by(song_id=song.id).order_by(desc(AnalysisResult.created_at)).first()
+        
+        # Count completed analyses
+        if analysis and analysis.status == 'completed':
+            analyzed_songs += 1
         
         # Check if song is whitelisted
         is_whitelisted = Whitelist.query.filter_by(
@@ -122,10 +129,20 @@ def playlist_detail(playlist_id):
             'is_whitelisted': is_whitelisted
         })
     
-    # Simple template variables
+    # Determine playlist analysis state
+    playlist_analysis_state = {
+        'total_songs': total_songs,
+        'analyzed_songs': analyzed_songs,
+        'is_fully_analyzed': analyzed_songs == total_songs and total_songs > 0,
+        'has_unanalyzed': analyzed_songs < total_songs,
+        'analysis_percentage': round((analyzed_songs / total_songs) * 100) if total_songs > 0 else 0
+    }
+    
+    # Template variables with analysis state
     return render_template('playlist_detail.html', 
                          playlist=playlist,
-                         songs=songs_data)
+                         songs=songs_data,
+                         analysis_state=playlist_analysis_state)
 
 
 @bp.route('/song/<int:song_id>')
