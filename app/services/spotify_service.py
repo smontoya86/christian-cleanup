@@ -19,7 +19,12 @@ class SpotifyService:
     
     def __init__(self, user: User):
         self.user = user
-        self._ensure_valid_token()
+        try:
+            self._ensure_valid_token()
+        except ValueError as e:
+            from flask import current_app
+            current_app.logger.error(f"Failed to initialize SpotifyService for user {user.id}: {e}")
+            raise ValueError(f"Cannot initialize Spotify service: {e}") from e
     
     def _ensure_valid_token(self):
         """Ensure user has a valid access token"""
@@ -51,17 +56,22 @@ class SpotifyService:
             'client_secret': current_app.config['SPOTIFY_CLIENT_SECRET']
         }
         
-        response = requests.post('https://accounts.spotify.com/api/token', data=token_data)
-        response.raise_for_status()
-        token_info = response.json()
-        
-        # Update user tokens
-        self.user.access_token = token_info['access_token']
-        if 'refresh_token' in token_info:
-            self.user.refresh_token = token_info['refresh_token']
-        self.user.token_expiry = datetime.now(timezone.utc) + timedelta(seconds=token_info['expires_in'])
-        
-        db.session.commit()
+        try:
+            response = requests.post('https://accounts.spotify.com/api/token', data=token_data)
+            response.raise_for_status()
+            token_info = response.json()
+            
+            # Update user tokens
+            self.user.access_token = token_info['access_token']
+            if 'refresh_token' in token_info:
+                self.user.refresh_token = token_info['refresh_token']
+            self.user.token_expiry = datetime.now(timezone.utc) + timedelta(seconds=token_info['expires_in'])
+            
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Failed to refresh token for user {self.user.id}: {e}")
+            raise ValueError(f"Token refresh failed: {e}") from e
     
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[Any, Any]:
         """Make an authenticated request to Spotify API"""
@@ -177,6 +187,8 @@ class SpotifyService:
             
             # Track existing songs to avoid duplicate queries
             existing_songs = {}
+            new_songs = []  # Batch new songs
+            new_playlist_songs = []  # Batch new playlist-song relationships
             
             for position, track_item in enumerate(spotify_tracks):
                 track = track_item['track']
@@ -211,10 +223,25 @@ class SpotifyService:
                             duration_ms=track['duration_ms'],
                             explicit=track.get('explicit', False)
                         )
-                        db.session.add(song)
-                        db.session.flush()  # Get the ID
+                        new_songs.append(song)
                     
                     existing_songs[spotify_id] = song
+                
+                # Prepare playlist-song relationship (will be added after songs are committed)
+                new_playlist_songs.append({
+                    'song': song,
+                    'position': position
+                })
+            
+            # Batch commit new songs first
+            if new_songs:
+                db.session.add_all(new_songs)
+                db.session.flush()  # Get IDs for new songs
+            
+            # Now add playlist-song relationships
+            for ps_data in new_playlist_songs:
+                song = ps_data['song']
+                position = ps_data['position']
                 
                 # Check if this playlist-song relationship already exists
                 existing_ps = PlaylistSong.query.filter_by(

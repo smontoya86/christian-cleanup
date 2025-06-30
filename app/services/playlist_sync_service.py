@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .. import db
 from ..models.models import User, Playlist, Song, PlaylistSong
-from ..utils.spotify import get_user_playlists, get_playlist_tracks
+# Removed: from ..utils.spotify import get_user_playlists, get_playlist_tracks - these functions don't exist
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +92,10 @@ class PlaylistSyncService:
         try:
             self.logger.info(f"Starting playlist sync for user {user.id}")
             
-            # Get playlists from Spotify
-            spotify_playlists = get_user_playlists(user.access_token)
+            # Get playlists from Spotify using SpotifyService
+            from .spotify_service import SpotifyService
+            spotify_service = SpotifyService(user)
+            spotify_playlists = spotify_service.get_user_playlists()
             
             if not spotify_playlists:
                 return {
@@ -164,8 +166,10 @@ class PlaylistSyncService:
         try:
             self.logger.info(f"Syncing tracks for playlist {playlist.name} (ID: {playlist.id})")
             
-            # Get tracks from Spotify
-            spotify_tracks = get_playlist_tracks(user.access_token, playlist.spotify_id)
+            # Get tracks from Spotify using SpotifyService
+            from .spotify_service import SpotifyService
+            spotify_service = SpotifyService(user)
+            spotify_tracks = spotify_service.get_playlist_tracks(playlist.spotify_id)
             
             if not spotify_tracks:
                 return {
@@ -190,7 +194,7 @@ class PlaylistSyncService:
                         playlist_song = PlaylistSong(
                             playlist_id=playlist.id,
                             song_id=song.id,
-                            position=i
+                            track_position=i
                         )
                         db.session.add(playlist_song)
                         tracks_synced += 1
@@ -231,7 +235,7 @@ class PlaylistSyncService:
             
             # Check if playlist already exists
             playlist = Playlist.query.filter_by(
-                user_id=user.id,
+                owner_id=user.id,
                 spotify_id=spotify_id
             ).first()
             
@@ -239,7 +243,7 @@ class PlaylistSyncService:
             
             if not playlist:
                 playlist = Playlist(
-                    user_id=user.id,
+                    owner_id=user.id,
                     spotify_id=spotify_id
                 )
                 db.session.add(playlist)
