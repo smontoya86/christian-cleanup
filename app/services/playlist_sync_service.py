@@ -179,43 +179,65 @@ class PlaylistSyncService:
                     'message': 'No tracks found for playlist'
                 }
             
-            # Clear existing playlist-song associations
-            PlaylistSong.query.filter_by(playlist_id=playlist.id).delete()
-            
-            # Sync each track
-            tracks_synced = 0
-            new_tracks = 0
-            
-            for i, track_data in enumerate(spotify_tracks):
-                try:
-                    song = self._sync_single_song(track_data)
-                    if song:
-                        # Create playlist-song association
-                        playlist_song = PlaylistSong(
-                            playlist_id=playlist.id,
-                            song_id=song.id,
-                            track_position=i
-                        )
-                        db.session.add(playlist_song)
-                        tracks_synced += 1
-                        
-                        # Check if this is a new song
-                        if hasattr(song, '_is_new') and song._is_new:
-                            new_tracks += 1
+            # Use single transaction for all operations
+            try:
+                # Clear existing playlist-song associations
+                PlaylistSong.query.filter_by(playlist_id=playlist.id).delete()
+                
+                # Sync each track using batch operations
+                tracks_synced = 0
+                new_tracks = 0
+                playlist_songs_to_add = []
+                
+                for i, track_data in enumerate(spotify_tracks):
+                    try:
+                        song = self._sync_single_song_atomic(track_data)
+                        if song:
+                            # Prepare playlist-song association for batch insert
+                            playlist_songs_to_add.append({
+                                'playlist_id': playlist.id,
+                                'song_id': song.id,
+                                'track_position': i
+                            })
+                            tracks_synced += 1
                             
-                except Exception as e:
-                    self.logger.error(f"Error syncing track: {e}")
-            
-            # Update playlist track count
-            playlist.track_count = tracks_synced
-            db.session.commit()
-            
-            return {
-                'status': 'completed',
-                'tracks_synced': tracks_synced,
-                'new_tracks': new_tracks,
-                'playlist_id': playlist.id
-            }
+                            # Check if this is a new song
+                            if hasattr(song, '_is_new') and song._is_new:
+                                new_tracks += 1
+                                
+                    except Exception as e:
+                        self.logger.error(f"Error syncing track: {e}")
+                        # Continue with other tracks but track the error
+                        continue
+                
+                # Batch insert playlist-song associations
+                if playlist_songs_to_add:
+                    db.session.bulk_insert_mappings(PlaylistSong, playlist_songs_to_add)
+                
+                # Update playlist track count
+                playlist.track_count = tracks_synced
+                
+                # Commit all changes in single transaction
+                db.session.commit()
+                
+                return {
+                    'status': 'completed',
+                    'tracks_synced': tracks_synced,
+                    'new_tracks': new_tracks,
+                    'playlist_id': playlist.id
+                }
+                
+            except Exception as e:
+                # Rollback the entire transaction on any failure
+                db.session.rollback()
+                self.logger.error(f"Transaction failed during playlist sync: {e}")
+                return {
+                    'status': 'failed',
+                    'error': str(e),
+                    'tracks_synced': 0,
+                    'new_tracks': 0,
+                    'playlist_id': playlist.id
+                }
             
         except Exception as e:
             db.session.rollback()
@@ -252,12 +274,22 @@ class PlaylistSyncService:
             playlist.name = spotify_playlist['name']
             playlist.description = spotify_playlist.get('description', '')
             playlist.public = spotify_playlist.get('public', False)
-            playlist.track_count = spotify_playlist.get('tracks', {}).get('total', 0)
+            playlist.collaborative = spotify_playlist.get('collaborative', False)
             
             # Handle image URL
             images = spotify_playlist.get('images', [])
             if images:
                 playlist.image_url = images[0]['url']
+            
+            # Handle owner information
+            owner = spotify_playlist.get('owner', {})
+            if owner:
+                playlist.owner_display_name = owner.get('display_name', '')
+            
+            # Don't set track_count from Spotify API here - it will be set accurately during sync
+            # This ensures consistency between services and reflects actual synced tracks
+            if is_new:
+                playlist.track_count = 0  # Will be updated during track sync
             
             db.session.commit()
             playlist._is_new = is_new  # Mark for tracking
@@ -308,6 +340,45 @@ class PlaylistSyncService:
             self.logger.error(f"Error syncing song: {e}")
             return None
 
+    def _sync_single_song_atomic(self, track_data: Dict[str, Any]) -> Optional[Song]:
+        """Sync a single song from Spotify track data without committing (for atomic operations)."""
+        try:
+            track = track_data['track']
+            if not track or track['id'] is None:
+                return None
+                
+            spotify_id = track['id']
+            
+            # Check if song already exists
+            song = Song.query.filter_by(spotify_id=spotify_id).first()
+            
+            is_new = song is None
+            
+            if not song:
+                song = Song(spotify_id=spotify_id)
+                db.session.add(song)
+            
+            # Update song data
+            song.title = track['name']
+            song.artist = ', '.join([artist['name'] for artist in track['artists']])
+            song.album = track['album']['name']
+            song.duration_ms = track.get('duration_ms', 0)
+            
+            # Handle album art
+            album_images = track['album'].get('images', [])
+            if album_images:
+                song.album_art_url = album_images[0]['url']
+            
+            # Flush to get the ID but don't commit
+            db.session.flush()
+            song._is_new = is_new  # Mark for tracking
+            
+            return song
+            
+        except Exception as e:
+            self.logger.error(f"Error syncing song: {e}")
+            raise  # Re-raise to allow transaction rollback
+
 
 def enqueue_user_playlist_sync(user_id: int, priority: str = 'default') -> Dict[str, Any]:
     """
@@ -324,10 +395,30 @@ def enqueue_user_playlist_sync(user_id: int, priority: str = 'default') -> Dict[
         - estimated_duration: Estimated completion time
     """
     try:
-        # Mock job info - would integrate with priority queue system
-        job_id = f'user_sync_{user_id}_{int(datetime.now().timestamp())}'
+        from .priority_analysis_queue import PriorityAnalysisQueue, JobType, JobPriority
         
-        logger.info(f"User playlist sync job {job_id} enqueued for user {user_id}")
+        # Map string priority to JobPriority enum
+        priority_map = {
+            'high': JobPriority.HIGH,
+            'default': JobPriority.MEDIUM,
+            'medium': JobPriority.MEDIUM,
+            'low': JobPriority.LOW
+        }
+        job_priority = priority_map.get(priority, JobPriority.MEDIUM)
+        
+        # Create priority queue instance
+        queue = PriorityAnalysisQueue()
+        
+        # Enqueue the job
+        job_id = queue.enqueue(
+            job_type=JobType.PLAYLIST_ANALYSIS,
+            user_id=user_id,
+            target_id=user_id,  # For user sync, target_id is user_id
+            priority=job_priority,
+            metadata={'sync_type': 'user_playlists'}
+        )
+        
+        logger.info(f"User playlist sync job {job_id} enqueued for user {user_id} with priority {priority}")
         
         return {
             'job_id': job_id,
@@ -364,10 +455,31 @@ def enqueue_playlist_sync(playlist_id: int, user_id: int, priority: str = 'norma
         - estimated_duration: Estimated completion time
     """
     try:
-        # This would normally enqueue with RQ
-        # For now, return mock job info for tests
+        from .priority_analysis_queue import PriorityAnalysisQueue, JobType, JobPriority
+        
+        # Map string priority to JobPriority enum
+        priority_map = {
+            'high': JobPriority.HIGH,
+            'normal': JobPriority.MEDIUM,
+            'medium': JobPriority.MEDIUM,
+            'low': JobPriority.LOW
+        }
+        job_priority = priority_map.get(priority, JobPriority.MEDIUM)
+        
+        # Create priority queue instance
+        queue = PriorityAnalysisQueue()
+        
+        # Enqueue the job
+        job_id = queue.enqueue(
+            job_type=JobType.PLAYLIST_ANALYSIS,
+            user_id=user_id,
+            target_id=playlist_id,
+            priority=job_priority,
+            metadata={'sync_type': 'single_playlist', 'playlist_id': playlist_id}
+        )
+        
         job_info = {
-            'job_id': f'sync_{playlist_id}_{int(datetime.now().timestamp())}',
+            'job_id': job_id,
             'status': 'queued',
             'playlist_id': playlist_id,
             'user_id': user_id,
@@ -405,27 +517,42 @@ def get_sync_status(job_id: Optional[str] = None, user_id: Optional[int] = None)
         - failed_count: Number of failed jobs
     """
     try:
+        from .priority_analysis_queue import PriorityAnalysisQueue
+        
+        queue = PriorityAnalysisQueue()
+        
         if job_id:
-            # Mock job status for now - would integrate with priority queue system
-            return {
-                'job_id': job_id,
-                'status': 'completed',
-                'progress': 100,
-                'started_at': datetime.now(timezone.utc).isoformat(),
-                'ended_at': datetime.now(timezone.utc).isoformat(),
-                'result': {'status': 'completed'},
-                'meta': {}
-            }
+            # Get specific job status from queue
+            job = queue.get_job(job_id)
+            if job:
+                job_dict = job.to_dict()
+                return {
+                    'job_id': job.job_id,
+                    'status': job.status.value,
+                    'progress': 100 if job.status.value == 'completed' else 50 if job.status.value == 'in_progress' else 0,
+                    'started_at': job.started_at.isoformat() if job.started_at else None,
+                    'ended_at': job.completed_at.isoformat() if job.completed_at else None,
+                    'result': job_dict,
+                    'meta': job.metadata
+                }
+            else:
+                return {
+                    'job_id': job_id,
+                    'status': 'not_found',
+                    'error': 'Job not found',
+                    'timestamp': datetime.now(timezone.utc).isoformat()
+                }
         else:
-            # Return overview for user
+            # Return overview for user - get queue status
+            queue_status = queue.get_queue_status()
             return {
                 'user_id': user_id,
-                'active_count': 0,
-                'completed_count': 0,
-                'failed_count': 0,
-                'total_jobs': 0,
-                'last_sync': None,
-                'sync_in_progress': False,
+                'active_count': queue_status.get('active_jobs', 0),
+                'completed_count': queue_status.get('completed_jobs', 0),
+                'failed_count': queue_status.get('failed_jobs', 0),
+                'total_jobs': queue_status.get('total_jobs', 0),
+                'last_sync': None,  # Could be enhanced to track last sync per user
+                'sync_in_progress': queue_status.get('active_jobs', 0) > 0,
                 'timestamp': datetime.now(timezone.utc).isoformat()
             }
             
@@ -442,7 +569,7 @@ def sync_playlist_task(playlist_id: int, user_id: int) -> Dict[str, Any]:
     """
     Background task function for syncing a playlist.
     
-    This would normally be executed by RQ workers.
+    This function is executed by priority queue workers.
     
     Args:
         playlist_id (int): ID of the playlist to sync
@@ -451,31 +578,70 @@ def sync_playlist_task(playlist_id: int, user_id: int) -> Dict[str, Any]:
     Returns:
         Dict containing sync results
     """
+    start_time = datetime.now(timezone.utc)
+    
     try:
         logger.info(f"Starting playlist sync: playlist_id={playlist_id}, user_id={user_id}")
         
-        # Mock sync process
-        result = {
+        # Get user and playlist from database
+        user = db.session.get(User, user_id)
+        playlist = db.session.get(Playlist, playlist_id)
+        
+        if not user:
+            error_msg = f"User {user_id} not found"
+            logger.error(error_msg)
+            return {
+                'playlist_id': playlist_id,
+                'user_id': user_id,
+                'status': 'failed',
+                'error': error_msg,
+                'duration': 0,
+                'completed_at': datetime.now(timezone.utc).isoformat()
+            }
+        
+        if not playlist:
+            error_msg = f"Playlist {playlist_id} not found"
+            logger.error(error_msg)
+            return {
+                'playlist_id': playlist_id,
+                'user_id': user_id,
+                'status': 'failed',
+                'error': error_msg,
+                'duration': 0,
+                'completed_at': datetime.now(timezone.utc).isoformat()
+            }
+        
+        # Use the sync service to perform the actual sync
+        sync_service = PlaylistSyncService()
+        result = sync_service.sync_playlist_tracks(user, playlist)
+        
+        # Calculate duration
+        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+        
+        # Format result for task response
+        task_result = {
             'playlist_id': playlist_id,
             'user_id': user_id,
-            'status': 'completed',
-            'tracks_synced': 0,  # Would be actual count
-            'new_tracks': 0,
-            'updated_tracks': 0,
-            'errors': [],
-            'duration': 25,
+            'status': result.get('status', 'completed'),
+            'tracks_synced': result.get('tracks_synced', 0),
+            'new_tracks': result.get('new_tracks', 0),
+            'updated_tracks': result.get('updated_tracks', 0),
+            'errors': result.get('errors', []),
+            'duration': duration,
             'completed_at': datetime.now(timezone.utc).isoformat()
         }
         
-        logger.info(f"Playlist sync completed: {result}")
-        return result
+        logger.info(f"Playlist sync completed: {task_result}")
+        return task_result
         
     except Exception as e:
+        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         logger.error(f"Error in playlist sync task: {e}")
         return {
             'playlist_id': playlist_id,
             'user_id': user_id,
             'status': 'failed',
             'error': str(e),
+            'duration': duration,
             'completed_at': datetime.now(timezone.utc).isoformat()
         } 
