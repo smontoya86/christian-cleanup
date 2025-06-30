@@ -2,7 +2,7 @@
 Authentication routes for Spotify OAuth integration
 """
 
-from flask import Blueprint, request, redirect, url_for, session, flash, current_app, render_template
+from flask import Blueprint, request, redirect, url_for, session, flash, current_app, render_template, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlencode
 import secrets
@@ -22,11 +22,19 @@ def login():
         return redirect(url_for('main.dashboard'))
     
     # Validate required config before proceeding
-    if not current_app.config.get('SPOTIFY_CLIENT_ID'):
+    client_id = current_app.config.get('SPOTIFY_CLIENT_ID')
+    client_secret = current_app.config.get('SPOTIFY_CLIENT_SECRET')
+    redirect_uri = current_app.config.get('SPOTIFY_REDIRECT_URI')
+    
+    if not client_id:
         flash('Spotify client ID not configured. Please contact the administrator.', 'error')
         return redirect(url_for('main.index'))
     
-    if not current_app.config.get('SPOTIFY_REDIRECT_URI'):
+    if not client_secret or client_secret in ['your-spotify-client-secret-here', 'REQUIRED_SPOTIFY_CLIENT_SECRET_FROM_DEVELOPER_DASHBOARD']:
+        flash('Spotify client secret not configured. Please set SPOTIFY_CLIENT_SECRET in your environment variables.', 'error')
+        return redirect(url_for('main.index'))
+    
+    if not redirect_uri:
         flash('Spotify redirect URI not configured. Please contact the administrator.', 'error')
         return redirect(url_for('main.index'))
     
@@ -36,9 +44,9 @@ def login():
     
     # Spotify OAuth parameters
     params = {
-        'client_id': current_app.config['SPOTIFY_CLIENT_ID'],
+        'client_id': client_id,
         'response_type': 'code',
-        'redirect_uri': current_app.config['SPOTIFY_REDIRECT_URI'],
+        'redirect_uri': redirect_uri,
         'state': state,
         'scope': 'user-read-private user-read-email playlist-read-private playlist-modify-private playlist-modify-public',
         'show_dialog': 'false'
@@ -180,8 +188,22 @@ def callback():
         return redirect(url_for('main.dashboard'))
         
     except requests.RequestException as e:
-        current_app.logger.error(f'Spotify API error during authentication: {e}')
-        flash('Error communicating with Spotify. Please try again.', 'error')
+        error_msg = str(e)
+        if 'invalid_client' in error_msg.lower():
+            current_app.logger.error(f'Spotify invalid client error: {e}')
+            flash('Invalid Spotify credentials. Please check your client ID and secret configuration.', 'error')
+        elif 'invalid_grant' in error_msg.lower():
+            current_app.logger.error(f'Spotify invalid grant error: {e}')
+            flash('Authorization code expired or invalid. Please try logging in again.', 'error')
+        elif '400' in error_msg:
+            current_app.logger.error(f'Spotify API 400 error: {e}')
+            flash('Bad request to Spotify API. Please check your configuration and try again.', 'error')
+        elif '401' in error_msg:
+            current_app.logger.error(f'Spotify API 401 error: {e}')
+            flash('Unauthorized Spotify API request. Please check your client credentials.', 'error')
+        else:
+            current_app.logger.error(f'Spotify API error during authentication: {e}')
+            flash('Error communicating with Spotify. Please try again.', 'error')
         return redirect(url_for('main.index'))
     except Exception as e:
         current_app.logger.error(f'Authentication error: {e}')
@@ -264,6 +286,46 @@ def mock_login(user_id):
     login_user(user)
     flash(f'Logged in as test user: {user.display_name}', 'success')
     return redirect(url_for('main.dashboard'))
+
+
+@bp.route('/config-status')
+def config_status():
+    """Show configuration status for debugging (development only)"""
+    if not current_app.debug:
+        flash('Configuration status is only available in development mode', 'error')
+        return redirect(url_for('main.index'))
+    
+    client_id = current_app.config.get('SPOTIFY_CLIENT_ID')
+    client_secret = current_app.config.get('SPOTIFY_CLIENT_SECRET')
+    redirect_uri = current_app.config.get('SPOTIFY_REDIRECT_URI')
+    
+    config_status = {
+        'client_id': {
+            'status': 'SET' if client_id else 'MISSING',
+            'length': len(client_id) if client_id else 0,
+            'value': client_id[:8] + '...' if client_id and len(client_id) > 8 else client_id
+        },
+        'client_secret': {
+            'status': 'SET' if client_secret else 'MISSING',
+            'length': len(client_secret) if client_secret else 0,
+            'is_placeholder': client_secret in ['your-spotify-client-secret-here', 'REQUIRED_SPOTIFY_CLIENT_SECRET_FROM_DEVELOPER_DASHBOARD'] if client_secret else False,
+            'value': '***HIDDEN***' if client_secret and not client_secret.startswith(('your-', 'REQUIRED_')) else client_secret
+        },
+        'redirect_uri': {
+            'status': 'SET' if redirect_uri else 'MISSING',
+            'value': redirect_uri
+        }
+    }
+    
+    return jsonify({
+        'spotify_config': config_status,
+        'ready_for_oauth': all([
+            client_id,
+            client_secret,
+            client_secret not in ['your-spotify-client-secret-here', 'REQUIRED_SPOTIFY_CLIENT_SECRET_FROM_DEVELOPER_DASHBOARD'],
+            redirect_uri
+        ])
+    })
 
 
 @bp.route('/mock-users')
