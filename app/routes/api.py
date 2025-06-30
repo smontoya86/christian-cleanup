@@ -13,6 +13,11 @@ Analysis Endpoint Structure:
 - Overall Status: GET /analysis/status (user-wide analysis progress)
 - Admin Status: GET /admin/reanalysis-status (admin-level view)
 
+- Queue Management: GET /queue/status (queue status and health)
+- Worker Health: GET /worker/health (worker status and monitoring)
+- Job Status: GET /jobs/<job_id>/status (individual job tracking)
+- Queue Health: GET /queue/health (queue system health check)
+
 Note: Different endpoint patterns maintained for backward compatibility with frontend JavaScript
 """
 
@@ -25,6 +30,10 @@ from .. import db
 from ..models.models import Playlist, Song, AnalysisResult, PlaylistSong, User, Whitelist
 from ..services.spotify_service import SpotifyService
 from ..services.unified_analysis_service import UnifiedAnalysisService
+from ..services.priority_analysis_queue import (
+    PriorityAnalysisQueue, enqueue_song_analysis, JobPriority
+)
+from ..services.priority_queue_worker import get_worker_status
 from ..utils.health_monitor import health_monitor
 from ..utils.prometheus_metrics import get_metrics, metrics_collector
 from ..utils.auth import admin_required
@@ -484,10 +493,73 @@ def get_song_analysis_status(song_id):
         })
 
 
+@bp.route('/songs/<int:song_id>/analyze', methods=['POST'])
+@login_required
+def analyze_single_song(song_id):
+    """Analyze a single song using priority queue system"""
+    try:
+        # Verify user has access to this song
+        song = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
+            Song.id == song_id,
+            Playlist.owner_id == current_user.id
+        ).first()
+        
+        if not song:
+            return jsonify({
+                'status': 'error',
+                'message': f'Song with ID {song_id} not found or access denied'
+            }), 404
+
+        # Create or update analysis record to 'pending' status for progress tracking
+        existing_analysis = AnalysisResult.query.filter_by(song_id=song_id).first()
+        if existing_analysis:
+            existing_analysis.status = 'pending'
+            existing_analysis.updated_at = db.func.now()
+        else:
+            new_analysis = AnalysisResult(song_id=song_id, status='pending')
+            db.session.add(new_analysis)
+        
+        db.session.commit()
+
+        # Enqueue analysis job with HIGH priority (individual song requests)
+        job = enqueue_song_analysis(
+            song_id=song_id,
+            user_id=current_user.id,
+            priority=JobPriority.HIGH,
+            metadata={
+                'song_title': song.title,
+                'artist': song.artist,
+                'requested_at': datetime.now().isoformat()
+            }
+        )
+        
+        return jsonify({
+            'success': True,
+            'status': 'success',
+            'message': 'Song queued for analysis',
+            'song_id': song_id,
+            'job_id': job.job_id
+        })
+
+    except ValueError as e:
+        current_app.logger.error(f'Song not found: {e}')
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 404
+    except Exception as e:
+        current_app.logger.error(f'Single song analysis error: {e}')
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'message': 'Analysis service error occurred'
+        }), 500
+
+
 @bp.route('/playlists/<int:playlist_id>/analyze-unanalyzed', methods=['POST'])
 @login_required
 def start_playlist_analysis_unanalyzed(playlist_id):
-    """Start analysis for unanalyzed songs in playlist"""
+    """Start analysis for unanalyzed songs in playlist using priority queue"""
     try:
         playlist = Playlist.query.filter_by(
             id=playlist_id,
@@ -501,32 +573,27 @@ def start_playlist_analysis_unanalyzed(playlist_id):
         ).all()
 
         if not unanalyzed_songs:
-                    return jsonify({
-            'status': 'success',
-            'success': True,
-            'message': 'All songs already analyzed',
-            'queued_count': 0
-        })
+            return jsonify({
+                'status': 'success',
+                'success': True,
+                'message': 'All songs already analyzed',
+                'queued_count': 0
+            })
 
-        # Queue analysis jobs using the unified analysis service
+        # Use unified analysis service to queue playlist analysis
         analysis_service = UnifiedAnalysisService()
-        queued_count = 0
-        
-        for song in unanalyzed_songs:
-            try:
-                # Use unified analysis service to queue analysis
-                analysis_service.enqueue_analysis_job(song.id, user_id=current_user.id)
-                queued_count += 1
-            except Exception as e:
-                current_app.logger.error(f'Failed to queue song {song.id}: {e}')
-
-        db.session.commit()
+        job = analysis_service.enqueue_playlist_analysis(
+            playlist_id=playlist_id,
+            user_id=current_user.id,
+            priority='medium'  # Playlist analysis = MEDIUM priority
+        )
         
         return jsonify({
             'status': 'success',
             'success': True,
-            'message': f'Queued {queued_count} songs for analysis',
-            'queued_count': queued_count
+            'message': f'Queued {len(unanalyzed_songs)} songs for analysis',
+            'queued_count': len(unanalyzed_songs),
+            'job_id': job.id
         })
 
     except Exception as e:
@@ -542,7 +609,7 @@ def start_playlist_analysis_unanalyzed(playlist_id):
 @bp.route('/playlists/<int:playlist_id>/reanalyze-all', methods=['POST'])
 @login_required
 def reanalyze_all_playlist_songs(playlist_id):
-    """Reanalyze all songs in playlist"""
+    """Reanalyze all songs in playlist using priority queue"""
     try:
         playlist = Playlist.query.filter_by(
             id=playlist_id,
@@ -561,33 +628,19 @@ def reanalyze_all_playlist_songs(playlist_id):
                 'queued_count': 0
             })
 
-        # Reset existing analysis results to pending
-        db.session.query(AnalysisResult).filter(
-            AnalysisResult.song_id.in_([song.id for song in songs])
-        ).update({'status': 'pending'}, synchronize_session=False)
-
-        # Create analysis records for songs without them
-        existing_analyses = db.session.query(AnalysisResult.song_id).filter(
-            AnalysisResult.song_id.in_([song.id for song in songs])
-        ).all()
-        existing_song_ids = {row[0] for row in existing_analyses}
-
-        queued_count = len(songs)
-        for song in songs:
-            if song.id not in existing_song_ids:
-                analysis = AnalysisResult(
-                    song_id=song.id,
-                    status='pending',
-                    created_at=datetime.now()
-                )
-                db.session.add(analysis)
-
-        db.session.commit()
+        # Use unified analysis service to queue playlist reanalysis
+        analysis_service = UnifiedAnalysisService()
+        job = analysis_service.enqueue_playlist_analysis(
+            playlist_id=playlist_id,
+            user_id=current_user.id,
+            priority='medium'  # Playlist reanalysis = MEDIUM priority
+        )
         
         return jsonify({
             'success': True,
-            'message': f'Queued {queued_count} songs for reanalysis',
-            'queued_count': queued_count
+            'message': f'Queued {len(songs)} songs for reanalysis',
+            'queued_count': len(songs),
+            'job_id': job.id
         })
 
     except Exception as e:
@@ -599,58 +652,15 @@ def reanalyze_all_playlist_songs(playlist_id):
         }), 500
 
 
-@bp.route('/songs/<int:song_id>/analyze', methods=['POST'])
-@login_required
-def analyze_single_song(song_id):
-    """Analyze a single song"""
-    try:
-        # Verify user has access to this song
-        song = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
-            Song.id == song_id,
-            Playlist.owner_id == current_user.id
-        ).first()
-        
-        if not song:
-            return jsonify({
-                'status': 'error',
-                'message': f'Song with ID {song_id} not found or access denied'
-            }), 404
-
-        # Use UnifiedAnalysisService to enqueue the analysis job
-        analysis_service = UnifiedAnalysisService()
-        
-        # Enqueue analysis job with low priority (as expected by test)
-        job = analysis_service.enqueue_analysis_job(song_id, user_id=current_user.id, priority='low')
-        
-        return jsonify({
-            'success': True,
-            'status': 'success',
-            'message': 'Song queued for analysis',
-            'song_id': song_id,
-            'job_id': job.id
-        })
-
-    except ValueError as e:
-        # Handle song not found from the service
-        current_app.logger.error(f'Song not found: {e}')
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 404
-    except Exception as e:
-        current_app.logger.error(f'Single song analysis error: {e}')
-        return jsonify({
-            'status': 'error',
-            'error': str(e),
-            'message': 'Analysis service error occurred'
-        }), 500
-
-
 @bp.route('/analysis/status')
 @login_required
 def get_analysis_status():
-    """Get overall analysis status for the current user"""
+    """Get overall analysis status for the current user with queue information"""
     try:
+        # Get queue status from priority queue
+        queue = PriorityAnalysisQueue()
+        queue_status = queue.get_queue_status()
+        
         # Get all user's playlists
         user_playlists = Playlist.query.filter_by(owner_id=current_user.id).all()
         
@@ -677,7 +687,10 @@ def get_analysis_status():
             'progress': progress_percentage,
             'analyzed_count': analyzed_songs,
             'total_count': total_songs,
-            'analysis_queue_length': 0,  # For test compatibility - real implementation would check Redis queue
+            'queue_length': queue_status.get('total_jobs', 0),
+            'pending_jobs': queue_status.get('pending_jobs', 0),
+            'in_progress_jobs': queue_status.get('in_progress_jobs', 0),
+            'estimated_completion_minutes': queue_status.get('estimated_completion_time', 0),
             'message': f'Analysis {progress_percentage}% complete ({analyzed_songs}/{total_songs} songs)'
         })
         
@@ -710,11 +723,10 @@ def get_admin_reanalysis_status():
 @admin_required
 def admin_reanalyze_user(user_id):
     """
-    Admin endpoint to trigger account-wide re-analysis for a specific user.
+    Admin endpoint to trigger account-wide re-analysis for a specific user using background analysis.
     
     This endpoint allows administrators to force re-analysis of all songs
-    for a given user account. It resets existing analysis results to pending
-    and enqueues analysis jobs for all user's songs.
+    for a given user account using the priority queue system with LOW priority.
     
     Args:
         user_id (int): The ID of the user account to re-analyze
@@ -748,74 +760,27 @@ def admin_reanalyze_user(user_id):
                 'user_id': user_id
             })
 
-        # Reset existing analysis results to pending status
-        song_ids = [song.id for song in user_songs]
-        db.session.query(AnalysisResult).filter(
-            AnalysisResult.song_id.in_(song_ids)
-        ).update({
-            'status': 'pending',
-            'score': None,
-            'concern_level': None,
-            'explanation': None,
-            'themes': None,
-            'concerns': None,
-            'analyzed_at': datetime.now()
-        }, synchronize_session=False)
-
-        # Create analysis records for songs without existing analysis
-        existing_analyses = db.session.query(AnalysisResult.song_id).filter(
-            AnalysisResult.song_id.in_(song_ids)
-        ).all()
-        existing_song_ids = {row[0] for row in existing_analyses}
-
-        for song in user_songs:
-            if song.id not in existing_song_ids:
-                analysis = AnalysisResult(
-                    song_id=song.id,
-                    status='pending',
-                    created_at=datetime.now()
-                )
-                db.session.add(analysis)
-
-        # Enqueue analysis jobs (using UnifiedAnalysisService)
+        # Use background analysis with LOW priority for admin-triggered reanalysis
         analysis_service = UnifiedAnalysisService()
-        queued_jobs = []
-        
-        for song in user_songs:
-            try:
-                job = analysis_service.enqueue_analysis_job(
-                    song.id, 
-                    user_id=user_id, 
-                    priority='normal'  # Admin-triggered jobs get normal priority
-                )
-                queued_jobs.append(job)
-            except Exception as e:
-                current_app.logger.warning(f'Failed to enqueue analysis for song {song.id}: {e}')
-                # Continue with other songs even if one fails
-
-        db.session.commit()
-
-        current_app.logger.info(
-            f'Admin {current_user.id} triggered re-analysis for user {user_id}: '
-            f'{len(user_songs)} songs queued'
+        job = analysis_service.enqueue_background_analysis(
+            user_id=user_id,
+            priority='low'  # Admin reanalysis = LOW priority (background)
         )
-
+        
         return jsonify({
             'success': True,
-            'message': f'Successfully queued {len(user_songs)} songs for re-analysis',
+            'message': f'Queued {len(user_songs)} songs for background analysis for user {target_user.display_name or target_user.email}',
             'queued_count': len(user_songs),
             'user_id': user_id,
-            'user_name': target_user.display_name or target_user.email,
-            'jobs_enqueued': len(queued_jobs)
+            'job_id': job.id
         })
 
     except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f'Admin re-analysis failed for user {user_id}: {e}')
+        current_app.logger.error(f'Admin reanalysis error: {e}')
         return jsonify({
             'success': False,
             'error': str(e),
-            'message': 'Failed to start admin re-analysis'
+            'message': f'Failed to start background analysis for user {user_id}'
         }), 500
 
 
@@ -1043,4 +1008,234 @@ def api_analyze_song(song_id):
 @login_required
 def api_song_analysis_status(song_id):
     """API endpoint for song analysis status (matches frontend expectation)"""
-    return get_song_analysis_status(song_id) 
+    return get_song_analysis_status(song_id)
+
+
+# New Queue Management Endpoints
+
+@bp.route('/queue/status')
+@login_required
+def get_queue_status():
+    """Get detailed queue status and health information"""
+    try:
+        queue = PriorityAnalysisQueue()
+        queue_status = queue.get_queue_status()
+        
+        return jsonify({
+            'status': 'success',
+            'queue': {
+                'total_jobs': queue_status.get('total_jobs', 0),
+                'pending_jobs': queue_status.get('pending_jobs', 0),
+                'in_progress_jobs': queue_status.get('in_progress_jobs', 0),
+                'completed_jobs': queue_status.get('completed_jobs', 0),
+                'failed_jobs': queue_status.get('failed_jobs', 0),
+                'priority_breakdown': queue_status.get('priority_counts', {}),
+                'estimated_completion_minutes': queue_status.get('estimated_completion_time', 0),
+                'active_job': queue_status.get('active_job', None)
+            }
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Queue status error: {e}')
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'message': 'Failed to get queue status'
+        }), 500
+
+
+@bp.route('/worker/health')
+@login_required
+def get_worker_health():
+    """Get worker health and status information"""
+    try:
+        worker_status = get_worker_status()
+        
+        return jsonify({
+            'status': 'success',
+            'worker': {
+                'status': worker_status.get('status', 'unknown'),
+                'uptime_seconds': worker_status.get('uptime_seconds', 0),
+                'jobs_processed': worker_status.get('jobs_processed', 0),
+                'jobs_failed': worker_status.get('jobs_failed', 0),
+                'jobs_interrupted': worker_status.get('jobs_interrupted', 0),
+                'last_heartbeat': worker_status.get('last_heartbeat', None),
+                'current_job': worker_status.get('current_job', None)
+            }
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Worker health error: {e}')
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'message': 'Failed to get worker health'
+        }), 500
+
+
+@bp.route('/jobs/<job_id>/status')
+@login_required
+def get_job_status(job_id):
+    """Get status of a specific analysis job with progress information"""
+    try:
+        from ..services.progress_tracker import get_progress_tracker
+        
+        queue = PriorityAnalysisQueue()
+        job = queue.get_job(job_id)
+        
+        if not job:
+            return jsonify({
+                'status': 'error',
+                'message': f'Job with ID {job_id} not found'
+            }), 404
+        
+        # Get progress information if available
+        tracker = get_progress_tracker()
+        progress = tracker.get_job_progress(job_id)
+        
+        job_data = {
+            'job_id': job.job_id,
+            'status': job.status.name,
+            'job_type': job.job_type.name,
+            'priority': job.priority.name,
+            'created_at': job.created_at,
+            'started_at': getattr(job, 'started_at', None),
+            'metadata': job.metadata
+        }
+        
+        # Add progress information if available
+        if progress:
+            job_data['progress'] = progress.to_dict()
+        else:
+            # Fallback progress info from job metadata
+            job_data['progress'] = getattr(job, 'progress', 0)
+            job_data['estimated_completion_minutes'] = getattr(job, 'estimated_completion_time', 0)
+        
+        return jsonify({
+            'status': 'success',
+            'job': job_data
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Job status error: {e}')
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'message': 'Failed to get job status'
+        }), 500
+
+
+@bp.route('/queue/health')
+@login_required  
+def get_queue_health():
+    """Get queue system health check information"""
+    try:
+        queue = PriorityAnalysisQueue()
+        health_status = queue.health_check()
+        
+        if not health_status.get('redis_connected', False):
+            return jsonify({
+                'status': 'error',
+                'queue_health': health_status
+            }), 503  # Service Unavailable
+        
+        return jsonify({
+            'status': 'success',
+            'queue_health': health_status
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Queue health check error: {e}')
+        return jsonify({
+            'status': 'error',
+            'queue_health': {
+                'redis_connected': False,
+                'queue_accessible': False,
+                'error': str(e)
+            }
+        }), 503
+
+
+# Progress Tracking Endpoints
+
+@bp.route('/progress/<job_id>')
+@login_required
+def get_job_progress(job_id):
+    """Get detailed progress for a specific job"""
+    try:
+        from ..services.progress_tracker import get_progress_tracker
+        
+        tracker = get_progress_tracker()
+        progress = tracker.get_job_progress(job_id)
+        
+        if not progress:
+            return jsonify({
+                'success': False,
+                'error': 'Job progress not found'
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'progress': progress.to_dict()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting job progress for {job_id}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@bp.route('/progress')
+@login_required
+def get_all_progress():
+    """Get progress for all active jobs"""
+    try:
+        from ..services.progress_tracker import get_progress_tracker
+        
+        tracker = get_progress_tracker()
+        all_progress = tracker.get_all_active_progress()
+        
+        # Convert to serializable format
+        progress_data = {}
+        for job_id, progress in all_progress.items():
+            progress_data[job_id] = progress.to_dict()
+        
+        return jsonify({
+            'success': True,
+            'active_jobs': progress_data,
+            'total_active': len(progress_data)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting all progress: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@bp.route('/progress/cleanup', methods=['POST'])
+@admin_required
+def cleanup_stale_progress():
+    """Clean up stale progress tracking jobs (admin only)"""
+    try:
+        from ..services.progress_tracker import get_progress_tracker
+        
+        tracker = get_progress_tracker()
+        max_age_hours = request.json.get('max_age_hours', 24) if request.json else 24
+        
+        tracker.cleanup_stale_jobs(max_age_hours=max_age_hours)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Cleaned up jobs older than {max_age_hours} hours'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error cleaning up stale progress: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500 

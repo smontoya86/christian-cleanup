@@ -28,10 +28,8 @@ class HuggingFaceAnalyzer:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.info(f"Initializing HuggingFace analyzer on device: {self.device}")
         
-        # Initialize models lazily to avoid startup delays
-        self._sentiment_analyzer = None
-        self._content_classifier = None
-        self._emotion_analyzer = None
+        # Load all models during initialization to avoid lazy loading issues
+        self._load_models()
         
         # Christian theme keywords (expanded)
         self.christian_keywords = {
@@ -51,72 +49,126 @@ class HuggingFaceAnalyzer:
             'drunk', 'alcohol', 'beer', 'vodka', 'whiskey', 'violence', 'kill',
             'murder', 'death', 'suicide', 'hate', 'racist', 'nazi'
         }
+        
+        logger.info("HuggingFace analyzer initialization complete - all models loaded successfully")
+
+    def _load_models(self):
+        """Load all models during initialization to avoid lazy loading delays and rate limits."""
+        try:
+            logger.info("Loading sentiment analysis model...")
+            # Load tokenizer and model separately to use local_files_only
+            tokenizer = AutoTokenizer.from_pretrained(
+                "cardiffnlp/twitter-roberta-base-sentiment-latest",
+                local_files_only=True
+            )
+            model = AutoModelForSequenceClassification.from_pretrained(
+                "cardiffnlp/twitter-roberta-base-sentiment-latest",
+                local_files_only=True
+            )
+            self._sentiment_analyzer = pipeline(
+                "sentiment-analysis",
+                model=model,
+                tokenizer=tokenizer,
+                device=0 if self.device == "cuda" else -1,
+                return_all_scores=True
+            )
+            logger.info("Sentiment analysis model loaded successfully")
+            
+            logger.info("Loading content safety model...")
+            tokenizer = AutoTokenizer.from_pretrained(
+                "unitary/toxic-bert",
+                local_files_only=True
+            )
+            model = AutoModelForSequenceClassification.from_pretrained(
+                "unitary/toxic-bert",
+                local_files_only=True
+            )
+            self._safety_analyzer = pipeline(
+                "text-classification",
+                model=model,
+                tokenizer=tokenizer,
+                device=0 if self.device == "cuda" else -1,
+                return_all_scores=True
+            )
+            logger.info("Content safety model loaded successfully")
+            
+            logger.info("Loading emotion analysis model...")
+            tokenizer = AutoTokenizer.from_pretrained(
+                "j-hartmann/emotion-english-distilroberta-base",
+                local_files_only=True
+            )
+            model = AutoModelForSequenceClassification.from_pretrained(
+                "j-hartmann/emotion-english-distilroberta-base",
+                local_files_only=True
+            )
+            self._emotion_analyzer = pipeline(
+                "text-classification",
+                model=model,
+                tokenizer=tokenizer,
+                device=0 if self.device == "cuda" else -1,
+                return_all_scores=True
+            )
+            logger.info("Emotion analysis model loaded successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to load HuggingFace models: {e}")
+            # If local_files_only fails, try without it (for initial download)
+            logger.warning("Retrying model loading without local_files_only restriction...")
+            try:
+                self._load_models_with_download()
+            except Exception as retry_error:
+                logger.error(f"Model loading failed even with download: {retry_error}")
+                raise RuntimeError(f"Cannot start analyzer without models: {e}")
+
+    def _load_models_with_download(self):
+        """Fallback method to load models with download capability."""
+        logger.info("Loading sentiment analysis model (with download)...")
+        self._sentiment_analyzer = pipeline(
+            "sentiment-analysis",
+            model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+            device=0 if self.device == "cuda" else -1,
+            return_all_scores=True
+        )
+        logger.info("Sentiment analysis model loaded successfully")
+        
+        logger.info("Loading content safety model (with download)...")
+        self._safety_analyzer = pipeline(
+            "text-classification",
+            model="unitary/toxic-bert",
+            device=0 if self.device == "cuda" else -1,
+            return_all_scores=True
+        )
+        logger.info("Content safety model loaded successfully")
+        
+        logger.info("Loading emotion analysis model (with download)...")
+        self._emotion_analyzer = pipeline(
+            "text-classification",
+            model="j-hartmann/emotion-english-distilroberta-base",
+            device=0 if self.device == "cuda" else -1,
+            return_all_scores=True
+        )
+        logger.info("Emotion analysis model loaded successfully")
 
     @property
     def sentiment_analyzer(self):
-        """Lazy loading for sentiment analysis model"""
-        if self._sentiment_analyzer is None:
-            try:
-                logger.info("Loading sentiment analysis model...")
-                # Using a lightweight, fast model
-                self._sentiment_analyzer = pipeline(
-                    "sentiment-analysis",
-                    model="cardiffnlp/twitter-roberta-base-sentiment-latest",
-                    device=0 if self.device == "cuda" else -1,
-                    return_all_scores=True
-                )
-                logger.info("Sentiment analysis model loaded successfully")
-            except Exception as e:
-                logger.warning(f"Failed to load sentiment model: {e}")
-                # Fallback to a simpler model
-                try:
-                    self._sentiment_analyzer = pipeline(
-                        "sentiment-analysis",
-                        model="distilbert-base-uncased-finetuned-sst-2-english",
-                        device=0 if self.device == "cuda" else -1,
-                        return_all_scores=True
-                    )
-                except Exception as e2:
-                    logger.error(f"Failed to load fallback sentiment model: {e2}")
-                    self._sentiment_analyzer = None
+        """Return the pre-loaded sentiment analysis model"""
         return self._sentiment_analyzer
 
     @property
-    def content_classifier(self):
-        """Lazy loading for content classification model"""
-        if self._content_classifier is None:
-            try:
-                logger.info("Loading content classification model...")
-                # Using a model that can detect inappropriate content
-                self._content_classifier = pipeline(
-                    "text-classification",
-                    model="unitary/toxic-bert",
-                    device=0 if self.device == "cuda" else -1,
-                    return_all_scores=True
-                )
-                logger.info("Content classification model loaded successfully")
-            except Exception as e:
-                logger.warning(f"Failed to load content classifier: {e}")
-                self._content_classifier = None
-        return self._content_classifier
+    def safety_analyzer(self):
+        """Return the pre-loaded content safety model"""
+        return self._safety_analyzer
 
     @property
     def emotion_analyzer(self):
-        """Lazy loading for emotion analysis model"""
-        if self._emotion_analyzer is None:
-            try:
-                logger.info("Loading emotion analysis model...")
-                self._emotion_analyzer = pipeline(
-                    "text-classification",
-                    model="j-hartmann/emotion-english-distilroberta-base",
-                    device=0 if self.device == "cuda" else -1,
-                    return_all_scores=True
-                )
-                logger.info("Emotion analysis model loaded successfully")
-            except Exception as e:
-                logger.warning(f"Failed to load emotion analyzer: {e}")
-                self._emotion_analyzer = None
+        """Return the pre-loaded emotion analysis model"""
         return self._emotion_analyzer
+
+    # Legacy property for backward compatibility
+    @property
+    def content_classifier(self):
+        """Legacy property - returns safety_analyzer for backward compatibility"""
+        return self._safety_analyzer
 
     def _safe_truncate_text(self, text: str, max_tokens: int = 450) -> str:
         """
@@ -319,13 +371,13 @@ class HuggingFaceAnalyzer:
 
     def _analyze_content_safety(self, text: str) -> Optional[Dict]:
         """Analyze content safety using Hugging Face model"""
-        if not self.content_classifier:
+        if not self.safety_analyzer:
             return None
             
         try:
             # Safe token-based truncation
             safe_text = self._safe_truncate_text(text)
-            result = self.content_classifier(safe_text)
+            result = self.safety_analyzer(safe_text)
             if result:
                 return {
                     'scores': result[0] if isinstance(result[0], list) else result,

@@ -480,11 +480,14 @@ class TestConvenienceFunctions:
         """Test enqueue_song_analysis convenience function"""
         mock_queue = Mock()
         mock_queue.enqueue.return_value = "job-123"
+        mock_job = Mock()
+        mock_job.job_id = "job-123"
+        mock_queue.get_job.return_value = mock_job
         mock_queue_class.return_value = mock_queue
         
-        job_id = enqueue_song_analysis(user_id=1, song_id=100, metadata={"test": "data"})
+        job = enqueue_song_analysis(user_id=1, song_id=100, metadata={"test": "data"})
         
-        assert job_id == "job-123"
+        assert job.job_id == "job-123"
         mock_queue.enqueue.assert_called_once_with(
             job_type=JobType.SONG_ANALYSIS,
             user_id=1,
@@ -498,43 +501,49 @@ class TestConvenienceFunctions:
         """Test enqueue_playlist_analysis convenience function"""
         mock_queue = Mock()
         mock_queue.enqueue.return_value = "job-456"
+        mock_job = Mock()
+        mock_job.job_id = "job-456"
+        mock_queue.get_job.return_value = mock_job
         mock_queue_class.return_value = mock_queue
         
-        job_id = enqueue_playlist_analysis(user_id=2, playlist_id=200)
+        job = enqueue_playlist_analysis(user_id=2, playlist_id=200, song_ids=[1, 2, 3])
         
-        assert job_id == "job-456"
+        assert job.job_id == "job-456"
         mock_queue.enqueue.assert_called_once_with(
             job_type=JobType.PLAYLIST_ANALYSIS,
             user_id=2,
             target_id=200,
             priority=JobPriority.MEDIUM,
-            metadata=None
+            metadata={"song_ids": [1, 2, 3]}
         )
     
     @patch('app.services.priority_analysis_queue.PriorityAnalysisQueue')
     def test_enqueue_background_analysis(self, mock_queue_class):
         """Test enqueue_background_analysis convenience function"""
         mock_queue = Mock()
-        mock_queue.enqueue.side_effect = ["job-1", "job-2", "job-3"]
+        mock_queue.enqueue.return_value = "job-789"
+        mock_job = Mock()
+        mock_job.job_id = "job-789"
+        mock_queue.get_job.return_value = mock_job
         mock_queue_class.return_value = mock_queue
         
-        job_ids = enqueue_background_analysis(
-            user_id=3, 
+        job = enqueue_background_analysis(
+            user_id=3,
             song_ids=[301, 302, 303],
             metadata={"batch": "1"}
         )
         
-        assert job_ids == ["job-1", "job-2", "job-3"]
-        assert mock_queue.enqueue.call_count == 3
+        assert job.job_id == "job-789"
+        assert mock_queue.enqueue.call_count == 1
         
-        # Verify each call
-        calls = mock_queue.enqueue.call_args_list
-        for i, call in enumerate(calls):
-            assert call[1]['job_type'] == JobType.BACKGROUND_ANALYSIS
-            assert call[1]['user_id'] == 3
-            assert call[1]['target_id'] == 301 + i
-            assert call[1]['priority'] == JobPriority.LOW
-            assert call[1]['metadata'] == {"batch": "1"}
+        # Verify the call
+        mock_queue.enqueue.assert_called_once_with(
+            job_type=JobType.BACKGROUND_ANALYSIS,
+            user_id=3,
+            target_id=3,  # user_id used as target for background analysis
+            priority=JobPriority.LOW,
+            metadata={"batch": "1", "song_ids": [301, 302, 303]}
+        )
 
 
 class TestPriorityOrdering:

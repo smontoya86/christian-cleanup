@@ -292,6 +292,102 @@
         </div>
     </div>
 
+    <!-- Progress Indicator Section -->
+    <div id="progress-section" class="mb-4" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line"></i> Analysis Progress
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="progress-info" class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span id="progress-message">Preparing analysis...</span>
+                        <span id="progress-percentage">0%</span>
+                    </div>
+                </div>
+                <div class="progress mb-3" style="height: 20px;">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+                <div id="progress-details" class="small text-muted">
+                    <div>Current Step: <span id="current-step">-</span></div>
+                    <div>ETA: <span id="eta">-</span></div>
+                    <div>Songs Analyzed: <span id="songs-analyzed">0</span> / <span id="total-songs">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Stats -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.total_playlists }}</h5>
+                    <p class="card-text">Playlists</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.total_songs }}</h5>
+                    <p class="card-text">Songs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.analyzed_songs }}</h5>
+                    <p class="card-text">Analyzed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.flagged_songs }}</h5>
+                    <p class="card-text">Flagged</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.clean_playlists }}</h5>
+                    <p class="card-text">Clean Playlists</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.analysis_progress }}%</h5>
+                    <p class="card-text">Complete</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Controls -->
+    {% if stats.total_songs > stats.analyzed_songs %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                You have {{ stats.total_songs - stats.analyzed_songs }} unanalyzed songs.
+                <button id="start-analysis-btn" class="btn btn-primary btn-sm ml-2">
+                    <i class="fas fa-play"></i> Analyze All
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     {% if playlists %}
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="playlistGrid">
             {% for playlist in playlists %}
@@ -299,7 +395,7 @@
                      data-score="{{ playlist.score * 100 if playlist.score is not none else 'null' }}"
                      data-name="{{ playlist.name|lower }}"
                      data-description="{{ playlist.description|lower if playlist.description else '' }}"
-                     data-tracks="{{ playlist.songs|length }}">
+                     data-tracks="{{ playlist.track_count or 0 }}">
                     <div class="card h-100 shadow-sm playlist-card-custom">
                         {% if playlist.image_url %}
                             <img src="{{ playlist.image_url }}" class="card-img-top" alt="{{ playlist.name }} cover" style="height: 200px; object-fit: cover;">
@@ -317,7 +413,7 @@
                                 <ul class="list-unstyled mb-3 text-muted small">
                                     <li class="d-flex justify-content-between">
                                         <span><i class="fas fa-music me-1"></i>Tracks:</span>
-                                        <strong>{{ playlist.songs|length }}</strong>
+                                        <strong>{{ playlist.track_count or 0 }}</strong>
                                     </li>
                                     <li class="d-flex justify-content-between">
                                         <span><i class="fas fa-star me-1"></i>Score:</span>
@@ -675,7 +771,15 @@ document.addEventListener('DOMContentLoaded', function () {
             // Calculate ETA
             if (avgRate > 0 && remaining > 0) {
                 const etaMinutes = remaining / avgRate;
-                const etaText = etaMinutes < 1 ? '<1 min' : Math.ceil(etaMinutes) + ' min';
+                let etaText;
+                if (etaMinutes < 1) {
+                    etaText = '<1 min';
+                } else if (etaMinutes < 60) {
+                    etaText = Math.ceil(etaMinutes) + ' min';
+                } else {
+                    const etaHours = Math.ceil(etaMinutes / 60);
+                    etaText = etaHours + ' hr';
+                }
                 document.getElementById('syncETA').textContent = etaText;
             }
         }
@@ -689,8 +793,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     function updateAnalysisProgress(data) {
-        console.log('updateAnalysisProgress called with:', data); // Debug log
-        
         const analysisAlert = document.getElementById('analysisProgressAlert');
         const analysisProgress = document.getElementById('analysisProgress');
         
@@ -709,14 +811,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const totalProgress = data.total_songs > 0 ? (data.completed / data.total_songs) * 100 : 0;
         const shouldShow = hasData && (hasInProgress || hasPending || hasActiveAnalysis || totalProgress < 100);
         
-        console.log(`🎯 Should show progress: ${shouldShow}`);
-        console.log(`   - Has data: ${hasData} (total: ${data.total_songs})`);
-        console.log(`   - Has in progress: ${hasInProgress} (${data.in_progress})`);
-        console.log(`   - Has pending: ${hasPending} (${data.pending})`);
-        console.log(`   - Has active analysis: ${hasActiveAnalysis}`);
-        
         if (!shouldShow) {
-            console.log('🔒 Hiding progress indicator - no active analysis or pending songs');
             analysisAlert.style.display = 'none';
             if (analysisCheckInterval) {
                 clearInterval(analysisCheckInterval);
@@ -726,15 +821,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
         // Show analysis progress
-        console.log('🔓 Showing progress indicator');
         analysisAlert.style.display = 'block';
         
         const completed = data.completed || 0;
         const inProgress = data.in_progress || 0;
         const pending = data.pending || 0;
         const total = completed + inProgress + pending;
-        
-        console.log(`Analysis progress: ${completed}/${total} (${inProgress} in progress, ${pending} pending)`);
         
         // Update progress bar - ensure it's visible and updating
         let progressPercent = 0;
@@ -754,8 +846,6 @@ document.addEventListener('DOMContentLoaded', function () {
             progressText.textContent = `${completed}/${total} songs analyzed (${progressPercent.toFixed(1)}%)`;
         }
         
-        console.log(`📊 Progress bar updated: ${progressPercent.toFixed(1)}% (${completed}/${total})`);
-        
         // Update stats (simplified - no rates)
         const elements = {
             'analysisCompleted': completed,
@@ -773,9 +863,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     element.style.color = '#28a745';
                     setTimeout(() => { element.style.color = ''; }, 1000);
                 }
-                console.log(`Updated ${id} from ${oldValue} to ${value}`);
-            } else {
-                console.warn(`Element ${id} not found`);
             }
         }
         
@@ -834,35 +921,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 miniProgressElement.style.transition = 'width 0.3s ease-in-out';
             }
         }
-        
-        // Update timestamp
-        const now = new Date();
-        const timeString = now.toLocaleTimeString();
-        console.log(`✅ Progress updated at ${timeString}`);
-    }
-    
-    function hideAnalysisProgress() {
-        document.getElementById('analysisProgressAlert').style.display = 'none';
-        if (analysisCheckInterval) {
-            clearInterval(analysisCheckInterval);
-            analysisCheckInterval = null;
-        }
     }
     
     function checkAnalysisStatus() {
-        console.log('🔍 checkAnalysisStatus() called at', new Date().toISOString());
         // Check if there are any active analysis jobs
         fetch('/api/analysis/status')
-            .then(response => {
-                console.log('📡 API response status:', response.status);
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                console.log('📊 API response data:', data);
                 updateAnalysisProgress(data);
             })
             .catch(error => {
-                console.error('❌ Error checking analysis status:', error);
+                console.error('Error checking analysis status:', error);
             });
     }
 
@@ -1191,6 +1260,290 @@ document.addEventListener('DOMContentLoaded', function () {
     // Format timestamps on page load
     formatTimestamps();
 });
+
+// Progress tracking functionality
+let progressPoller = null;
+let currentJobId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const startAnalysisBtn = document.getElementById('start-analysis-btn');
+    if (startAnalysisBtn) {
+        startAnalysisBtn.addEventListener('click', startBackgroundAnalysis);
+    }
+    
+    // Check for existing analysis jobs on page load
+    checkExistingAnalysis();
+});
+
+async function checkExistingAnalysis() {
+    try {
+        const response = await fetch('/api/queue/status');
+        const data = await response.json();
+        
+        if (data.success && data.jobs) {
+            const backgroundJobs = data.jobs.filter(job => 
+                job.job_type === 'BACKGROUND_ANALYSIS' && 
+                ['pending', 'in_progress'].includes(job.status)
+            );
+            
+            if (backgroundJobs.length > 0) {
+                const job = backgroundJobs[0];
+                currentJobId = job.job_id;
+                showProgressSection();
+                startProgressPolling(currentJobId);
+            }
+        }
+    } catch (error) {
+        console.error('Error checking existing analysis:', error);
+    }
+}
+
+async function startBackgroundAnalysis() {
+    const btn = document.getElementById('start-analysis-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+    
+    try {
+        const response = await fetch('/api/admin/reanalyze-user/{{ current_user.id }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.already_complete) {
+                // All songs are already analyzed
+                btn.innerHTML = '<i class="fas fa-check-circle text-success"></i> All Songs Analyzed';
+                btn.disabled = true;
+                
+                // Show a brief success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-check-circle"></i>
+                    <strong>Analysis Complete!</strong> ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                // Insert after the analyze button
+                btn.parentNode.insertBefore(alertDiv, btn.nextSibling);
+                
+                // Auto-dismiss after 5 seconds
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 5000);
+                
+            } else if (data.job_id) {
+                // Analysis started successfully
+                currentJobId = data.job_id;
+                showProgressSection();
+                startProgressPolling(currentJobId);
+            } else {
+                throw new Error(data.message || 'Unexpected response format');
+            }
+        } else {
+            throw new Error(data.message || 'Failed to start analysis');
+        }
+    } catch (error) {
+        console.error('Error starting analysis:', error);
+        alert('Failed to start analysis. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-play"></i> Analyze All';
+    }
+}
+
+function showProgressSection() {
+    document.getElementById('progress-section').style.display = 'block';
+    const startBtn = document.getElementById('start-analysis-btn');
+    if (startBtn) {
+        startBtn.style.display = 'none';
+    }
+}
+
+function hideProgressSection() {
+    document.getElementById('progress-section').style.display = 'none';
+    const startBtn = document.getElementById('start-analysis-btn');
+    if (startBtn) {
+        startBtn.style.display = 'inline-block';
+        startBtn.disabled = false;
+        startBtn.innerHTML = '<i class="fas fa-play"></i> Analyze All';
+    }
+}
+
+function startProgressPolling(jobId) {
+    if (progressPoller) {
+        clearInterval(progressPoller);
+    }
+    
+    let pollAttempts = 0;
+    const maxWaitAttempts = 30; // Wait up to 60 seconds for worker to start (30 * 2 seconds)
+    
+    // Show initial "waiting for worker" state
+    updateProgressDisplay({
+        current_progress: 0,
+        completed_items: 0,
+        total_items: 0,
+        current_step: 'Initializing',
+        current_message: 'Waiting for analysis to begin...',
+        eta_seconds: null,
+        is_complete: false
+    });
+    
+    progressPoller = setInterval(async () => {
+        try {
+            const response = await fetch(`/api/progress/${jobId}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.success && data.progress) {
+                    // Reset poll attempts since we're getting data
+                    pollAttempts = 0;
+                    updateProgressDisplay(data.progress);
+                    
+                    if (data.progress.is_complete || data.progress.current_progress >= 1.0) {
+                        clearInterval(progressPoller);
+                        setTimeout(() => {
+                            hideProgressSection();
+                            location.reload(); // Refresh to show updated stats
+                        }, 2000);
+                    }
+                } else {
+                    // API returned success but no progress data - still waiting
+                    pollAttempts++;
+                    if (pollAttempts <= maxWaitAttempts) {
+                        updateProgressDisplay({
+                            current_progress: 0,
+                            completed_items: 0,
+                            total_items: 0,
+                            current_step: 'Waiting',
+                            current_message: `Waiting for worker to start... (${pollAttempts}/${maxWaitAttempts})`,
+                            eta_seconds: null,
+                            is_complete: false
+                        });
+                    } else {
+                        // Waited too long, something might be wrong
+                        clearInterval(progressPoller);
+                        updateProgressDisplay({
+                            current_progress: 0,
+                            completed_items: 0,
+                            total_items: 0,
+                            current_step: 'Error',
+                            current_message: 'Analysis worker did not start. Please try again.',
+                            eta_seconds: null,
+                            is_complete: false
+                        });
+                        setTimeout(() => {
+                            hideProgressSection();
+                        }, 5000);
+                    }
+                }
+            } else if (response.status === 404) {
+                // 404 could mean:
+                // 1. Worker hasn't started yet (early in process)
+                // 2. Job completed and was cleaned up
+                pollAttempts++;
+                
+                if (pollAttempts <= maxWaitAttempts) {
+                    // Still waiting for worker to start
+                    updateProgressDisplay({
+                        current_progress: 0,
+                        completed_items: 0,
+                        total_items: 0,
+                        current_step: 'Starting',
+                        current_message: `Starting analysis worker... (${pollAttempts}/${maxWaitAttempts})`,
+                        eta_seconds: null,
+                        is_complete: false
+                    });
+                } else {
+                    // Waited too long, assume job completed or failed
+                    clearInterval(progressPoller);
+                    hideProgressSection();
+                    location.reload();
+                }
+            } else {
+                // Other error
+                console.error(`Progress API returned ${response.status}`);
+                pollAttempts++;
+                if (pollAttempts > maxWaitAttempts) {
+                    clearInterval(progressPoller);
+                    hideProgressSection();
+                }
+            }
+        } catch (error) {
+            console.error('Error polling progress:', error);
+            pollAttempts++;
+            if (pollAttempts > maxWaitAttempts) {
+                clearInterval(progressPoller);
+                hideProgressSection();
+            }
+        }
+    }, 2000); // Poll every 2 seconds
+}
+
+function updateProgressDisplay(progress) {
+    const percentage = Math.round((progress.current_progress || 0) * 100);
+    
+    // Update progress bar
+    const progressBar = document.getElementById('progress-bar');
+    if (progressBar) {
+        progressBar.style.width = `${percentage}%`;
+        progressBar.setAttribute('aria-valuenow', percentage);
+    }
+    
+    // Update percentage text
+    const percentageElement = document.getElementById('progress-percentage');
+    if (percentageElement) {
+        percentageElement.textContent = `${percentage}%`;
+    }
+    
+    // Update message
+    const messageElement = document.getElementById('progress-message');
+    if (messageElement) {
+        messageElement.textContent = 
+            progress.current_message || `Analyzing songs... ${progress.completed_items || 0}/${progress.total_items || 0}`;
+    }
+    
+    // Update current step
+    const stepElement = document.getElementById('current-step');
+    if (stepElement) {
+        stepElement.textContent = progress.current_step || 'Processing';
+    }
+    
+    // Update ETA
+    const etaElement = document.getElementById('eta');
+    if (etaElement) {
+        if (progress.eta_seconds && progress.eta_seconds > 0) {
+            const minutes = Math.ceil(progress.eta_seconds / 60);
+            if (minutes < 60) {
+                etaElement.textContent = `${minutes} min`;
+            } else {
+                const hours = Math.ceil(minutes / 60);
+                etaElement.textContent = `${hours} hr`;
+            }
+        } else {
+            etaElement.textContent = progress.current_step === 'Initializing' || progress.current_step === 'Starting' || progress.current_step === 'Waiting' 
+                ? 'Starting...' 
+                : 'Calculating...';
+        }
+    }
+    
+    // Update song counts
+    const analyzedElement = document.getElementById('songs-analyzed');
+    if (analyzedElement) {
+        analyzedElement.textContent = progress.completed_items || 0;
+    }
+    
+    const totalElement = document.getElementById('total-songs');
+    if (totalElement) {
+        totalElement.textContent = progress.total_items || 0;
+    }
+}
 </script>
 
 <!-- Load main.js for modular functionality -->

@@ -71,9 +71,8 @@ def create_app(config_name='development', skip_db_init=False):
     
     # Initialize priority queue worker (but don't start it during testing)
     if config_name != 'testing':
-        from .services.priority_queue_worker import init_worker, start_worker
-        init_worker(app)
-        start_worker(background=True)
+        from .services.priority_queue_worker import start_worker
+        start_worker(app)
     
     # Configure login manager
     login_manager.login_view = 'auth.login'

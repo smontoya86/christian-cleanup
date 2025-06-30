@@ -453,7 +453,7 @@ def enqueue_playlist_analysis(playlist_id: int, song_ids: List[int], user_id: in
     return queue.get_job(job_id)
 
 
-def enqueue_background_analysis(song_ids: List[int], user_id: int,
+def enqueue_background_analysis(user_id: int, song_ids: List[int], 
                                priority: JobPriority = JobPriority.LOW,
                                metadata: Dict[str, Any] = None) -> AnalysisJob:
     """Enqueue a background analysis job for multiple songs"""
@@ -467,7 +467,7 @@ def enqueue_background_analysis(song_ids: List[int], user_id: int,
     job_id = queue.enqueue(
         job_type=JobType.BACKGROUND_ANALYSIS,
         user_id=user_id,
-        target_id=0,  # Not used for background analysis
+        target_id=user_id,  # Use user_id as target for background analysis
         priority=priority,
         metadata=metadata
     )
