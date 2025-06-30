@@ -85,16 +85,18 @@ def dashboard():
                 for job in queue_status.get('jobs', [])
             )
             
+            # Only show flash message if analysis is NOT active (to avoid duplicate with template banner)
             if has_background_jobs:
-                flash(f'🔄 Analysis in progress: {unanalyzed_count} songs remaining.', 'info')
+                # Analysis is running - don't show flash message, JavaScript will handle the UI
+                pass
             else:
-                # Don't auto-start, just inform user
-                flash(f'📊 You have {unanalyzed_count} unanalyzed songs. Click "Analyze All" to start.', 'info')
+                # Don't show flash message at all - let the template banner handle it
+                # This prevents duplicate "analyze all" messages
+                pass
             
         except Exception as e:
             current_app.logger.warning(f'Failed to check background analysis status for user {current_user.id}: {e}')
-            # Just inform user without checking status
-            flash(f'📊 You have {unanalyzed_count} unanalyzed songs. Click "Analyze All" to start.', 'info')
+            # Don't show flash message on error either - template banner is sufficient
     
     return render_template('dashboard.html', playlists=playlists, stats=stats)
 

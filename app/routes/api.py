@@ -1053,6 +1053,25 @@ def get_queue_status():
         queue = PriorityAnalysisQueue()
         queue_status = queue.get_queue_status()
         
+        # Sanitize active job data to avoid massive song_ids arrays
+        active_job = queue_status.get('active_job', None)
+        if active_job and isinstance(active_job, dict):
+            # Create a copy and remove/summarize large arrays
+            sanitized_active_job = active_job.copy()
+            metadata = sanitized_active_job.get('metadata', {})
+            
+            if 'song_ids' in metadata:
+                # Replace massive song_ids array with just count and sample
+                song_ids = metadata['song_ids']
+                sanitized_metadata = metadata.copy()
+                sanitized_metadata['song_ids_count'] = len(song_ids)
+                sanitized_metadata['song_ids_sample'] = song_ids[:5] if song_ids else []
+                # Remove the massive array
+                del sanitized_metadata['song_ids']
+                sanitized_active_job['metadata'] = sanitized_metadata
+        else:
+            sanitized_active_job = active_job
+        
         return jsonify({
             'status': 'success',
             'queue': {
@@ -1063,7 +1082,7 @@ def get_queue_status():
                 'failed_jobs': queue_status.get('failed_jobs', 0),
                 'priority_breakdown': queue_status.get('priority_counts', {}),
                 'estimated_completion_minutes': queue_status.get('estimated_completion_time', 0),
-                'active_job': queue_status.get('active_job', None)
+                'active_job': sanitized_active_job
             }
         })
         
@@ -1276,34 +1295,309 @@ def cleanup_stale_progress():
 @bp.route('/admin/update-playlist-scores', methods=['POST'])
 @login_required  
 def admin_update_playlist_scores():
-    """Admin endpoint to recalculate and update playlist scores for existing analyzed songs"""
+    """Admin endpoint to manually update all playlist scores"""
     try:
-        # Verify admin permissions (you may want to add proper admin check here)
-        if not current_user.is_authenticated:
-            return jsonify({'error': 'Authentication required'}), 401
-        
-        # Get optional user_id parameter
-        data = request.get_json() or {}
-        user_id = data.get('user_id')
-        
-        from ..services.unified_analysis_service import UnifiedAnalysisService
-        analysis_service = UnifiedAnalysisService()
-        
-        # Update playlist scores
-        result = analysis_service.update_all_playlist_scores(user_id=user_id)
-        
-        if result['success']:
-            return jsonify({
-                'success': True,
-                'updated_count': result['updated_count'],
-                'message': result['message']
-            })
-        else:
+        if not current_user.is_admin:
             return jsonify({
                 'success': False,
-                'error': result['error'],
-                'message': result['message']
-            }), 500
+                'error': 'Admin access required'
+            }), 403
+            
+        from app.services.playlist_scoring_service import PlaylistScoringService
+        
+        scoring_service = PlaylistScoringService()
+        result = scoring_service.update_all_playlist_scores()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Updated scores for {result["updated_count"]} playlists',
+            'updated_count': result['updated_count'],
+            'total_playlists': result['total_playlists'],
+            'errors': result.get('errors', [])
+        })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500 
+        current_app.logger.error(f'Admin playlist score update error: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+def get_background_analysis_progress():
+    """Get accurate background analysis progress for the active job"""
+    try:
+        from app.services.priority_analysis_queue import PriorityAnalysisQueue
+        
+        queue = PriorityAnalysisQueue()
+        active_job = queue.get_active_job()
+        
+        if not active_job:
+            return {
+                'active': False,
+                'message': 'No active background analysis job'
+            }
+        
+        job_data = active_job.to_dict()
+        
+        # Only process background analysis jobs
+        if job_data.get('job_type') != 'background_analysis':
+            return {
+                'active': False,
+                'message': 'Active job is not a background analysis'
+            }
+        
+        user_id = job_data.get('user_id')
+        metadata = job_data.get('metadata', {})
+        total_songs = metadata.get('total_songs', 0)
+        user_name = metadata.get('user_name', 'Unknown User')
+        
+        if not user_id or not total_songs:
+            return {
+                'active': False,
+                'message': 'Invalid background analysis job data'
+            }
+        
+        # Get song IDs from metadata for accurate filtering
+        song_ids = metadata.get('song_ids', [])
+        
+        if song_ids:
+            # Count analyses for specific songs in the job
+            completed_analyses = AnalysisResult.query.filter(
+                AnalysisResult.song_id.in_(song_ids),
+                AnalysisResult.status == 'completed'
+            ).count()
+            
+            failed_analyses = AnalysisResult.query.filter(
+                AnalysisResult.song_id.in_(song_ids),
+                AnalysisResult.status == 'failed'
+            ).count()
+            
+            in_progress_analyses = AnalysisResult.query.filter(
+                AnalysisResult.song_id.in_(song_ids),
+                AnalysisResult.status == 'in_progress'
+            ).count()
+        else:
+            # Fallback: count all analyses for user
+            completed_analyses = AnalysisResult.query.filter(
+                AnalysisResult.user_id == user_id,
+                AnalysisResult.status == 'completed'
+            ).count()
+            
+            failed_analyses = AnalysisResult.query.filter(
+                AnalysisResult.user_id == user_id,
+                AnalysisResult.status == 'failed'
+            ).count()
+            
+            in_progress_analyses = AnalysisResult.query.filter(
+                AnalysisResult.user_id == user_id,
+                AnalysisResult.status == 'in_progress'
+            ).count()
+        
+        # Calculate progress
+        total_processed = completed_analyses + failed_analyses
+        progress_percentage = (total_processed / total_songs * 100) if total_songs > 0 else 0
+        
+        # Calculate ETA based on recent processing rate
+        remaining_songs = total_songs - total_processed
+        eta_data = calculate_processing_rate_eta(remaining_songs)
+        
+        return {
+            'active': True,
+            'progress_percentage': round(progress_percentage, 1),
+            'total_songs': total_songs,
+            'completed_analyses': completed_analyses,
+            'failed_analyses': failed_analyses,
+            'in_progress_analyses': in_progress_analyses,
+            'remaining_songs': remaining_songs,
+            'user_id': user_id,
+            'user_name': user_name,
+            'job_id': job_data.get('job_id'),
+            **eta_data
+        }
+        
+    except Exception as e:
+        current_app.logger.error(f'Background analysis progress error: {e}')
+        return {
+            'active': False,
+            'error': str(e),
+            'message': 'Failed to get background analysis progress'
+        }
+
+
+def calculate_processing_rate_eta(remaining_songs):
+    """Calculate ETA based on actual recent processing rate"""
+    try:
+        from datetime import datetime, timedelta
+        
+        # Look at completions in the last 10 minutes for rate calculation
+        cutoff_time = datetime.utcnow() - timedelta(minutes=10)
+        
+        recent_completions = AnalysisResult.query.filter(
+            AnalysisResult.status == 'completed',
+            AnalysisResult.updated_at >= cutoff_time
+        ).order_by(AnalysisResult.updated_at.desc()).limit(100).all()
+        
+        if len(recent_completions) < 2:
+            # Fallback: use a conservative estimate
+            analyses_per_hour = 30  # Conservative estimate
+        else:
+            # Calculate actual rate from recent completions
+            time_span_minutes = 10  # We looked at last 10 minutes
+            analyses_per_minute = len(recent_completions) / time_span_minutes
+            analyses_per_hour = analyses_per_minute * 60
+            
+            # Ensure we have a reasonable minimum rate
+            analyses_per_hour = max(analyses_per_hour, 10)
+        
+        # Calculate ETA
+        if analyses_per_hour > 0:
+            estimated_hours = remaining_songs / analyses_per_hour
+            estimated_minutes = int(estimated_hours * 60)
+        else:
+            estimated_hours = 0
+            estimated_minutes = 0
+        
+        return {
+            'analyses_per_hour': round(analyses_per_hour, 1),
+            'estimated_hours': round(estimated_hours, 1),
+            'estimated_minutes': estimated_minutes,
+            'sample_period_minutes': 10,
+            'recent_completions_count': len(recent_completions)
+        }
+        
+    except Exception as e:
+        current_app.logger.error(f'ETA calculation error: {e}')
+        return {
+            'analyses_per_hour': 30,  # Conservative fallback
+            'estimated_hours': remaining_songs / 30 if remaining_songs > 0 else 0,
+            'estimated_minutes': int((remaining_songs / 30 * 60)) if remaining_songs > 0 else 0,
+            'sample_period_minutes': 10,
+            'recent_completions_count': 0,
+            'error': str(e)
+        }
+
+
+@bp.route('/background-analysis/status')
+@login_required
+def get_background_analysis_status():
+    """API endpoint for accurate background analysis progress"""
+    try:
+        progress_data = get_background_analysis_progress()
+        
+        return jsonify({
+            'status': 'success',
+            'success': True,
+            **progress_data
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Background analysis status API error: {e}')
+        return jsonify({
+            'status': 'error',
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to get background analysis status'
+        }), 500
+
+
+@bp.route('/analysis/processing-rate')
+def get_processing_rate():
+    """API endpoint for current processing rate information"""
+    try:
+        # Calculate rate for informational purposes
+        eta_data = calculate_processing_rate_eta(0)  # 0 remaining for rate calc only
+        
+        return jsonify({
+            'status': 'success',
+            'success': True,
+            'analyses_per_minute': round(eta_data['analyses_per_hour'] / 60, 2),
+            'analyses_per_hour': eta_data['analyses_per_hour'],
+            'sample_period_minutes': eta_data['sample_period_minutes'],
+            'recent_completions_count': eta_data['recent_completions_count']
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Processing rate API error: {e}')
+        return jsonify({
+            'status': 'error',
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to get processing rate'
+        }), 500 
+
+@bp.route('/background-analysis/public-status')
+def get_background_analysis_public_status():
+    """Public endpoint for background analysis detection (no auth required)"""
+    try:
+        from app.services.priority_analysis_queue import PriorityAnalysisQueue
+        
+        queue = PriorityAnalysisQueue()
+        active_job = queue.get_active_job()
+        
+        if not active_job:
+            return jsonify({
+                'status': 'success',
+                'active': False,
+                'message': 'No active background analysis'
+            })
+        
+        job_data = active_job.to_dict()
+        
+        # Only process background analysis jobs
+        if job_data.get('job_type') != 'background_analysis':
+            return jsonify({
+                'status': 'success',
+                'active': False,
+                'message': 'Active job is not background analysis'
+            })
+        
+        # Return basic progress information without sensitive data
+        metadata = job_data.get('metadata', {})
+        user_name = metadata.get('user_name', 'Unknown User')
+        user_id = job_data.get('user_id')
+        
+        # Get REAL-TIME counts from database, not stale metadata
+        from app.models.models import AnalysisResult, Song, PlaylistSong, Playlist
+        
+        if user_id:
+            # Get accurate user-specific counts
+            total_songs = db.session.query(Song.id).join(PlaylistSong).join(Playlist).filter(
+                Playlist.owner_id == user_id
+            ).distinct().count()
+            
+            completed_analyses = db.session.query(Song.id).join(AnalysisResult).join(PlaylistSong).join(Playlist).filter(
+                Playlist.owner_id == user_id,
+                AnalysisResult.status == 'completed'
+            ).distinct().count()
+        else:
+            # Fallback to metadata if no user_id available
+            total_songs = metadata.get('total_songs', 0)
+            completed_analyses = AnalysisResult.query.filter(
+                AnalysisResult.status == 'completed'
+            ).count()
+        
+        # Calculate ETA based on remaining songs
+        remaining_songs = max(0, total_songs - completed_analyses)
+        eta_data = calculate_processing_rate_eta(remaining_songs)
+        
+        return jsonify({
+            'status': 'success',
+            'active': True,
+            'job_id': job_data.get('job_id'),
+            'total_songs': total_songs,
+            'user_name': user_name,
+            'recent_completed': completed_analyses,  # Now using ALL completed analyses, not just recent
+            'processing_rate': eta_data['analyses_per_hour'],
+            'estimated_hours': eta_data['estimated_hours'],
+            'message': f'Background analysis active for {user_name}'
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Public background analysis status error: {e}')
+        return jsonify({
+            'status': 'error',
+            'active': False,
+            'error': str(e),
+            'message': 'Failed to get background analysis status'
+        }), 500

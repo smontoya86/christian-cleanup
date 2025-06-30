@@ -517,7 +517,7 @@ class UnifiedAnalysisService:
         from .priority_analysis_queue import enqueue_playlist_analysis, JobPriority
         
         # Validate playlist exists and belongs to user
-        playlist = Playlist.query.filter_by(id=playlist_id, user_id=user_id).first()
+        playlist = Playlist.query.filter_by(id=playlist_id, owner_id=user_id).first()
         if not playlist:
             raise ValueError(f"Playlist with ID {playlist_id} not found for user {user_id}")
         

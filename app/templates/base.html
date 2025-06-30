@@ -174,7 +174,7 @@
         <div class="container mt-4">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-                    <div class="flash-messages" role="alert" aria-live="polite">
+                    <div id="flashMessages" class="flash-messages" role="alert" aria-live="polite">
                         {% for category, message in messages %}
                             <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
                                 {{ message }}
@@ -246,7 +246,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Smart Polling Library for Progress Updates -->
-    <script src="{{ url_for('static', filename='js/progress-polling.js') }}"></script>
+    <!-- <script src="{{ url_for('static', filename='js/progress-polling.js') }}"></script> -->
     
     <!-- Main Application JavaScript Module -->
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
