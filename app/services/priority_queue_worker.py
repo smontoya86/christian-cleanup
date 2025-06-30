@@ -447,7 +447,107 @@ class PriorityQueueWorker:
             db.session.rollback()
     
     def _process_playlist_analysis(self, job: AnalysisJob) -> None:
-        """Process a playlist analysis job"""
+        """Process a playlist analysis job or playlist sync job based on metadata"""
+        
+        # Check if this is a sync operation
+        sync_type = job.metadata.get('sync_type')
+        
+        if sync_type == 'user_playlists':
+            self._process_user_playlist_sync(job)
+        elif sync_type == 'single_playlist':
+            self._process_single_playlist_sync(job)
+        else:
+            # Default to analysis operation
+            self._process_playlist_content_analysis(job)
+    
+    def _process_user_playlist_sync(self, job: AnalysisJob) -> None:
+        """Process a user playlist sync job"""
+        # Import here to avoid circular imports
+        from .playlist_sync_service import sync_user_playlists_task
+        
+        # Update progress: Starting
+        self.progress_tracker.update_job_progress(
+            job_id=job.job_id,
+            completed_items=0,
+            current_step="starting",
+            step_progress=0.0,
+            message="Starting user playlist sync"
+        )
+        
+        if self.app:
+            with self.app.app_context():
+                # Execute the sync task
+                result = sync_user_playlists_task(job.user_id)
+                
+                # Update progress based on result
+                if result.get('status') == 'completed':
+                    playlists_synced = result.get('playlists_synced', 0)
+                    self.progress_tracker.update_job_progress(
+                        job_id=job.job_id,
+                        completed_items=playlists_synced,
+                        current_step="complete",
+                        step_progress=1.0,
+                        message=f"User playlist sync complete ({playlists_synced} playlists)"
+                    )
+                else:
+                    # Sync failed
+                    error_msg = result.get('error', 'Unknown error')
+                    raise Exception(f"User playlist sync failed: {error_msg}")
+        else:
+            # No app context - simulate sync for testing
+            time.sleep(3)  # Simulate processing time
+            self.progress_tracker.update_job_progress(
+                job_id=job.job_id,
+                completed_items=1,
+                message="User playlist sync complete (simulated)"
+            )
+    
+    def _process_single_playlist_sync(self, job: AnalysisJob) -> None:
+        """Process a single playlist sync job"""
+        # Import here to avoid circular imports
+        from .playlist_sync_service import sync_playlist_task
+        
+        # Update progress: Starting
+        self.progress_tracker.update_job_progress(
+            job_id=job.job_id,
+            completed_items=0,
+            current_step="starting",
+            step_progress=0.0,
+            message="Starting playlist sync"
+        )
+        
+        if self.app:
+            with self.app.app_context():
+                playlist_id = job.metadata.get('playlist_id', job.target_id)
+                
+                # Execute the sync task
+                result = sync_playlist_task(playlist_id, job.user_id)
+                
+                # Update progress based on result
+                if result.get('status') == 'completed':
+                    tracks_synced = result.get('tracks_synced', 0)
+                    self.progress_tracker.update_job_progress(
+                        job_id=job.job_id,
+                        completed_items=tracks_synced,
+                        current_step="complete",
+                        step_progress=1.0,
+                        message=f"Playlist sync complete ({tracks_synced} tracks)"
+                    )
+                else:
+                    # Sync failed
+                    error_msg = result.get('error', 'Unknown error')
+                    raise Exception(f"Playlist sync failed: {error_msg}")
+        else:
+            # No app context - simulate sync for testing
+            time.sleep(2)  # Simulate processing time
+            self.progress_tracker.update_job_progress(
+                job_id=job.job_id,
+                completed_items=1,
+                message="Playlist sync complete (simulated)"
+            )
+    
+    def _process_playlist_content_analysis(self, job: AnalysisJob) -> None:
+        """Process a playlist content analysis job (original functionality)"""
         from ..services.unified_analysis_service import UnifiedAnalysisService
         
         # Update progress: Starting

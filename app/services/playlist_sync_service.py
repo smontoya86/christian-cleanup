@@ -122,7 +122,8 @@ class PlaylistSyncService:
                         track_result = self.sync_playlist_tracks(user, playlist)
                         total_tracks += track_result.get('tracks_synced', 0)
                         
-                        if track_result.get('is_new', False):
+                        # Check if playlist is new based on the _is_new attribute
+                        if hasattr(playlist, '_is_new') and playlist._is_new:
                             new_playlists += 1
                         else:
                             updated_playlists += 1
@@ -274,17 +275,11 @@ class PlaylistSyncService:
             playlist.name = spotify_playlist['name']
             playlist.description = spotify_playlist.get('description', '')
             playlist.public = spotify_playlist.get('public', False)
-            playlist.collaborative = spotify_playlist.get('collaborative', False)
             
             # Handle image URL
             images = spotify_playlist.get('images', [])
             if images:
                 playlist.image_url = images[0]['url']
-            
-            # Handle owner information
-            owner = spotify_playlist.get('owner', {})
-            if owner:
-                playlist.owner_display_name = owner.get('display_name', '')
             
             # Don't set track_count from Spotify API here - it will be set accurately during sync
             # This ensures consistency between services and reflects actual synced tracks
