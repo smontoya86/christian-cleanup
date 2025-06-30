@@ -16,7 +16,6 @@ spotipy
 psycopg2-binary
 Flask-APScheduler
 bootstrap-flask
-Flask-RQ2
 redis
 tqdm>=4.65.0
 psutil

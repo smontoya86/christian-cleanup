@@ -15,7 +15,7 @@ from flask import current_app
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 
-from app.extensions import db, rq
+from app.extensions import db
 
 
 class HealthStatus(Enum):
@@ -70,7 +70,7 @@ class HealthMonitor:
         checks = [
             self._check_database(),
             self._check_redis(),
-            self._check_redis_queue(),
+            self._check_priority_queue(),
             self._check_memory_usage(),
             self._check_disk_space(),
             self._check_response_time(),
@@ -203,74 +203,53 @@ class HealthMonitor:
                 response_time_ms=(time.time() - start_time) * 1000
             )
     
-    def _check_redis_queue(self) -> HealthCheck:
-        """Check RQ queue status and worker health."""
+    def _check_priority_queue(self) -> HealthCheck:
+        """Check priority queue status and worker health."""
         try:
-            # Get queue information
-            from rq import Queue
+            # Get priority queue information
             redis_client = redis.from_url(current_app.config.get('RQ_REDIS_URL'))
             
-            queues = ['default', 'analysis_queue']
-            queue_info = {}
-            total_jobs = 0
+            # Check priority queue size
+            queue_size = redis_client.zcard('priority_analysis_queue')
             
-            for queue_name in queues:
-                queue = Queue(queue_name, connection=redis_client)
-                queue_length = len(queue)
-                total_jobs += queue_length
-                queue_info[queue_name] = {
-                    'length': queue_length,
-                    'failed_jobs': len(queue.failed_job_registry),
-                    'scheduled_jobs': len(queue.scheduled_job_registry)
-                }
+            # Check active workers
+            active_workers = redis_client.smembers('active_workers')
+            worker_count = len(active_workers)
             
-            # Check for stuck jobs (jobs running > 1 hour) - simplified for compatibility
-            from rq import Worker
-            workers = Worker.all(connection=redis_client)
-            stuck_jobs = 0
-            active_workers = 0
+            # Check for any processing jobs
+            processing_jobs = redis_client.scard('processing_jobs') if redis_client.exists('processing_jobs') else 0
             
-            for worker in workers:
-                current_job = worker.get_current_job()
-                if current_job:
-                    active_workers += 1
-                    if current_job.started_at:
-                        runtime = datetime.now(timezone.utc) - current_job.started_at.replace(tzinfo=timezone.utc)
-                        if runtime > timedelta(hours=1):
-                            stuck_jobs += 1
+            queue_info = {
+                'queue_size': queue_size,
+                'active_workers': worker_count,
+                'processing_jobs': processing_jobs,
+                'worker_ids': [w.decode() for w in active_workers]
+            }
             
             # Determine status
-            if stuck_jobs > 0:
+            if worker_count == 0:
                 status = HealthStatus.CRITICAL
-                message = f"Queue has {stuck_jobs} stuck job(s)"
-            elif total_jobs > 1000:
+                message = "No active workers found"
+            elif queue_size > 1000:
                 status = HealthStatus.WARNING
-                message = f"Queue backlog high: {total_jobs} jobs"
-            elif active_workers == 0 and total_jobs > 0:
-                status = HealthStatus.WARNING
-                message = "No active workers but jobs pending"
+                message = f"High queue backlog: {queue_size} jobs"
             else:
                 status = HealthStatus.HEALTHY
-                message = f"Queue healthy: {total_jobs} jobs, {active_workers} workers"
+                message = f"Priority queue healthy: {worker_count} workers, {queue_size} jobs"
             
             return HealthCheck(
-                name="redis_queue",
+                name="priority_queue",
                 status=status,
                 message=message,
                 timestamp=datetime.now(timezone.utc),
-                details={
-                    'total_jobs': total_jobs,
-                    'active_workers': active_workers,
-                    'stuck_jobs': stuck_jobs,
-                    'queues': queue_info
-                }
+                details=queue_info
             )
             
         except Exception as e:
             return HealthCheck(
-                name="redis_queue",
+                name="priority_queue",
                 status=HealthStatus.CRITICAL,
-                message=f"Queue check failed: {str(e)}",
+                message=f"Priority queue check failed: {str(e)}",
                 timestamp=datetime.now(timezone.utc)
             )
     
@@ -391,23 +370,19 @@ class HealthMonitor:
     def _check_worker_status(self) -> HealthCheck:
         """Check background worker status."""
         try:
-            from rq import Worker
-            import redis
-            redis_client = redis.from_url(current_app.config.get('RQ_REDIS_URL'))
-            workers = Worker.all(connection=redis_client)
-            total_workers = len(workers)
-            active_workers = sum(1 for w in workers if w.get_current_job())
+            # Check for any processing jobs
+            processing_jobs = db.session.execute(text('SELECT COUNT(*) FROM processing_jobs')).scalar()
             
             # Determine status
-            if total_workers == 0:
+            if processing_jobs == 0:
                 status = HealthStatus.CRITICAL
-                message = "No workers available"
-            elif total_workers < 2:
+                message = "No processing jobs found"
+            elif processing_jobs > 1000:
                 status = HealthStatus.WARNING
-                message = f"Low worker count: {total_workers}"
+                message = f"High processing backlog: {processing_jobs} jobs"
             else:
                 status = HealthStatus.HEALTHY
-                message = f"Workers healthy: {active_workers}/{total_workers} active"
+                message = f"Processing healthy: {processing_jobs} jobs"
             
             return HealthCheck(
                 name="workers",
@@ -415,15 +390,7 @@ class HealthMonitor:
                 message=message,
                 timestamp=datetime.now(timezone.utc),
                 details={
-                    'total_workers': total_workers,
-                    'active_workers': active_workers,
-                    'worker_details': [
-                        {
-                            'name': w.name,
-                            'state': str(w.get_state()),
-                            'current_job': str(w.get_current_job()) if w.get_current_job() else None
-                        } for w in workers
-                    ]
+                    'processing_jobs': processing_jobs
                 }
             )
             

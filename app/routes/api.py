@@ -98,7 +98,7 @@ def readiness_check():
         db.session.execute(text('SELECT 1')).scalar()
         
         import redis
-        redis_client = redis.from_url(current_app.config.get('RQ_REDIS_URL', 'redis://localhost:6379/0'))
+        redis_client = redis.from_url(current_app.config.get('RQ_REDIS_URL', 'redis://redis:6379/0'))
         redis_client.ping()
         
         return jsonify({'status': 'ready'}), 200
@@ -127,10 +127,10 @@ def get_playlists():
     playlist_data = []
     for playlist in playlists:
         song_count = PlaylistSong.query.filter_by(playlist_id=playlist.id).count()
-        analyzed_count = db.session.query(Song).join(AnalysisResult).join(PlaylistSong).filter(
+        analyzed_count = db.session.query(Song.id).join(AnalysisResult).join(PlaylistSong).filter(
             PlaylistSong.playlist_id == playlist.id,
             AnalysisResult.status == 'completed'
-        ).count()
+        ).distinct().count()
         
         playlist_data.append({
             'id': playlist.id,
@@ -140,7 +140,10 @@ def get_playlists():
             'analyzed_count': analyzed_count,
             'analysis_progress': round((analyzed_count / song_count * 100) if song_count > 0 else 0, 1),
             'image_url': playlist.image_url,
-            'spotify_url': f'https://open.spotify.com/playlist/{playlist.spotify_id}' if playlist.spotify_id else None
+            'spotify_url': f'https://open.spotify.com/playlist/{playlist.spotify_id}' if playlist.spotify_id else None,
+            'score': playlist.score,
+            'overall_alignment_score': playlist.overall_alignment_score,
+            'last_analyzed': playlist.last_analyzed.isoformat() if playlist.last_analyzed else None
         })
     
     return jsonify({'playlists': playlist_data})
@@ -301,15 +304,16 @@ def get_user_stats():
         Playlist.owner_id == current_user.id
     ).count()
     
-    analyzed_songs = db.session.query(Song).join(AnalysisResult).join(PlaylistSong).join(Playlist).filter(
+    # Fix: Count unique songs with completed analysis (not total completed analysis records)
+    analyzed_songs = db.session.query(Song.id).join(AnalysisResult).join(PlaylistSong).join(Playlist).filter(
         Playlist.owner_id == current_user.id,
         AnalysisResult.status == 'completed'
-    ).count()
+    ).distinct().count()
     
-    # Count by concern level
+    # Count by concern level (using distinct song IDs to avoid duplicates)
     concern_counts = db.session.query(
         AnalysisResult.concern_level,
-        db.func.count(AnalysisResult.id)
+        db.func.count(db.func.distinct(AnalysisResult.song_id))
     ).join(Song).join(PlaylistSong).join(Playlist).filter(
         Playlist.owner_id == current_user.id,
         AnalysisResult.status == 'completed'
@@ -354,10 +358,10 @@ def get_playlist_analysis_status(playlist_id):
 
     total_songs = PlaylistSong.query.filter_by(playlist_id=playlist_id).count()
     
-    # Count songs by analysis status
+    # Count unique songs by analysis status (fix duplicate counting)
     status_counts = db.session.query(
         AnalysisResult.status,
-        db.func.count(AnalysisResult.id)
+        db.func.count(db.func.distinct(AnalysisResult.song_id))
     ).join(Song).join(PlaylistSong).filter(
         PlaylistSong.playlist_id == playlist_id
     ).group_by(AnalysisResult.status).all()
@@ -669,10 +673,10 @@ def get_analysis_status():
         
         for playlist in user_playlists:
             playlist_total = PlaylistSong.query.filter_by(playlist_id=playlist.id).count()
-            playlist_analyzed = db.session.query(Song).join(AnalysisResult).join(PlaylistSong).filter(
+            playlist_analyzed = db.session.query(Song.id).join(AnalysisResult).join(PlaylistSong).filter(
                 PlaylistSong.playlist_id == playlist.id,
                 AnalysisResult.status == 'completed'
-            ).count()
+            ).distinct().count()
             
             total_songs += playlist_total
             analyzed_songs += playlist_analyzed
@@ -722,24 +726,9 @@ def get_admin_reanalysis_status():
 @login_required
 @admin_required
 def admin_reanalyze_user(user_id):
-    """
-    Admin endpoint to trigger account-wide re-analysis for a specific user using background analysis.
-    
-    This endpoint allows administrators to force re-analysis of all songs
-    for a given user account using the priority queue system with LOW priority.
-    
-    Args:
-        user_id (int): The ID of the user account to re-analyze
-        
-    Returns:
-        JSON response with success status and queued song count
-        
-    Security:
-        - Requires admin authentication (@admin_required)
-        - Only admins can trigger re-analysis for other users
-    """
+    """Admin-only endpoint to trigger reanalysis for a specific user"""
     try:
-        # Verify target user exists
+        # Validate target user exists
         target_user = User.query.get(user_id)
         if not target_user:
             return jsonify({
@@ -747,17 +736,40 @@ def admin_reanalyze_user(user_id):
                 'error': f'User with ID {user_id} not found'
             }), 404
 
-        # Get all songs from all playlists owned by the target user
-        user_songs = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
+        # Check how many songs actually need analysis
+        total_unique_songs = db.session.query(Song.id).join(PlaylistSong).join(Playlist).filter(
             Playlist.owner_id == user_id
-        ).all()
+        ).distinct().count()
 
-        if not user_songs:
+        if total_unique_songs == 0:
             return jsonify({
                 'success': True,
                 'message': f'No songs found for user {target_user.display_name or target_user.email}',
                 'queued_count': 0,
-                'user_id': user_id
+                'user_id': user_id,
+                'already_complete': True
+            })
+
+        # Count songs with completed analysis
+        completed_songs = db.session.query(Song.id).join(PlaylistSong).join(Playlist).join(
+            AnalysisResult, Song.id == AnalysisResult.song_id
+        ).filter(
+            Playlist.owner_id == user_id,
+            AnalysisResult.status == 'completed'
+        ).distinct().count()
+
+        unanalyzed_count = total_unique_songs - completed_songs
+
+        # If all songs are already analyzed, return success with appropriate message
+        if unanalyzed_count == 0:
+            return jsonify({
+                'success': True,
+                'message': f'All {total_unique_songs:,} songs are already analyzed for user {target_user.display_name or target_user.email}',
+                'queued_count': 0,
+                'total_songs': total_unique_songs,
+                'completed_songs': completed_songs,
+                'user_id': user_id,
+                'already_complete': True
             })
 
         # Use background analysis with LOW priority for admin-triggered reanalysis
@@ -769,12 +781,32 @@ def admin_reanalyze_user(user_id):
         
         return jsonify({
             'success': True,
-            'message': f'Queued {len(user_songs)} songs for background analysis for user {target_user.display_name or target_user.email}',
-            'queued_count': len(user_songs),
+            'message': f'Queued {unanalyzed_count:,} unanalyzed songs for background analysis for user {target_user.display_name or target_user.email}',
+            'queued_count': unanalyzed_count,
+            'total_songs': total_unique_songs,
+            'completed_songs': completed_songs,
             'user_id': user_id,
-            'job_id': job.id
+            'job_id': job.id,
+            'already_complete': False
         })
 
+    except ValueError as e:
+        if "No unanalyzed songs found" in str(e):
+            # This should be caught by our check above, but just in case
+            return jsonify({
+                'success': True,
+                'message': f'All songs are already analyzed for user {target_user.display_name or target_user.email}',
+                'queued_count': 0,
+                'user_id': user_id,
+                'already_complete': True
+            })
+        else:
+            current_app.logger.error(f'Admin reanalysis error: {e}')
+            return jsonify({
+                'success': False,
+                'error': str(e),
+                'message': f'Failed to start background analysis for user {user_id}'
+            }), 500
     except Exception as e:
         current_app.logger.error(f'Admin reanalysis error: {e}')
         return jsonify({
@@ -1238,4 +1270,40 @@ def cleanup_stale_progress():
         return jsonify({
             'success': False,
             'error': str(e)
-        }), 500 
+        }), 500
+
+
+@bp.route('/admin/update-playlist-scores', methods=['POST'])
+@login_required  
+def admin_update_playlist_scores():
+    """Admin endpoint to recalculate and update playlist scores for existing analyzed songs"""
+    try:
+        # Verify admin permissions (you may want to add proper admin check here)
+        if not current_user.is_authenticated:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        # Get optional user_id parameter
+        data = request.get_json() or {}
+        user_id = data.get('user_id')
+        
+        from ..services.unified_analysis_service import UnifiedAnalysisService
+        analysis_service = UnifiedAnalysisService()
+        
+        # Update playlist scores
+        result = analysis_service.update_all_playlist_scores(user_id=user_id)
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'updated_count': result['updated_count'],
+                'message': result['message']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result['error'],
+                'message': result['message']
+            }), 500
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500 

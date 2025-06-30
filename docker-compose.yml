@@ -20,7 +20,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - RQ_REDIS_URL=${RQ_REDIS_URL}
       - REDIS_URL=${REDIS_URL}
-      - USE_LIGHTWEIGHT_ANALYZER=${USE_LIGHTWEIGHT_ANALYZER}
+      - LYRICSGENIUS_API_KEY=${LYRICSGENIUS_API_KEY}
     depends_on:
       db:
         condition: service_healthy
@@ -58,7 +58,9 @@ services:
       - RQ_REDIS_URL=${RQ_REDIS_URL}
       - RQ_WORKER_BURST=true  # Process jobs in burst mode for faster processing
       - RQ_WORKER_TIMEOUT=600  # 10 minute timeout for comprehensive analysis
-      - USE_LIGHTWEIGHT_ANALYZER=${USE_LIGHTWEIGHT_ANALYZER}
+      - TRANSFORMERS_CACHE=/app/models  # HuggingFace model caching
+      - HF_HOME=/app/models  # HuggingFace model caching
+      - LYRICSGENIUS_API_KEY=${LYRICSGENIUS_API_KEY}
     depends_on:
       redis:
         condition: service_healthy
@@ -74,11 +76,12 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1G  # Increased from 512M to 1G per worker
           cpus: '0.5'
         reservations:
-          memory: 256M
+          memory: 512M  # Increased from 256M to 512M per worker
           cpus: '0.25'
+      replicas: 6  # Default to 6 workers for parallel processing
     networks:
       - app-network
 
@@ -114,7 +117,7 @@ services:
       - "127.0.0.1:6380:6379"  # Use port 6380 to avoid conflict with local Redis
     volumes:
       - redis_data:/data
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save 60 1000
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save 60 1000
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -125,11 +128,11 @@ services:
     deploy:
       resources:
         limits:
+          memory: 1G  # Increased for 6 workers
+          cpus: '0.5'  # Increased for higher load
+        reservations:
           memory: 512M
           cpus: '0.25'
-        reservations:
-          memory: 256M
-          cpus: '0.1'
     networks:
       - app-network
 
@@ -148,6 +151,12 @@ services:
       - '--storage.tsdb.retention.time=30d'
       - '--web.enable-lifecycle'
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     deploy:
       resources:
         limits:
@@ -175,6 +184,12 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     deploy:
       resources:
         limits:

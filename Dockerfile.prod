@@ -21,6 +21,13 @@ RUN pip install --no-cache-dir --upgrade pip wheel setuptools && \
     pip install --no-cache-dir -r /tmp/requirements.txt && \
     pip install --no-cache-dir gunicorn[gevent] gevent
 
+# Set up HuggingFace model caching
+ENV TRANSFORMERS_CACHE=/app/models
+ENV HF_HOME=/app/models
+RUN mkdir -p /app/models
+
+# Pre-download HuggingFace models to cache them during build
+RUN python -c "from transformers import pipeline; import logging; logging.basicConfig(level=logging.INFO); print('Pre-downloading HuggingFace models...'); pipeline('sentiment-analysis', model='cardiffnlp/twitter-roberta-base-sentiment-latest'); pipeline('text-classification', model='unitary/toxic-bert'); pipeline('text-classification', model='j-hartmann/emotion-english-distilroberta-base'); print('All models cached successfully')"
 # Node.js build stage for frontend assets
 FROM node:18-alpine AS node-builder
 
@@ -58,6 +65,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=python-builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Copy cached models from builder stage
+COPY --from=python-builder /app/models /app/models
+
 # Set working directory
 WORKDIR /app
 
@@ -69,7 +79,7 @@ COPY --from=node-builder /app/app/static/dist ./app/static/dist
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/logs /app/uploads /app/instance && \
-    chown -R christian:christian /app/logs /app/uploads /app/instance
+    chown -R christian:christian /app/logs /app/uploads /app/instance /app/models
 
 # Create startup script
 RUN echo '#!/bin/bash' > /app/entrypoint.sh && \
@@ -104,12 +114,14 @@ RUN chmod +x /app/entrypoint.sh && \
 RUN rm -rf /app/.git /app/.gitignore /app/tests /app/docs \
     /app/scripts/create_*_mock_data.py /app/scripts/setup-docker-env.sh
 
-# Set environment variables
+# Set environment variables (including model caching)
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     FLASK_APP=run.py \
     FLASK_ENV=production \
-    PATH="/opt/venv/bin:$PATH"
+    PATH="/opt/venv/bin:$PATH" \
+    TRANSFORMERS_CACHE=/app/models \
+    HF_HOME=/app/models
 
 # Expose port
 EXPOSE 5000

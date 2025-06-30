@@ -105,7 +105,13 @@ function analyzePlaylistWithProgress(playlistId, containerElement) {
                             overallStatus.textContent = `Analyzing songs: ${current}/${total}`;
                             
                             if (progress.eta_seconds && progress.eta_seconds > 10) {
-                                overallStatus.textContent += ` (${Math.round(progress.eta_seconds / 60)} min remaining)`;
+                                const etaMinutes = Math.round(progress.eta_seconds / 60);
+                                if (etaMinutes < 60) {
+                                    overallStatus.textContent += ` (${etaMinutes} min remaining)`;
+                                } else {
+                                    const etaHours = Math.round(etaMinutes / 60);
+                                    overallStatus.textContent += ` (${etaHours} hr remaining)`;
+                                }
                             }
                         }
                         

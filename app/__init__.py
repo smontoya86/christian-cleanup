@@ -6,7 +6,7 @@ A clean, straightforward Flask app for curating Christian music playlists.
 
 import os
 from flask import Flask
-from .extensions import db, login_manager, rq, bootstrap
+from .extensions import db, login_manager, bootstrap
 
 
 def create_app(config_name='development', skip_db_init=False):
@@ -35,7 +35,7 @@ def create_app(config_name='development', skip_db_init=False):
         'SQLALCHEMY_TRACK_MODIFICATIONS': False,
         
         # Redis config
-        'RQ_REDIS_URL': os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
+        'RQ_REDIS_URL': os.environ.get('REDIS_URL', 'redis://redis:6379/0'),
         
         # Spotify OAuth config
         'SPOTIFY_CLIENT_ID': os.environ.get('SPOTIPY_CLIENT_ID'),
@@ -66,13 +66,7 @@ def create_app(config_name='development', skip_db_init=False):
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
-    rq.init_app(app)
     bootstrap.init_app(app)
-    
-    # Initialize priority queue worker (but don't start it during testing)
-    if config_name != 'testing':
-        from .services.priority_queue_worker import start_worker
-        start_worker(app)
     
     # Configure login manager
     login_manager.login_view = 'auth.login'

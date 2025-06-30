@@ -205,6 +205,80 @@ class ChristianMusicCuratorApp {
         
         // Handle unhandled promise rejections
         window.addEventListener('unhandledrejection', this.handleUnhandledRejection.bind(this));
+        
+        // Setup dark mode toggle
+        this.setupThemeToggle();
+    }
+    
+    /**
+     * Setup dark mode theme toggle functionality
+     */
+    setupThemeToggle() {
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        if (!themeToggle || !themeIcon) {
+            console.warn('Theme toggle elements not found');
+            return;
+        }
+        
+        // Get current theme from localStorage or system preference
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const currentTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+        
+        // Apply initial theme
+        this.applyTheme(currentTheme);
+        
+        // Add click handler for theme toggle
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            this.applyTheme(newTheme);
+            
+            // Save preference
+            localStorage.setItem('theme', newTheme);
+            
+            // Track analytics
+            this.trackAnalyticsEvent('ui', 'theme_toggle', { theme: newTheme });
+        });
+        
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            // Only auto-switch if user hasn't manually set a preference
+            if (!localStorage.getItem('theme')) {
+                this.applyTheme(e.matches ? 'dark' : 'light');
+            }
+        });
+        
+        console.log('✅ Theme toggle initialized');
+    }
+    
+    /**
+     * Apply theme to the document
+     * @param {string} theme - 'light' or 'dark'
+     */
+    applyTheme(theme) {
+        const themeIcon = document.getElementById('themeIcon');
+        
+        // Set theme attribute on document root
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        // Update icon
+        if (themeIcon) {
+            if (theme === 'dark') {
+                themeIcon.className = 'fas fa-sun';
+                themeIcon.parentElement.setAttribute('aria-label', 'Switch to light mode');
+            } else {
+                themeIcon.className = 'fas fa-moon';
+                themeIcon.parentElement.setAttribute('aria-label', 'Switch to dark mode');
+            }
+        }
+        
+        // Update body class for compatibility
+        document.body.classList.toggle('dark-theme', theme === 'dark');
+        
+        console.log(`Theme applied: ${theme}`);
     }
     
     /**

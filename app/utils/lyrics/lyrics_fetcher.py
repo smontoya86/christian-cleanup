@@ -543,7 +543,7 @@ class LyricsFetcher:
         
         # Try to get the token from the environment first
         if not self.genius_token:
-            self.genius_token = os.getenv('GENIUS_ACCESS_TOKEN')
+            self.genius_token = os.getenv('LYRICSGENIUS_API_KEY') or os.getenv('GENIUS_ACCESS_TOKEN')
         
         # Initialize rate limit tracker using configuration
         self.rate_tracker = RateLimitTracker(
@@ -910,7 +910,7 @@ class LyricsFetcher:
             if self.config.log_cache_operations:
                 logger.debug(f"Cache hit for '{title}' by '{artist}'")
             duration = time.time() - start_time
-            self.metrics.record_event('lyrics_fetch_completed', duration, source='cache', success=True)
+            self.metrics.record_event('lyrics_fetch_completed', duration=duration, source='cache', success=True)
             return cached_lyrics
 
         if self.config.log_api_calls:

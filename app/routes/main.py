@@ -31,20 +31,22 @@ def dashboard():
     
     # Calculate stats (using simple, working queries)
     total_playlists = len(playlists)
-    total_songs = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
+    total_songs = db.session.query(Song.id).join(PlaylistSong).join(Playlist).filter(
         Playlist.owner_id == current_user.id
-    ).count()
+    ).distinct().count()
     
-    analyzed_songs = db.session.query(Song).join(AnalysisResult).join(PlaylistSong).join(Playlist).filter(
+    # Fix: Count unique songs with completed analysis (not total completed analysis records)
+    analyzed_songs = db.session.query(Song.id).join(AnalysisResult).join(PlaylistSong).join(Playlist).filter(
         Playlist.owner_id == current_user.id,
         AnalysisResult.status == 'completed'
-    ).count()
+    ).distinct().count()
     
-    flagged_songs = db.session.query(Song).join(AnalysisResult).join(PlaylistSong).join(Playlist).filter(
+    # Fix: Count unique songs with flagged analysis (not total flagged analysis records)
+    flagged_songs = db.session.query(Song.id).join(AnalysisResult).join(PlaylistSong).join(Playlist).filter(
         Playlist.owner_id == current_user.id,
         AnalysisResult.status == 'completed',
         AnalysisResult.concern_level.in_(['medium', 'high'])
-    ).count()
+    ).distinct().count()
     
     # Calculate clean playlists (playlists with no flagged songs)
     clean_playlists = db.session.query(Playlist).filter(
@@ -66,6 +68,33 @@ def dashboard():
         'clean_playlists': clean_playlists,
         'analysis_progress': round((analyzed_songs / total_songs * 100) if total_songs > 0 else 0, 1)
     }
+    
+    # Check if there's already a background analysis job running (quick check only)
+    if total_songs > 0 and analyzed_songs < total_songs:
+        unanalyzed_count = total_songs - analyzed_songs
+        
+        try:
+            # Quick check without starting anything automatically
+            from ..services.priority_analysis_queue import PriorityAnalysisQueue
+            queue = PriorityAnalysisQueue()
+            queue_status = queue.get_queue_status()
+            
+            # Check if background analysis is already running
+            has_background_jobs = any(
+                job.get('job_type') == 'BACKGROUND_ANALYSIS' and job.get('status') in ['pending', 'in_progress']
+                for job in queue_status.get('jobs', [])
+            )
+            
+            if has_background_jobs:
+                flash(f'🔄 Analysis in progress: {unanalyzed_count} songs remaining.', 'info')
+            else:
+                # Don't auto-start, just inform user
+                flash(f'📊 You have {unanalyzed_count} unanalyzed songs. Click "Analyze All" to start.', 'info')
+            
+        except Exception as e:
+            current_app.logger.warning(f'Failed to check background analysis status for user {current_user.id}: {e}')
+            # Just inform user without checking status
+            flash(f'📊 You have {unanalyzed_count} unanalyzed songs. Click "Analyze All" to start.', 'info')
     
     return render_template('dashboard.html', playlists=playlists, stats=stats)
 

@@ -30,9 +30,11 @@ class TestUnifiedAnalysisService:
         # Mock the simplified analysis service
         with patch.object(analysis_service.analysis_service, 'analyze_song') as mock_analyze:
             # Mock return value to simulate successful analysis
-            mock_result = MagicMock()
+            mock_result = Mock()
             mock_result.scoring_results = {'final_score': 85, 'quality_level': 'Low', 'explanation': 'Test analysis'}
-            mock_result.biblical_analysis = {'themes': []}
+            mock_result.biblical_analysis = {'themes': [], 'supporting_scripture': []}
+            mock_result.content_analysis = {'concern_flags': []}
+            mock_result.model_analysis = {'sentiment': {'label': 'POSITIVE', 'score': 0.8}}
             mock_analyze.return_value = mock_result
             
             result = analysis_service.analyze_song_complete(sample_song, force=True)
@@ -66,8 +68,8 @@ class TestUnifiedAnalysisService:
         )
         db.session.add(playlist)
         
-        song1 = Song(spotify_id='song1', title='Song 1', artist='Artist 1')
-        song2 = Song(spotify_id='song2', title='Song 2', artist='Artist 2')
+        song1 = Song(spotify_id='song1', title='Song 1', artist='Artist 1', lyrics='Test lyrics 1')
+        song2 = Song(spotify_id='song2', title='Song 2', artist='Artist 2', lyrics='Test lyrics 2')
         db.session.add_all([song1, song2])
         db.session.commit()
         
@@ -82,7 +84,9 @@ class TestUnifiedAnalysisService:
             # Mock return value to simulate successful analysis
             mock_result = Mock()
             mock_result.scoring_results = {'final_score': 85, 'quality_level': 'Low', 'explanation': 'Test analysis'}
-            mock_result.biblical_analysis = {'themes': []}
+            mock_result.biblical_analysis = {'themes': [], 'supporting_scripture': []}
+            mock_result.content_analysis = {'concern_flags': []}
+            mock_result.model_analysis = {'sentiment': {'label': 'POSITIVE', 'score': 0.8}}
             mock_analyze.return_value = mock_result
             
             # Call the method that should trigger auto-analysis
@@ -107,8 +111,8 @@ class TestUnifiedAnalysisService:
         )
         db.session.add(playlist)
         
-        song1 = Song(spotify_id='song1', title='Song 1', artist='Artist 1')
-        song2 = Song(spotify_id='song2', title='Song 2', artist='Artist 2')
+        song1 = Song(spotify_id='song1', title='Song 1', artist='Artist 1', lyrics='Test lyrics 1')
+        song2 = Song(spotify_id='song2', title='Song 2', artist='Artist 2', lyrics='Test lyrics 2')
         db.session.add_all([song1, song2])
         db.session.commit()
         
@@ -130,9 +134,11 @@ class TestUnifiedAnalysisService:
         # Mock SimplifiedChristianAnalysisService.analyze_song to track calls
         with patch.object(analysis_service.analysis_service, 'analyze_song') as mock_analyze:
             # Mock return value to simulate successful analysis
-            mock_result = MagicMock()
+            mock_result = Mock()
             mock_result.scoring_results = {'final_score': 85, 'quality_level': 'Low', 'explanation': 'Test analysis'}
-            mock_result.biblical_analysis = {'themes': []}
+            mock_result.biblical_analysis = {'themes': [], 'supporting_scripture': []}
+            mock_result.content_analysis = {'concern_flags': []}
+            mock_result.model_analysis = {'sentiment': {'label': 'POSITIVE', 'score': 0.8}}
             mock_analyze.return_value = mock_result
             
             # Call auto-analysis
@@ -168,8 +174,8 @@ class TestUnifiedAnalysisService:
         db.session.add(playlist)
         
         # Create songs - one analyzed, one new
-        song1 = Song(spotify_id='song1', title='Song 1', artist='Artist 1')
-        song2 = Song(spotify_id='song2', title='Song 2', artist='Artist 2')  # New song
+        song1 = Song(spotify_id='song1', title='Song 1', artist='Artist 1', lyrics='Test lyrics 1')
+        song2 = Song(spotify_id='song2', title='Song 2', artist='Artist 2', lyrics='Test lyrics 2')  # New song
         db.session.add_all([song1, song2])
         db.session.commit()
         
@@ -199,9 +205,11 @@ class TestUnifiedAnalysisService:
         # Mock SimplifiedChristianAnalysisService.analyze_song to track calls
         with patch.object(analysis_service.analysis_service, 'analyze_song') as mock_analyze:
             # Mock return value to simulate successful analysis
-            mock_result = MagicMock()
+            mock_result = Mock()
             mock_result.scoring_results = {'final_score': 85, 'quality_level': 'Low', 'explanation': 'Test analysis'}
-            mock_result.biblical_analysis = {'themes': []}
+            mock_result.biblical_analysis = {'themes': [], 'supporting_scripture': []}
+            mock_result.content_analysis = {'concern_flags': []}
+            mock_result.model_analysis = {'sentiment': {'label': 'POSITIVE', 'score': 0.8}}
             mock_analyze.return_value = mock_result
             
             # Call change detection analysis

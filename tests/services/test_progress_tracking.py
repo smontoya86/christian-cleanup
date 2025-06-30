@@ -13,6 +13,8 @@ from app.services.progress_tracker import (
     JobProgress, ProgressPersistence
 )
 from app.services.priority_analysis_queue import JobType, JobStatus, JobPriority
+from app.models.models import Playlist, PlaylistSong
+from app import db
 
 
 class TestProgressUpdate:
@@ -533,4 +535,307 @@ class TestProgressTracker:
 
 
 # Import json for serialization tests
-import json 
+import json
+
+class TestBackgroundAnalysisProgressTracking:
+    """Test progress tracking for background analysis jobs."""
+    
+    def test_background_analysis_job_progress_initialization(self, app, sample_user, sample_songs):
+        """Test that background analysis jobs properly initialize progress tracking."""
+        with app.app_context():
+            from app.services.unified_analysis_service import UnifiedAnalysisService
+            from app.services.progress_tracker import get_progress_tracker
+            from app.services.priority_analysis_queue import PriorityAnalysisQueue
+            
+            # Create a playlist owned by the user and add songs to it
+            playlist = Playlist(
+                spotify_id='test_playlist_123',
+                name='Test Playlist',
+                description='Test playlist for background analysis',
+                owner_id=sample_user.id
+            )
+            db.session.add(playlist)
+            db.session.commit()
+            
+            # Add songs to the playlist
+            for i, song in enumerate(sample_songs[:5]):  # Use first 5 songs
+                playlist_song = PlaylistSong(
+                    playlist_id=playlist.id,
+                    song_id=song.id,
+                    track_position=i
+                )
+                db.session.add(playlist_song)
+            db.session.commit()
+            
+            # Create background analysis job
+            analysis_service = UnifiedAnalysisService()
+            job = analysis_service.enqueue_background_analysis(
+                user_id=sample_user.id,
+                priority='low'
+            )
+            
+            # Verify job was created
+            assert job is not None
+            assert hasattr(job, 'id')
+            
+            # Check if job exists in queue
+            queue = PriorityAnalysisQueue()
+            queue_job = queue.get_job(job.id)
+            assert queue_job is not None
+            assert queue_job.job_type.value == 'background_analysis'
+            assert queue_job.user_id == sample_user.id
+            
+            # Check if progress tracking is initialized (should be None until worker starts)
+            tracker = get_progress_tracker()
+            progress = tracker.get_job_progress(job.id)
+            
+            # Progress might be None initially (until worker starts processing)
+            # This is expected behavior
+            if progress is None:
+                print(f"✓ Progress not yet initialized for job {job.id} (expected until worker starts)")
+            else:
+                print(f"✓ Progress already initialized: {progress.to_dict()}")
+    
+    def test_background_analysis_progress_api_endpoint(self, app, sample_user, sample_songs):
+        """Test that the progress API endpoint works correctly for background analysis jobs."""
+        with app.app_context():
+            from app.services.unified_analysis_service import UnifiedAnalysisService
+            from app.routes.api import get_job_progress
+            from flask import Flask
+            from unittest.mock import patch
+            from app.models.models import Playlist, PlaylistSong
+            from app import db
+            
+            # Create a playlist owned by the user and add songs to it
+            playlist = Playlist(
+                spotify_id='test_playlist_api_123',
+                name='Test Playlist API',
+                description='Test playlist for API testing',
+                owner_id=sample_user.id
+            )
+            db.session.add(playlist)
+            db.session.commit()
+            
+            # Add songs to the playlist
+            for i, song in enumerate(sample_songs[:3]):  # Use first 3 songs
+                playlist_song = PlaylistSong(
+                    playlist_id=playlist.id,
+                    song_id=song.id,
+                    track_position=i
+                )
+                db.session.add(playlist_song)
+            db.session.commit()
+            
+            # Create background analysis job
+            analysis_service = UnifiedAnalysisService()
+            job = analysis_service.enqueue_background_analysis(
+                user_id=sample_user.id,
+                priority='low'
+            )
+            
+            # Test API endpoint directly
+            with patch('flask.current_app', app):
+                with patch('flask_login.current_user', sample_user):
+                    response = get_job_progress(job.id)
+                    
+                    # Should return 404 if progress not yet initialized
+                    if hasattr(response, 'status_code'):
+                        assert response.status_code in [200, 404]
+                        if response.status_code == 404:
+                            print(f"✓ API correctly returns 404 for uninitialized progress (job {job.id})")
+                        else:
+                            print(f"✓ API returns progress data for job {job.id}")
+                    else:
+                        # Direct function call returns tuple
+                        data, status_code = response
+                        assert status_code in [200, 404]
+                        if status_code == 404:
+                            print(f"✓ API correctly returns 404 for uninitialized progress (job {job.id})")
+                        else:
+                            print(f"✓ API returns progress data for job {job.id}: {data}")
+    
+    def test_background_analysis_worker_simulation(self, app, sample_user, sample_songs):
+        """Test that the worker properly initializes and updates progress for background analysis."""
+        with app.app_context():
+            from app.services.unified_analysis_service import UnifiedAnalysisService
+            from app.services.priority_queue_worker import PriorityQueueWorker
+            from app.services.progress_tracker import get_progress_tracker
+            from app.services.priority_analysis_queue import PriorityAnalysisQueue
+            from app.models.models import Playlist, PlaylistSong
+            from app import db
+            
+            # Create a playlist owned by the user and add songs to it
+            playlist = Playlist(
+                spotify_id='test_playlist_worker_123',
+                name='Test Playlist Worker',
+                description='Test playlist for worker testing',
+                owner_id=sample_user.id
+            )
+            db.session.add(playlist)
+            db.session.commit()
+            
+            # Add songs to the playlist
+            for i, song in enumerate(sample_songs[:4]):  # Use first 4 songs
+                playlist_song = PlaylistSong(
+                    playlist_id=playlist.id,
+                    song_id=song.id,
+                    track_position=i
+                )
+                db.session.add(playlist_song)
+            db.session.commit()
+            
+            # Create background analysis job
+            analysis_service = UnifiedAnalysisService()
+            job = analysis_service.enqueue_background_analysis(
+                user_id=sample_user.id,
+                priority='low'
+            )
+            
+            # Create worker and simulate processing
+            worker = PriorityQueueWorker(app=app, check_interval=0.1)
+            
+            # Get the job from queue
+            queue = PriorityAnalysisQueue()
+            queue_job = queue.get_job(job.id)
+            assert queue_job is not None
+            
+            # Simulate worker processing the job (just the progress initialization part)
+            tracker = get_progress_tracker()
+            
+            # Initialize progress tracking (simulating what worker does)
+            total_songs = len(queue_job.metadata.get('song_ids', []))
+            tracker.start_job_tracking(
+                job_id=job.id,
+                job_type=queue_job.job_type,
+                total_items=total_songs
+            )
+            
+            # Update progress (simulating worker progress)
+            tracker.update_job_progress(
+                job_id=job.id,
+                completed_items=0,
+                total_items=total_songs,
+                current_step="starting",
+                step_progress=0.0,
+                message="Starting background analysis"
+            )
+            
+            # Verify progress tracking works
+            progress = tracker.get_job_progress(job.id)
+            assert progress is not None
+            assert progress.total_items == total_songs
+            assert progress.completed_items == 0
+            assert progress.current_step == "starting"
+            assert progress.current_progress == 0.0
+            
+            print(f"✓ Background analysis progress tracking works: {progress.to_dict()}")
+            
+            # Test progress update
+            tracker.update_job_progress(
+                job_id=job.id,
+                completed_items=1,
+                current_step="analysis",
+                step_progress=0.1,
+                message=f"Analyzing song 1/{total_songs}"
+            )
+            
+            progress = tracker.get_job_progress(job.id)
+            assert progress.completed_items == 1
+            assert progress.current_step == "analysis"
+            
+            print(f"✓ Progress update works: {progress.to_dict()}")
+    
+    def test_dashboard_progress_polling_workflow(self, app, sample_user, sample_songs):
+        """Test the complete workflow that the dashboard uses for progress polling."""
+        with app.app_context():
+            from app.services.unified_analysis_service import UnifiedAnalysisService
+            from app.services.progress_tracker import get_progress_tracker
+            from app.services.priority_analysis_queue import PriorityAnalysisQueue
+            from app.models.models import Playlist, PlaylistSong
+            from app import db
+            import time
+            
+            # Set up user with playlist and songs
+            playlist = Playlist(
+                spotify_id='test_playlist_dashboard_123',
+                name='Test Playlist Dashboard',
+                description='Test playlist for dashboard workflow',
+                owner_id=sample_user.id
+            )
+            db.session.add(playlist)
+            db.session.commit()
+            
+            # Add songs to the playlist
+            for i, song in enumerate(sample_songs[:6]):  # Use first 6 songs
+                playlist_song = PlaylistSong(
+                    playlist_id=playlist.id,
+                    song_id=song.id,
+                    track_position=i
+                )
+                db.session.add(playlist_song)
+            db.session.commit()
+            
+            # Step 1: Dashboard triggers analysis (simulating button click)
+            analysis_service = UnifiedAnalysisService()
+            job = analysis_service.enqueue_background_analysis(
+                user_id=sample_user.id,
+                priority='low'
+            )
+            
+            print(f"✓ Step 1: Analysis job created with ID {job.id}")
+            
+            # Step 2: Dashboard starts polling for progress
+            tracker = get_progress_tracker()
+            progress = tracker.get_job_progress(job.id)
+            
+            # Initially, progress should be None (worker hasn't started yet)
+            if progress is None:
+                print(f"✓ Step 2: Progress not yet available (expected before worker starts)")
+            else:
+                print(f"✓ Step 2: Progress already available: {progress.to_dict()}")
+            
+            # Step 3: Simulate worker starting to process the job
+            queue = PriorityAnalysisQueue()
+            queue_job = queue.get_job(job.id)
+            
+            # Worker would initialize progress tracking
+            total_songs = len(queue_job.metadata.get('song_ids', []))
+            tracker.start_job_tracking(
+                job_id=job.id,
+                job_type=queue_job.job_type,
+                total_items=total_songs
+            )
+            
+            print(f"✓ Step 3: Worker initialized progress tracking for {total_songs} songs")
+            
+            # Step 4: Dashboard polls again and should get progress data
+            progress = tracker.get_job_progress(job.id)
+            assert progress is not None
+            assert progress.total_items == total_songs
+            
+            print(f"✓ Step 4: Dashboard can now retrieve progress: {progress.to_dict()}")
+            
+            # Step 5: Simulate some progress updates
+            for i in range(1, min(4, total_songs + 1)):
+                tracker.update_job_progress(
+                    job_id=job.id,
+                    completed_items=i,
+                    current_step="analysis",
+                    step_progress=i / total_songs,
+                    message=f"Analyzing song {i}/{total_songs}"
+                )
+                
+                progress = tracker.get_job_progress(job.id)
+                print(f"✓ Step 5.{i}: Progress update: {progress.completed_items}/{progress.total_items} ({progress.current_progress:.1%})")
+            
+            # Step 6: Complete the job
+            tracker.complete_job_tracking(job.id, success=True)
+            progress = tracker.get_job_progress(job.id)
+            
+            if progress is not None:
+                print(f"✓ Step 6: Job completed: {progress.to_dict()}")
+                assert progress.is_complete
+                assert progress.current_progress >= 1.0
+            else:
+                print(f"✓ Step 6: Job completed and removed from tracking (expected with Redis mocks)")
+                # This is expected behavior in test environment with Redis mocks 

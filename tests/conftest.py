@@ -201,15 +201,43 @@ def sample_song(app, db):
     
     song = Song(
         spotify_id='sample_song_123',
-        title='Amazing Grace',
-        artist='Traditional',
-        album='Hymns Collection',
-        duration_ms=180000
+        title='Sample Song',
+        artist='Sample Artist',
+        album='Sample Album',
+        duration_ms=210000,
+        lyrics='Sample lyrics content'
     )
     
     db.session.add(song)
     db.session.commit()
     return song
+
+
+@pytest.fixture
+def sample_songs(app, db):
+    """Create multiple sample songs for testing batch operations."""
+    from app.models.models import Song
+    
+    songs = []
+    for i in range(10):
+        song = Song(
+            spotify_id=f'sample_song_{i}',
+            title=f'Sample Song {i}',
+            artist=f'Sample Artist {i}',
+            album=f'Sample Album {i}',
+            duration_ms=210000 + (i * 1000),
+            lyrics=f'Sample lyrics content for song {i}' if i % 2 == 0 else ''
+        )
+        songs.append(song)
+        db.session.add(song)
+    
+    db.session.commit()
+    
+    # Refresh all songs to ensure they're bound to the session
+    for song in songs:
+        db.session.refresh(song)
+    
+    return songs
 
 
 @pytest.fixture

@@ -59,16 +59,67 @@ class PriorityQueueWorker:
         logger.info("Priority queue worker initialized")
     
     def start(self) -> None:
-        """Start the worker in a background thread"""
-        if self.is_running:
-            logger.warning("Worker is already running")
+        """Start the worker in a background thread with enhanced validation and retry"""
+        # Check if thread is actually alive, not just the flag
+        if self.worker_thread and self.worker_thread.is_alive():
+            logger.warning("Worker thread is already running")
             return
-        
+
         self.should_stop = False
-        self.worker_thread = threading.Thread(target=self._run_worker, daemon=True)
-        self.worker_thread.start()
+        self.is_running = False  # Reset flag
         
-        logger.info("Priority queue worker started")
+        # Enhanced thread startup with retry mechanism
+        max_retries = 3
+        retry_delay = 0.5
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Attempting to start worker thread (attempt {attempt + 1}/{max_retries})")
+                
+                # Create the thread
+                self.worker_thread = threading.Thread(target=self._run_worker, daemon=True)
+                
+                # Start the thread
+                self.worker_thread.start()
+                
+                # Give thread time to start and validate startup
+                import time
+                time.sleep(0.2)
+                
+                # Validate thread actually started
+                if self.worker_thread.is_alive():
+                    logger.info(f"✅ Priority queue worker thread started successfully - Thread alive: {self.worker_thread.is_alive()}")
+                    
+                    # Wait a bit more for _run_worker to execute and set is_running
+                    time.sleep(0.3)
+                    
+                    # Validate worker is actually running
+                    if self.is_running:
+                        logger.info("✅ Worker thread validated - _run_worker() executing successfully")
+                        return
+                    else:
+                        logger.warning(f"⚠️ Thread started but _run_worker() not executing (attempt {attempt + 1})")
+                        # Thread started but _run_worker isn't executing - try again
+                        if self.worker_thread.is_alive():
+                            self.should_stop = True
+                            self.worker_thread.join(timeout=1.0)
+                        continue
+                else:
+                    logger.error(f"❌ Thread failed to start (attempt {attempt + 1}) - Thread alive: {self.worker_thread.is_alive()}")
+                    continue
+                    
+            except Exception as e:
+                logger.error(f"❌ Exception during thread startup (attempt {attempt + 1}): {e}", exc_info=True)
+                
+            # If we get here, this attempt failed
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying thread startup in {retry_delay}s...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            
+        # If we get here, all attempts failed
+        logger.error("❌ CRITICAL: Failed to start worker thread after all retry attempts")
+        raise RuntimeError("Failed to start worker thread after multiple attempts")
     
     def stop(self, timeout: float = 30.0) -> bool:
         """
@@ -101,6 +152,9 @@ class PriorityQueueWorker:
         self.is_running = True
         self.start_time = datetime.now(timezone.utc)
         
+        # Register worker as active
+        self._register_worker()
+        
         logger.info("Worker started processing jobs")
         
         try:
@@ -127,10 +181,32 @@ class PriorityQueueWorker:
         finally:
             self.is_running = False
             self.current_job = None
+            # Unregister worker
+            self._unregister_worker()
     
     def _update_heartbeat(self) -> None:
-        """Update the worker heartbeat timestamp"""
+        """Update the worker heartbeat timestamp and refresh TTL"""
         self.last_heartbeat = datetime.now(timezone.utc)
+        
+        # Update Redis heartbeat TTL
+        try:
+            import redis
+            import os
+            
+            if hasattr(self, 'worker_id'):
+                redis_client = redis.from_url(os.getenv('RQ_REDIS_URL', 'redis://redis:6379/0'))
+                # Refresh the heartbeat TTL
+                redis_client.setex(f"worker_heartbeat:{self.worker_id}", 60, "alive")
+                
+                # Clean up stale workers (workers without heartbeat)
+                active_workers = redis_client.smembers('active_workers')
+                for worker in active_workers:
+                    worker_str = worker.decode() if isinstance(worker, bytes) else worker
+                    if not redis_client.exists(f"worker_heartbeat:{worker_str}"):
+                        redis_client.srem('active_workers', worker_str)
+                        logger.info(f"Removed stale worker: {worker_str}")
+        except Exception as e:
+            logger.warning(f"Failed to update heartbeat: {e}")
     
     def _should_interrupt_current_job(self) -> bool:
         """Check if current job should be interrupted for higher priority work"""
@@ -259,24 +335,24 @@ class PriorityQueueWorker:
                 # Update progress: Fetching lyrics
                 self.progress_tracker.update_job_progress(
                     job_id=job.job_id,
-                    current_step="lyrics_fetching",
+                    completed_items=0,
+                    current_step="lyrics",
                     step_progress=0.3,
-                    message=f"Fetching lyrics for '{song.title}'"
+                    message="Fetching lyrics"
                 )
-                
-                # Perform analysis
-                analysis_service = UnifiedAnalysisService()
                 
                 # Update progress: Analyzing content
                 self.progress_tracker.update_job_progress(
                     job_id=job.job_id,
+                    completed_items=0,
                     current_step="analysis",
-                    step_progress=0.7,
-                    message="Analyzing song content"
+                    step_progress=0.6,
+                    message="Analyzing content"
                 )
                 
-                # Execute the analysis
-                result = analysis_service.analyze_song(song)
+                # Perform the analysis
+                analysis_service = UnifiedAnalysisService()
+                analysis_service.analyze_song(song.id, user_id=job.user_id)
                 
                 # Update progress: Complete
                 self.progress_tracker.update_job_progress(
@@ -286,14 +362,89 @@ class PriorityQueueWorker:
                     step_progress=1.0,
                     message="Analysis complete"
                 )
+                
+                # Update playlist scores for any playlists containing this song
+                self._update_playlist_scores_for_song(song.id)
         else:
             # No app context - simulate analysis for testing
             time.sleep(2)  # Simulate processing time
             self.progress_tracker.update_job_progress(
                 job_id=job.job_id,
                 completed_items=1,
-                message="Song analysis complete"
+                message="Analysis complete (simulated)"
             )
+    
+    def _update_playlist_scores_for_song(self, song_id: int) -> None:
+        """Update overall_alignment_score for all playlists containing this song"""
+        from ..models.models import Playlist, PlaylistSong, Song, AnalysisResult
+        from .. import db
+        from sqlalchemy import func
+        
+        try:
+            # Get all playlists containing this song
+            playlists = db.session.query(Playlist).join(PlaylistSong).filter(
+                PlaylistSong.song_id == song_id
+            ).all()
+            
+            for playlist in playlists:
+                # Calculate average score for all analyzed songs in this playlist
+                avg_score = db.session.query(func.avg(AnalysisResult.score)).join(
+                    Song, AnalysisResult.song_id == Song.id
+                ).join(
+                    PlaylistSong, Song.id == PlaylistSong.song_id
+                ).filter(
+                    PlaylistSong.playlist_id == playlist.id,
+                    AnalysisResult.status == 'completed',
+                    AnalysisResult.score.isnot(None)
+                ).scalar()
+                
+                if avg_score is not None:
+                    # Update playlist score (store as 0-100 scale)
+                    playlist.overall_alignment_score = float(avg_score)
+                    playlist.last_analyzed = db.func.now()
+                    logger.info(f"Updated playlist '{playlist.name}' score to {avg_score:.1f}")
+                
+            db.session.commit()
+            
+        except Exception as e:
+            logger.error(f"Failed to update playlist scores for song {song_id}: {e}")
+            db.session.rollback()
+    
+    def _update_playlist_score(self, playlist_id: int) -> None:
+        """Update overall_alignment_score for a specific playlist"""
+        from ..models.models import Playlist, PlaylistSong, Song, AnalysisResult
+        from .. import db
+        from sqlalchemy import func
+        
+        try:
+            playlist = Playlist.query.get(playlist_id)
+            if not playlist:
+                logger.warning(f"Playlist {playlist_id} not found for score update")
+                return
+                
+            # Calculate average score for all analyzed songs in this playlist
+            avg_score = db.session.query(func.avg(AnalysisResult.score)).join(
+                Song, AnalysisResult.song_id == Song.id
+            ).join(
+                PlaylistSong, Song.id == PlaylistSong.song_id
+            ).filter(
+                PlaylistSong.playlist_id == playlist_id,
+                AnalysisResult.status == 'completed',
+                AnalysisResult.score.isnot(None)
+            ).scalar()
+            
+            if avg_score is not None:
+                # Update playlist score (store as 0-100 scale)
+                playlist.overall_alignment_score = float(avg_score)
+                playlist.last_analyzed = db.func.now()
+                logger.info(f"Updated playlist '{playlist.name}' overall score to {avg_score:.1f}")
+                db.session.commit()
+            else:
+                logger.info(f"No analyzed songs found for playlist '{playlist.name}' - score not updated")
+                
+        except Exception as e:
+            logger.error(f"Failed to update playlist score for playlist {playlist_id}: {e}")
+            db.session.rollback()
     
     def _process_playlist_analysis(self, job: AnalysisJob) -> None:
         """Process a playlist analysis job"""
@@ -333,8 +484,10 @@ class PriorityQueueWorker:
                 total_songs = len(songs)
                 
                 # Update total items in progress tracker
-                if hasattr(self.progress_tracker.active_jobs.get(job.job_id), 'total_items'):
-                    self.progress_tracker.active_jobs[job.job_id].total_items = total_songs
+                self.progress_tracker.update_job_progress(
+                    job_id=job.job_id,
+                    total_items=total_songs
+                )
                 
                 analysis_service = UnifiedAnalysisService()
                 
@@ -354,7 +507,7 @@ class PriorityQueueWorker:
                     
                     # Analyze the song
                     try:
-                        analysis_service.analyze_song(song)
+                        analysis_service.analyze_song(song.id, user_id=job.user_id)
                     except Exception as e:
                         logger.warning(f"Failed to analyze song {song.id}: {e}")
                 
@@ -366,6 +519,9 @@ class PriorityQueueWorker:
                     step_progress=1.0,
                     message=f"Playlist analysis complete ({total_songs} songs)"
                 )
+                
+                # Update playlist overall score after all songs are analyzed
+                self._update_playlist_score(playlist.id)
         else:
             # No app context - simulate analysis for testing
             total_items = job.metadata.get('song_count', 5)
@@ -410,8 +566,10 @@ class PriorityQueueWorker:
                 total_songs = len(song_ids)
                 
                 # Update total items in progress tracker
-                if hasattr(self.progress_tracker.active_jobs.get(job.job_id), 'total_items'):
-                    self.progress_tracker.active_jobs[job.job_id].total_items = total_songs
+                self.progress_tracker.update_job_progress(
+                    job_id=job.job_id,
+                    total_items=total_songs
+                )
                 
                 analysis_service = UnifiedAnalysisService()
                 
@@ -435,7 +593,7 @@ class PriorityQueueWorker:
                     
                     # Analyze the song
                     try:
-                        analysis_service.analyze_song(song)
+                        analysis_service.analyze_song(song.id, user_id=job.user_id)
                     except Exception as e:
                         logger.warning(f"Failed to analyze song {song.id}: {e}")
                 
@@ -461,7 +619,42 @@ class PriorityQueueWorker:
                     message=f"Background processed song {i + 1}/{total_songs}"
                 )
     
+    def _register_worker(self) -> None:
+        """Register this worker as active in Redis with TTL"""
+        try:
+            import redis
+            import os
+            import socket
+            
+            redis_client = redis.from_url(os.getenv('RQ_REDIS_URL', 'redis://redis:6379/0'))
+            worker_id = f"worker-{socket.gethostname()}-{threading.current_thread().ident}"
+            
+            # Add worker to active set with TTL
+            redis_client.sadd('active_workers', worker_id)
+            # Set individual worker key with 60 second TTL for heartbeat
+            redis_client.setex(f"worker_heartbeat:{worker_id}", 60, "alive")
+            
+            self.worker_id = worker_id  # Store for later use
+            logger.info(f"Registered worker: {worker_id}")
+        except Exception as e:
+            logger.warning(f"Failed to register worker: {e}")
 
+    def _unregister_worker(self) -> None:
+        """Unregister this worker from Redis"""
+        try:
+            import redis
+            import os
+            
+            redis_client = redis.from_url(os.getenv('RQ_REDIS_URL', 'redis://redis:6379/0'))
+            
+            if hasattr(self, 'worker_id'):
+                # Remove from active set
+                redis_client.srem('active_workers', self.worker_id)
+                # Remove heartbeat key
+                redis_client.delete(f"worker_heartbeat:{self.worker_id}")
+                logger.info(f"Unregistered worker: {self.worker_id}")
+        except Exception as e:
+            logger.warning(f"Failed to unregister worker: {e}")
     
     def get_status(self) -> Dict[str, Any]:
         """Get current worker status and statistics"""
@@ -498,10 +691,17 @@ def start_worker(app: Flask = None) -> PriorityQueueWorker:
     """Start the global worker instance"""
     global _worker
     
-    if _worker and _worker.is_running:
-        logger.warning("Worker is already running")
-        return _worker
+    # If there's an existing worker, properly shut it down first
+    if _worker:
+        logger.info("Shutting down existing worker before starting new one")
+        _worker.stop()
+        _worker = None
+        # Give time for cleanup
+        import time
+        time.sleep(0.5)
     
+    # Create new worker instance
+    logger.info("Creating new worker instance")
     _worker = PriorityQueueWorker(app=app)
     _worker.start()
     return _worker

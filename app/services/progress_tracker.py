@@ -197,14 +197,45 @@ class ProgressPersistence:
     """Handles persistence of progress data in Redis"""
     
     def __init__(self):
-        redis_url = current_app.config.get('RQ_REDIS_URL', 'redis://localhost:6379/0')
-        self.redis = redis.Redis.from_url(redis_url, decode_responses=True)
+        self._redis = None
         self.key_prefix = "progress:"
         self.ttl_seconds = 86400  # 24 hours
+    
+    @property
+    def redis(self):
+        """Lazy initialization of Redis connection"""
+        if self._redis is None:
+            try:
+                # Try to get Redis URL from Flask config first
+                redis_url = current_app.config.get('RQ_REDIS_URL') or current_app.config.get('REDIS_URL')
+                if not redis_url:
+                    # Fallback to environment variables
+                    import os
+                    redis_url = os.environ.get('REDIS_URL') or os.environ.get('RQ_REDIS_URL', 'redis://redis:6379/0')
+                
+                self._redis = redis.Redis.from_url(redis_url, decode_responses=True)
+                # Test the connection
+                self._redis.ping()
+                logger.debug(f"Connected to Redis at {redis_url}")
+            except RuntimeError:
+                # No Flask context, use environment variables
+                import os
+                redis_url = os.environ.get('REDIS_URL') or os.environ.get('RQ_REDIS_URL', 'redis://redis:6379/0')
+                self._redis = redis.Redis.from_url(redis_url, decode_responses=True)
+                logger.debug(f"Connected to Redis (no Flask context) at {redis_url}")
+            except Exception as e:
+                logger.error(f"Failed to connect to Redis: {e}")
+                # Create a dummy Redis client that will fail gracefully
+                self._redis = None
+        return self._redis
     
     def save_progress(self, progress: JobProgress) -> None:
         """Save job progress to Redis"""
         try:
+            if self.redis is None:
+                logger.warning(f"Redis unavailable, cannot save progress for job {progress.job_id}")
+                return
+            
             key = f"{self.key_prefix}{progress.job_id}"
             data = json.dumps(progress.to_dict())
             self.redis.set(key, data, ex=self.ttl_seconds)
@@ -215,6 +246,10 @@ class ProgressPersistence:
     def load_progress(self, job_id: str) -> Optional[JobProgress]:
         """Load job progress from Redis"""
         try:
+            if self.redis is None:
+                logger.warning(f"Redis unavailable, cannot load progress for job {job_id}")
+                return None
+            
             key = f"{self.key_prefix}{job_id}"
             data = self.redis.get(key)
             
@@ -230,6 +265,10 @@ class ProgressPersistence:
     def delete_progress(self, job_id: str) -> None:
         """Delete job progress from Redis"""
         try:
+            if self.redis is None:
+                logger.warning(f"Redis unavailable, cannot delete progress for job {job_id}")
+                return
+            
             key = f"{self.key_prefix}{job_id}"
             self.redis.delete(key)
             logger.debug(f"Deleted progress for job {job_id}")
@@ -267,12 +306,17 @@ class ProgressTracker:
     
     def update_job_progress(self, job_id: str, completed_items: int = None,
                            current_step: str = None, step_progress: float = None,
-                           message: str = None) -> Optional[ProgressUpdate]:
+                           message: str = None, total_items: int = None) -> Optional[ProgressUpdate]:
         """Update job progress and notify subscribers"""
         progress = self.active_jobs.get(job_id)
         if not progress:
             logger.warning(f"Attempted to update progress for unknown job {job_id}")
             return None
+        
+        # Update total items if provided
+        if total_items is not None:
+            progress.total_items = total_items
+            logger.debug(f"Updated total items for job {job_id} to {total_items}")
         
         # Update progress
         if completed_items is not None:

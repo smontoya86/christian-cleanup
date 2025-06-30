@@ -137,6 +137,46 @@ main {
     }
 }
 
+/* Manual Dark Mode Support via data-theme attribute */
+[data-theme="dark"] {
+    --dark-text: #fff;
+    --light-text: #000;
+    --body-bg: #1a1a1a;
+    --card-bg: #2d2d2d;
+    --light-bg: #333;
+    --footer-bg: #2d2d2d;
+    --border-color: #404040;
+    --muted-text: #ccc;
+    --hover-bg: rgb(255 255 255 / 5%);
+}
+
+[data-theme="dark"] body {
+    background-color: var(--body-bg);
+    color: var(--dark-text);
+}
+
+/* Ensure dark theme overrides system preference when manually set */
+[data-theme="dark"] .site-header {
+    background-color: var(--body-bg);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .site-footer {
+    background-color: var(--footer-bg);
+}
+
+[data-theme="dark"] .nav-link-custom {
+    color: var(--dark-text) !important;
+}
+
+[data-theme="dark"] .nav-link-custom:hover {
+    color: var(--primary-purple) !important;
+}
+
+[data-theme="dark"] .site-footer h5 {
+    color: var(--dark-text);
+}
+
 /* Print Styles */
 @media print {
     .no-print {

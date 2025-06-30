@@ -362,4 +362,5 @@ local_settings.py
 !test_*.py
 
 # Cache
-.cache/
+.cache/.env.local
+.env.secrets

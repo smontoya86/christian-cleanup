@@ -30,34 +30,10 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
-# Copy frontend configuration files (simplified structure - skip for now)
-# COPY postcss.config.js .eslintrc.js .stylelintrc.js ./
+# Set up HuggingFace model caching
+ENV TRANSFORMERS_CACHE=/app/models
+ENV HF_HOME=/app/models
+RUN mkdir -p /app/models
 
-# Copy scripts directory (needed for build process) 
-COPY scripts/ ./scripts/
-
-# Copy frontend source files
-COPY app/static ./app/static
-
-# Build frontend assets for production (simplified structure - skip for now)
-# ENV NODE_ENV=production
-# RUN npm run build
-
-# Copy the rest of the application (excluding files already copied)
-COPY . .
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV FLASK_APP=run.py
-ENV FLASK_ENV=production
-
-# Expose the port the app runs on
-EXPOSE 5000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/api/health || exit 1
-
-# The default command is overridden in docker-compose.yml
-# This is just a fallback
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "run:app"]
+# Pre-download HuggingFace models to cache them during build
+RUN python -c "from transformers import pipeline; import logging; logging.basicConfig(level=logging.INFO); print('Pre-downloading HuggingFace models...'); pipeline('sentiment-analysis', model='cardiffnlp/twitter-roberta-base-sentiment-latest'); pipeline('text-classification', model='unitary/toxic-bert'); pipeline('text-classification', model='j-hartmann/emotion-english-distilroberta-base'); print('All models cached successfully')"

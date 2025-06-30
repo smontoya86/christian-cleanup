@@ -716,6 +716,94 @@ td .concern-badge {
     }
 }
 
+/* Manual Dark Mode for Components */
+[data-theme="dark"] .card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .card-header {
+    background-color: var(--card-bg);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .table {
+    color: var(--dark-text);
+}
+
+[data-theme="dark"] .table-hover tbody tr:hover {
+    background-color: var(--hover-bg);
+}
+
+[data-theme="dark"] .table td, 
+[data-theme="dark"] .table th {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .text-muted {
+    color: var(--muted-text) !important;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+    color: var(--muted-text);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+    background-color: var(--light-bg);
+    border-color: var(--border-color);
+    color: var(--dark-text);
+}
+
+/* Dark mode improvements for concern badges */
+[data-theme="dark"] .bg-high {
+    background-color: var(--concern-high) !important;
+    color: #000 !important;
+}
+
+[data-theme="dark"] .bg-medium {
+    background-color: var(--concern-medium) !important;
+    color: #fff !important;
+}
+
+/* Improve progress bar for dark mode */
+[data-theme="dark"] .progress {
+    background-color: var(--border-color);
+}
+
+/* Alert improvements for dark mode */
+[data-theme="dark"] .alert-warning {
+    background-color: rgba(255, 193, 7, 0.15);
+    border-color: rgba(255, 193, 7, 0.3);
+    color: var(--dark-text);
+}
+
+[data-theme="dark"] .alert-success {
+    background-color: rgba(25, 135, 84, 0.15);
+    border-color: rgba(25, 135, 84, 0.3);
+    color: var(--dark-text);
+}
+
+/* Dark mode for dropdown menus */
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: var(--dark-text);
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+    background-color: var(--hover-bg);
+    color: var(--dark-text);
+}
+
+[data-theme="dark"] .actions-cell .dropdown-toggle:hover {
+    background-color: var(--hover-bg);
+    color: var(--dark-text);
+}
+
 /* Table Actions Column Improvements */
 .actions-cell {
     min-width: 160px;

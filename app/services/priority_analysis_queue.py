@@ -66,6 +66,14 @@ class AnalysisJob:
         if self.metadata is None:
             self.metadata = {}
     
+    @staticmethod
+    def _parse_datetime(dt_str: str) -> datetime:
+        """Parse datetime string handling both Z and +00:00 timezone formats"""
+        if dt_str.endswith('Z'):
+            # Replace Z with +00:00 for fromisoformat compatibility
+            dt_str = dt_str[:-1] + '+00:00'
+        return datetime.fromisoformat(dt_str)
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert job to dictionary for Redis storage"""
         data = asdict(self)
@@ -85,11 +93,11 @@ class AnalysisJob:
     def from_dict(cls, data: Dict[str, Any]) -> 'AnalysisJob':
         """Create job from dictionary stored in Redis"""
         # Convert ISO strings back to datetime objects
-        data['created_at'] = datetime.fromisoformat(data['created_at'])
+        data['created_at'] = cls._parse_datetime(data['created_at'])
         if data.get('started_at'):
-            data['started_at'] = datetime.fromisoformat(data['started_at'])
+            data['started_at'] = cls._parse_datetime(data['started_at'])
         if data.get('completed_at'):
-            data['completed_at'] = datetime.fromisoformat(data['completed_at'])
+            data['completed_at'] = cls._parse_datetime(data['completed_at'])
         # Convert values back to enums
         data['job_type'] = JobType(data['job_type'])
         data['priority'] = JobPriority(data['priority'])
@@ -125,11 +133,11 @@ class PriorityAnalysisQueue:
             else:
                 # Get Redis connection from Flask app config or environment
                 try:
-                    redis_url = current_app.config.get('REDIS_URL', 'redis://localhost:6379/0')
+                    redis_url = current_app.config.get('RQ_REDIS_URL', 'redis://redis:6379/0')
                 except RuntimeError:
                     # Fallback when outside app context
                     import os
-                    redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+                    redis_url = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
                 
                 self._redis = redis.from_url(redis_url, decode_responses=True)
         
@@ -167,8 +175,9 @@ class PriorityAnalysisQueue:
         self.redis.hset(self.jobs_key, job_id, json.dumps(job.to_dict()))
         
         # Add job to priority queue (sorted set)
-        # Score is priority value + timestamp for FIFO within same priority
-        score = priority.value + (time.time() / 1000000)  # Microsecond precision
+        # Score is priority * 1000000 + timestamp for proper priority ordering
+        # Lower scores are processed first, so higher priority (lower value) gets lower score
+        score = (priority.value * 1000000) + time.time()
         self.redis.zadd(self.queue_key, {job_id: score})
         
         logger.info(f"Enqueued {job_type.value} job {job_id} for user {user_id} "
@@ -246,8 +255,8 @@ class PriorityAnalysisQueue:
         if active_job_id == job_id:
             self.redis.delete(self.active_key)
         
-        # Set TTL for completed job data (cleanup after 24 hours)
-        self.redis.expire(f"{self.jobs_key}:{job_id}", 86400)
+        # Note: Cannot set TTL on individual hash fields in Redis
+        # Completed jobs will be cleaned up by periodic maintenance or manual clear
         
         status = "completed" if success else "failed"
         logger.info(f"Job {job_id} marked as {status}")
@@ -277,7 +286,7 @@ class PriorityAnalysisQueue:
         self.redis.hset(self.jobs_key, job_id, json.dumps(job.to_dict()))
         
         # Re-queue the job with original priority
-        score = job.priority.value + (time.time() / 1000000)
+        score = (job.priority.value * 1000000) + time.time()
         self.redis.zadd(self.queue_key, {job_id: score})
         
         # Clear active job
@@ -331,11 +340,10 @@ class PriorityAnalysisQueue:
         # Count by priority
         priority_counts = {priority.name: 0 for priority in JobPriority}
         for job_id, score in queue_jobs:
-            priority_value = int(score)  # Extract priority from score
-            for priority in JobPriority:
-                if priority.value == priority_value:
-                    priority_counts[priority.name] += 1
-                    break
+            # Get actual job data to determine priority
+            job = self.get_job(job_id)
+            if job:
+                priority_counts[job.priority.name] += 1
         
         # Get active job
         active_job = self.get_active_job()
