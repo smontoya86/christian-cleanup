@@ -21,6 +21,15 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     
+    # Validate required config before proceeding
+    if not current_app.config.get('SPOTIFY_CLIENT_ID'):
+        flash('Spotify client ID not configured. Please contact the administrator.', 'error')
+        return redirect(url_for('main.index'))
+    
+    if not current_app.config.get('SPOTIFY_REDIRECT_URI'):
+        flash('Spotify redirect URI not configured. Please contact the administrator.', 'error')
+        return redirect(url_for('main.index'))
+    
     # Generate state parameter for security
     state = secrets.token_urlsafe(32)
     session['oauth_state'] = state
@@ -51,6 +60,9 @@ def callback():
     if request.args.get('state') != session.get('oauth_state'):
         flash('Invalid state parameter. Please try logging in again.', 'error')
         return redirect(url_for('main.index'))
+    
+    # Clean up state parameter after validation
+    session.pop('oauth_state', None)
     
     # Exchange code for access token
     code = request.args.get('code')

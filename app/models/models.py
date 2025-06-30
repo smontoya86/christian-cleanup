@@ -196,10 +196,8 @@ class User(UserMixin, db.Model):
         except requests.RequestException as e:
             current_app.logger.error(f"Failed to refresh token for user {self.id}: {e}")
             
-            try:
-                db.session.commit()
-            except Exception:
-                db.session.rollback()
+            # Just rollback on failure - don't attempt commit
+            db.session.rollback()
             
             return False
 
