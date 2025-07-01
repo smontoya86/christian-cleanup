@@ -4,6 +4,8 @@
 
 This document outlines a comprehensive solution architecture for enhancing the Christian Music Curator's analysis capabilities through a hybrid approach that combines existing AI models with sophisticated theological reasoning layers. The solution provides 80% of custom AI benefits with 20% of the cost and risk, delivering genuine biblical worldview analysis without requiring custom model training.
 
+The system focuses exclusively on core orthodox Christian doctrine, avoiding denominational variations to maintain theological simplicity and broad accessibility while ensuring biblical integrity.
+
 ## Current State Analysis
 
 ### Existing Architecture Components
@@ -76,7 +78,7 @@ def test_theological_pattern_matching():
 - [ ] **AC 1.1.2**: Database contains 100+ biblical principles with conflict detection rules
 - [ ] **AC 1.1.3**: Pattern recognition identifies 20+ categories of spiritual conflicts
 - [ ] **AC 1.1.4**: All theological data is scripturally referenced and doctrinally sound
-- [ ] **AC 1.1.5**: Knowledge base supports multiple denominational perspectives where appropriate
+- [ ] **AC 1.1.5**: Knowledge base focuses on orthodox Christian doctrine without denominational variations
 
 ---
 
@@ -227,12 +229,7 @@ def test_violation_severity_assessment():
    - Define heretical or problematic theological positions
    - Create doctrine compatibility matrix
 
-2. **3.2.2: Denominational Sensitivity Handler**
-   - Account for legitimate denominational differences
-   - Flag major doctrinal divisions vs minor disagreements
-   - Provide user preference options for denominational focus
-
-3. **3.2.3: False Teaching Detection**
+2. **3.2.2: False Teaching Detection**
    - Identify common false teaching patterns
    - Detect prosperity gospel, universalism, antinomianism
    - Flag new age spirituality and syncretism
@@ -244,11 +241,6 @@ def test_orthodox_doctrine_validation():
     # WHEN validating against orthodox Christian belief
     # THEN confirm doctrinal soundness and provide positive scoring
 
-def test_denominational_difference_handling():
-    # GIVEN content about baptism methods
-    # WHEN evaluating denominational differences
-    # THEN distinguish major heresy from legitimate denominational variance
-
 def test_false_teaching_identification():
     # GIVEN lyrics promoting prosperity gospel
     # WHEN scanning for false teaching patterns
@@ -257,10 +249,9 @@ def test_false_teaching_identification():
 
 #### Acceptance Criteria:
 - [ ] **AC 3.2.1**: Validates against 15+ core orthodox Christian doctrines
-- [ ] **AC 3.2.2**: Correctly handles denominational differences without false negatives
-- [ ] **AC 3.2.3**: Identifies 10+ categories of false teaching with 90%+ accuracy
-- [ ] **AC 3.2.4**: Provides clear explanation for all doctrinal concerns raised
-- [ ] **AC 3.2.5**: User can configure denominational preference settings
+- [ ] **AC 3.2.2**: Identifies 10+ categories of false teaching with 90%+ accuracy
+- [ ] **AC 3.2.3**: Provides clear explanation for all doctrinal concerns raised
+- [ ] **AC 3.2.4**: System maintains focus on core Christian orthodoxy without denominational bias
 
 ---
 
@@ -407,9 +398,9 @@ def test_confidence_level_assessment():
 
 #### Subtasks:
 1. **5.2.1: User Theological Profile System**
-   - Create user preference profiles for denominational emphasis
+   - Create user preference profiles for theological sensitivity levels
    - Implement spiritual maturity level considerations
-   - Allow customization of theological sensitivity levels
+   - Allow customization of analysis depth and explanation detail
 
 2. **5.2.2: Contextual Recommendation Logic**
    - Adjust recommendations based on listening context
@@ -424,9 +415,9 @@ def test_confidence_level_assessment():
 #### TDD Approach:
 ```python
 def test_user_profile_customization():
-    # GIVEN user with reformed theological preferences
+    # GIVEN user with high theological sensitivity preferences
     # WHEN customizing analysis parameters
-    # THEN apply appropriate theological emphasis in scoring
+    # THEN apply appropriate depth and detail in theological analysis
 
 def test_contextual_recommendations():
     # GIVEN young Christian vs mature believer profiles
@@ -440,7 +431,7 @@ def test_community_feedback_integration():
 ```
 
 #### Acceptance Criteria:
-- [ ] **AC 5.2.1**: User profiles support 5+ theological tradition preferences
+- [ ] **AC 5.2.1**: User profiles support multiple theological sensitivity levels
 - [ ] **AC 5.2.2**: Recommendations appropriately consider spiritual maturity levels
 - [ ] **AC 5.2.3**: Community feedback system maintains theological accuracy
 - [ ] **AC 5.2.4**: Personalized recommendations improve user satisfaction by 40%+
@@ -554,7 +545,7 @@ def test_spiritual_formation_integration():
 2. **Enhanced Existing Tables**:
    - `analysis_results` - Add theological dimension scores
    - `songs` - Add theological metadata and community ratings
-   - `users` - Add theological preference settings
+   - `users` - Add theological sensitivity and maturity level settings
 
 ### API Enhancements
 1. **New Endpoints**:
@@ -578,7 +569,7 @@ def test_spiritual_formation_integration():
 2. **Enhanced Existing Components**:
    - Song Analysis Cards - Add theological dimension display
    - Progress Tracking - Include theological analysis progress
-   - User Settings - Add theological preference options
+   - User Settings - Add theological sensitivity and maturity level options
 
 ### Background Processing Integration
 1. **New Processing Queues**:
@@ -634,11 +625,11 @@ def test_spiritual_formation_integration():
    - *Mitigation*: Incremental implementation with comprehensive testing
 
 ### Theological Risks
-1. **Denominational Bias**: Analysis may favor specific theological traditions
-   - *Mitigation*: Multi-denominational review board and configurable preferences
+1. **Orthodox Doctrine Focus**: Risk of being too narrow in theological interpretation
+   - *Mitigation*: Base analysis on well-established orthodox Christian doctrine with clear biblical foundation
 
-2. **False Teaching Detection**: Risk of flagging legitimate theological diversity
-   - *Mitigation*: Conservative approach with clear escalation paths
+2. **False Teaching Detection**: Risk of flagging legitimate Christian content as problematic
+   - *Mitigation*: Conservative approach with clear escalation paths and human review
 
 3. **Legalistic Tendencies**: System may become overly restrictive
    - *Mitigation*: Emphasize grace and spiritual growth over rule-following
@@ -681,4 +672,4 @@ def test_spiritual_formation_integration():
 
 This hybrid approach provides a comprehensive solution for delivering on the USP of "AI trained on Christian theology" without the massive investment of custom model development. The system will genuinely evaluate music through a biblical worldview lens, detect subtle spiritual conflicts, and provide believers with confidence in their music choices.
 
-The solution maintains technical feasibility while delivering theological depth, positioning the Christian Music Curator as the definitive platform for faith-based music curation and spiritual growth through music.
+By focusing on core orthodox Christian doctrine rather than denominational variations, the solution maintains theological integrity while remaining accessible to the broader Christian community. The system emphasizes biblical truth and spiritual growth, positioning the Christian Music Curator as the definitive platform for faith-based music curation.
