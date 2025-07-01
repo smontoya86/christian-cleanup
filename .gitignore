@@ -364,3 +364,8 @@ local_settings.py
 # Cache
 .cache/.env.local
 .env.secrets
+
+# ML Models
+models/
+*.bin
+*.safetensors
