@@ -31,6 +31,10 @@ class LyricsFetcherConfig:
     error_cache_ttl: int = 12 * 60 * 60  # 12 hours for error results
     cache_cleanup_interval: int = 60 * 60  # 1 hour between cleanup runs
     
+    # Batch Cache Configuration (NEW - for database optimization)
+    cache_batch_size: int = 50  # Number of cache operations to batch together
+    cache_batch_timeout: int = 30  # Seconds to wait before forcing batch commit
+    
     # Genius API configuration
     genius_timeout: int = 15  # API timeout in seconds (increased from 5)
     genius_sleep_time: float = 0.1  # sleep between requests
@@ -110,6 +114,10 @@ class LyricsFetcherConfig:
             error_cache_ttl=int(os.getenv('LYRICS_ERROR_CACHE_TTL', 12 * 60 * 60)),
             cache_cleanup_interval=int(os.getenv('LYRICS_CACHE_CLEANUP_INTERVAL', 60 * 60)),
             
+            # Batch Cache Configuration
+            cache_batch_size=int(os.getenv('LYRICS_CACHE_BATCH_SIZE', 50)),
+            cache_batch_timeout=int(os.getenv('LYRICS_CACHE_BATCH_TIMEOUT', 30)),
+            
             # Genius API
             genius_timeout=int(os.getenv('LYRICS_GENIUS_TIMEOUT', 5)),
             genius_sleep_time=float(os.getenv('LYRICS_GENIUS_SLEEP_TIME', 0.1)),
@@ -150,6 +158,10 @@ class LyricsFetcherConfig:
                 'negative_ttl': self.negative_cache_ttl,
                 'error_ttl': self.error_cache_ttl,
                 'cleanup_interval': self.cache_cleanup_interval,
+            },
+            'batch_cache': {
+                'size': self.cache_batch_size,
+                'timeout': self.cache_batch_timeout,
             },
             'genius_api': {
                 'timeout': self.genius_timeout,
