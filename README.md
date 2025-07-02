@@ -1,5 +1,14 @@
 # Christian Music Curator
 
+## 🐳 **DOCKER-FIRST PROJECT** 
+
+**⚠️ IMPORTANT: This is a Docker-first application. All commands should be run through Docker containers, not locally.**
+
+- **Web App**: `docker exec christiancleanupwindsurf-web-1 <command>`
+- **Database**: `docker exec christiancleanupwindsurf-db-1 <command>`
+- **Workers**: `docker exec christiancleanupwindsurf-worker-1 <command>`
+- **Redis**: `docker exec christiancleanupwindsurf-redis-1 redis-cli`
+
 ## Overview
 
 A production-ready Flask application that transforms Christian music curation from basic scoring into comprehensive discernment training. The system analyzes song lyrics using AI-powered analysis, provides biblical perspectives, and helps Christians develop discernment skills for music evaluation.

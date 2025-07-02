@@ -114,7 +114,7 @@
         </div>
         
         <div class="mt-3">
-            <strong>Current:</strong> <span id="currentJob">Background analysis for {{ current_user.display_name }} (ETA: 11.7h) • 600/hr</span><br>
+            <strong>Current:</strong> <span id="currentJob">Background analysis for {{ current_user.display_name }}</span><br>
             <strong>Recent:</strong> <span id="recentJobs">None</span>
         </div>
     </div>
@@ -963,6 +963,19 @@ function updateAllProgressDisplays(data) {
         etaElement.textContent = hours > 0 ? `${hours}h` : 'calculating...';
     }
     
+    // Update current job description with real data
+    const currentJobElement = document.getElementById('currentJob');
+    if (currentJobElement) {
+        const userName = data.user_name || '{{ current_user.display_name }}';
+        if (data.estimated_hours && data.processing_rate) {
+            const hours = Math.round(data.estimated_hours * 10) / 10;
+            const rate = Math.round(data.processing_rate);
+            currentJobElement.textContent = `Background analysis for ${userName} (ETA: ${hours}h) • ${rate}/hr`;
+        } else {
+            currentJobElement.textContent = `Background analysis for ${userName}`;
+        }
+    }
+    
     // ===== 2. UPDATE SONGS ANALYZED CARD (CRITICAL FIX) =====
     const totalAnalyzedSongsElement = document.getElementById('totalAnalyzedSongs');
     const analysisPercentageElement = document.getElementById('analysisPercentage');
@@ -1105,7 +1118,7 @@ async function startBackgroundAnalysis() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
     
     try {
-        const response = await fetch('/api/admin/reanalyze-user/{{ current_user.id }}', {
+                    const response = await fetch('/api/analyze-all', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

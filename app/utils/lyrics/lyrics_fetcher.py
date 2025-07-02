@@ -70,7 +70,7 @@ class LRCLibProvider(LyricsProvider):
         self.headers = {
             'User-Agent': 'Christian Cleanup App/1.0 (https://github.com/sammontoya/christian-cleanup)'
         }
-        self.timeout = 20  # Increased from 10 to 20 seconds
+        self.timeout = 8  # Faster timeout for better throughput
     
     @track_lyrics_call("lrclib_search")
     @retry_with_config(config_prefix='LYRICS_RETRY')
@@ -199,7 +199,7 @@ class LyricsOvhProvider(LyricsProvider):
         self.headers = {
             'User-Agent': 'Christian Cleanup App/1.0'
         }
-        self.timeout = 20  # Increased from 10 to 20 seconds
+        self.timeout = 6  # Faster timeout for better throughput
     
     @track_lyrics_call("lyrics_ovh_search")
     @retry_with_config(config_prefix='LYRICS_RETRY')

@@ -170,14 +170,14 @@ class HuggingFaceAnalyzer:
         """Legacy property - returns safety_analyzer for backward compatibility"""
         return self._safety_analyzer
 
-    def _safe_truncate_text(self, text: str, max_tokens: int = 450) -> str:
+    def _safe_truncate_text(self, text: str, max_tokens: int = 500) -> str:
         """
         Safely truncate text to ensure it fits within model token limits.
-        Uses conservative token estimation and handles edge cases.
+        Uses improved token estimation and handles edge cases.
         
         Args:
             text: Input text to truncate
-            max_tokens: Maximum tokens (default 450 to stay well under 512 limit)
+            max_tokens: Maximum tokens (default 500, safe margin under 512)
             
         Returns:
             Truncated text that should fit within token limits
@@ -186,24 +186,29 @@ class HuggingFaceAnalyzer:
             return ""
         
         # Quick check for very short text
-        if len(text) <= 100:
+        if len(text) <= 200:
             return text
         
-        # Conservative estimation: ~3-4 characters per token on average
-        # Use 3 chars/token for safety margin
-        estimated_chars = max_tokens * 3
+        # Improved estimation: ~4 characters per token on average for English
+        # But use 3.5 for safety with mixed content
+        estimated_chars = int(max_tokens * 3.5)
         
         if len(text) <= estimated_chars:
             return text
             
-        # Truncate to estimated character limit
-        truncated = text[:estimated_chars]
+        # Truncate to estimated character limit with extra safety margin
+        safety_chars = int(estimated_chars * 0.9)  # 10% safety margin
+        truncated = text[:safety_chars]
         
-        # Try to truncate at word boundary for better context
-        if ' ' in truncated:
-            # Find last complete word
+        # Try to truncate at sentence boundary first
+        if '. ' in truncated:
+            last_sentence = truncated.rfind('. ')
+            if last_sentence > safety_chars * 0.7:  # Don't lose too much content
+                truncated = truncated[:last_sentence + 1]
+        # Fall back to word boundary
+        elif ' ' in truncated:
             last_space = truncated.rfind(' ')
-            if last_space > estimated_chars * 0.8:  # Don't lose too much text
+            if last_space > safety_chars * 0.8:  # Don't lose too much text
                 truncated = truncated[:last_space]
         
         return truncated

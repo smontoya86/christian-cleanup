@@ -1,0 +1,135 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Docker-first development workflow and command requirements
+globs: *.md, *.py, *.js, *.sh
+alwaysApply: true
+---
+
+# Docker-First Development Rules
+
+## **🐳 CRITICAL REQUIREMENT**
+
+**This is a DOCKER-FIRST project. All development operations must be performed using Docker containers.**
+
+### **Container Names & Services**
+
+- **Web Application**: `christiancleanupwindsurf-web-1`
+- **Database**: `christiancleanupwindsurf-db-1` 
+- **Redis Cache/Queue**: `christiancleanupwindsurf-redis-1`
+- **Background Workers**: `christiancleanupwindsurf-worker-{1-6}`
+- **Monitoring**: `christiancleanupwindsurf-grafana-1`, `christiancleanupwindsurf-prometheus-1`
+
+### **Required Command Patterns**
+
+#### **✅ ALWAYS USE (Docker Commands)**
+```bash
+# Service status
+docker-compose ps
+./docker-helper.sh status
+
+# Web application commands
+docker exec christiancleanupwindsurf-web-1 flask shell
+docker exec christiancleanupwindsurf-web-1 flask db upgrade
+docker exec christiancleanupwindsurf-web-1 python -c "import app; print('test')"
+
+# Database operations
+docker exec christiancleanupwindsurf-db-1 psql -U curator -d christian_curator
+docker exec christiancleanupwindsurf-db-1 pg_dump -U curator christian_curator
+
+# Redis operations
+docker exec christiancleanupwindsurf-redis-1 redis-cli
+docker exec christiancleanupwindsurf-redis-1 redis-cli keys "*"
+
+# Worker operations
+docker logs christiancleanupwindsurf-worker-1
+docker restart $(docker ps -q --filter "name=worker")
+
+# Service management
+docker-compose up -d
+docker-compose restart web
+docker-compose logs -f web
+```
+
+#### **❌ NEVER USE (Local Commands)**
+```bash
+# These commands will fail or cause environment issues:
+python run.py              # ❌ NO - Use Docker web container
+flask shell                # ❌ NO - Use docker exec
+pip install                # ❌ NO - Use Dockerfile/requirements.txt  
+psql                       # ❌ NO - Use docker exec to database container
+redis-cli                  # ❌ NO - Use docker exec to Redis container
+python -m pytest          # ❌ NO - Use docker exec to web container
+```
+
+### **Development Workflow**
+
+1. **Start Development Session**:
+   ```bash
+   ./docker-helper.sh status
+   ./docker-helper.sh logs web
+   ```
+
+2. **Code Changes**: Edit files locally, changes are mounted into containers
+
+3. **Run Commands**: All Python/Flask/Database commands via Docker:
+   ```bash
+   docker exec christiancleanupwindsurf-web-1 flask shell
+   docker exec christiancleanupwindsurf-web-1 python -m pytest
+   ```
+
+4. **Monitor Background Jobs**:
+   ```bash
+   ./docker-helper.sh analysis
+   docker logs -f christiancleanupwindsurf-worker-1
+   ```
+
+### **Environment & Configuration**
+
+- **Environment Variables**: Set in `docker-compose.yml` and `.env`
+- **Never run local .env**: Docker containers load environment automatically
+- **Secret Management**: All secrets in Docker environment, not local shell
+
+### **Helper Tools**
+
+- **Primary**: `./docker-helper.sh` - Provides easy access to all Docker operations
+- **Documentation**: `DOCKER_COMMANDS.md` - Comprehensive command reference
+- **Visual Indicators**: README.md has prominent Docker-first warnings
+
+### **AI Assistant Guidelines**
+
+**When working on this project:**
+
+1. ✅ **ALWAYS check container status first**: `docker-compose ps`
+2. ✅ **Use docker exec for all app commands**: Never run Python/Flask locally  
+3. ✅ **Use helper script when possible**: `./docker-helper.sh <command>`
+4. ✅ **Monitor via Docker logs**: `docker logs <container>`
+5. ✅ **Restart services via Docker**: `docker-compose restart <service>`
+
+**Key Questions to Ask Yourself:**
+- Am I running this command in a Docker container? 
+- Does this command start with `docker exec` or `docker-compose`?
+- Am I using the correct container name?
+
+### **Common Mistakes to Avoid**
+
+- **Environment Confusion**: Running Flask locally while containers expect Docker environment
+- **Port Conflicts**: Local services conflicting with Docker port mappings  
+- **Dependency Issues**: Installing packages locally instead of via Docker
+- **Database Access**: Trying to connect to localhost instead of Docker database
+- **Session Issues**: Local cookies/sessions incompatible with Docker app
+
+### **Troubleshooting**
+
+If commands fail, verify:
+1. All containers are running: `docker-compose ps`
+2. Using correct container names: `docker ps --format "table {{.Names}}\\t{{.Status}}"`
+3. Environment variables loaded in containers: `docker exec <container> env`
+4. Not mixing local and Docker environments
+
+---
+
+**Remember: This project's entire stack runs in Docker. Local commands will fail or cause inconsistencies.**

@@ -722,6 +722,93 @@ def get_admin_reanalysis_status():
     })
 
 
+@bp.route('/analyze-all', methods=['POST'])
+@login_required
+def analyze_all_user_songs():
+    """User endpoint to trigger analysis for all unanalyzed songs in their playlists"""
+    try:
+        user_id = current_user.id
+        
+        # Check how many songs actually need analysis
+        total_unique_songs = db.session.query(Song.id).join(PlaylistSong).join(Playlist).filter(
+            Playlist.owner_id == user_id
+        ).distinct().count()
+
+        if total_unique_songs == 0:
+            return jsonify({
+                'success': True,
+                'message': 'No songs found in your playlists',
+                'queued_count': 0,
+                'user_id': user_id,
+                'already_complete': True
+            })
+
+        # Count songs with completed analysis
+        completed_songs = db.session.query(Song.id).join(PlaylistSong).join(Playlist).join(
+            AnalysisResult, Song.id == AnalysisResult.song_id
+        ).filter(
+            Playlist.owner_id == user_id,
+            AnalysisResult.status == 'completed'
+        ).distinct().count()
+
+        unanalyzed_count = total_unique_songs - completed_songs
+
+        # If all songs are already analyzed, return success with appropriate message
+        if unanalyzed_count == 0:
+            return jsonify({
+                'success': True,
+                'message': f'All {total_unique_songs:,} songs are already analyzed',
+                'queued_count': 0,
+                'total_songs': total_unique_songs,
+                'completed_songs': completed_songs,
+                'user_id': user_id,
+                'already_complete': True
+            })
+
+        # Use background analysis with MEDIUM priority for user-triggered analysis
+        analysis_service = UnifiedAnalysisService()
+        job = analysis_service.enqueue_background_analysis(
+            user_id=user_id,
+            priority='medium'  # User-triggered analysis = MEDIUM priority
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'Queued {unanalyzed_count:,} unanalyzed songs for analysis',
+            'queued_count': unanalyzed_count,
+            'total_songs': total_unique_songs,
+            'completed_songs': completed_songs,
+            'user_id': user_id,
+            'job_id': job.id,
+            'already_complete': False
+        })
+
+    except ValueError as e:
+        if "No unanalyzed songs found" in str(e):
+            # This should be caught by our check above, but just in case
+            return jsonify({
+                'success': True,
+                'message': 'All songs are already analyzed',
+                'queued_count': 0,
+                'user_id': user_id,
+                'already_complete': True
+            })
+        else:
+            current_app.logger.error(f'User analysis error: {e}')
+            return jsonify({
+                'success': False,
+                'error': str(e),
+                'message': 'Failed to start analysis for your songs'
+            }), 500
+    except Exception as e:
+        current_app.logger.error(f'User analysis error: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to start analysis for your songs'
+        }), 500
+
+
 @bp.route('/admin/reanalyze-user/<int:user_id>', methods=['POST'])
 @login_required
 @admin_required
@@ -1552,6 +1639,24 @@ def get_background_analysis_public_status():
                 'message': 'Active job is not background analysis'
             })
         
+        # **SIMPLE VALIDATION**: Check if workers are actually processing jobs
+        queue_length = queue.redis.llen('rq:queue:analysis') or 0
+        if queue_length == 0:
+            # No jobs in queue - check if analysis completed or stalled
+            completed_recently = db.session.execute(
+                text("SELECT COUNT(*) FROM analysis_results WHERE created_at > NOW() - INTERVAL '10 minutes'")
+            ).scalar()
+            
+            if completed_recently == 0:
+                # No jobs in queue AND no recent completions = stalled job
+                current_app.logger.warning("🧹 Detected stale background analysis tracking - cleaning up")
+                queue.redis.delete('analysis_active')
+                return jsonify({
+                    'status': 'success',
+                    'active': False,
+                    'message': 'Background analysis job was stale - cleaned up'
+                })
+        
         # Return basic progress information without sensitive data
         metadata = job_data.get('metadata', {})
         user_name = metadata.get('user_name', 'Unknown User')
@@ -1601,3 +1706,6 @@ def get_background_analysis_public_status():
             'error': str(e),
             'message': 'Failed to get background analysis status'
         }), 500
+
+
+

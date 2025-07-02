@@ -105,5 +105,23 @@ def create_app(config_name='development', skip_db_init=False):
     if not skip_db_init:
         with app.app_context():
             db.create_all()
+            
+            # Simple job reconnection on startup
+            try:
+                from .services.priority_analysis_queue import PriorityAnalysisQueue
+                queue = PriorityAnalysisQueue()
+                
+                # Check if we have progress data but no active job
+                progress_keys = queue.redis.keys("progress:*")
+                active_job = queue.redis.get("analysis_active")
+                
+                if progress_keys and not active_job:
+                    # Reconnect the first orphaned job
+                    job_id = progress_keys[0].decode('utf-8').split(":", 1)[1]
+                    queue.redis.set("analysis_active", job_id, ex=3600)
+                    app.logger.info(f"🔄 Reconnected orphaned background analysis job: {job_id}")
+            except Exception as e:
+                app.logger.warning(f"Job reconnection failed (non-critical): {e}")
+                # Don't fail startup if reconnection fails
     
     return app 
