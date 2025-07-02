@@ -1307,14 +1307,21 @@ class LyricsCache(db.Model):
             >>> # Expected output: Cached lyrics from genius
             >>> cache_entry.source
         """
-        if not all([artist, title, lyrics, source]):
-            raise ValueError("Artist, title, lyrics, and source are all required")
+        if not all([artist, title, source]):
+            raise ValueError("Artist, title, and source are all required")
             
         # Clean up the inputs
         artist = artist.strip()
         title = title.strip()
-        lyrics = lyrics.strip()
         source = source.strip()
+        
+        # Handle negative caching - store empty string for failed lookups
+        if not lyrics:
+            lyrics = ""  # Store as empty string for failed lookups
+            if source not in ['negative_cache', 'failed_lookup']:
+                source = 'negative_cache'
+        else:
+            lyrics = lyrics.strip()
         
         # Check if already exists
         existing = cls.find_cached_lyrics(artist, title)

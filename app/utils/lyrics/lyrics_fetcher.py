@@ -641,6 +641,14 @@ class LyricsFetcher:
             cache_entry = LyricsCache.find_cached_lyrics(artist, title)
             
             if cache_entry:
+                # Handle negative cache entries - return None to indicate "failed lookup"
+                if cache_entry.source == 'negative_cache' or (not cache_entry.lyrics and cache_entry.source in ['failed_lookup', 'negative_cache']):
+                    if self.config.log_cache_operations:
+                        logger.debug(f"Database negative cache hit for '{artist}' - '{title}' (source: {cache_entry.source})")
+                    self.metrics.record_cache_operation('lookup', hit=True, key=cache_key[:8], negative=True)
+                    return None  # Return None for failed lookups to skip provider calls
+                
+                # Return actual lyrics for successful cache entries
                 if self.config.log_cache_operations:
                     logger.debug(f"Database cache hit for '{artist}' - '{title}' (source: {cache_entry.source})")
                 self.metrics.record_cache_operation('lookup', hit=True, key=cache_key[:8])
@@ -670,10 +678,18 @@ class LyricsFetcher:
                     logger.warning(f"Invalid cache key format for storage: {cache_key[:8]}...")
                 return
             
-            # Don't cache None/empty lyrics
+            # Handle negative caching (failed lookups)
             if not lyrics:
                 if self.config.log_cache_operations:
-                    logger.debug(f"Skipping cache storage for empty lyrics: '{artist}' - '{title}'")
+                    logger.debug(f"Caching negative result for '{artist}' - '{title}'")
+                
+                # Cache the failed lookup with empty string and negative_cache source
+                cache_entry = LyricsCache.cache_lyrics(artist, title, "", 'negative_cache')
+                db.session.commit()
+                
+                if self.config.log_cache_operations:
+                    logger.debug(f"Cached negative result for '{artist}' - '{title}'")
+                self.metrics.record_cache_operation('store_negative', key=cache_key[:8])
                 return
             
             # Determine the source provider (use the last successful provider)
