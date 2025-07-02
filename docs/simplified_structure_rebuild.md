@@ -47,6 +47,7 @@ A production-ready Flask application for Christian music curation and analysis, 
 ### **AI & Analysis**
 - **HuggingFace Transformers** for content analysis
 - **Custom Analysis Pipeline** with educational focus
+- **Contextual Theme Detection** with semantic understanding (NEW)
 - **Multi-provider Lyrics System** (LRCLib → Lyrics.ovh → Genius)
 - **Biblical Reference Engine** with scripture mapping
 - **Enhanced Concern Detection** with Christian perspectives
@@ -79,6 +80,7 @@ app/
 │   ├── priority_queue_worker.py       # Background job processing
 │   ├── progress_tracker.py            # Real-time progress tracking with ETA
 │   ├── simplified_christian_analysis_service.py  # Core analysis engine
+│   ├── contextual_theme_detector.py   # Contextual theme detection (NEW)
 │   ├── enhanced_scripture_mapper.py    # Biblical reference mapping
 │   └── enhanced_concern_detector.py    # Content concern analysis
 ├── models/                              # Database models
@@ -177,9 +179,17 @@ User Action → Priority Queue → Worker Processing → Progress Tracking → R
 #### **SimplifiedChristianAnalysisService**
 - **AI-Powered Analysis** with HuggingFace models
 - **Biblical Theme Detection** (Faith, Worship, Savior, Jesus, God, etc.)
+- **Contextual Theme Detection** with semantic understanding
 - **Educational Explanations** with Christian perspectives
 - **Performance Optimized** (<1 second analysis time)
 - **Efficient Processing** for large-scale background analysis
+
+#### **ContextualThemeDetector** (NEW)
+- **Semantic Context Analysis** using existing AI sentiment/emotion models
+- **Prevents False Positives** (e.g., "God damn" vs "God is good")
+- **Context-Aware Theme Recognition** with confidence scoring
+- **Integration with Existing Infrastructure** (no added complexity)
+- **Improved Accuracy** over simple keyword matching
 
 #### **EnhancedScriptureMapper**
 - **10 Biblical Themes** with 30+ scripture passages

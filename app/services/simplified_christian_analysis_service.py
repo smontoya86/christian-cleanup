@@ -15,6 +15,7 @@ from app.utils.analysis.analysis_result import AnalysisResult
 from app.utils.analysis.huggingface_analyzer import HuggingFaceAnalyzer
 from .enhanced_scripture_mapper import EnhancedScriptureMapper
 from .enhanced_concern_detector import EnhancedConcernDetector
+from .contextual_theme_detector import ContextualThemeDetector
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +36,12 @@ class SimplifiedChristianAnalysisService:
         logger.info("Initializing SimplifiedChristianAnalysisService")
         
         logger.info("Using COMPREHENSIVE analysis mode (HuggingFace models)")
+        
+        # Contextual theme detection for improved accuracy (new enhancement)
+        self.contextual_detector = ContextualThemeDetector()
+        
         # Core AI analyzer for nuanced understanding (essential)
-        self.ai_analyzer = EnhancedAIAnalyzer()
+        self.ai_analyzer = EnhancedAIAnalyzer(self.contextual_detector)
         
         # Enhanced scripture mapping for educational value (essential)  
         self.scripture_mapper = EnhancedScriptureMapper()
@@ -529,9 +534,10 @@ class SimplifiedChristianAnalysisService:
 class EnhancedAIAnalyzer:
     """Enhanced AI analyzer that provides comprehensive analysis."""
     
-    def __init__(self):
+    def __init__(self, contextual_detector=None):
         """Initialize enhanced AI analyzer."""
         self.hf_analyzer = HuggingFaceAnalyzer()
+        self.contextual_detector = contextual_detector
     
     def analyze_comprehensive(self, title: str, artist: str, lyrics: str) -> Dict[str, Any]:
         """
@@ -544,12 +550,16 @@ class EnhancedAIAnalyzer:
             # Use existing HuggingFace analyzer for the heavy lifting
             hf_result = self.hf_analyzer.analyze_song(title, artist, lyrics)
             
+            # Extract sentiment and emotions first (needed for contextual themes)
+            sentiment_analysis = self._extract_sentiment(hf_result)
+            emotions_analysis = self._extract_emotions(hf_result)
+            
             # Extract and enhance the analysis
             analysis = {
-                'sentiment': self._extract_sentiment(hf_result),
-                'themes': self._extract_themes(hf_result),
+                'sentiment': sentiment_analysis,
+                'themes': self._extract_themes(hf_result, sentiment_analysis, emotions_analysis, lyrics),
                 'content_safety': self._extract_safety(hf_result),
-                'emotions': self._extract_emotions(hf_result),
+                'emotions': emotions_analysis,
                 'theological_depth': self._calculate_theological_depth(hf_result)
             }
             
@@ -580,29 +590,47 @@ class EnhancedAIAnalyzer:
         
         return {'label': 'NEUTRAL', 'score': 0.5, 'confidence': 0.5}
     
-    def _extract_themes(self, hf_result: AnalysisResult) -> List[str]:
-        """Extract themes from HuggingFace result with enhanced intelligence."""
-        # Get existing themes from HF analysis
-        biblical_analysis = hf_result.biblical_analysis or {}
-        themes_list = biblical_analysis.get('themes', [])
+    def _extract_themes(self, hf_result: AnalysisResult, sentiment_data: Dict, emotion_data: Dict, lyrics: str) -> List[str]:
+        """Extract themes using contextual analysis for improved accuracy."""
+        # Use contextual detector if available
+        if self.contextual_detector:
+            # Convert emotion data to the format expected by contextual detector
+            emotion_analysis = {'primary': {'label': emotion_data[0] if emotion_data else 'neutral', 'score': 0.8}}
+            
+            # Get contextual themes
+            contextual_themes = self.contextual_detector.detect_themes_with_context(
+                lyrics, sentiment_data, emotion_analysis
+            )
+            
+            # Extract theme names from contextual analysis
+            detected_themes = [theme['theme'] for theme in contextual_themes]
+            
+            logger.info(f"Contextual analysis detected {len(detected_themes)} themes: {detected_themes}")
+            return detected_themes
         
-        # Extract theme names from the theme dictionaries
-        detected_themes = []
-        if themes_list and isinstance(themes_list, list) and len(themes_list) > 0:
-            if isinstance(themes_list[0], dict):
-                detected_themes = [theme.get('theme', '') for theme in themes_list if theme and 'theme' in theme]
-            else:
-                detected_themes = [str(theme) for theme in themes_list if theme]
-        
-        # Enhance with intelligent keyword-based theme detection
-        lyrics_text = hf_result.lyrics_text or ""
-        title_text = hf_result.title or ""
-        enhanced_themes = self._detect_additional_themes(lyrics_text, title_text, detected_themes)
-        
-        # Combine and deduplicate
-        all_themes = list(set([theme for theme in detected_themes + enhanced_themes if theme]))
-        
-        return all_themes
+        # Fallback to original method if contextual detector not available
+        else:
+            # Get existing themes from HF analysis
+            biblical_analysis = hf_result.biblical_analysis or {}
+            themes_list = biblical_analysis.get('themes', [])
+            
+            # Extract theme names from the theme dictionaries
+            detected_themes = []
+            if themes_list and isinstance(themes_list, list) and len(themes_list) > 0:
+                if isinstance(themes_list[0], dict):
+                    detected_themes = [theme.get('theme', '') for theme in themes_list if theme and 'theme' in theme]
+                else:
+                    detected_themes = [str(theme) for theme in themes_list if theme]
+            
+            # Enhance with intelligent keyword-based theme detection
+            lyrics_text = hf_result.lyrics_text or ""
+            title_text = hf_result.title or ""
+            enhanced_themes = self._detect_additional_themes(lyrics_text, title_text, detected_themes)
+            
+            # Combine and deduplicate
+            all_themes = list(set([theme for theme in detected_themes + enhanced_themes if theme]))
+            
+            return all_themes
     
     def _detect_additional_themes(self, lyrics: str, title: str, existing_themes: List[str]) -> List[str]:
         """Simple but effective theme detection using keywords and synonyms."""
