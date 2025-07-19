@@ -203,19 +203,19 @@ class User(UserMixin, db.Model):
 
 class PlaylistSong(db.Model):
     """
-    Association model for the many-to-many relationship between Playlists and Songs.
+    Association table linking playlists and songs with track metadata.
     
-    This model represents the junction table that connects playlists and songs,
-    storing additional metadata about the relationship such as track position,
-    when the song was added to Spotify, and who added it. This enables detailed
-    playlist synchronization and track ordering capabilities.
+    This model represents the many-to-many relationship between playlists and songs,
+    storing additional metadata about each track's position in the playlist and
+    when it was added to Spotify. The track_position field maintains the order
+    of songs as they appear in the Spotify playlist.
     
     Attributes:
         playlist_id (int): Foreign key referencing the playlist.
         song_id (int): Foreign key referencing the song.
-        track_position (int): Zero-indexed position of the track in the playlist (Spotify convention).
-        added_at_spotify (datetime, optional): When the song was added to the playlist on Spotify.
-        added_by_spotify_user_id (str, optional): Spotify user ID of who added the track.
+        track_position (int): Position of the track in the playlist (0-based).
+        added_at_spotify (datetime, optional): When the track was added to Spotify.
+        added_by_spotify_user_id (str, optional): Spotify user ID who added the track.
         
     Relationships:
         playlist: Back reference to the associated Playlist object.
@@ -225,27 +225,26 @@ class PlaylistSong(db.Model):
         Adding a song to a playlist:
             >>> playlist_song = PlaylistSong(
             ...     playlist_id=1,
-            ...     song_id=5,
-            ...     track_position=0,
-            ...     added_at_spotify=datetime.now(timezone.utc),
-            ...     added_by_spotify_user_id='spotify123'
+            ...     song_id=2,
+            ...     track_position=0
             ... )
             >>> db.session.add(playlist_song)
             >>> db.session.commit()
             
-        Querying songs in a playlist by position:
-            >>> track = PlaylistSong.query.filter_by(
-            ...     playlist_id=1,
-            ...     track_position=0
-            ... ).first()
+        Finding songs in order:
+            >>> ordered_songs = PlaylistSong.query.filter_by(
+            ...     playlist_id=1
+            ... ).order_by(PlaylistSong.track_position).all()
     """
     __tablename__ = 'playlist_songs'
+    
     playlist_id = db.Column(db.Integer, db.ForeignKey('playlists.id'), primary_key=True)
     song_id = db.Column(db.Integer, db.ForeignKey('songs.id'), primary_key=True)
-    track_position = db.Column(db.Integer, nullable=False) # Spotify's 0-indexed position
-    added_at_spotify = db.Column(db.DateTime, nullable=True) # Timestamp from Spotify
-    added_by_spotify_user_id = db.Column(db.String(255), nullable=True) # Spotify user ID of adder
-
+    track_position = db.Column(db.Integer, nullable=False)
+    added_at_spotify = db.Column(db.DateTime, nullable=True)
+    added_by_spotify_user_id = db.Column(db.String(255), nullable=True)
+    
+    # Relationships
     playlist = db.relationship('Playlist', back_populates='song_associations')
     song = db.relationship('Song', back_populates='playlist_associations')
     
@@ -255,17 +254,17 @@ class PlaylistSong(db.Model):
         db.Index('idx_playlist_songs_song_id', 'song_id'),
         db.Index('idx_playlist_songs_track_position', 'playlist_id', 'track_position'),
     )
-
+    
     def __repr__(self):
         """
-        Return a string representation of the PlaylistSong association.
+        Return a string representation of the PlaylistSong instance.
         
         Returns:
-            str: String representation showing playlist ID, song ID, and track position.
+            str: String representation showing playlist and song IDs with position.
             
         Examples:
-            >>> ps = PlaylistSong(playlist_id=1, song_id=5, track_position=0)
-            >>> # Expected output: <PlaylistSong playlist_id=1 song_id=5 position=0>
+            >>> ps = PlaylistSong(playlist_id=1, song_id=2, track_position=0)
+            >>> # Expected output: <PlaylistSong playlist_id=1 song_id=2 position=0>
             >>> repr(ps)
         """
         return f'<PlaylistSong playlist_id={self.playlist_id} song_id={self.song_id} position={self.track_position}>'
@@ -1481,3 +1480,5 @@ class PlaylistSnapshot(db.Model):
     def __repr__(self):
         """String representation of the PlaylistSnapshot."""
         return f'<PlaylistSnapshot {self.snapshot_id}>'
+
+

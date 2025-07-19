@@ -84,9 +84,11 @@ class EnhancedConcernDetector:
                 'category': 'Materialism and Greed',
                 'severity': 'medium',
                 'patterns': [
-                    r'\b(money|cash|rich|wealth|expensive|luxury|diamond|gold)\b',
-                    r'\b(buy|shopping|possess|own|mine|deserve|earn)\b',
-                    r'\b(status|fame|power|control|success|achievement)\b'
+                    r'\b(money|cash)\s+(is|comes|first|everything|all)\b',
+                    r'\b(rich|wealth|expensive|luxury)\s+(life|lifestyle|living)\b',
+                    r'\b(buy|shopping|possess|own)\s+(everything|anything|more)\b',
+                    r'\blove\s+(money|cash|wealth|riches)\b',
+                    r'\b(greed|greedy|materialistic|selfish)\b'
                 ],
                 'biblical_perspective': '1 Timothy 6:10 warns that the love of money is the root of all kinds of evil.',
                 'explanation': 'Excessive focus on material wealth can distract from spiritual priorities and contentment in God.',
@@ -97,9 +99,11 @@ class EnhancedConcernDetector:
                 'category': 'Pride and Self-Focus',
                 'severity': 'medium',
                 'patterns': [
-                    r'\b(better|superior|perfect|amazing|incredible|awesome)\s+(than|me|myself|i)\b',
-                    r'\b(deserve|earned|worthy|special|chosen|blessed)\b',
-                    r'\bi\s+(am|can|will|deserve|need|want|love)\b'
+                    r'\bi\s+(am|m)\s+(better|superior|perfect|amazing|incredible|awesome)\s+(than|you)\b',
+                    r'\bi\s+(deserve|earned|command|demand)\s+(everything|anything|more|respect)\b',
+                    r'\b(arrogant|conceited|prideful|boastful|self-righteous)\b',
+                    r'\blook\s+down\s+on\b',
+                    r'\bi\s+(don\'t|dont)\s+need\s+(god|jesus|anyone|help)\b'
                 ],
                 'biblical_perspective': 'Proverbs 16:18 warns that pride goes before destruction and a haughty spirit before a fall.',
                 'explanation': 'Excessive self-focus can lead to pride and take glory away from God.',

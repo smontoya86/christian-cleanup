@@ -51,6 +51,13 @@ class SimplifiedChristianAnalysisService:
         
         logger.info("SimplifiedChristianAnalysisService initialized successfully")
     
+    def get_analysis_precision_report(self) -> Dict[str, Any]:
+        """Get precision analysis report from the contextual theme detector."""
+        if hasattr(self.contextual_detector, 'get_precision_report'):
+            return self.contextual_detector.get_precision_report()
+        else:
+            return {'error': 'Precision tracking not available'}
+    
     def analyze_song(self, title: str, artist: str, lyrics: str, user_id: Optional[int] = None) -> AnalysisResult:
         """
         Comprehensive Christian music analysis with enhanced educational components.
@@ -240,22 +247,24 @@ class SimplifiedChristianAnalysisService:
         # Use enhanced concern analysis if available
         if concern_analysis:
             enhanced_level = concern_analysis['overall_concern_level']
-            # Use the more conservative (higher concern) of the two analyses
-            if enhanced_level == 'High' or score <= 30:
+            # For Christian songs, prioritize lower concern when scores are high
+            if enhanced_level == 'High' and score <= 30:
                 return 'High'
-            elif enhanced_level == 'Medium' or score <= 60:
+            elif enhanced_level == 'Medium' and score <= 50:
                 return 'Medium'
-            elif enhanced_level == 'Low' or score <= 80:
+            elif enhanced_level == 'Low' or score >= 70:
                 return 'Low'
-            else:
+            elif score >= 85:
                 return 'Very Low'
+            else:
+                return enhanced_level
         
-        # Fallback to original logic
+        # Corrected logic: Higher scores = Lower concern for positive Christian content
         if not ai_analysis['content_safety']['is_safe'] or score <= 30:
             return 'High'
-        elif score <= 60:
+        elif score <= 50:
             return 'Medium' 
-        elif score <= 80:
+        elif score <= 70:
             return 'Low'
         else:
             return 'Very Low'
