@@ -322,7 +322,7 @@
                             <i class="fas fa-search fa-3x text-muted mb-3"></i>
                             <h5>No Analysis Available</h5>
                             <p class="text-muted">This song hasn't been analyzed yet. Click the button below to analyze it now.</p>
-                            <button id="analyzeSongBtn" class="btn btn-primary" 
+                            <button id="analyzeSongBtn" class="btn btn-primary analyze-song-btn" 
                                     data-song-id="{{ song.id }}"
                                     data-song-title="{{ song.title }}"
                                     data-song-artist="{{ song.artist }}">
@@ -361,12 +361,24 @@
                         <!-- Re-analyze button -->
                         {% if analysis %}
                             <div class="d-grid mb-3">
-                                <button id="reanalyzeSongBtn" class="btn btn-outline-primary" 
+                                <button id="reanalyzeSongBtn" class="btn btn-outline-primary analyze-song-btn" 
                                         data-song-id="{{ song.id }}"
                                         data-song-title="{{ song.title }}"
                                         data-song-artist="{{ song.artist }}">
                                     <i class="fas fa-redo me-2"></i>Re-analyze Song
                                 </button>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Remove from Playlist button (only when accessed from playlist context) -->
+                        {% if playlist %}
+                            <div class="d-grid mb-3">
+                                <form action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist.id, song_id=song.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-outline-danger w-100" 
+                                            onclick="return confirm('Remove this song from {{ playlist.name }}? This action cannot be undone.')">
+                                        <i class="fas fa-trash me-2"></i>Remove from Playlist
+                                    </button>
+                                </form>
                             </div>
                         {% endif %}
                         
