@@ -276,14 +276,20 @@ class HuggingFaceAnalyzer:
             # 4. AI-powered emotion detection
             emotion_result = self._analyze_emotions(all_text)
             
-            # Calculate final score
-            final_score = self._calculate_final_score(
+            # Calculate final score using enhanced Phase 4 scoring system
+            scoring_metadata = self._calculate_final_score(
                 christian_themes, concern_flags, sentiment_result, 
                 safety_result, emotion_result
             )
+            final_score = scoring_metadata['final_score']
             
             # Determine concern level
             concern_level = self._determine_concern_level(final_score, concern_flags, safety_result)
+            
+            # Generate Phase 4 structured verdict
+            verdict_data = self._generate_structured_verdict(
+                christian_themes, scoring_metadata, concern_level
+            )
             
             # Generate explanation
             explanation = self._generate_explanation(
@@ -326,7 +332,14 @@ class HuggingFaceAnalyzer:
                         'safety_penalty': -25 if safety_result and safety_result.get('is_toxic') else 0,
                         'concern_penalty': -sum(15 for flag in concern_flags)
                     },
-                    'explanation': explanation
+                    'explanation': explanation,
+                    # Phase 4 Enhanced Scoring Metadata
+                    'base_theme_points': scoring_metadata.get('base_theme_points', 0),
+                    'theological_weighting': scoring_metadata.get('theological_weighting', 1.0),
+                    'formational_penalty': scoring_metadata.get('formational_penalty', 0),
+                    # Phase 4 Structured Verdict Format
+                    'verdict_summary': verdict_data.get('verdict_summary', ''),
+                    'formation_guidance': verdict_data.get('formation_guidance', '')
                 }
             )
             
@@ -675,18 +688,15 @@ class HuggingFaceAnalyzer:
 
     def _calculate_final_score(self, christian_themes: List[Dict], concern_flags: List[Dict],
                              sentiment_result: Optional[Dict], safety_result: Optional[Dict],
-                             emotion_result: Optional[Dict]) -> float:
+                             emotion_result: Optional[Dict]) -> Dict[str, float]:
         """
-        Calculate final score starting at 0 and earning points for positive Christian themes.
-        
-        Phase 1 Core Gospel Themes scoring:
-        - Christ-Centered: +10 points
-        - Gospel Presentation: +10 points  
-        - Redemption: +7 points
-        - Sacrificial Love: +6 points
-        - Light vs Darkness: +5 points
+        Calculate final score with Phase 4 enhancements:
+        - Theological Significance Weighting (Core Gospel 1.5x, Character 1.2x)
+        - Formational Weight Multiplier (-10 for severe content)
+        - Enhanced scoring metadata for structured verdict
         """
         score = 0.0  # Start at 0 and earn points
+        base_theme_points = 0.0  # Track base points before weighting
         
         # Process all themes (positive and negative)
         if christian_themes:
@@ -697,13 +707,17 @@ class HuggingFaceAnalyzer:
                 category = theme.get('category', '')
                 
                 if points > 0 and confidence > 0.3:  # Positive themes - earn points
-                    # Very generous: double the points for high-confidence Core Gospel themes
+                    # Calculate base points without weighting
                     if confidence > 0.8:
-                        score += points * 2.0  # Double points for high confidence (80%+)
+                        theme_points = points * 2.0  # Double points for high confidence (80%+)
                     else:
                         # Still generous for medium confidence
                         adjusted_confidence = max(0.8, confidence)
-                        score += points * adjusted_confidence
+                        theme_points = points * adjusted_confidence
+                    
+                    base_theme_points += theme_points
+                    score += theme_points
+                    
                 elif points < 0 and confidence > 0.3:  # Negative themes - lose points
                     # Apply penalties for negative themes based on confidence
                     if confidence > 0.7:  # High confidence negative themes get full penalty
@@ -711,7 +725,16 @@ class HuggingFaceAnalyzer:
                     else:  # Lower confidence gets reduced penalty
                         score += points * confidence
                 elif not points:  # Keyword-based themes get decent bonuses
-                    score += 8 * confidence  # Increased from 5 to 8 points per keyword theme
+                    keyword_points = 8 * confidence  # Increased from 5 to 8 points per keyword theme
+                    base_theme_points += keyword_points
+                    score += keyword_points
+        
+        # Phase 4 Enhancement: Apply Theological Significance Weighting
+        theological_weighting = self._calculate_theological_weighting(christian_themes)
+        if theological_weighting > 1.0 and base_theme_points > 0:
+            # Apply weighting boost to theme points
+            weighting_boost = base_theme_points * (theological_weighting - 1.0)
+            score += weighting_boost
         
         # Positive sentiment bonus (increased)
         if sentiment_result and sentiment_result.get('primary'):
@@ -750,7 +773,165 @@ class HuggingFaceAnalyzer:
             if any(neg_emotion in emotion['label'].lower() for neg_emotion in very_negative_emotions):
                 score -= emotion['score'] * 8  # Penalty for negative emotions
         
-        return max(0.0, min(100.0, score))
+        # Phase 4 Enhancement: Apply Formational Weight Multiplier for severe content
+        formational_penalty = self._check_formational_penalty(
+            christian_themes, sentiment_result, emotion_result, safety_result
+        )
+        if formational_penalty < 0:
+            score += formational_penalty  # Apply the -10 penalty
+        
+        final_score = max(0.0, min(100.0, score))
+        
+        # Return enhanced scoring metadata
+        return {
+            'final_score': final_score,
+            'base_theme_points': base_theme_points,
+            'theological_weighting': theological_weighting,
+            'formational_penalty': formational_penalty
+        }
+
+    def _calculate_theological_weighting(self, christian_themes: List[Dict]) -> float:
+        """
+        Calculate theological significance weighting based on theme categories.
+        
+        Returns:
+        - 1.5x for content with Core Gospel themes
+        - 1.2x for content with Character/Spiritual themes  
+        - 1.0x for secular content or negative-only content
+        """
+        if not christian_themes:
+            return 1.0
+        
+        # Check for Core Gospel themes (highest priority)
+        has_core_gospel = any(
+            t.get('category') == 'core_gospel' and t.get('points', 0) > 0
+            for t in christian_themes
+        )
+        if has_core_gospel:
+            return 1.5
+        
+        # Check for Character/Spiritual themes
+        has_character_spiritual = any(
+            t.get('category') == 'character_spiritual' and t.get('points', 0) > 0
+            for t in christian_themes
+        )
+        if has_character_spiritual:
+            return 1.2
+        
+        # No positive Christian themes detected
+        return 1.0
+
+    def _check_formational_penalty(self, christian_themes: List[Dict], 
+                                 sentiment_result: Optional[Dict],
+                                 emotion_result: Optional[Dict],
+                                 safety_result: Optional[Dict]) -> float:
+        """
+        Check if formational weight multiplier should be applied.
+        
+        Criteria for -10 penalty:
+        - 3+ negative themes each -15 or worse
+        - Emotionally immersive negative tone (anger/fear + negative sentiment)  
+        - No redemptive elements (no positive themes)
+        
+        Returns: -10 if criteria met, 0 otherwise
+        """
+        if not christian_themes:
+            return 0.0
+        
+        # Count severe negative themes (-15 or worse)
+        severe_negative_themes = [
+            t for t in christian_themes 
+            if t.get('category') == 'negative' and t.get('points', 0) <= -15
+        ]
+        
+        # Check for 3+ severe negative themes
+        if len(severe_negative_themes) < 3:
+            return 0.0
+        
+        # Check for emotionally immersive negative tone
+        has_negative_sentiment = (
+            sentiment_result and 
+            sentiment_result.get('primary', {}).get('label', '').upper() == 'NEGATIVE' and
+            sentiment_result.get('primary', {}).get('score', 0) > 0.8
+        )
+        
+        has_negative_emotion = (
+            emotion_result and
+            any(neg_emotion in emotion_result.get('primary', {}).get('label', '').lower() 
+                for neg_emotion in ['anger', 'fear', 'disgust', 'rage']) and
+            emotion_result.get('primary', {}).get('score', 0) > 0.8
+        )
+        
+        # Check for toxic content
+        is_toxic = safety_result and safety_result.get('is_toxic', False)
+        
+        # Require strong emotional negativity
+        if not (has_negative_sentiment and (has_negative_emotion or is_toxic)):
+            return 0.0
+        
+        # Check for no redemptive elements (no positive themes)
+        has_positive_themes = any(
+            t.get('points', 0) > 0 for t in christian_themes
+        )
+        
+        if has_positive_themes:
+            return 0.0  # Has some redemptive content
+        
+        # All criteria met - apply formational penalty
+        return -10.0
+
+    def _generate_structured_verdict(self, christian_themes: List[Dict], 
+                                   scoring_metadata: Dict[str, float],
+                                   concern_level: str) -> Dict[str, str]:
+        """
+        Generate structured verdict with summary and formation guidance.
+        
+        Returns:
+        - verdict_summary: 1-line statement about spiritual core  
+        - formation_guidance: 1-2 sentences about spiritual impact and approach
+        """
+        final_score = scoring_metadata.get('final_score', 0)
+        theological_weighting = scoring_metadata.get('theological_weighting', 1.0)
+        formational_penalty = scoring_metadata.get('formational_penalty', 0)
+        
+        # Categorize content type
+        positive_themes = [t for t in christian_themes if t.get('points', 0) > 0]
+        negative_themes = [t for t in christian_themes if t.get('points', 0) < 0]
+        
+        if final_score >= 70 and theological_weighting >= 1.2:
+            # Excellent Christian content
+            summary = "Gospel-rich, theologically sound, spiritually edifying content."
+            guidance = "Safe for regular listening and worship. Encourages spiritual growth and strengthens faith through biblical truth."
+            
+        elif final_score >= 50 and len(positive_themes) > len(negative_themes):
+            # Good Christian content with some issues
+            summary = "Positive Christian content with good spiritual foundation."
+            guidance = "Generally safe for listening. Contains biblical truth that can encourage faith and spiritual development."
+            
+        elif final_score >= 30 and len(positive_themes) > 0:
+            # Mixed content
+            summary = "Mixed spiritual content with both positive and concerning elements."
+            guidance = "Use with discernment. Contains both beneficial and potentially harmful spiritual content that requires careful consideration."
+            
+        elif formational_penalty < 0:
+            # Severe negative content with formational penalty
+            summary = "Spiritually destructive content that forms listeners toward darkness."
+            guidance = "Avoid for spiritual formation. This content immerses listeners in harmful themes without redemptive truth or hope."
+            
+        elif final_score <= 20:
+            # Generally harmful content
+            summary = "Spiritually concerning content with harmful influences."
+            guidance = "Not recommended for regular listening. Contains themes that may negatively impact spiritual formation and biblical worldview."
+            
+        else:
+            # Secular or neutral content
+            summary = "Secular content with limited spiritual significance."
+            guidance = "Spiritually neutral content. While not harmful, offers little spiritual formation or biblical truth for growth."
+        
+        return {
+            'verdict_summary': summary,
+            'formation_guidance': guidance
+        }
 
     def _determine_concern_level(self, score: float, concern_flags: List[Dict], 
                                safety_result: Optional[Dict]) -> str:
