@@ -420,7 +420,7 @@ class HuggingFaceAnalyzer:
             return []
         
         try:
-            # Define Phase 1 + Phase 2 themes for classification
+            # Define Phase 1 + Phase 2 + Phase 3 themes for classification
             gospel_theme_labels = [
                 # Phase 1: Core Gospel Themes (5 themes)
                 "Christ-centered worship - Jesus as Savior, Lord, or King",
@@ -439,7 +439,28 @@ class HuggingFaceAnalyzer:
                 "Victory in Christ - Triumph over sin, death, and spiritual forces",
                 "Gratitude and thanksgiving - Thankful heart and praise to God",
                 "Discipleship and following Jesus - Spiritual growth and commitment",
-                "Evangelism and mission - Sharing the gospel and Great Commission"
+                "Evangelism and mission - Sharing the gospel and Great Commission",
+                
+                # Phase 3: Negative Themes (15+ themes) - HIGH SEVERITY
+                "Blasphemy and mocking God - Deliberate disrespect toward the sacred",
+                "Self-deification and pride - Making oneself god or ultimate authority",
+                "Apostasy and faith rejection - Abandoning or rejecting Christian beliefs",
+                "Suicide ideation and death wish - Wanting death without hope in God",
+                
+                # Phase 3: Negative Themes - MEDIUM SEVERITY
+                "Pride and arrogance - Self-glorification and superiority complex",
+                "Idolatry and false worship - Elevating created things over Creator",
+                "Occult practices and sorcery - Witchcraft, magic, and demonic spirituality",
+                "Sexual immorality and lust - Adultery, objectification, and moral compromise",
+                "Glorification of violence - Celebrating brutality and harm to others",
+                "Hatred and vengeance - Bitterness, retaliation, and malice toward others",
+                
+                # Phase 3: Negative Themes - LOWER SEVERITY  
+                "Materialism and greed - Worship of wealth and material possessions",
+                "Self-righteousness and works-based pride - Earning salvation through deeds",
+                "Moral confusion and relativism - Reversing good and evil standards",
+                "Vague spirituality without foundation - Generic spiritual concepts without Christ",
+                "Empty positivity and self-help - Motivation without biblical truth"
             ]
             
             # Safe truncation for the classifier
@@ -511,15 +532,73 @@ class HuggingFaceAnalyzer:
                         "Take up your cross": {"name": "Discipleship", "points": 4},  # Additional mapping
                         "Evangelism and mission": {"name": "Evangelistic Zeal", "points": 4},
                         "Great Commission": {"name": "Evangelistic Zeal", "points": 4},  # Additional mapping
-                        "Sharing the gospel": {"name": "Evangelistic Zeal", "points": 4}  # Additional mapping
+                        "Sharing the gospel": {"name": "Evangelistic Zeal", "points": 4},  # Additional mapping
+                        
+                        # Phase 3: Negative Themes - HIGH SEVERITY (-25 to -30 points)
+                        "Blasphemy and mocking God": {"name": "Blasphemy", "points": -30},
+                        "Deliberate disrespect": {"name": "Blasphemy", "points": -30},  # Additional mapping
+                        "Mocking the sacred": {"name": "Blasphemy", "points": -30},  # Additional mapping
+                        "Self-deification and pride": {"name": "Self-deification", "points": -25},
+                        "Making oneself god": {"name": "Self-deification", "points": -25},  # Additional mapping
+                        "Ultimate authority": {"name": "Self-deification", "points": -25},  # Additional mapping
+                        "Apostasy and faith rejection": {"name": "Apostasy", "points": -25},
+                        "Abandoning Christian beliefs": {"name": "Apostasy", "points": -25},  # Additional mapping
+                        "Rejecting faith": {"name": "Apostasy", "points": -25},  # Additional mapping
+                        "Suicide ideation and death wish": {"name": "Suicide ideation", "points": -25},
+                        "Wanting death": {"name": "Suicide ideation", "points": -25},  # Additional mapping
+                        "Death wish": {"name": "Suicide ideation", "points": -25},  # Additional mapping
+                        
+                        # Phase 3: Negative Themes - MEDIUM SEVERITY (-15 to -20 points)
+                        "Pride and arrogance": {"name": "Pride", "points": -20},
+                        "Self-glorification": {"name": "Pride", "points": -20},  # Additional mapping
+                        "Superiority complex": {"name": "Pride", "points": -20},  # Additional mapping
+                        "Idolatry and false worship": {"name": "Idolatry", "points": -20},
+                        "Elevating created things": {"name": "Idolatry", "points": -20},  # Additional mapping
+                        "False worship": {"name": "Idolatry", "points": -20},  # Additional mapping
+                        "Occult practices and sorcery": {"name": "Occult", "points": -20},
+                        "Witchcraft and magic": {"name": "Occult", "points": -20},  # Additional mapping
+                        "Demonic spirituality": {"name": "Occult", "points": -20},  # Additional mapping
+                        "Sexual immorality and lust": {"name": "Sexual immorality", "points": -20},
+                        "Adultery and unfaithfulness": {"name": "Sexual immorality", "points": -20},  # Additional mapping
+                        "Objectification of others": {"name": "Sexual immorality", "points": -20},  # Additional mapping
+                        "Glorification of violence": {"name": "Violence", "points": -20},
+                        "Celebrating brutality": {"name": "Violence", "points": -20},  # Additional mapping
+                        "Harm to others": {"name": "Violence", "points": -20},  # Additional mapping
+                        "Hatred and vengeance": {"name": "Hatred", "points": -20},
+                        "Bitterness and retaliation": {"name": "Hatred", "points": -20},  # Additional mapping
+                        "Malice toward others": {"name": "Hatred", "points": -20},  # Additional mapping
+                        
+                        # Phase 3: Negative Themes - LOWER SEVERITY (-10 to -15 points)
+                        "Materialism and greed": {"name": "Materialism", "points": -15},
+                        "Worship of wealth": {"name": "Materialism", "points": -15},  # Additional mapping
+                        "Material possessions": {"name": "Materialism", "points": -15},  # Additional mapping
+                        "Self-righteousness and works-based pride": {"name": "Self-righteousness", "points": -15},
+                        "Earning salvation": {"name": "Self-righteousness", "points": -15},  # Additional mapping
+                        "Works-based pride": {"name": "Self-righteousness", "points": -15},  # Additional mapping
+                        "Moral confusion and relativism": {"name": "Moral confusion", "points": -15},
+                        "Reversing good and evil": {"name": "Moral confusion", "points": -15},  # Additional mapping
+                        "Ethical relativism": {"name": "Moral confusion", "points": -15},  # Additional mapping
+                        "Vague spirituality without foundation": {"name": "Vague spirituality", "points": -10},
+                        "Generic spiritual concepts": {"name": "Vague spirituality", "points": -10},  # Additional mapping
+                        "Undefined divine references": {"name": "Vague spirituality", "points": -10},  # Additional mapping
+                        "Empty positivity and self-help": {"name": "Empty positivity", "points": -10},
+                        "Motivation without truth": {"name": "Empty positivity", "points": -10},  # Additional mapping
+                        "Self-help without foundation": {"name": "Empty positivity", "points": -10}  # Additional mapping
                     }
                     
                     # Find the matching theme
                     for key, value in theme_mapping.items():
                         if key.lower() in label.lower():
-                            # Determine category based on theme name
+                            # Determine category based on theme name and point value
                             phase1_themes = ['Christ-centered', 'Gospel presentation', 'Redemption', 'Sacrificial love', 'Light vs darkness']
-                            category = 'core_gospel' if value['name'] in phase1_themes else 'character_spiritual'
+                            negative_themes = ['Blasphemy', 'Self-deification', 'Apostasy', 'Suicide ideation', 'Pride', 'Idolatry', 'Occult', 'Sexual immorality', 'Violence', 'Hatred', 'Materialism', 'Self-righteousness', 'Moral confusion', 'Vague spirituality', 'Empty positivity']
+                            
+                            if value['name'] in phase1_themes:
+                                category = 'core_gospel'
+                            elif value['name'] in negative_themes or value['points'] < 0:
+                                category = 'negative'
+                            else:
+                                category = 'character_spiritual'
                             
                             themes.append({
                                 'theme': value['name'],
@@ -609,15 +688,15 @@ class HuggingFaceAnalyzer:
         """
         score = 0.0  # Start at 0 and earn points
         
-        # Earn points for Christian themes (more generous scoring)
+        # Process all themes (positive and negative)
         if christian_themes:
             for theme in christian_themes:
                 theme_name = theme.get('theme', '').lower()
                 confidence = theme.get('score', 0.5)
                 points = theme.get('points', 0)
+                category = theme.get('category', '')
                 
-                # Core Gospel Themes with specific point values (very generous for strong themes)
-                if points > 0 and confidence > 0.3:  # Use semantic classification points
+                if points > 0 and confidence > 0.3:  # Positive themes - earn points
                     # Very generous: double the points for high-confidence Core Gospel themes
                     if confidence > 0.8:
                         score += points * 2.0  # Double points for high confidence (80%+)
@@ -625,6 +704,12 @@ class HuggingFaceAnalyzer:
                         # Still generous for medium confidence
                         adjusted_confidence = max(0.8, confidence)
                         score += points * adjusted_confidence
+                elif points < 0 and confidence > 0.3:  # Negative themes - lose points
+                    # Apply penalties for negative themes based on confidence
+                    if confidence > 0.7:  # High confidence negative themes get full penalty
+                        score += points  # points is negative, so this subtracts
+                    else:  # Lower confidence gets reduced penalty
+                        score += points * confidence
                 elif not points:  # Keyword-based themes get decent bonuses
                     score += 8 * confidence  # Increased from 5 to 8 points per keyword theme
         
