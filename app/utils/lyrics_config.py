@@ -26,6 +26,7 @@ class LyricsFetcherConfig:
     jitter_factor: float = 0.1  # jitter factor for randomization
     
     # Cache configuration
+    use_cache: bool = True  # Enable/disable caching
     default_cache_ttl: int = 7 * 24 * 60 * 60  # 7 days in seconds
     negative_cache_ttl: int = 24 * 60 * 60  # 1 day for not found results
     error_cache_ttl: int = 12 * 60 * 60  # 12 hours for error results

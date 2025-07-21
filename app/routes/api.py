@@ -1708,4 +1708,52 @@ def get_background_analysis_public_status():
         }), 500
 
 
-
+@bp.route('/api/test/semantic-detection', methods=['POST'])
+@login_required
+def test_semantic_detection():
+    """Test endpoint for enhanced semantic theme detection."""
+    try:
+        data = request.get_json()
+        title = data.get('title', 'Test Song')
+        artist = data.get('artist', 'Test Artist') 
+        lyrics = data.get('lyrics', '')
+        
+        if not lyrics:
+            return jsonify({
+                'success': False,
+                'error': 'Lyrics are required for testing'
+            }), 400
+        
+        # Test the enhanced analysis
+        from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
+        analysis_service = SimplifiedChristianAnalysisService()
+        
+        result = analysis_service.analyze_song(title, artist, lyrics)
+        
+        # Get precision metrics
+        precision_report = analysis_service.get_analysis_precision_report()
+        
+        return jsonify({
+            'success': True,
+            'analysis': {
+                'score': result.scoring_results['final_score'],
+                'quality_level': result.scoring_results['quality_level'],
+                'explanation': result.scoring_results['explanation'],
+                'themes_detected': len(result.biblical_analysis['themes']),
+                'themes': [
+                    theme.get('theme', str(theme)) if isinstance(theme, dict) else str(theme)
+                    for theme in result.biblical_analysis['themes']
+                ],
+                'concerns': len(result.content_analysis.get('detailed_concerns', [])),
+                'scripture_references': len(result.biblical_analysis.get('supporting_scripture', []))
+            },
+            'precision_metrics': precision_report,
+            'message': 'Enhanced semantic detection active'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in semantic detection test: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

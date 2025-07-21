@@ -153,7 +153,7 @@
                     <div class="progress mt-2" style="height: 8px;">
                         <div class="progress-bar bg-info" 
                              role="progressbar" 
-                             style="width: {{ (stats.analyzed_songs / stats.total_songs) * 100 }}%"
+                             style="width: {% if stats.analyzed_songs and stats.total_songs %}{{ '%.1f'|format((stats.analyzed_songs / stats.total_songs) * 100) }}{% else %}0{% endif %}%"
                              id="miniAnalysisProgress">
                         </div>
                     </div>
@@ -982,27 +982,27 @@ function updateAllProgressDisplays(data) {
     const miniProgressBar = document.getElementById('miniAnalysisProgress');
     
     // Update the songs analyzed count
-    if (totalAnalyzedSongsElement) {
-        const oldValue = totalAnalyzedSongsElement.textContent;
-        totalAnalyzedSongsElement.textContent = completed;
+                    if (totalAnalyzedSongsElement && data.active) {
+                    const oldValue = totalAnalyzedSongsElement.textContent;
+                    totalAnalyzedSongsElement.textContent = completed;
         console.log(`✅ Songs Analyzed Card: Updated count from ${oldValue} to ${completed}`);
     } else {
         console.error(`❌ Element 'totalAnalyzedSongs' not found!`);
     }
     
     // Update the percentage text
-    if (analysisPercentageElement) {
-        const oldValue = analysisPercentageElement.textContent;
-        analysisPercentageElement.textContent = `${percentage.toFixed(1)}%`;
+                    if (analysisPercentageElement && data.active) {
+                    const oldValue = analysisPercentageElement.textContent;
+                    analysisPercentageElement.textContent = `${percentage.toFixed(1)}%`;
         console.log(`✅ Songs Analyzed Card: Updated percentage from ${oldValue} to ${percentage.toFixed(1)}%`);
     } else {
         console.error(`❌ Element 'analysisPercentage' not found!`);
     }
     
     // Update the mini progress bar
-    if (miniProgressBar) {
-        const oldWidth = miniProgressBar.style.width;
-        miniProgressBar.style.width = `${percentage}%`;
+                    if (miniProgressBar && data.active) {
+                    const oldWidth = miniProgressBar.style.width;
+                    miniProgressBar.style.width = `${percentage}%`;
         console.log(`✅ Songs Analyzed Card: Updated mini progress bar from ${oldWidth} to ${percentage}%`);
     } else {
         console.error(`❌ Element 'miniAnalysisProgress' not found!`);

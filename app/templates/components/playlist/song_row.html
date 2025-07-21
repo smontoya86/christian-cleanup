@@ -69,6 +69,14 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                                 </button>
                             </form>
                         </li>
+                        <li>
+                            <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
+                                <button type="submit" class="dropdown-item text-danger" 
+                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">
+                                    <i class="fas fa-trash me-2"></i>Remove from Playlist
+                                </button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -121,6 +129,15 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                             </form>
                         </li>
                         {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
+                                <button type="submit" class="dropdown-item text-danger" 
+                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">
+                                    <i class="fas fa-trash me-2"></i>Remove from Playlist
+                                </button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -146,6 +163,15 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                             <a class="dropdown-item" href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}">
                                 View Details
                             </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
+                                <button type="submit" class="dropdown-item text-danger" 
+                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">
+                                    <i class="fas fa-trash me-2"></i>Remove from Playlist
+                                </button>
+                            </form>
                         </li>
                     </ul>
                 </div>

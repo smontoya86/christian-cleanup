@@ -29,19 +29,44 @@ def dashboard():
     # Get user's playlists with stats
     playlists = Playlist.query.filter_by(owner_id=current_user.id).all()
     
-    # Calculate stats (using simple, working queries)
+    # Calculate track counts and analysis scores for each playlist
+    for playlist in playlists:
+        # Calculate track count from associations
+        playlist.track_count = len(playlist.song_associations)
+        
+        # Calculate analysis score from completed song analyses
+        if playlist.track_count > 0:
+            # Get all completed analyses for songs in this playlist
+            completed_analyses = db.session.query(AnalysisResult.score).join(
+                Song, AnalysisResult.song_id == Song.id
+            ).join(
+                PlaylistSong, Song.id == PlaylistSong.song_id
+            ).filter(
+                PlaylistSong.playlist_id == playlist.id,
+                AnalysisResult.status == 'completed'
+            ).all()
+            
+            if completed_analyses:
+                # Calculate average score from completed analyses
+                scores = [analysis.score for analysis in completed_analyses if analysis.score is not None]
+                if scores:
+                    avg_score = sum(scores) / len(scores)
+                    # Store as 0-100 scale in overall_alignment_score for the score property to work
+                    playlist.overall_alignment_score = avg_score
+    
+    # Calculate overall stats (using simple, working queries)
     total_playlists = len(playlists)
     total_songs = db.session.query(Song.id).join(PlaylistSong).join(Playlist).filter(
         Playlist.owner_id == current_user.id
     ).distinct().count()
     
-    # Fix: Count unique songs with completed analysis (not total completed analysis records)
+    # Count unique songs with completed analysis
     analyzed_songs = db.session.query(Song.id).join(AnalysisResult).join(PlaylistSong).join(Playlist).filter(
         Playlist.owner_id == current_user.id,
         AnalysisResult.status == 'completed'
     ).distinct().count()
     
-    # Fix: Count unique songs with flagged analysis (not total flagged analysis records)
+    # Count unique songs with flagged analysis
     flagged_songs = db.session.query(Song.id).join(AnalysisResult).join(PlaylistSong).join(Playlist).filter(
         Playlist.owner_id == current_user.id,
         AnalysisResult.status == 'completed',
@@ -186,6 +211,10 @@ def song_detail(song_id, playlist_id=None):
         Song.id == song_id,
         Playlist.owner_id == current_user.id
     ).first_or_404()
+    
+    # Get playlist_id from URL path parameter or query parameter
+    if not playlist_id:
+        playlist_id = request.args.get('playlist_id', type=int)
     
     # Get playlist info if playlist_id is provided
     playlist = None

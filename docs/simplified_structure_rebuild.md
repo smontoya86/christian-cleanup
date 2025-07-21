@@ -331,19 +331,43 @@ class User(db.Model):
 class Song(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     spotify_id = db.Column(db.String(255), unique=True, nullable=False)
-    name = db.Column(db.String(500), nullable=False)
-    artist = db.Column(db.String(500), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    artist = db.Column(db.String(255), nullable=False)
+    album = db.Column(db.String(255), nullable=True)
+    duration_ms = db.Column(db.Integer, nullable=True)
+    lyrics = db.Column(db.Text, nullable=True)
+    album_art_url = db.Column(db.String(512), nullable=True)
+    explicit = db.Column(db.Boolean, default=False)
+    last_analyzed = db.Column(db.DateTime, nullable=True)
     
-    # Enhanced Analysis Fields
-    biblical_themes = db.Column(JSON)              # Contextual theme detection
-    supporting_scripture = db.Column(JSON)         # Scripture mapping
-    purity_flags_details = db.Column(JSON)         # Enhanced concern analysis
-    positive_themes_identified = db.Column(JSON)   # Positive theme identification
+    # Relationships
+    playlist_associations = db.relationship('PlaylistSong', back_populates='song')
+    analysis_results = db.relationship('AnalysisResult', back_populates='song_rel', lazy='dynamic')
     
-    # Performance Metrics
-    analysis_score = db.Column(db.Float)
-    concern_level = db.Column(db.String(50))
-    has_analysis = db.Column(db.Boolean, default=False)
+    # Dynamic properties for accessing latest analysis results
+    @property
+    def analysis_status(self):
+        result = self.analysis_results.first()
+        return result.status if result else 'pending'
+    
+    @property
+    def score(self):
+        result = self.analysis_results.filter_by(status='completed').order_by(AnalysisResult.analyzed_at.desc()).first()
+        return result.score if result else None
+```
+
+#### **PlaylistSong Association Table**
+```python
+class PlaylistSong(db.Model):
+    playlist_id = db.Column(db.Integer, db.ForeignKey('playlists.id'), primary_key=True)
+    song_id = db.Column(db.Integer, db.ForeignKey('songs.id'), primary_key=True)
+    track_position = db.Column(db.Integer, nullable=False)
+    added_at_spotify = db.Column(db.DateTime, nullable=True)
+    added_by_spotify_user_id = db.Column(db.String(255), nullable=True)
+    
+    # Relationships
+    playlist = db.relationship('Playlist', back_populates='song_associations')
+    song = db.relationship('Song', back_populates='playlist_associations')
 ```
 
 #### **Lyrics Cache Model (NEW)**
@@ -662,6 +686,119 @@ python worker.py
 ---
 
 ## Future Enhancements
+
+### **Enhanced Analysis System with Comprehensive Theme Coverage**
+
+The analysis system has been completely rewritten to provide comprehensive Christian theme detection across all major theological categories, ensuring at least 80% coverage of Christian concepts in music.
+
+#### **Comprehensive Theme Detection (34+ Categories)**
+
+**1. Theology Proper (God the Father)**
+- God's names, titles, divine attributes (God, Lord, Creator, Almighty, Yahweh, etc.)
+- Divine transcendence, omnipotence, sovereignty
+- Trinity references and monotheistic declarations
+
+**2. Christology (Jesus Christ)**  
+- Jesus' names and titles (Christ, Savior, Redeemer, Messiah, etc.)
+- Incarnation, deity, and humanity of Christ
+- Atonement, cross, crucifixion, sacrifice, blood
+- Resurrection, victory over death, eternal life
+- Second coming, return, rapture, glorious appearing
+
+**3. Pneumatology (Holy Spirit)**
+- Holy Spirit's work, gifts, fruit, leading
+- Sanctification, spiritual growth, transformation
+- Guidance, comfort, intercession, filling
+
+**4. Soteriology (Salvation Themes)**
+- Grace, mercy, unmerited favor, divine kindness
+- Forgiveness, cleansing, redemption, atonement
+- Faith, trust, belief, confidence in God
+- Repentance, turning from sin, heart change
+- Justification, righteousness, declared righteous
+- Sanctification, holiness, spiritual growth
+
+**5. Hamartiology (Sin)**
+- Sin, transgression, iniquity, unrighteousness
+- Fall, moral failure, separation from God
+- Guilt, shame, consequences of sin
+
+**6. Ecclesiology (Church)**
+- Church body, fellowship, community, unity
+- Worship, praise, adoration, magnifying God
+- Prayer, intercession, communication with God
+
+**7. Eschatology (Last Things)**
+- Heaven, paradise, eternal life, glory
+- Second coming, return of Christ, end times
+- Judgment, accountability, divine justice
+
+**8. Christian Living (20+ Sub-categories)**
+- Love (divine and human), compassion, kindness
+- Peace, rest, tranquility, shalom
+- Joy, gladness, spiritual happiness, rejoicing
+- Hope, assurance, confident expectation
+- Patience, endurance, perseverance, waiting
+- Humility, meekness, selflessness, service
+- Strength, power, refuge, fortress in God
+- Provision, care, meeting needs, divine supply
+- Guidance, direction, leading, divine counsel
+- Protection, safety, security, divine covering
+- Healing, restoration, renewal, wholeness
+- Trials, suffering, difficulties, testing
+- Comfort, consolation, encouragement, relief
+- Transformation, new creation, spiritual change
+- Discipleship, following Christ, spiritual growth
+- Mission, evangelism, sharing the gospel
+- Stewardship, giving, generosity, responsibility
+- Covenant, promises, faithfulness, divine agreements
+- Kingdom, reign, rule, sovereignty of God
+- Creation, God's handiwork, natural revelation
+- Thanksgiving, gratitude, blessing, praise
+
+#### **Advanced Detection Methods**
+
+**1. Comprehensive Pattern Matching**
+- 500+ specific regex patterns across 34 themes
+- Context-aware phrase detection with sentiment validation
+- False positive prevention for worship vs. secular references
+
+**2. Zero-Shot Semantic Classification**
+- BART-large-mnli model for semantic understanding
+- 30+ semantic theme categories for broad coverage
+- Sentiment and emotion context validation
+
+**3. Hybrid Validation System**
+- Pattern + semantic results combination
+- Confidence scoring with context multipliers
+- Duplicate removal and relevance ranking
+
+#### **Enhanced Scripture Mapping**
+
+**Comprehensive Biblical Reference System**
+- 34 theme categories with detailed scripture mappings
+- Primary verses (3 per theme) + supporting verses
+- Practical applications and educational insights
+- Theological coverage assessment (80%+ target)
+
+**Educational Framework**
+- Systematic theology organization
+- Progressive revelation understanding
+- Practical Christian living applications
+- Balanced teaching approach for concerns
+
+#### **Precision and Coverage Metrics**
+
+**Performance Tracking**
+- Theme detection rate per song analysis
+- Coverage percentage across theological categories
+- Semantic vs. pattern detection comparison
+- False positive/negative monitoring
+
+**Quality Assurance**
+- Confidence thresholds for each detection method
+- Context validation using sentiment/emotion analysis
+- Educational value assessment for each theme match
 
 ### **Planned Features**
 - **Advanced AI Models**: Integration with newer transformer models
