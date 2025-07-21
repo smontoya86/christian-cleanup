@@ -110,6 +110,15 @@ class HuggingFaceAnalyzer:
             )
             logger.info("Emotion analysis model loaded successfully")
             
+            logger.info("Loading zero-shot theme classification model...")
+            # Load BART model for semantic theme detection
+            self._theme_analyzer = pipeline(
+                "zero-shot-classification",
+                model="facebook/bart-large-mnli",
+                device=0 if self.device == "cuda" else -1
+            )
+            logger.info("Zero-shot theme classification model loaded successfully")
+            
         except Exception as e:
             logger.error(f"Failed to load HuggingFace models: {e}")
             # If local_files_only fails, try without it (for initial download)
@@ -148,6 +157,14 @@ class HuggingFaceAnalyzer:
             return_all_scores=True
         )
         logger.info("Emotion analysis model loaded successfully")
+        
+        logger.info("Loading zero-shot theme classification model (with download)...")
+        self._theme_analyzer = pipeline(
+            "zero-shot-classification",
+            model="facebook/bart-large-mnli",
+            device=0 if self.device == "cuda" else -1
+        )
+        logger.info("Zero-shot theme classification model loaded successfully")
 
     @property
     def sentiment_analyzer(self):
@@ -163,6 +180,11 @@ class HuggingFaceAnalyzer:
     def emotion_analyzer(self):
         """Return the pre-loaded emotion analysis model"""
         return self._emotion_analyzer
+
+    @property
+    def theme_analyzer(self):
+        """Return the pre-loaded zero-shot theme classification model"""
+        return self._theme_analyzer
 
     # Legacy property for backward compatibility
     @property
@@ -241,8 +263,8 @@ class HuggingFaceAnalyzer:
             
             # Safe token-based truncation for AI models
             all_text = self._safe_truncate_text(full_text)
-            # 1. Keyword-based theme detection (fast)
-            christian_themes = self._detect_christian_themes(all_text)
+            # 1. Enhanced theme detection (keyword + semantic)
+            christian_themes = self._detect_enhanced_christian_themes(all_text)
             concern_flags = self._detect_concerns(all_text)
             
             # 2. AI-powered sentiment analysis
@@ -283,10 +305,10 @@ class HuggingFaceAnalyzer:
                 content_analysis={
                     'concern_flags': concern_flags,
                     'safety_assessment': safety_result,
-                    'total_penalty': sum(30 for flag in concern_flags)
+                    'total_penalty': sum(15 for flag in concern_flags)  # Updated penalty
                 },
                 biblical_analysis={
-                    'themes': [{'theme': theme, 'score': 1.0} for theme in christian_themes],
+                    'themes': christian_themes,  # Now includes enhanced theme structure
                     'supporting_scripture': supporting_scripture,
                     'biblical_themes_count': len(christian_themes)
                 },
@@ -299,10 +321,10 @@ class HuggingFaceAnalyzer:
                     'final_score': final_score,
                     'quality_level': concern_level,
                     'component_scores': {
-                        'christian_themes': min(len(christian_themes) * 10, 50),
-                        'sentiment_score': sentiment_result.get('primary', {}).get('score', 0) * 20 if sentiment_result else 0,
-                        'safety_penalty': -40 if safety_result and safety_result.get('is_toxic') else 0,
-                        'concern_penalty': -sum(30 for flag in concern_flags)
+                        'christian_themes': sum(theme.get('points', 3) * theme.get('score', 0.5) for theme in christian_themes),
+                        'sentiment_score': sentiment_result.get('primary', {}).get('score', 0) * 5 if sentiment_result else 0,
+                        'safety_penalty': -25 if safety_result and safety_result.get('is_toxic') else 0,
+                        'concern_penalty': -sum(15 for flag in concern_flags)
                     },
                     'explanation': explanation
                 }
@@ -354,6 +376,166 @@ class HuggingFaceAnalyzer:
             
         logger.info(f"⚠️ Total concern flags: {len(concern_flags)} - Keywords: {found_concerns}")
         return concern_flags
+
+    def _detect_enhanced_christian_themes(self, text: str) -> List[Dict]:
+        """
+        Enhanced Christian theme detection using both keywords and zero-shot classification.
+        
+        Detects the 5 Core Gospel Themes:
+        - Christ-Centered: Jesus as Savior, Lord, or King (+10 points)
+        - Gospel Presentation: Cross, resurrection, salvation by grace (+10 points)  
+        - Redemption: Deliverance by grace (+7 points)
+        - Sacrificial Love: Christlike self-giving (+6 points)
+        - Light vs Darkness: Spiritual clarity and contrast (+5 points)
+        """
+        logger.info(f"🔍 Enhanced theme detection for text (length: {len(text)})")
+        
+        # 1. Start with keyword-based detection (fast baseline)
+        keyword_themes = self._detect_christian_themes(text)
+        
+        # 2. Add zero-shot semantic classification for Core Gospel Themes
+        core_gospel_themes = self._classify_core_gospel_themes(text)
+        
+        # 3. Combine and deduplicate results
+        all_themes = []
+        
+        # Add keyword themes as themes with scores
+        for theme in keyword_themes:
+            all_themes.append({
+                'theme': theme,
+                'score': 1.0,  # High confidence for explicit keywords
+                'detection_method': 'keyword',
+                'category': 'general_christian'
+            })
+        
+        # Add semantic themes
+        all_themes.extend(core_gospel_themes)
+        
+        logger.info(f"🎯 Enhanced themes detected: {len(all_themes)} total themes")
+        return all_themes
+
+    def _classify_core_gospel_themes(self, text: str) -> List[Dict]:
+        """Use zero-shot classification to detect Core Gospel Themes."""
+        if not self.theme_analyzer:
+            return []
+        
+        try:
+            # Define Phase 1 + Phase 2 themes for classification
+            gospel_theme_labels = [
+                # Phase 1: Core Gospel Themes (5 themes)
+                "Christ-centered worship - Jesus as Savior, Lord, or King",
+                "Gospel presentation - Cross, resurrection, salvation by grace", 
+                "Redemption and deliverance - Grace and mercy from sin",
+                "Sacrificial love - Christlike self-giving and laying down life",
+                "Light versus darkness - Spiritual victory and overcoming evil",
+                
+                # Phase 2: Character & Spiritual Themes (10 themes)
+                "Perseverance and endurance - Faith through trials and spiritual growth",
+                "Obedience to God - Willingness to follow divine commands and will",
+                "Justice and righteousness - Advocacy for truth and biblical morality", 
+                "Mercy and compassion - Showing kindness and grace to others",
+                "Biblical truth and doctrine - Sound teaching and theological fidelity",
+                "Identity in Christ - New creation reality and child of God status",
+                "Victory in Christ - Triumph over sin, death, and spiritual forces",
+                "Gratitude and thanksgiving - Thankful heart and praise to God",
+                "Discipleship and following Jesus - Spiritual growth and commitment",
+                "Evangelism and mission - Sharing the gospel and Great Commission"
+            ]
+            
+            # Safe truncation for the classifier
+            safe_text = self._safe_truncate_text(text, max_tokens=400)
+            
+            # Perform zero-shot classification
+            results = self.theme_analyzer(safe_text, gospel_theme_labels)
+            
+            # Convert results to our theme format - handle different result formats
+            themes = []
+            
+            # Debug: log the actual structure
+            logger.info(f"🔬 Zero-shot results type: {type(results)}")
+            logger.info(f"🔬 Zero-shot results: {results}")
+            
+            # Handle different result formats from zero-shot classifier
+            if isinstance(results, dict):
+                # Standard format: {'labels': [...], 'scores': [...]}
+                labels = results.get('labels', [])
+                scores = results.get('scores', [])
+            elif isinstance(results, list) and len(results) > 0:
+                # Alternative format: [{'label': '...', 'score': ...}, ...]
+                labels = [item.get('label', '') for item in results]
+                scores = [item.get('score', 0.0) for item in results]
+            else:
+                logger.warning(f"Unexpected zero-shot result format: {type(results)}")
+                return themes
+            
+            for i, (label, score) in enumerate(zip(labels, scores)):
+                # Only include themes with reasonable confidence
+                if score > 0.3:  # 30% confidence threshold
+                    # Map to simplified theme names and point values (Phase 1 + Phase 2)
+                    theme_mapping = {
+                        # Phase 1: Core Gospel Themes
+                        "Christ-centered worship": {"name": "Christ-centered", "points": 10},
+                        "Gospel presentation": {"name": "Gospel presentation", "points": 10},
+                        "Redemption and deliverance": {"name": "Redemption", "points": 7},
+                        "Sacrificial love": {"name": "Sacrificial love", "points": 6},
+                        "Light versus darkness": {"name": "Light vs darkness", "points": 5},
+                        "Light overcoming darkness": {"name": "Light vs darkness", "points": 5},  # Additional mapping
+                        
+                        # Phase 2: Character & Spiritual Themes
+                        "Perseverance and endurance": {"name": "Endurance", "points": 6},
+                        "Faith through trials": {"name": "Endurance", "points": 6},  # Additional mapping
+                        "Spiritual perseverance": {"name": "Endurance", "points": 6},  # Additional mapping
+                        "Obedience to God": {"name": "Obedience", "points": 5},
+                        "Submission to divine will": {"name": "Obedience", "points": 5},  # Additional mapping
+                        "Following Gods commands": {"name": "Obedience", "points": 5},  # Additional mapping
+                        "Justice and righteousness": {"name": "Justice", "points": 5},
+                        "Defending the oppressed": {"name": "Justice", "points": 5},  # Additional mapping
+                        "Gods justice": {"name": "Justice", "points": 5},  # Additional mapping
+                        "Mercy and compassion": {"name": "Mercy", "points": 4},
+                        "Showing kindness": {"name": "Mercy", "points": 4},  # Additional mapping
+                        "Gods mercy": {"name": "Mercy", "points": 4},  # Additional mapping
+                        "Biblical truth and doctrine": {"name": "Truth", "points": 4},
+                        "Gods Word as truth": {"name": "Truth", "points": 4},  # Additional mapping
+                        "Sound doctrine": {"name": "Truth", "points": 4},  # Additional mapping
+                        "Identity in Christ": {"name": "Identity in Christ", "points": 5},
+                        "New creation in Christ": {"name": "Identity in Christ", "points": 5},  # Additional mapping
+                        "Child of God identity": {"name": "Identity in Christ", "points": 5},  # Additional mapping
+                        "Victory in Christ": {"name": "Victory in Christ", "points": 4},
+                        "Triumph over sin and death": {"name": "Victory in Christ", "points": 4},  # Additional mapping
+                        "Spiritual victory": {"name": "Victory in Christ", "points": 4},  # Additional mapping (updated from Light vs darkness)
+                        "Gratitude and thanksgiving": {"name": "Gratitude", "points": 4},
+                        "Thankful heart": {"name": "Gratitude", "points": 4},  # Additional mapping
+                        "Counting blessings": {"name": "Gratitude", "points": 4},  # Additional mapping
+                        "Discipleship and following Jesus": {"name": "Discipleship", "points": 4},
+                        "Spiritual growth": {"name": "Discipleship", "points": 4},  # Additional mapping
+                        "Take up your cross": {"name": "Discipleship", "points": 4},  # Additional mapping
+                        "Evangelism and mission": {"name": "Evangelistic Zeal", "points": 4},
+                        "Great Commission": {"name": "Evangelistic Zeal", "points": 4},  # Additional mapping
+                        "Sharing the gospel": {"name": "Evangelistic Zeal", "points": 4}  # Additional mapping
+                    }
+                    
+                    # Find the matching theme
+                    for key, value in theme_mapping.items():
+                        if key.lower() in label.lower():
+                            # Determine category based on theme name
+                            phase1_themes = ['Christ-centered', 'Gospel presentation', 'Redemption', 'Sacrificial love', 'Light vs darkness']
+                            category = 'core_gospel' if value['name'] in phase1_themes else 'character_spiritual'
+                            
+                            themes.append({
+                                'theme': value['name'],
+                                'score': float(score),
+                                'detection_method': 'semantic',
+                                'category': category,
+                                'points': value['points']
+                            })
+                            break
+            
+            logger.info(f"🔬 Semantic gospel themes: {[t['theme'] for t in themes]}")
+            return themes
+            
+        except Exception as e:
+            logger.warning(f"Zero-shot theme classification failed: {e}")
+            return []
 
     def _analyze_sentiment(self, text: str) -> Optional[Dict]:
         """Analyze sentiment using Hugging Face model"""
@@ -412,42 +594,78 @@ class HuggingFaceAnalyzer:
             logger.warning(f"Emotion analysis failed: {e}")
             return None
 
-    def _calculate_final_score(self, christian_themes: List[str], concern_flags: List[Dict],
+    def _calculate_final_score(self, christian_themes: List[Dict], concern_flags: List[Dict],
                              sentiment_result: Optional[Dict], safety_result: Optional[Dict],
                              emotion_result: Optional[Dict]) -> float:
-        """Calculate final score starting at 100% and deducting for concerning content"""
-        base_score = 100.0  # Start at perfect score
+        """
+        Calculate final score starting at 0 and earning points for positive Christian themes.
         
-        # Concern penalties - significant deductions
+        Phase 1 Core Gospel Themes scoring:
+        - Christ-Centered: +10 points
+        - Gospel Presentation: +10 points  
+        - Redemption: +7 points
+        - Sacrificial Love: +6 points
+        - Light vs Darkness: +5 points
+        """
+        score = 0.0  # Start at 0 and earn points
+        
+        # Earn points for Christian themes (more generous scoring)
+        if christian_themes:
+            for theme in christian_themes:
+                theme_name = theme.get('theme', '').lower()
+                confidence = theme.get('score', 0.5)
+                points = theme.get('points', 0)
+                
+                # Core Gospel Themes with specific point values (very generous for strong themes)
+                if points > 0 and confidence > 0.3:  # Use semantic classification points
+                    # Very generous: double the points for high-confidence Core Gospel themes
+                    if confidence > 0.8:
+                        score += points * 2.0  # Double points for high confidence (80%+)
+                    else:
+                        # Still generous for medium confidence
+                        adjusted_confidence = max(0.8, confidence)
+                        score += points * adjusted_confidence
+                elif not points:  # Keyword-based themes get decent bonuses
+                    score += 8 * confidence  # Increased from 5 to 8 points per keyword theme
+        
+        # Positive sentiment bonus (increased)
+        if sentiment_result and sentiment_result.get('primary'):
+            sentiment = sentiment_result['primary']
+            if sentiment['label'].upper() == 'POSITIVE':
+                score += sentiment['score'] * 10  # Increased from 5 to 10 for positive sentiment
+        
+        # Positive emotion bonus (increased)
+        if emotion_result and emotion_result.get('primary'):
+            emotion = emotion_result['primary']
+            positive_emotions = ['joy', 'love', 'optimism', 'gratitude']
+            
+            if any(pos_emotion in emotion['label'].lower() for pos_emotion in positive_emotions):
+                score += emotion['score'] * 6  # Increased from 3 to 6 for positive emotions
+        
+        # Deduct points for concerning content
         if concern_flags:
-            penalty = sum(15 for flag in concern_flags)  # -15 per concern type (was -30)
-            base_score -= penalty
+            penalty = sum(15 for flag in concern_flags)  # -15 per concern type
+            score -= penalty
         
-        # Safety penalty - major deduction for toxic content
+        # Major penalty for toxic content
         if safety_result and safety_result.get('is_toxic'):
-            base_score -= 25  # Heavy penalty for toxic content (was -40)
+            score -= 25  # Heavy penalty for toxic content
         
-        # Sentiment adjustment - minor penalties for negative sentiment
+        # Negative sentiment penalty
         if sentiment_result and sentiment_result.get('primary'):
             sentiment = sentiment_result['primary']
             if sentiment['label'].upper() == 'NEGATIVE':
-                base_score -= sentiment['score'] * 10  # Up to -10 for strong negative sentiment
-            # No bonus for positive sentiment - that's expected
+                score -= sentiment['score'] * 10  # Up to -10 for strong negative sentiment
         
-        # Emotion adjustment - small penalties for very negative emotions
+        # Negative emotion penalty
         if emotion_result and emotion_result.get('primary'):
             emotion = emotion_result['primary']
-            very_negative_emotions = ['anger', 'fear', 'disgust']  # Removed sadness as it's often artistic
+            very_negative_emotions = ['anger', 'fear', 'disgust']
             
             if any(neg_emotion in emotion['label'].lower() for neg_emotion in very_negative_emotions):
-                base_score -= emotion['score'] * 8  # Small penalty for negative emotions
+                score -= emotion['score'] * 8  # Penalty for negative emotions
         
-        # Christian theme bonus - small bonus for explicitly Christian content
-        if christian_themes:
-            bonus = min(len(christian_themes) * 3, 10)  # Up to +10 for Christian themes (much smaller)
-            base_score += bonus
-        
-        return max(0.0, min(100.0, base_score))
+        return max(0.0, min(100.0, score))
 
     def _determine_concern_level(self, score: float, concern_flags: List[Dict], 
                                safety_result: Optional[Dict]) -> str:
@@ -463,14 +681,21 @@ class HuggingFaceAnalyzer:
         else:  # Excellent content
             return 'Very Low'
 
-    def _generate_explanation(self, christian_themes: List[str], concern_flags: List[Dict],
+    def _generate_explanation(self, christian_themes: List[Dict], concern_flags: List[Dict],
                             sentiment_result: Optional[Dict], safety_result: Optional[Dict],
                             emotion_result: Optional[Dict], final_score: float) -> str:
         """Generate human-readable explanation"""
         explanations = []
         
         if christian_themes:
-            explanations.append(f"Contains Christian themes: {', '.join(christian_themes[:5])}")
+            # Handle enhanced theme structure
+            theme_names = []
+            for theme in christian_themes:
+                if isinstance(theme, dict):
+                    theme_names.append(theme.get('theme', 'unknown'))
+                else:
+                    theme_names.append(str(theme))
+            explanations.append(f"Contains Christian themes: {', '.join(theme_names[:5])}")
         
         if concern_flags:
             for flag in concern_flags:
@@ -529,24 +754,42 @@ class HuggingFaceAnalyzer:
         
         return ". ".join(explanations)
 
-    def _get_supporting_scripture(self, christian_themes: List[str]) -> Optional[str]:
+    def _get_supporting_scripture(self, christian_themes) -> Optional[str]:
         """Get supporting scripture for detected Christian themes"""
         if not christian_themes:
             return None
             
-        # Simple mapping of themes to scriptures
+        # Enhanced mapping for both keyword and semantic themes
         scripture_map = {
+            # Keyword themes
             'jesus': "John 3:16 - For God so loved the world that he gave his one and only Son",
             'christ': "Philippians 2:9 - Therefore God exalted him to the highest place",
             'god': "Psalm 46:1 - God is our refuge and strength, an ever-present help in trouble",
             'lord': "Psalm 23:1 - The Lord is my shepherd, I lack nothing",
             'faith': "Hebrews 11:1 - Now faith is confidence in what we hope for",
-            'grace': "Ephesians 2:8 - For it is by grace you have been saved, through faith"
+            'grace': "Ephesians 2:8 - For it is by grace you have been saved, through faith",
+            
+            # Core Gospel Themes (Phase 1)
+            'christ-centered': "Colossians 1:18 - And he is the head of the body, the church; he is the beginning and the firstborn from among the dead",
+            'gospel presentation': "1 Corinthians 15:3-4 - For what I received I passed on to you as of first importance: that Christ died for our sins according to the Scriptures",
+            'redemption': "Ephesians 1:7 - In him we have redemption through his blood, the forgiveness of sins",
+            'sacrificial love': "John 15:13 - Greater love has no one than this: to lay down one's life for one's friends",
+            'light vs darkness': "John 1:5 - The light shines in the darkness, and the darkness has not overcome it"
         }
         
-        for theme in christian_themes:
-            if theme in scripture_map:
-                return scripture_map[theme]
+        # Handle both old format (list of strings) and new format (list of dicts)
+        theme_names = []
+        if christian_themes and isinstance(christian_themes[0], dict):
+            # New enhanced format
+            theme_names = [theme.get('theme', '').lower() for theme in christian_themes]
+        else:
+            # Old string format
+            theme_names = [str(theme).lower() for theme in christian_themes]
+        
+        # Look for matching scripture
+        for theme_name in theme_names:
+            if theme_name in scripture_map:
+                return scripture_map[theme_name]
         
         return "Psalm 100:1 - Shout for joy to the Lord, all the earth"
 
@@ -554,18 +797,31 @@ class HuggingFaceAnalyzer:
         """Fallback analysis when AI models fail"""
         all_text = f"{title} {artist} {lyrics}".lower()
         
-        christian_themes = self._detect_christian_themes(all_text)
+        keyword_themes = self._detect_christian_themes(all_text)
         concern_flags = self._detect_concerns(all_text)
         
-        base_score = 100.0  # Start at perfect score
-        if concern_flags:
-            base_score -= 15 * len(concern_flags)  # -15 per concern
+        # Convert keyword themes to enhanced structure
+        christian_themes = [
+            {
+                'theme': theme,
+                'score': 1.0,
+                'detection_method': 'keyword',
+                'category': 'general_christian',
+                'points': 3  # Default points for keyword themes
+            }
+            for theme in keyword_themes
+        ]
+        
+        # Calculate score using new system (start at 0, earn points)
+        score = 0.0
         if christian_themes:
-            base_score += min(len(christian_themes) * 3, 10)  # Small bonus for Christian themes
+            score += len(christian_themes) * 3  # 3 points per keyword theme
+        if concern_flags:
+            score -= 15 * len(concern_flags)  # -15 per concern
         
-        score = max(0.0, min(100.0, base_score))
+        score = max(0.0, min(100.0, score))
         
-        # Determine concern level using new thresholds
+        # Determine concern level using new thresholds  
         if score < 70:
             concern_level = 'High'
         elif score < 85:
@@ -575,9 +831,9 @@ class HuggingFaceAnalyzer:
         else:
             concern_level = 'Very Low'
         
-        explanation = "Keyword-based analysis completed"
+        explanation = "Keyword-based fallback analysis completed"
         if christian_themes:
-            explanation += f" - Contains Christian themes: {', '.join(christian_themes[:3])}"
+            explanation += f" - Contains Christian themes: {', '.join([t['theme'] for t in christian_themes[:3]])}"
         if concern_flags:
             explanation += " - Contains concerning content"
         
@@ -588,11 +844,11 @@ class HuggingFaceAnalyzer:
             processed_text=all_text,
             content_analysis={
                 'concern_flags': concern_flags,
-                'total_penalty': sum(30 for flag in concern_flags)
+                'total_penalty': sum(15 for flag in concern_flags)  # Updated penalty
             },
             biblical_analysis={
-                'themes': [{'theme': theme, 'score': 1.0} for theme in christian_themes],
-                'supporting_scripture': self._get_supporting_scripture(christian_themes),
+                'themes': christian_themes,  # Now uses enhanced structure
+                'supporting_scripture': self._get_supporting_scripture([t['theme'] for t in christian_themes]),
                 'biblical_themes_count': len(christian_themes)
             },
             scoring_results={
