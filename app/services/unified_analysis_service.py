@@ -238,9 +238,8 @@ class UnifiedAnalysisService:
             # Return analysis in expected format with detailed information
             return {
                 'score': analysis_result.scoring_results['final_score'],
-                'concern_level': analysis_result.scoring_results['quality_level'],
-                'themes': [theme.get('theme', theme) if isinstance(theme, dict) else theme 
-                          for theme in analysis_result.biblical_analysis.get('themes', [])],
+                'concern_level': self._map_concern_level(analysis_result.scoring_results.get('quality_level', 'Unknown')),
+                'themes': self._extract_theme_names(analysis_result.biblical_analysis.get('themes', [])),
                 'status': 'completed',
                 'explanation': analysis_result.scoring_results['explanation'],
                 # Add detailed fields for database storage
@@ -302,13 +301,62 @@ class UnifiedAnalysisService:
             'concern_level': 'high',
             'themes': [],
             'status': 'completed',
-            'explanation': f'This song has been blacklisted by you and will not be analyzed further. Blacklisted songs are considered inappropriate regardless of their content.',
-            'detailed_concerns': ['User blacklisted'],
+            'explanation': f'This song has been blacklisted by you and is not recommended for Christian listening.',
+            'detailed_concerns': [{'type': 'user_blacklisted', 'description': 'Song has been marked as inappropriate by the user'}],
             'positive_themes': [],
             'biblical_themes': [],
             'supporting_scripture': []
         }
     
+    def _map_concern_level(self, quality_level: str) -> str:
+        """
+        Map analysis quality_level to database concern_level format.
+        
+        Args:
+            quality_level: The quality level from analysis ('High', 'Medium', 'Low', 'Very Low')
+            
+        Returns:
+            Mapped concern level in lowercase format for database
+        """
+        mapping = {
+            'High': 'high',
+            'Medium': 'medium', 
+            'Low': 'low',
+            'Very Low': 'very_low',
+            'Unknown': 'unknown'
+        }
+        return mapping.get(quality_level, 'unknown')
+    
+    def _extract_theme_names(self, themes_data) -> list:
+        """
+        Extract theme names from complex theme data structures.
+        
+        Args:
+            themes_data: List of themes (could be strings or dictionaries)
+            
+        Returns:
+            List of theme name strings
+        """
+        if not themes_data:
+            return []
+        
+        theme_names = []
+        for theme in themes_data:
+            if isinstance(theme, dict):
+                # Extract theme name from dictionary
+                name = theme.get('theme', theme.get('name', ''))
+                if name:
+                    theme_names.append(str(name))
+            elif isinstance(theme, str):
+                # Already a string
+                theme_names.append(theme)
+            else:
+                # Convert other types to string
+                theme_names.append(str(theme))
+        
+        # Remove empty strings and duplicates
+        return list(set([name for name in theme_names if name.strip()]))
+
     def _create_whitelisted_result(self, song, user_id):
         """Create analysis result for whitelisted song."""
         return {
