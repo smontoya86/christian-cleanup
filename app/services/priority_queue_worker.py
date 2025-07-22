@@ -17,6 +17,7 @@ from flask import current_app, Flask
 from .priority_analysis_queue import PriorityAnalysisQueue, AnalysisJob, JobType, JobStatus, JobPriority
 from .unified_analysis_service import UnifiedAnalysisService
 from .progress_tracker import get_progress_tracker, ProgressTracker
+from app.services.analyzer_cache import initialize_analyzer, get_analyzer_info, is_analyzer_ready
 
 logger = logging.getLogger(__name__)
 
@@ -310,17 +311,27 @@ class PriorityQueueWorker:
             return 1
     
     def _process_song_analysis(self, job: AnalysisJob) -> None:
-        """Process a single song analysis job"""
-        from ..services.unified_analysis_service import UnifiedAnalysisService
-        
+        """Process a single song analysis job using cached analyzer"""
         # Update progress: Starting analysis
         self.progress_tracker.update_job_progress(
             job_id=job.job_id,
             completed_items=0,
             current_step="starting",
             step_progress=0.0,
-            message="Starting song analysis"
+            message="Starting song analysis with cached models"
         )
+        
+        # Check if shared analyzer is ready
+        if not is_analyzer_ready():
+            logger.info("🚀 Shared analyzer not ready, initializing...")
+            self.progress_tracker.update_job_progress(
+                job_id=job.job_id,
+                completed_items=0,
+                current_step="initialization",
+                step_progress=0.1,
+                message="Initializing shared AI models (one-time setup)"
+            )
+            initialize_analyzer()
         
         # Get song from database
         from ..models.models import Song
@@ -341,16 +352,17 @@ class PriorityQueueWorker:
                     message="Fetching lyrics"
                 )
                 
-                # Update progress: Analyzing content
+                # Update progress: Analyzing content with cached models
                 self.progress_tracker.update_job_progress(
                     job_id=job.job_id,
                     completed_items=0,
                     current_step="analysis",
                     step_progress=0.6,
-                    message="Analyzing content"
+                    message="Analyzing content with cached AI models"
                 )
                 
-                # Perform the analysis
+                # Perform the analysis using cached analyzer
+                logger.info(f"🧠 Using cached analyzer for song: {song.title}")
                 analysis_service = UnifiedAnalysisService()
                 analysis_service.analyze_song(song.id, user_id=job.user_id)
                 
@@ -360,7 +372,7 @@ class PriorityQueueWorker:
                     completed_items=1,
                     current_step="complete",
                     step_progress=1.0,
-                    message="Analysis complete"
+                    message="Analysis complete using cached models"
                 )
                 
                 # Update playlist scores for any playlists containing this song
@@ -371,7 +383,9 @@ class PriorityQueueWorker:
             self.progress_tracker.update_job_progress(
                 job_id=job.job_id,
                 completed_items=1,
-                message="Analysis complete (simulated)"
+                current_step="complete",
+                step_progress=1.0,
+                message="Test analysis complete"
             )
     
     def _update_playlist_scores_for_song(self, song_id: int) -> None:
@@ -839,3 +853,29 @@ def shutdown_worker() -> None:
         _worker.stop()
         _worker = None
         logger.info("Global worker shutdown complete") 
+
+
+def initialize_worker() -> bool:
+    """
+    Initialize the worker with pre-loaded AI models.
+    
+    This function pre-loads the shared analyzer to ensure models
+    are ready before processing any analysis jobs.
+    
+    Returns:
+        bool: True if initialization successful
+    """
+    try:
+        logger.info("🚀 Pre-initializing worker with shared analyzer...")
+        
+        # Pre-load the shared analyzer
+        analyzer = initialize_analyzer()
+        
+        logger.info(f"✅ Worker initialization complete. Analyzer ready: {is_analyzer_ready()}")
+        logger.info(f"📊 Loaded models: {get_analyzer_info()}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Worker initialization failed: {e}")
+        return False 

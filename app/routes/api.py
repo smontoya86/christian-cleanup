@@ -570,7 +570,7 @@ def start_playlist_analysis_unanalyzed(playlist_id):
             owner_id=current_user.id
         ).first_or_404()
 
-        # Get unanalyzed songs
+        # Get unanalyzed songs (songs with no analysis results at all)
         unanalyzed_songs = db.session.query(Song).join(PlaylistSong).outerjoin(AnalysisResult).filter(
             PlaylistSong.playlist_id == playlist_id,
             AnalysisResult.id.is_(None)
@@ -584,20 +584,39 @@ def start_playlist_analysis_unanalyzed(playlist_id):
                 'queued_count': 0
             })
 
-        # Use unified analysis service to queue playlist analysis
-        analysis_service = UnifiedAnalysisService()
-        job = analysis_service.enqueue_playlist_analysis(
-            playlist_id=playlist_id,
-            user_id=current_user.id,
-            priority='medium'  # Playlist analysis = MEDIUM priority
-        )
+        # Queue each unanalyzed song individually using the proper system
+        from ..services.priority_analysis_queue import enqueue_song_analysis, JobPriority
+        
+        job_count = 0
+        errors = []
+        
+        for song in unanalyzed_songs:
+            try:
+                # Queue analysis job with MEDIUM priority for playlist analysis
+                job = enqueue_song_analysis(
+                    song_id=song.id,
+                    user_id=current_user.id,
+                    priority=JobPriority.MEDIUM,
+                    metadata={
+                        'song_title': song.title,
+                        'artist': song.artist,
+                        'playlist_id': playlist_id,
+                        'requested_at': datetime.now().isoformat()
+                    }
+                )
+                job_count += 1
+            except Exception as song_error:
+                error_msg = f'Failed to queue song "{song.title}": {song_error}'
+                current_app.logger.warning(error_msg)
+                errors.append(error_msg)
         
         return jsonify({
             'status': 'success',
             'success': True,
-            'message': f'Queued {len(unanalyzed_songs)} songs for analysis',
-            'queued_count': len(unanalyzed_songs),
-            'job_id': job.id
+            'message': f'Queued {job_count} songs for analysis. This will take several minutes to complete.',
+            'queued_count': job_count,
+            'total_songs': len(unanalyzed_songs),
+            'errors': errors
         })
 
     except Exception as e:
@@ -632,19 +651,47 @@ def reanalyze_all_playlist_songs(playlist_id):
                 'queued_count': 0
             })
 
-        # Use unified analysis service to queue playlist reanalysis
-        analysis_service = UnifiedAnalysisService()
-        job = analysis_service.enqueue_playlist_analysis(
-            playlist_id=playlist_id,
-            user_id=current_user.id,
-            priority='medium'  # Playlist reanalysis = MEDIUM priority
-        )
+        # Queue each song individually for reanalysis using the proper system
+        from ..services.priority_analysis_queue import enqueue_song_analysis, JobPriority
+        
+        job_count = 0
+        errors = []
+        
+        for song in songs:
+            try:
+                # For reanalysis, we need to clear any existing analysis first
+                existing_analysis = AnalysisResult.query.filter_by(song_id=song.id).first()
+                if existing_analysis:
+                    # Reset to pending to allow reanalysis
+                    existing_analysis.status = 'pending'
+                    existing_analysis.updated_at = db.func.now()
+                    db.session.commit()
+                
+                # Queue analysis job with MEDIUM priority for playlist reanalysis
+                job = enqueue_song_analysis(
+                    song_id=song.id,
+                    user_id=current_user.id,
+                    priority=JobPriority.MEDIUM,
+                    metadata={
+                        'song_title': song.title,
+                        'artist': song.artist,
+                        'playlist_id': playlist_id,
+                        'reanalysis': True,
+                        'requested_at': datetime.now().isoformat()
+                    }
+                )
+                job_count += 1
+            except Exception as song_error:
+                error_msg = f'Failed to queue song "{song.title}" for reanalysis: {song_error}'
+                current_app.logger.warning(error_msg)
+                errors.append(error_msg)
         
         return jsonify({
             'success': True,
-            'message': f'Queued {len(songs)} songs for reanalysis',
-            'queued_count': len(songs),
-            'job_id': job.id
+            'message': f'Queued {job_count} songs for reanalysis. This will take several minutes to complete.',
+            'queued_count': job_count,
+            'total_songs': len(songs),
+            'errors': errors
         })
 
     except Exception as e:

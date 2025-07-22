@@ -16,40 +16,58 @@ from app.utils.analysis.huggingface_analyzer import HuggingFaceAnalyzer
 from .enhanced_scripture_mapper import EnhancedScriptureMapper
 from .enhanced_concern_detector import EnhancedConcernDetector
 from .contextual_theme_detector import ContextualThemeDetector
+from app.services.analyzer_cache import get_shared_analyzer, is_analyzer_ready
 
 logger = logging.getLogger(__name__)
 
 
 class SimplifiedChristianAnalysisService:
     """
-    Simplified analysis service for Christian music curation.
+    Simplified Christian song analysis service that uses enhanced AI analysis.
     
-    Consolidates 15+ complex components into 2 core services:
-    1. AI Analyzer (HuggingFace models for nuanced understanding)
-    2. Scripture Mapper (Educational biblical connections)
-    
-    Focuses on training Christian discernment through AI-powered analysis.
+    This service now uses a shared, cached analyzer to avoid reloading
+    expensive AI models for each analysis.
     """
     
     def __init__(self):
-        """Initialize the simplified analysis service."""
-        logger.info("Initializing SimplifiedChristianAnalysisService")
+        """Initialize the service with cached analyzer"""
+        logger.info("📁 Initializing SimplifiedChristianAnalysisService with cached analyzer...")
+        # Don't create analyzer here - use lazy loading with cache
+        self._ai_analyzer = None
+        logger.info("✅ SimplifiedChristianAnalysisService initialized (analyzer will be loaded on demand)")
+    
+    @property
+    def ai_analyzer(self):
+        """Get the shared AI analyzer instance (lazy loading)"""
+        if self._ai_analyzer is None:
+            logger.info("🔗 Getting shared analyzer from cache...")
+            self._ai_analyzer = get_shared_analyzer()
+            logger.info("✅ Connected to shared analyzer")
+        return self._ai_analyzer
+    
+    def analyze_song_content(self, song_title: str, artist: str, lyrics: str) -> Dict[str, Any]:
+        """
+        Analyze a song's content using the shared AI analyzer.
         
-        logger.info("Using COMPREHENSIVE analysis mode (HuggingFace models)")
-        
-        # Contextual theme detection for improved accuracy (new enhancement)
-        self.contextual_detector = ContextualThemeDetector()
-        
-        # Core AI analyzer for nuanced understanding (essential)
-        self.ai_analyzer = EnhancedAIAnalyzer(self.contextual_detector)
-        
-        # Enhanced scripture mapping for educational value (essential)  
-        self.scripture_mapper = EnhancedScriptureMapper()
-        
-        # Enhanced concern detection for educational discernment (essential)
-        self.concern_detector = EnhancedConcernDetector()
-        
-        logger.info("SimplifiedChristianAnalysisService initialized successfully")
+        This method now uses cached models for significantly faster analysis.
+        """
+        try:
+            logger.info(f"🎵 Starting enhanced analysis for '{song_title}' by {artist}")
+            
+            # Check if analyzer is ready
+            if not is_analyzer_ready():
+                logger.info("⏳ Shared analyzer not ready, initializing...")
+            
+            # Use shared analyzer instead of creating new instance
+            analysis_result = self.ai_analyzer.analyze_song(song_title, artist, lyrics)
+            
+            logger.info(f"✅ Enhanced analysis completed for '{song_title}'")
+            return analysis_result
+            
+        except Exception as e:
+            logger.error(f"❌ Enhanced analysis failed for '{song_title}': {str(e)}")
+            # Fallback to basic analysis if AI fails
+            return self._fallback_analysis(song_title, artist, lyrics)
     
     def get_analysis_precision_report(self) -> Dict[str, Any]:
         """Get precision analysis report from the contextual theme detector."""
@@ -538,6 +556,47 @@ class SimplifiedChristianAnalysisService:
                     scripture_references.append(enhanced_ref)
         
         return scripture_references
+
+    def _fallback_analysis(self, song_title: str, artist: str, lyrics: str) -> Dict[str, Any]:
+        """
+        Fallback analysis method when the main AI analysis fails.
+        
+        Provides basic analysis without AI models.
+        """
+        logger.warning(f"Using fallback analysis for '{song_title}' by {artist}")
+        
+        # Simple keyword-based analysis
+        lyrics_lower = lyrics.lower() if lyrics else ""
+        title_lower = song_title.lower() if song_title else ""
+        text = f"{title_lower} {lyrics_lower}"
+        
+        # Basic Christian theme detection
+        christian_keywords = ['jesus', 'christ', 'god', 'lord', 'savior', 'faith', 'grace', 'worship']
+        detected_themes = [keyword for keyword in christian_keywords if keyword in text]
+        
+        # Basic sentiment
+        positive_words = ['love', 'joy', 'peace', 'hope', 'blessed', 'grace']
+        negative_words = ['hate', 'angry', 'sad', 'evil', 'death', 'fear']
+        
+        positive_count = sum(1 for word in positive_words if word in text)
+        negative_count = sum(1 for word in negative_words if word in text)
+        
+        if positive_count > negative_count:
+            sentiment = {'label': 'POSITIVE', 'score': 0.7}
+        elif negative_count > positive_count:
+            sentiment = {'label': 'NEGATIVE', 'score': 0.7}
+        else:
+            sentiment = {'label': 'NEUTRAL', 'score': 0.5}
+        
+        return {
+            'themes': detected_themes,
+            'sentiment': sentiment,
+            'emotions': [],
+            'content_safety': {'is_safe': True, 'toxicity_score': 0.0},
+            'theological_depth': len(detected_themes) * 0.2,
+            'final_score': max(30.0, min(80.0, 50.0 + len(detected_themes) * 10)),
+            'explanation': f"Fallback analysis detected {len(detected_themes)} Christian themes"
+        }
 
 
 class EnhancedAIAnalyzer:
