@@ -106,6 +106,27 @@ def create_app(config_name='development', skip_db_init=False):
         with app.app_context():
             db.create_all()
             
+            # Pre-load AI models for fast analysis (PERFORMANCE FIX)
+            if config_name != 'testing':  # Skip model loading in tests
+                try:
+                    app.logger.info("🚀 Pre-loading AI models for fast analysis...")
+                    from .services.analyzer_cache import initialize_analyzer, get_analyzer_info, is_analyzer_ready
+                    
+                    # Pre-load the shared analyzer
+                    analyzer = initialize_analyzer()
+                    
+                    if is_analyzer_ready():
+                        model_info = get_analyzer_info()
+                        app.logger.info(f"✅ AI models pre-loaded successfully: {model_info}")
+                        app.logger.info("🚀 Analysis requests will now be fast!")
+                    else:
+                        app.logger.warning("⚠️ AI models not ready after initialization")
+                        
+                except Exception as e:
+                    app.logger.error(f"❌ Failed to pre-load AI models: {e}")
+                    app.logger.warning("⚠️ Analysis will be slower on first request")
+                    # Don't fail startup if model loading fails
+            
             # Simple job reconnection on startup
             try:
                 from .services.priority_analysis_queue import PriorityAnalysisQueue

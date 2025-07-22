@@ -122,17 +122,28 @@
                                     <h6 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Concerns Found</h6>
                                 </div>
                                 <div class="card-body">
-                                    {% if analysis.purity_flags_details and (analysis.purity_flags_details | length > 0) %}
-                                        {% for flag in analysis.purity_flags_details %}
-                                            <div class="mb-2">
-                                                <span class="badge bg-warning text-dark me-2">
-                                                    {{ (flag.type if flag.type else 'Content Issue') | replace('_', ' ') | title }}
-                                                </span>
-                                                {% if flag is mapping and (flag.severity or flag.get('severity')) %}
-                                                    <small class="text-muted">{{ (flag.severity or flag.get('severity')).title() }} Level</small>
-                                                {% endif %}
+                                    {% if analysis.concerns %}
+                                        {% set concerns_data = analysis.concerns %}
+                                        {% if concerns_data is string %}
+                                            {% set concerns_data = concerns_data | from_json %}
+                                        {% endif %}
+                                        {% if concerns_data and (concerns_data | length > 0) %}
+                                            {% for concern in concerns_data %}
+                                                <div class="mb-2">
+                                                    <span class="badge bg-warning text-dark me-2">
+                                                        {{ (concern.type if concern.type else 'Content Issue') | replace('_', ' ') | title }}
+                                                    </span>
+                                                    {% if concern.severity %}
+                                                        <small class="text-muted">{{ concern.severity.title() }} Level</small>
+                                                    {% endif %}
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="text-success">
+                                                <i class="fas fa-check-circle me-2"></i>
+                                                <span class="fw-semibold">No major concerns identified</span>
                                             </div>
-                                        {% endfor %}
+                                        {% endif %}
                                     {% else %}
                                         <div class="text-success">
                                             <i class="fas fa-check-circle me-2"></i>
@@ -201,15 +212,10 @@
                     <!-- Enhanced Biblical Content with Categorized Scripture References -->
                     {% if analysis.supporting_scripture is iterable and analysis.supporting_scripture is not string %}
                         {% set positive_scriptures = [] %}
-                        {% set concern_scriptures = [] %}
                         
                         {% for scripture in analysis.supporting_scripture %}
                             {% if scripture is mapping %}
-                                {% if scripture.get('concern_type') %}
-                                    {% set _ = concern_scriptures.append(scripture) %}
-                                {% else %}
-                                    {% set _ = positive_scriptures.append(scripture) %}
-                                {% endif %}
+                                {% set _ = positive_scriptures.append(scripture) %}
                             {% endif %}
                         {% endfor %}
                         
@@ -245,13 +251,17 @@
                             </div>
                         {% endif %}
                         
-                        <!-- Section for Concern-Based Scriptures -->
-                        {% if concern_scriptures %}
-                            <div class="mb-4">
-                                <h6 class="text-warning mb-3">
-                                    <i class="fas fa-shield-alt me-2"></i>Biblical Foundation for Concerns
-                                    <span class="badge bg-warning text-dark ms-2">{{ concern_scriptures|length }}</span>
-                                </h6>
+                                <!-- DEBUG: Test concern_scriptures variable -->
+        <!-- DEBUG: concern_scriptures exists: {{ concern_scriptures is not none }} -->
+        <!-- DEBUG: concern_scriptures length: {{ concern_scriptures|length if concern_scriptures else 0 }} -->
+        
+        <!-- Section for Concern-Based Scriptures -->
+        {% if concern_scriptures %}
+            <div class="mb-4">
+                <h6 class="text-warning mb-3">
+                    <i class="fas fa-shield-alt me-2"></i>Biblical Foundation for Concerns
+                    <span class="badge bg-warning text-dark ms-2">{{ concern_scriptures|length }}</span>
+                </h6>
                                 <div class="alert alert-warning p-3 mb-3">
                                     <small>
                                         <i class="fas fa-info-circle me-2"></i>

@@ -206,6 +206,7 @@ def playlist_detail(playlist_id):
 @login_required
 def song_detail(song_id, playlist_id=None):
     """Detailed view of a song with analysis"""
+    current_app.logger.warning(f"🎵 ROUTE HIT: song_detail for song_id={song_id}, playlist_id={playlist_id}")
     # Verify user has access to this song
     song = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
         Song.id == song_id,
@@ -244,12 +245,65 @@ def song_detail(song_id, playlist_id=None):
     # Check if song has lyrics (for Biblical sections display)
     has_lyrics = bool(song.lyrics and song.lyrics.strip() and song.lyrics != "Lyrics not available")
     
+    # Extract concern scriptures from concerns data (not supporting_scripture)
+    concern_scriptures = []
+    current_app.logger.warning(f"🔍 DEBUG: Analysis exists: {analysis is not None}")
+    if analysis:
+        current_app.logger.warning(f"🔍 DEBUG: Analysis.concerns exists: {analysis.concerns is not None}")
+        current_app.logger.warning(f"🔍 DEBUG: Analysis.concerns type: {type(analysis.concerns)}")
+    
+    if analysis and analysis.concerns:
+        import json
+        current_app.logger.warning(f"🔍 DEBUG: Entering concern extraction logic")
+        try:
+            # Parse concerns if it's stored as JSON string
+            concerns_data = analysis.concerns
+            if isinstance(concerns_data, str):
+                concerns_data = json.loads(concerns_data)
+            
+            # Extract scripture information from each concern
+            if concerns_data and isinstance(concerns_data, list):
+                current_app.logger.warning(f"🔍 DEBUG: Processing {len(concerns_data)} concerns")
+                for i, concern in enumerate(concerns_data):
+                    current_app.logger.warning(f"🔍 DEBUG: Processing concern {i}: {type(concern)}")
+                    if isinstance(concern, dict):
+                        current_app.logger.warning(f"🔍 DEBUG: Concern {i} keys: {list(concern.keys())}")
+                        biblical_perspective = concern.get('biblical_perspective', '')
+                        current_app.logger.warning(f"🔍 DEBUG: Concern {i} biblical_perspective: {biblical_perspective[:100] if biblical_perspective else 'NONE'}")
+                        
+                        # Create scripture entry from concern data
+                        concern_scripture = {
+                            'concern_type': concern.get('type'),
+                            'reference': f"Biblical Perspective on {concern.get('category', concern.get('type', 'Concern')).title()}",
+                            'text': concern.get('biblical_perspective', ''),
+                            'educational_value': concern.get('educational_value', ''),
+                            'category': concern.get('category', ''),
+                            'severity': concern.get('severity', '')
+                        }
+                        if concern_scripture['text']:  # Only add if there's actual scripture content
+                            concern_scriptures.append(concern_scripture)
+                            current_app.logger.warning(f"🔍 DEBUG: Added concern scripture {i}")
+                        else:
+                            current_app.logger.warning(f"🔍 DEBUG: Skipped concern {i} - no text")
+                
+                current_app.logger.warning(f"✅ Successfully extracted {len(concern_scriptures)} concern scriptures")
+                current_app.logger.warning(f"🔍 DEBUG: Final concern_scriptures being passed to template: {len(concern_scriptures)} items")
+                for i, cs in enumerate(concern_scriptures):
+                    current_app.logger.warning(f"🔍 DEBUG: Concern scripture {i}: {cs.get('reference')} - {cs.get('text')[:50]}...")
+                
+        except (json.JSONDecodeError, TypeError) as e:
+            current_app.logger.warning(f"Error parsing concerns for song {song_id}: {e}")
+    else:
+        current_app.logger.info(f"No analysis or concerns found for song {song_id}")
+    
+    current_app.logger.warning(f"🔍 DEBUG: RIGHT BEFORE TEMPLATE - concern_scriptures length: {len(concern_scriptures)}")
     return render_template('song_detail.html', 
                          song=song, 
                          analysis=analysis, 
                          is_whitelisted=is_whitelisted,
                          has_lyrics=has_lyrics,
-                         playlist=playlist)
+                         playlist=playlist,
+                         concern_scriptures=concern_scriptures)
 
 
 @bp.route('/analyze_song/<int:song_id>', methods=['POST'])

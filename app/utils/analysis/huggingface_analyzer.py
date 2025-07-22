@@ -1087,7 +1087,7 @@ class HuggingFaceAnalyzer:
         
         score = max(0.0, min(100.0, score))
         
-        # Determine concern level using new thresholds  
+        # Determine concern level using new thresholds
         if score < 70:
             concern_level = 'High'
         elif score < 85:

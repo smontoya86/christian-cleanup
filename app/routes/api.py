@@ -225,8 +225,10 @@ def get_song_analysis(song_id):
             'concern_level': analysis.concern_level,
             'themes': analysis.themes or [],
             'analysis_details': analysis.problematic_content or {},
-            'created_at': analysis.created_at.isoformat(),
-            'concerns': analysis.concerns or []
+            'supporting_scripture': getattr(analysis, 'supporting_scripture', None) or [],
+            'biblical_themes': getattr(analysis, 'biblical_themes', None) or [],
+            'concerns': getattr(analysis, 'concerns', None) or [],
+            'created_at': analysis.created_at.isoformat()
         }
     
     return jsonify({
@@ -397,7 +399,7 @@ def get_playlist_analysis_status(playlist_id):
 @bp.route('/songs/<int:song_id>/analysis-status')
 @login_required
 def get_song_analysis_status(song_id):
-    """Get song analysis status (frontend-expected endpoint)"""
+    """Get song analysis status with progress tracking for queue system"""
     # Verify user has access to this song
     song = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
         Song.id == song_id,
@@ -418,7 +420,7 @@ def get_song_analysis_status(song_id):
             'stage': 'Analysis complete',
             'score': analysis.score,
             'concern_level': analysis.concern_level,
-            'message': 'Analysis completed',
+            'message': 'Analysis completed using cached models',
             'result': {
                 'id': analysis.id,
                 'score': analysis.score,
@@ -426,6 +428,9 @@ def get_song_analysis_status(song_id):
                 'status': analysis.status,
                 'themes': analysis.themes or [],
                 'explanation': analysis.explanation,
+                'supporting_scripture': getattr(analysis, 'supporting_scripture', None) or [],
+                'biblical_themes': getattr(analysis, 'biblical_themes', None) or [],
+                'concerns': getattr(analysis, 'concerns', None) or [],
                 'created_at': analysis.created_at.isoformat() if analysis.created_at else None
             },
             'analysis': {
@@ -435,6 +440,9 @@ def get_song_analysis_status(song_id):
                 'status': analysis.status,
                 'themes': analysis.themes or [],
                 'explanation': analysis.explanation,
+                'supporting_scripture': getattr(analysis, 'supporting_scripture', None) or [],
+                'biblical_themes': getattr(analysis, 'biblical_themes', None) or [],
+                'concerns': getattr(analysis, 'concerns', None) or [],
                 'created_at': analysis.created_at.isoformat() if analysis.created_at else None
             }
         })
@@ -443,25 +451,21 @@ def get_song_analysis_status(song_id):
         created_at = analysis.created_at
         if created_at:
             elapsed_seconds = (datetime.now() - created_at).total_seconds()
-            # Estimate progress: most songs take 30-60 seconds to analyze
-            # Progress increases rapidly in first 30 seconds, then levels off
-            if elapsed_seconds < 5:
-                progress = 10
-                stage = 'Fetching lyrics...'
-            elif elapsed_seconds < 15:
-                progress = 30
-                stage = 'Analyzing content...'
-            elif elapsed_seconds < 30:
+            # With cached models, analysis should be much faster
+            if elapsed_seconds < 2:
+                progress = 20
+                stage = 'Using cached AI models...'
+            elif elapsed_seconds < 5:
                 progress = 60
-                stage = 'Processing themes...'
-            elif elapsed_seconds < 45:
-                progress = 80
-                stage = 'Generating score...'
-            else:
+                stage = 'Analyzing content...'
+            elif elapsed_seconds < 10:
                 progress = 90
-                stage = 'Finalizing analysis...'
+                stage = 'Finalizing results...'
+            else:
+                progress = 95
+                stage = 'Almost complete...'
         else:
-            progress = 5
+            progress = 10
             stage = 'Starting analysis...'
             
         return jsonify({
@@ -471,7 +475,7 @@ def get_song_analysis_status(song_id):
             'status': 'pending',
             'progress': progress,
             'stage': stage,
-            'message': 'Analysis in progress'
+            'message': 'Analysis in progress with cached models'
         })
     elif analysis and analysis.status == 'failed':
         return jsonify({
@@ -486,21 +490,22 @@ def get_song_analysis_status(song_id):
             'message': 'Analysis failed'
         })
     else:
+        # No analysis found - ready to start
         return jsonify({
             'success': True,
             'completed': False,
             'has_analysis': False,
-            'status': 'pending',
+            'status': 'not_started',
             'progress': 0,
-            'stage': 'Initializing...',
-            'message': 'Analysis not started'
+            'stage': 'Ready to analyze',
+            'message': 'Click Analyze to start analysis with cached models'
         })
 
 
 @bp.route('/songs/<int:song_id>/analyze', methods=['POST'])
 @login_required
 def analyze_single_song(song_id):
-    """Analyze a single song using priority queue system"""
+    """Analyze a single song using simplified worker with cached models"""
     try:
         # Verify user has access to this song
         song = db.session.query(Song).join(PlaylistSong).join(Playlist).filter(
@@ -525,7 +530,7 @@ def analyze_single_song(song_id):
         
         db.session.commit()
 
-        # Enqueue analysis job with HIGH priority (individual song requests)
+        # Enqueue analysis job with HIGH priority - simplified worker will process with cached models
         job = enqueue_song_analysis(
             song_id=song_id,
             user_id=current_user.id,
@@ -537,10 +542,12 @@ def analyze_single_song(song_id):
             }
         )
         
+        current_app.logger.info(f"🚀 Queued song {song_id} ({song.title}) for analysis with simplified worker")
+        
         return jsonify({
             'success': True,
             'status': 'success',
-            'message': 'Song queued for analysis',
+            'message': 'Song queued for analysis using cached models',
             'song_id': song_id,
             'job_id': job.job_id
         })
@@ -552,7 +559,7 @@ def analyze_single_song(song_id):
             'message': str(e)
         }), 404
     except Exception as e:
-        current_app.logger.error(f'Single song analysis error: {e}')
+        current_app.logger.error(f'Song analysis queueing error: {e}')
         return jsonify({
             'status': 'error',
             'error': str(e),
