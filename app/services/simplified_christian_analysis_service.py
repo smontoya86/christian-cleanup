@@ -44,15 +44,11 @@ class SimplifiedChristianAnalysisService:
     
     @property
     def ai_analyzer(self):
-        """Get the enhanced AI analyzer instance that wraps the cached HuggingFace analyzer"""
+        """Get the enhanced AI analyzer instance with cached HuggingFace models"""
         if self._ai_analyzer is None:
             logger.info("🔗 Creating enhanced analyzer with cached HuggingFace models...")
-            # Get the cached HuggingFace analyzer
-            cached_hf_analyzer = get_shared_analyzer()
-            # Wrap it in EnhancedAIAnalyzer to provide analyze_comprehensive method
+            # Create EnhancedAIAnalyzer - it will use cached HuggingFace analyzer automatically
             self._ai_analyzer = EnhancedAIAnalyzer(self.contextual_detector)
-            # Replace the internal HuggingFace analyzer with our cached one
-            self._ai_analyzer.hf_analyzer = cached_hf_analyzer
             logger.info("✅ Enhanced analyzer created with cached models")
         return self._ai_analyzer
     
@@ -614,20 +610,29 @@ class EnhancedAIAnalyzer:
     """Enhanced AI analyzer that provides comprehensive analysis."""
     
     def __init__(self, contextual_detector=None):
-        """Initialize enhanced AI analyzer."""
-        self.hf_analyzer = HuggingFaceAnalyzer()
+        """Initialize enhanced AI analyzer with lazy loading."""
+        self.hf_analyzer = None  # Don't create analyzer here - use lazy loading
         self.contextual_detector = contextual_detector
+    
+    @property
+    def _cached_hf_analyzer(self):
+        """Get the cached HuggingFace analyzer instance (lazy loading)"""
+        if self.hf_analyzer is None:
+            logger.info("🔗 Getting cached HuggingFace analyzer...")
+            self.hf_analyzer = get_shared_analyzer()
+            logger.info("✅ Using cached HuggingFace analyzer")
+        return self.hf_analyzer
     
     def analyze_comprehensive(self, title: str, artist: str, lyrics: str) -> Dict[str, Any]:
         """
-        Perform comprehensive AI analysis using HuggingFace models.
+        Perform comprehensive AI analysis using cached HuggingFace models.
         
         Returns:
             Dictionary with sentiment, themes, safety, emotions, and depth analysis
         """
         try:
-            # Use existing HuggingFace analyzer for the heavy lifting
-            hf_result = self.hf_analyzer.analyze_song(title, artist, lyrics)
+            # Use cached HuggingFace analyzer for the heavy lifting
+            hf_result = self._cached_hf_analyzer.analyze_song(title, artist, lyrics)
             
             # Extract sentiment and emotions first (needed for contextual themes)
             sentiment_analysis = self._extract_sentiment(hf_result)
