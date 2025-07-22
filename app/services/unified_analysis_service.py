@@ -72,8 +72,13 @@ class UnifiedAnalysisService:
         # Use the analyze_song_complete method for consistent analysis
         analysis_data = self.analyze_song_complete(song, force=True, user_id=user_id)
         
-        # Create analysis record with results using mark_completed for proper field population
-        analysis = AnalysisResult(song_id=song_id)
+        # Get existing analysis record or create new one
+        analysis = AnalysisResult.query.filter_by(song_id=song_id).order_by(AnalysisResult.created_at.desc()).first()
+        if not analysis:
+            analysis = AnalysisResult(song_id=song_id)
+            db.session.add(analysis)
+        
+        # Update the analysis record with completed results using mark_completed for proper field population
         analysis.mark_completed(
             score=analysis_data.get('score', 85),
             concern_level=analysis_data.get('concern_level', 'low'),
@@ -85,7 +90,6 @@ class UnifiedAnalysisService:
             biblical_themes=analysis_data.get('biblical_themes', []),
             supporting_scripture=analysis_data.get('supporting_scripture', [])
         )
-        db.session.add(analysis)
         db.session.commit()
         
         return analysis
@@ -111,8 +115,13 @@ class UnifiedAnalysisService:
         # Get analysis data using the complete method
         analysis_data = self.analyze_song_complete(song, force=True, user_id=user_id)
         
-        # Create and save analysis result
-        analysis = AnalysisResult(song_id=song_id)
+        # Get existing analysis record or create new one
+        analysis = AnalysisResult.query.filter_by(song_id=song_id).order_by(AnalysisResult.created_at.desc()).first()
+        if not analysis:
+            analysis = AnalysisResult(song_id=song_id)
+            db.session.add(analysis)
+        
+        # Update the analysis record with completed results
         analysis.mark_completed(
             score=analysis_data.get('score', 85),
             concern_level=analysis_data.get('concern_level', 'low'),
@@ -124,7 +133,6 @@ class UnifiedAnalysisService:
             biblical_themes=analysis_data.get('biblical_themes', []),
             supporting_scripture=analysis_data.get('supporting_scripture', [])
         )
-        db.session.add(analysis)
         db.session.commit()
         
         return analysis
