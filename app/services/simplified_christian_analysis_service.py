@@ -32,17 +32,28 @@ class SimplifiedChristianAnalysisService:
     def __init__(self):
         """Initialize the service with cached analyzer"""
         logger.info("📁 Initializing SimplifiedChristianAnalysisService with cached analyzer...")
+        
+        # Initialize required components
+        self.contextual_detector = ContextualThemeDetector()
+        self.concern_detector = EnhancedConcernDetector()
+        self.scripture_mapper = EnhancedScriptureMapper()
+        
         # Don't create analyzer here - use lazy loading with cache
         self._ai_analyzer = None
         logger.info("✅ SimplifiedChristianAnalysisService initialized (analyzer will be loaded on demand)")
     
     @property
     def ai_analyzer(self):
-        """Get the shared AI analyzer instance (lazy loading)"""
+        """Get the enhanced AI analyzer instance that wraps the cached HuggingFace analyzer"""
         if self._ai_analyzer is None:
-            logger.info("🔗 Getting shared analyzer from cache...")
-            self._ai_analyzer = get_shared_analyzer()
-            logger.info("✅ Connected to shared analyzer")
+            logger.info("🔗 Creating enhanced analyzer with cached HuggingFace models...")
+            # Get the cached HuggingFace analyzer
+            cached_hf_analyzer = get_shared_analyzer()
+            # Wrap it in EnhancedAIAnalyzer to provide analyze_comprehensive method
+            self._ai_analyzer = EnhancedAIAnalyzer(self.contextual_detector)
+            # Replace the internal HuggingFace analyzer with our cached one
+            self._ai_analyzer.hf_analyzer = cached_hf_analyzer
+            logger.info("✅ Enhanced analyzer created with cached models")
         return self._ai_analyzer
     
     def analyze_song_content(self, song_title: str, artist: str, lyrics: str) -> Dict[str, Any]:
