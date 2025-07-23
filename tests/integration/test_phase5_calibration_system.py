@@ -44,7 +44,7 @@ class TestCalibrationSystem:
         ]
         
         # Mock batch re-analysis function (to be implemented)
-        with patch('app.services.calibration_service.CalibrationService') as mock_service:
+        with patch('scripts.utilities.calibration_service.CalibrationService') as mock_service:
             mock_service.return_value.batch_reanalyze.return_value = {
                 'total_songs': len(test_songs),
                 'successful_analyses': len(test_songs),
