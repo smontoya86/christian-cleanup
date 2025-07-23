@@ -88,9 +88,8 @@ class TestBasicFunctionality:
         assert UnifiedAnalysisService is not None
 
     @pytest.mark.smoke
-    @patch('app.services.unified_analysis_service.EnhancedSongAnalyzer')
     @patch('app.services.unified_analysis_service.LyricsFetcher')
-    def test_basic_analysis_works(self, mock_lyrics_fetcher, mock_analyzer, app, db, sample_song):
+    def test_basic_analysis_works(self, mock_lyrics_fetcher, app, db, sample_song):
         """Test that basic analysis functionality works."""
         with app.app_context():
             # Mock the lyrics fetcher
@@ -98,20 +97,8 @@ class TestBasicFunctionality:
             mock_lyrics_fetcher.return_value = mock_lyrics_instance
             mock_lyrics_instance.fetch_lyrics.return_value = "Amazing grace how sweet the sound that saved a wretch like me"
             
-            # Mock the analyzer
-            mock_analyzer_instance = MagicMock()
-            mock_analyzer.return_value = mock_analyzer_instance
-            mock_analyzer_instance.analyze_song.return_value = {
-                'score': 85,
-                'concern_level': 'low',
-                'detailed_concerns': [],
-                'biblical_themes': [{'theme': 'salvation_and_redemption', 'confidence': 0.9}],
-                'positive_themes': [{'theme': 'grace', 'confidence': 0.8}],
-                'explanation': 'This song contains strong Christian themes about salvation and grace.',
-                'positive_bonus': 15,
-                'biblical_references': [],
-                'content_flags': []
-            }
+            # Test uses the real SimplifiedChristianAnalysisService
+            # No need to mock the analyzer since we're testing the actual service
             
             # Import and test the service
             from app.services.unified_analysis_service import UnifiedAnalysisService
@@ -187,9 +174,9 @@ class TestBasicFunctionality:
             from app import db
             assert db is not None
 
-            # Test that RQ extension is available 
-            from app import rq
-            assert rq is not None
+            # Test that login manager is available
+            from app import login_manager
+            assert login_manager is not None
 
     @pytest.mark.smoke
     def test_environment_variables_loaded(self, app):

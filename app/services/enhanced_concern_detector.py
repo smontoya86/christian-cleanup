@@ -21,218 +21,219 @@ class EnhancedConcernDetector:
     """
     
     def __init__(self):
-        """Initialize the enhanced concern detector."""
-        logger.info("Initializing EnhancedConcernDetector")
-        self._initialize_concern_patterns()
-    
-    def _initialize_concern_patterns(self):
-        """Initialize comprehensive concern detection patterns."""
+        """
+        Initialize enhanced concern detector with Christian-context-aware patterns.
+        
+        Patterns are designed to avoid false positives in Christian worship songs
+        while still detecting genuinely concerning content.
+        """
         self.concern_patterns = {
             'explicit_language': {
                 'category': 'Language and Expression',
                 'severity': 'high',
                 'patterns': [
-                    r'\b(f[*u]ck|sh[*i]t|d[*a]mn|b[*i]tch|a[*s]s|hell|crap)\b',
-                    r'\b(stupid|idiot|moron|dumb)\b',
-                    r'\b(hate|revenge|kill|murder|die)\b'
+                    # Only flag actual profanity, not spiritual references
+                    r'\b(fuck|shit|damn|bitch|asshole|bastard|crap)\b',
+                    r'\b(motherfucker|goddamn|jesus christ)\b(?!.*\b(lord|savior|praise|worship|holy)\b)',  # Exclude worship context
+                    r'\b(piss|ass)\b(?!.*\b(pass|grass|class|mass|glass)\b)'  # Exclude innocent words
+                ],
+                'exclusions': [
+                    # Christian contexts should not be flagged
+                    r'\b(hell|damn)\b.*\b(victory|overcome|defeated|lost|free|salvation|redeemed)\b',
+                    r'\b(hell)\b.*\b(another one|no more|cannot hold|lost its grip)\b'
                 ],
                 'biblical_perspective': 'Ephesians 4:29 teaches us to use words that build up rather than tear down.',
-                'explanation': 'Inappropriate language can harm our witness and fail to reflect Christ\'s love.',
-                'alternative_approach': 'Choose words that encourage and edify others, reflecting God\'s character.'
+                'explanation': 'Inappropriate language can harm our witness and fail to reflect Christ\'s love.'
             },
             
             'sexual_content': {
-                'category': 'Sexual Purity',
+                'category': 'Sexual Purity', 
                 'severity': 'high',
                 'patterns': [
-                    r'\b(sex|sexual|sexy|seduction|lust|desire|passion|intimate|romance)\b',
-                    r'\b(body|curves|touch|kiss|bed|night|temptation)\b',
-                    r'\b(love\s+me|want\s+you|need\s+you|take\s+me)\b'
+                    # Much more specific sexual patterns
+                    r'\b(sexual|explicit|seduction|erotic|pornography|adultery|fornication)\b',
+                    r'\b(one night stand|hook up|make love|get naked|strip|seduce)\s+(me|you|tonight)\b',
+                    r'\b(bedroom|sheets|undress)\s+(with you|tonight|now)\b',
+                    r'\b(lust|lustful|sensual)\s+(desires|thoughts|body|touch)\b'
+                ],
+                'exclusions': [
+                    # Common innocent words that appear in Christian songs
+                    r'\b(night|body|touch|kiss|love|heart|soul|spirit)\b(?!.*\b(sexual|lust|desire|pleasure)\b)',
+                    r'\b(embrace|hold|tender|gentle|beautiful)\b.*\b(god|lord|jesus|savior|faith|prayer)\b'
                 ],
                 'biblical_perspective': '1 Corinthians 6:18-20 calls us to honor God with our bodies and flee sexual immorality.',
-                'explanation': 'Sexual content outside biblical marriage context can promote impure thoughts and desires.',
-                'alternative_approach': 'Focus on pure love, commitment, and God-honoring relationships.'
+                'explanation': 'Sexual content outside biblical marriage context can promote impure thoughts and desires.'
+            },
+            
+            'violence_aggression': {
+                'category': 'Violence and Aggression',
+                'severity': 'high', 
+                'patterns': [
+                    # Specific actual violence, not spiritual warfare
+                    r'\b(murder|kill|stab|shoot|assault|torture)\s+(you|him|her|them|people)\b',
+                    r'\b(gun|knife|weapon|bomb)\s+(at|to kill|to hurt|to destroy)\b',
+                    r'\b(hate|hurt|destroy|revenge)\s+(you|him|her|them|people)\b',
+                    r'\b(blood|violence|brutal|savage)\s+(everywhere|spilled|graphic|gore)\b'
+                ],
+                'exclusions': [
+                    # Spiritual warfare and Christian battle language should not be flagged
+                    r'\b(battle|fight|war|enemy|armor|sword|shield)\b.*\b(god|lord|jesus|faith|prayer|spirit|evil|devil|darkness)\b',
+                    r'\b(fight|battle|war)\s+(the good fight|for faith|against sin|spiritual)\b',
+                    r'\b(victory|overcome|conquer|defeat)\b.*\b(sin|death|darkness|enemy|evil)\b'
+                ],
+                'biblical_perspective': 'Matthew 5:39 teaches us to turn the other cheek rather than seek revenge.',
+                'explanation': 'Violent themes can promote aggression rather than the peace Christ calls us to.'
             },
             
             'substance_abuse': {
                 'category': 'Substance Use',
                 'severity': 'medium',
                 'patterns': [
-                    r'\b(drunk|drinking|alcohol|beer|wine|whiskey|vodka|party|club)\b',
-                    r'\b(high|weed|marijuana|drugs|smoke|pills|substance)\b',
-                    r'\b(escape|numb|forget|drown|relief)\b'
+                    # Specific substance abuse contexts
+                    r'\b(drunk|drinking|alcohol|beer|wine)\s+(heavily|everyday|to forget|to numb)\b',
+                    r'\b(high|weed|marijuana|drugs|pills)\s+(on|from|everyday|to escape)\b',
+                    r'\b(party|club|bar)\s+(drinking|drunk|wasted|hammered)\b',
+                    r'\b(escape|numb|forget)\s+(with alcohol|with drugs|through drinking)\b'
+                ],
+                'exclusions': [
+                    # Biblical wine/celebration contexts and metaphorical escape
+                    r'\b(wine|celebrate|feast)\b.*\b(wedding|celebration|joy|blessing)\b',
+                    r'\b(escape|refuge|shelter)\b.*\b(god|lord|jesus|faith|prayer|rock|fortress)\b'
                 ],
                 'biblical_perspective': '1 Corinthians 6:19-20 reminds us our bodies are temples of the Holy Spirit.',
-                'explanation': 'Substance use can impair judgment and become a substitute for finding peace in God.',
-                'alternative_approach': 'Seek comfort, joy, and peace through prayer, fellowship, and God\'s presence.'
-            },
-            
-            'violence_aggression': {
-                'category': 'Violence and Aggression',
-                'severity': 'high',
-                'patterns': [
-                    r'\b(fight|violence|hurt|pain|blood|gun|weapon|war)\b',
-                    r'\b(anger|rage|fury|destroy|break|smash|hit)\b',
-                    r'\b(enemy|battle|conflict|struggle|defeat)\b'
-                ],
-                'biblical_perspective': 'Matthew 5:39 teaches us to turn the other cheek rather than seek revenge.',
-                'explanation': 'Violent themes can promote aggression rather than the peace Christ calls us to.',
-                'alternative_approach': 'Embrace forgiveness, peace-making, and resolving conflicts with love.'
-            },
-            
-            'materialism_greed': {
-                'category': 'Materialism and Greed',
-                'severity': 'medium',
-                'patterns': [
-                    r'\b(money|cash)\s+(is|comes|first|everything|all)\b',
-                    r'\b(rich|wealth|expensive|luxury)\s+(life|lifestyle|living)\b',
-                    r'\b(buy|shopping|possess|own)\s+(everything|anything|more)\b',
-                    r'\blove\s+(money|cash|wealth|riches)\b',
-                    r'\b(greed|greedy|materialistic|selfish)\b'
-                ],
-                'biblical_perspective': '1 Timothy 6:10 warns that the love of money is the root of all kinds of evil.',
-                'explanation': 'Excessive focus on material wealth can distract from spiritual priorities and contentment in God.',
-                'alternative_approach': 'Find satisfaction in God\'s provision and focus on eternal rather than temporary treasures.'
-            },
-            
-            'pride_arrogance': {
-                'category': 'Pride and Self-Focus',
-                'severity': 'medium',
-                'patterns': [
-                    r'\bi\s+(am|m)\s+(better|superior|perfect|amazing|incredible|awesome)\s+(than|you)\b',
-                    r'\bi\s+(deserve|earned|command|demand)\s+(everything|anything|more|respect)\b',
-                    r'\b(arrogant|conceited|prideful|boastful|self-righteous)\b',
-                    r'\blook\s+down\s+on\b',
-                    r'\bi\s+(don\'t|dont)\s+need\s+(god|jesus|anyone|help)\b'
-                ],
-                'biblical_perspective': 'Proverbs 16:18 warns that pride goes before destruction and a haughty spirit before a fall.',
-                'explanation': 'Excessive self-focus can lead to pride and take glory away from God.',
-                'alternative_approach': 'Practice humility, recognizing that all good things come from God.'
-            },
-            
-            'occult_spiritual_darkness': {
-                'category': 'Occult and Spiritual Darkness',
-                'severity': 'high',
-                'patterns': [
-                    r'\b(magic|spell|witch|demon|devil|satan|evil|dark|curse)\b',
-                    r'\b(fortune|destiny|fate|luck|karma|energy|universe)\b',
-                    r'\b(horoscope|astrology|psychic|medium|spirit|ghost)\b'
-                ],
-                'biblical_perspective': 'Deuteronomy 18:10-12 prohibits involvement with occult practices.',
-                'explanation': 'Occult themes can open doors to spiritual deception and draw us away from God\'s truth.',
-                'alternative_approach': 'Seek guidance through prayer, Scripture, and the Holy Spirit alone.'
+                'explanation': 'Substance use can impair our judgment and dependence on God.'
             },
             
             'despair_hopelessness': {
                 'category': 'Despair and Mental Health',
                 'severity': 'medium',
                 'patterns': [
-                    r'\b(hopeless|pointless|meaningless|worthless|empty|lost)\b',
-                    r'\b(depression|anxiety|fear|worry|stress|overwhelmed)\b',
-                    r'\b(alone|isolated|abandoned|rejected|broken|damaged)\b'
+                    # Specific hopeless contexts without redemptive themes
+                    r'\b(hopeless|pointless|meaningless|worthless)\s+(?!.*\b(until|before|but now|then)\b)',
+                    r'\b(suicide|kill myself|end it all|want to die)\b',
+                    r'\b(no hope|no point|no meaning|give up)\s+(?!.*\b(until|before|but|except|unless)\b)'
+                ],
+                'exclusions': [
+                    # "Lost and found" themes common in Christian testimony
+                    r'\b(lost|alone|broken|empty)\b.*\b(found|filled|healed|restored|redeemed|saved)\b',
+                    r'\b(once was|used to be|before)\s+(lost|alone|broken)\b.*\b(now|but|until)\b',
+                    r'\b(lost|wandering|searching)\b.*\b(god|lord|jesus|home|way|light|truth)\b'
                 ],
                 'biblical_perspective': 'Romans 15:13 declares God as the source of hope who fills us with joy and peace.',
-                'explanation': 'While acknowledging struggles is healthy, constant focus on despair without hope can be spiritually harmful.',
-                'alternative_approach': 'Balance honest expression of difficulties with reminders of God\'s love, hope, and healing.'
+                'explanation': 'While acknowledging struggles is healthy, constant focus on despair without hope can be spiritually harmful.'
             },
             
             'rebellion_authority': {
                 'category': 'Rebellion Against Authority',
                 'severity': 'medium',
                 'patterns': [
-                    r'\b(rebel|defiant|resist|oppose|against|rules|authority)\b',
-                    r'\b(my\s+way|do\s+what|independent|free|nobody|control)\b',
-                    r'\b(parents|teacher|boss|law|government|church)\s+(wrong|stupid|unfair)\b'
+                    # Specific rebellious contexts
+                    r'\b(rebel|rebellion|revolt)\s+(against|fight|destroy)\s+(parents|government|law|authority)\b',
+                    r'\b(break|destroy|ignore|defy)\s+(the law|authority|rules|government)\b',
+                    r'\b(anarchy|chaos|disorder|lawlessness)\s+(is good|forever|rules)\b'
+                ],
+                'exclusions': [
+                    # Spiritual freedom and liberation themes
+                    r'\b(free|freedom|liberty|liberated)\b.*\b(christ|god|lord|jesus|spirit|sin|death|hell|chains|bondage)\b',
+                    r'\b(break|destroy)\s+(chains|bondage|sin|death|curse|stronghold)\b',
+                    r'\b(rebel|fight|resist)\s+(sin|evil|devil|darkness|temptation)\b'
                 ],
                 'biblical_perspective': 'Romans 13:1 teaches that all authority is established by God.',
-                'explanation': 'Constant rebellion against legitimate authority contradicts biblical principles of submission and respect.',
-                'alternative_approach': 'Address grievances respectfully while honoring God-given authority structures.'
+                'explanation': 'Constant rebellion against legitimate authority contradicts biblical principles of submission and respect.'
             },
             
-            'false_teaching': {
-                'category': 'False Teaching and Heresy',
+            'occult_spiritual_darkness': {
+                'category': 'Occult and Spiritual Darkness',
                 'severity': 'high',
                 'patterns': [
-                    r'\b(all\s+gods|many\s+paths|universal|relative|truth|your\s+truth)\b',
-                    r'\b(deserve\s+heaven|good\s+person|earn\s+salvation|works)\b',
-                    r'\b(new\s+age|enlightenment|consciousness|awakening|meditation)\b'
+                    # Specific occult practices, not general Christian spirituality
+                    r'\b(witch|witchcraft|spell|hex|curse|black magic|séance)\b',
+                    r'\b(demon worship|satanic|devil worship|evil ritual)\b',
+                    r'\b(ouija|tarot|crystal ball|horoscope|astrology|psychic reading)\b',
+                    r'\b(new age|meditation|chakra|karma|reincarnation)\s+(?!.*\b(christian|biblical|prayer)\b)'
                 ],
-                'biblical_perspective': 'John 14:6 declares Jesus as the only way to the Father.',
-                'explanation': 'Teachings that contradict core Christian doctrines can lead believers away from biblical truth.',
-                'alternative_approach': 'Affirm the exclusivity of Christ and salvation by grace through faith alone.'
+                'exclusions': [
+                    # Christian spiritual language should not be flagged
+                    r'\b(spirit|spiritual|soul|energy|universe|power)\b.*\b(god|lord|jesus|holy|divine|christian|prayer|worship)\b',
+                    r'\b(meditation|prayer|worship|praise)\s+(on|in|to)\s+(god|jesus|lord|scripture|word)\b'
+                ],
+                'biblical_perspective': 'Deuteronomy 18:10-12 warns against involvement in occult practices.',
+                'explanation': 'Occult involvement opens doors to spiritual deception and darkness.'
             }
         }
     
-    def analyze_content_concerns(self, title: str, artist: str, lyrics: str) -> Dict[str, Any]:
+    def detect_concerns(self, lyrics: str, title: str = "", artist: str = "") -> Dict[str, Any]:
         """
-        Analyze content for concerns with educational explanations.
+        Detect potential concerns in song lyrics with Christian context awareness.
         
-        Args:
-            title: Song title
-            artist: Artist name
-            lyrics: Song lyrics
-            
-        Returns:
-            Comprehensive concern analysis with educational insights
+        Returns enhanced analysis with concern categories, biblical perspectives,
+        and educational guidance while avoiding false positives in Christian songs.
         """
-        try:
-            logger.info(f"Analyzing content concerns for '{title}' by {artist}")
+        if not lyrics:
+            return {
+                'concern_flags': [],
+                'overall_concern_level': 'Low',
+                'detailed_analysis': {},
+                'educational_summary': 'No lyrics available for analysis.'
+            }
+        
+        lyrics_lower = lyrics.lower()
+        detected_concerns = []
+        detailed_analysis = {}
+        
+        for concern_type, config in self.concern_patterns.items():
+            concern_matches = []
             
-            # Combine all text for analysis
-            full_text = f"{title} {artist} {lyrics}".lower()
-            
-            # Detect concerns
-            detected_concerns = []
-            concern_score = 0
-            
-            for concern_type, concern_data in self.concern_patterns.items():
-                matches = self._detect_pattern_matches(full_text, concern_data['patterns'])
-                
+            # Check main concern patterns
+            for pattern in config['patterns']:
+                matches = list(re.finditer(pattern, lyrics_lower, re.IGNORECASE))
                 if matches:
-                    severity_weight = self._get_severity_weight(concern_data['severity'])
-                    concern_score += len(matches) * severity_weight
+                    # Check exclusions if they exist
+                    should_exclude = False
+                    if 'exclusions' in config:
+                        for exclusion_pattern in config['exclusions']:
+                            if re.search(exclusion_pattern, lyrics_lower, re.IGNORECASE):
+                                should_exclude = True
+                                break
                     
-                    detected_concerns.append({
-                        'type': concern_type,
-                        'category': concern_data['category'],
-                        'severity': concern_data['severity'],
-                        'matches': matches,
-                        'match_count': len(matches),
-                        'biblical_perspective': concern_data['biblical_perspective'],
-                        'explanation': concern_data['explanation'],
-                        'alternative_approach': concern_data['alternative_approach'],
-                        'educational_value': self._generate_educational_explanation(concern_type, concern_data, matches)
-                    })
+                    # Only add concerns if not excluded by Christian context
+                    if not should_exclude:
+                        concern_matches.extend([match.group() for match in matches])
             
-            # Calculate overall concern level
-            overall_concern = self._calculate_overall_concern(concern_score, detected_concerns)
-            
-            # Generate educational summary
-            educational_summary = self._generate_educational_summary(detected_concerns, overall_concern)
-            
-            return {
-                'concern_score': concern_score,
-                'overall_concern_level': overall_concern,
-                'concerns_detected': len(detected_concerns),
-                'detailed_concerns': detected_concerns,
-                'educational_summary': educational_summary,
-                'discernment_guidance': self._generate_discernment_guidance(detected_concerns),
-                'is_content_safe': overall_concern in ['Very Low', 'Low'],
-                'recommendation': self._generate_recommendation(overall_concern, detected_concerns)
-            }
-            
-        except Exception as e:
-            logger.error(f"Error analyzing content concerns: {e}")
-            return {
-                'concern_score': 0,
-                'overall_concern_level': 'Unknown',
-                'concerns_detected': 0,
-                'detailed_concerns': [],
-                'educational_summary': 'Content analysis temporarily unavailable.',
-                'discernment_guidance': ['Content requires manual review.'],
-                'is_content_safe': True,
-                'recommendation': 'Please review content manually for Christian appropriateness.'
-            }
+            if concern_matches:
+                # Remove duplicates while preserving order
+                unique_matches = []
+                seen = set()
+                for match in concern_matches:
+                    if match not in seen:
+                        unique_matches.append(match)
+                        seen.add(match)
+                
+                concern_detail = {
+                    'type': concern_type,
+                    'severity': config['severity'],
+                    'category': config['category'],
+                    'description': config['explanation'],
+                    'biblical_perspective': config['biblical_perspective'],
+                    'educational_value': f"This content shows {config['category'].lower()} concerns. {config['explanation']} Biblical guidance: {config['biblical_perspective']} Consider: Choose words that encourage and edify others, reflecting God's character." if concern_type == 'explicit_language' else f"This content shows {config['category'].lower()} concerns. {config['explanation']} Biblical guidance: {config['biblical_perspective']} Consider: Focus on themes that align with biblical values and spiritual growth.",
+                    'matches': unique_matches[:5]  # Limit to top 5 matches
+                }
+                detected_concerns.append(concern_detail)
+                detailed_analysis[concern_type] = concern_detail
+        
+        # Determine overall concern level based on severity and count
+        overall_level = self._calculate_overall_concern_level(detected_concerns)
+        
+        # Generate educational summary
+        educational_summary = self._generate_educational_summary(detected_concerns, title, artist)
+        
+        return {
+            'concern_flags': detected_concerns,
+            'overall_concern_level': overall_level,
+            'detailed_analysis': detailed_analysis,
+            'educational_summary': educational_summary,
+            'context_awareness': 'Christian song analysis with false positive prevention'
+        }
     
     def _detect_pattern_matches(self, text: str, patterns: List[str]) -> List[str]:
         """Detect pattern matches in text."""
@@ -251,22 +252,54 @@ class EnhancedConcernDetector:
         }
         return weights.get(severity, 2)
     
-    def _calculate_overall_concern(self, score: int, concerns: List[Dict]) -> str:
-        """Calculate overall concern level."""
-        if not concerns:
+    def _calculate_overall_concern_level(self, detected_concerns: List[Dict]) -> str:
+        """Calculate overall concern level based on detected concerns."""
+        if not detected_concerns:
             return 'Very Low'
         
-        # Check for high-severity concerns
-        high_severity_count = sum(1 for c in concerns if c['severity'] == 'high')
+        high_severity_count = sum(1 for concern in detected_concerns if concern.get('severity') == 'high')
+        medium_severity_count = sum(1 for concern in detected_concerns if concern.get('severity') == 'medium')
         
-        if high_severity_count >= 2 or score >= 15:
+        # More lenient thresholds to avoid over-flagging Christian content
+        if high_severity_count >= 2:
             return 'High'
-        elif high_severity_count >= 1 or score >= 10:
+        elif high_severity_count >= 1 or medium_severity_count >= 3:
             return 'Medium'
-        elif score >= 5:
+        elif medium_severity_count >= 1:
             return 'Low'
         else:
             return 'Very Low'
+    
+    def _generate_educational_summary(self, detected_concerns: List[Dict], title: str, artist: str) -> str:
+        """Generate educational summary for detected concerns."""
+        if not detected_concerns:
+            return "This content appears to align well with Christian values and supports spiritual growth."
+        
+        concern_categories = [concern.get('category', 'General') for concern in detected_concerns]
+        concern_count = len(detected_concerns)
+        
+        if concern_count == 1:
+            return f"This song contains content that may require discernment in the area of {concern_categories[0]}. Consider the biblical guidance provided and how this content aligns with your spiritual growth."
+        else:
+            categories_text = ", ".join(concern_categories)
+            return f"This song contains content that may require discernment in {concern_count} areas: {categories_text}. Use this analysis as a tool for developing your own discernment skills and consider how this content supports your walk with Christ."
+
+    # Backward compatibility method
+    def analyze_content_concerns(self, title: str, artist: str, lyrics: str) -> Dict[str, Any]:
+        """Legacy method for backward compatibility."""
+        result = self.detect_concerns(lyrics, title, artist)
+        
+        # Convert to old format for backward compatibility
+        return {
+            'concern_score': len(result['concern_flags']) * 10,  # Simple score calculation
+            'overall_concern_level': result['overall_concern_level'],
+            'concerns_detected': len(result['concern_flags']),
+            'detailed_concerns': result['concern_flags'],
+            'educational_summary': result['educational_summary'],
+            'discernment_guidance': [concern.get('biblical_perspective', '') for concern in result['concern_flags']],
+            'is_content_safe': result['overall_concern_level'] in ['Very Low', 'Low'],
+            'recommendation': 'Review content based on the concerns identified above.'
+        }
     
     def _generate_educational_explanation(self, concern_type: str, concern_data: Dict, matches: List[str]) -> str:
         """Generate educational explanation for a specific concern."""
@@ -276,25 +309,6 @@ class EnhancedConcernDetector:
         explanation += f"Consider: {concern_data['alternative_approach']}"
         
         return explanation
-    
-    def _generate_educational_summary(self, concerns: List[Dict], overall_level: str) -> str:
-        """Generate educational summary of all concerns."""
-        if not concerns:
-            return "This content shows no significant concerns and appears suitable for Christian listeners. It can support spiritual growth and positive thinking."
-        
-        summary = f"This content has {overall_level.lower()} concern level with {len(concerns)} area(s) requiring discernment: "
-        
-        categories = list(set(c['category'] for c in concerns))
-        summary += ", ".join(categories) + ". "
-        
-        if overall_level in ['High', 'Medium']:
-            summary += "This content requires careful consideration of whether it aligns with biblical values and supports your spiritual growth. "
-        else:
-            summary += "While minor concerns exist, this content can likely be enjoyed with proper biblical perspective. "
-        
-        summary += "Use this analysis as a tool for developing your own discernment skills."
-        
-        return summary
     
     def _generate_discernment_guidance(self, concerns: List[Dict]) -> List[str]:
         """Generate specific discernment guidance."""

@@ -40,15 +40,17 @@ class HuggingFaceAnalyzer:
             'resurrection', 'crucifixion', 'trinity', 'apostle', 'disciple', 'angel'
         }
         
-        # Concern keywords (expanded)
+        # Concern keywords (focused on actual profanity and inappropriate content)
+        # Removed words that have legitimate Christian usage: "hell", "damn", "ass", "death", "kill"
         self.concern_keywords = {
-            'damn', 'hell', 'shit', 'fuck', 'bitch', 'ass', 'bastard', 'crap',
-            'piss', 'whore', 'slut', 'retard', 'faggot', 'nigger', 'goddamn',
-            'motherfucker', 'asshole', 'dickhead', 'pussy', 'cock', 'penis',
-            'sex', 'sexual', 'drugs', 'cocaine', 'heroin', 'marijuana', 'weed',
-            'drunk', 'alcohol', 'beer', 'vodka', 'whiskey', 'violence', 'kill',
-            'murder', 'death', 'suicide', 'hate', 'racist', 'nazi'
+            'shit', 'fuck', 'bitch', 'bastard', 'crap', 'piss', 'whore', 'slut', 
+            'retard', 'faggot', 'nigger', 'motherfucker', 'asshole', 'dickhead', 
+            'pussy', 'cock', 'penis', 'sexual', 'cocaine', 'heroin', 'marijuana', 
+            'weed', 'drunk', 'vodka', 'whiskey', 'racist', 'nazi'
         }
+        # Note: Removed "hell", "damn", "ass", "death", "kill", "murder", "hate", "sex", 
+        # "drugs", "alcohol", "beer", "violence", "suicide" as these can appear in 
+        # legitimate Christian/spiritual contexts
         
         logger.info("HuggingFace analyzer initialization complete - all models loaded successfully")
 
@@ -311,7 +313,7 @@ class HuggingFaceAnalyzer:
                 content_analysis={
                     'concern_flags': concern_flags,
                     'safety_assessment': safety_result,
-                    'total_penalty': sum(15 for flag in concern_flags)  # Updated penalty
+                    'total_penalty': sum(5 for flag in concern_flags)  # Updated penalty (reduced from 15)
                 },
                 biblical_analysis={
                     'themes': christian_themes,  # Now includes enhanced theme structure
@@ -330,7 +332,7 @@ class HuggingFaceAnalyzer:
                         'christian_themes': sum(theme.get('points', 3) * theme.get('score', 0.5) for theme in christian_themes),
                         'sentiment_score': sentiment_result.get('primary', {}).get('score', 0) * 5 if sentiment_result else 0,
                         'safety_penalty': -25 if safety_result and safety_result.get('is_toxic') else 0,
-                        'concern_penalty': -sum(15 for flag in concern_flags)
+                        'concern_penalty': -sum(5 for flag in concern_flags)
                     },
                     'explanation': explanation,
                     # Phase 4 Enhanced Scoring Metadata
@@ -453,6 +455,12 @@ class HuggingFaceAnalyzer:
                 "Gratitude and thanksgiving - Thankful heart and praise to God",
                 "Discipleship and following Jesus - Spiritual growth and commitment",
                 "Evangelism and mission - Sharing the gospel and Great Commission",
+                "Worship and praise - Adoration and reverence for God",
+                "Faith and trust - Belief and confidence in God",
+                "Hope in God - Confident expectation and future assurance", 
+                "Divine love - God's love and Christian love for others",
+                "Peace in Christ - Inner peace and harmony through God",
+                "Prayer and communion - Communication and relationship with God",
                 
                 # Phase 3: Negative Themes (15+ themes) - HIGH SEVERITY
                 "Blasphemy and mocking God - Deliberate disrespect toward the sacred",
@@ -546,6 +554,12 @@ class HuggingFaceAnalyzer:
                         "Evangelism and mission": {"name": "Evangelistic Zeal", "points": 4},
                         "Great Commission": {"name": "Evangelistic Zeal", "points": 4},  # Additional mapping
                         "Sharing the gospel": {"name": "Evangelistic Zeal", "points": 4},  # Additional mapping
+                        "Worship and praise": {"name": "Worship", "points": 4},
+                        "Faith and trust": {"name": "Faith", "points": 4},
+                        "Hope in God": {"name": "Hope", "points": 4},
+                        "Divine love": {"name": "Love", "points": 4},
+                        "Peace in Christ": {"name": "Peace", "points": 4},
+                        "Prayer and communion": {"name": "Prayer", "points": 4},
                         
                         # Phase 3: Negative Themes - HIGH SEVERITY (-25 to -30 points)
                         "Blasphemy and mocking God": {"name": "Blasphemy", "points": -30},
@@ -691,12 +705,14 @@ class HuggingFaceAnalyzer:
                              emotion_result: Optional[Dict]) -> Dict[str, float]:
         """
         Calculate final score with Phase 4 enhancements:
+        - Start at 100 points and adjust based on content
         - Theological Significance Weighting (Core Gospel 1.5x, Character 1.2x)
         - Formational Weight Multiplier (-10 for severe content)
         - Enhanced scoring metadata for structured verdict
         """
-        score = 0.0  # Start at 0 and earn points
-        base_theme_points = 0.0  # Track base points before weighting
+        score = 100.0  # Start at 100 and adjust based on content
+        positive_theme_points = 0.0  # Track positive theme contributions
+        negative_theme_points = 0.0  # Track negative theme penalties
         
         # Process all themes (positive and negative)
         if christian_themes:
@@ -706,86 +722,82 @@ class HuggingFaceAnalyzer:
                 points = theme.get('points', 0)
                 category = theme.get('category', '')
                 
-                if points > 0 and confidence > 0.3:  # Positive themes - earn points
-                    # Calculate base points without weighting
+                if points > 0 and confidence > 0.3:  # Positive themes - add bonus points
+                    # Calculate theme points with confidence weighting
                     if confidence > 0.8:
-                        theme_points = points * 2.0  # Double points for high confidence (80%+)
+                        theme_points = points * 1.5  # 50% bonus for high confidence (80%+)
                     else:
-                        # Still generous for medium confidence
-                        adjusted_confidence = max(0.8, confidence)
-                        theme_points = points * adjusted_confidence
+                        # Standard scaling for medium confidence
+                        theme_points = points * confidence
                     
-                    base_theme_points += theme_points
-                    score += theme_points
+                    positive_theme_points += theme_points
+                    score += theme_points  # Add bonus points to the base 100
                     
-                elif points < 0 and confidence > 0.3:  # Negative themes - lose points
+                elif points < 0 and confidence > 0.3:  # Negative themes - subtract points
                     # Apply penalties for negative themes based on confidence
                     if confidence > 0.7:  # High confidence negative themes get full penalty
-                        score += points  # points is negative, so this subtracts
+                        penalty_points = abs(points)  # Convert negative to positive for subtraction
+                        negative_theme_points += penalty_points
+                        score -= penalty_points
                     else:  # Lower confidence gets reduced penalty
-                        score += points * confidence
-                elif not points:  # Keyword-based themes get decent bonuses
-                    keyword_points = 8 * confidence  # Increased from 5 to 8 points per keyword theme
-                    base_theme_points += keyword_points
+                        penalty_points = abs(points) * confidence
+                        negative_theme_points += penalty_points
+                        score -= penalty_points
+                        
+                elif not points:  # Keyword-based themes get modest bonuses
+                    keyword_points = 5 * confidence  # 5 points per keyword theme
+                    positive_theme_points += keyword_points
                     score += keyword_points
         
-        # Phase 4 Enhancement: Apply Theological Significance Weighting
+        # Phase 4 Enhancement: Apply Theological Significance Weighting to positive themes
         theological_weighting = self._calculate_theological_weighting(christian_themes)
-        if theological_weighting > 1.0 and base_theme_points > 0:
-            # Apply weighting boost to theme points
-            weighting_boost = base_theme_points * (theological_weighting - 1.0)
+        if theological_weighting > 1.0 and positive_theme_points > 0:
+            # Apply weighting boost to positive theme points only
+            weighting_boost = positive_theme_points * (theological_weighting - 1.0)
             score += weighting_boost
         
-        # Positive sentiment bonus (increased)
+        # Sentiment adjustments (more moderate since we start at 100)
         if sentiment_result and sentiment_result.get('primary'):
             sentiment = sentiment_result['primary']
             if sentiment['label'].upper() == 'POSITIVE':
-                score += sentiment['score'] * 10  # Increased from 5 to 10 for positive sentiment
+                score += sentiment['score'] * 5  # Modest positive bonus
+            elif sentiment['label'].upper() == 'NEGATIVE':
+                score -= sentiment['score'] * 8  # Moderate negative penalty
         
-        # Positive emotion bonus (increased)
+        # Emotion adjustments
         if emotion_result and emotion_result.get('primary'):
             emotion = emotion_result['primary']
             positive_emotions = ['joy', 'love', 'optimism', 'gratitude']
+            negative_emotions = ['anger', 'fear', 'disgust']
             
             if any(pos_emotion in emotion['label'].lower() for pos_emotion in positive_emotions):
-                score += emotion['score'] * 6  # Increased from 3 to 6 for positive emotions
+                score += emotion['score'] * 3  # Small positive emotion bonus
+            elif any(neg_emotion in emotion['label'].lower() for neg_emotion in negative_emotions):
+                score -= emotion['score'] * 5  # Moderate negative emotion penalty
         
-        # Deduct points for concerning content
+        # Deduct points for concerning content (reduced impact since we start higher)
         if concern_flags:
-            penalty = sum(15 for flag in concern_flags)  # -15 per concern type
+            penalty = sum(3 for flag in concern_flags)  # -3 per concern type (reduced from -5)
             score -= penalty
         
         # Major penalty for toxic content
         if safety_result and safety_result.get('is_toxic'):
-            score -= 25  # Heavy penalty for toxic content
-        
-        # Negative sentiment penalty
-        if sentiment_result and sentiment_result.get('primary'):
-            sentiment = sentiment_result['primary']
-            if sentiment['label'].upper() == 'NEGATIVE':
-                score -= sentiment['score'] * 10  # Up to -10 for strong negative sentiment
-        
-        # Negative emotion penalty
-        if emotion_result and emotion_result.get('primary'):
-            emotion = emotion_result['primary']
-            very_negative_emotions = ['anger', 'fear', 'disgust']
-            
-            if any(neg_emotion in emotion['label'].lower() for neg_emotion in very_negative_emotions):
-                score -= emotion['score'] * 8  # Penalty for negative emotions
+            score -= 20  # Significant but not devastating penalty for toxic content
         
         # Phase 4 Enhancement: Apply Formational Weight Multiplier for severe content
         formational_penalty = self._check_formational_penalty(
             christian_themes, sentiment_result, emotion_result, safety_result
         )
         if formational_penalty < 0:
-            score += formational_penalty  # Apply the -10 penalty
+            score += formational_penalty  # Apply the -10 penalty (formational_penalty is negative)
         
         final_score = max(0.0, min(100.0, score))
         
         # Return enhanced scoring metadata
         return {
             'final_score': final_score,
-            'base_theme_points': base_theme_points,
+            'positive_theme_points': positive_theme_points,
+            'negative_theme_points': negative_theme_points,
             'theological_weighting': theological_weighting,
             'formational_penalty': formational_penalty
         }
@@ -938,14 +950,14 @@ class HuggingFaceAnalyzer:
         """Determine concern level based on analysis (scores now start at 100%)"""
         if safety_result and safety_result.get('is_toxic'):
             return 'High'
-        elif score < 70:  # Significant concerns
-            return 'High'
-        elif score < 85:  # Moderate concerns
-            return 'Medium'
-        elif score < 95:  # Minor concerns
-            return 'Low'
-        else:  # Excellent content
+        elif score >= 90:  # Excellent content
             return 'Very Low'
+        elif score >= 75:  # Good content with minor issues
+            return 'Low'
+        elif score >= 50:  # Moderate concerns
+            return 'Medium'
+        else:  # Significant concerns
+            return 'High'
 
     def _generate_explanation(self, christian_themes: List[Dict], concern_flags: List[Dict],
                             sentiment_result: Optional[Dict], safety_result: Optional[Dict],
@@ -1078,24 +1090,24 @@ class HuggingFaceAnalyzer:
             for theme in keyword_themes
         ]
         
-        # Calculate score using new system (start at 0, earn points)
-        score = 0.0
+        # Calculate score using new system (start at 100, adjust based on content)
+        score = 100.0  # Start at 100 points
         if christian_themes:
-            score += len(christian_themes) * 3  # 3 points per keyword theme
+            score += len(christian_themes) * 2  # Small bonus for keyword themes
         if concern_flags:
-            score -= 15 * len(concern_flags)  # -15 per concern
+            score -= 3 * len(concern_flags)  # -3 per concern (consistent with main system)
         
         score = max(0.0, min(100.0, score))
         
-        # Determine concern level using new thresholds
-        if score < 70:
-            concern_level = 'High'
-        elif score < 85:
-            concern_level = 'Medium'
-        elif score < 95:
-            concern_level = 'Low'
-        else:
+        # Determine concern level using 100-point starting system thresholds
+        if score >= 90:
             concern_level = 'Very Low'
+        elif score >= 75:
+            concern_level = 'Low'
+        elif score >= 50:
+            concern_level = 'Medium'
+        else:
+            concern_level = 'High'
         
         explanation = "Keyword-based fallback analysis completed"
         if christian_themes:
@@ -1110,7 +1122,7 @@ class HuggingFaceAnalyzer:
             processed_text=all_text,
             content_analysis={
                 'concern_flags': concern_flags,
-                'total_penalty': sum(15 for flag in concern_flags)  # Updated penalty
+                'total_penalty': sum(5 for flag in concern_flags)  # Updated penalty (reduced from 15)
             },
             biblical_analysis={
                 'themes': christian_themes,  # Now uses enhanced structure

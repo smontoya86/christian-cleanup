@@ -1138,8 +1138,18 @@ class EnhancedScriptureMapper:
         processed_themes = set()
         
         for theme in themes:
+            # Handle both string themes and dictionary themes with 'theme' key
+            if isinstance(theme, dict):
+                theme_name = theme.get('theme', '')
+            else:
+                theme_name = str(theme)
+            
+            # Skip empty themes
+            if not theme_name:
+                continue
+                
             # Normalize theme name (remove prefixes like 'concern_')
-            clean_theme = theme.replace('concern_', '').replace('_', ' ').lower()
+            clean_theme = theme_name.replace('concern_', '').replace('_', ' ').lower()
             
             # Skip if we've already processed this theme
             if clean_theme in processed_themes:

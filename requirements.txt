@@ -6,15 +6,12 @@ Flask-Session
 python-dotenv
 pytest
 pytest-flask
-pytest-asyncio
 lyricsgenius==3.3.1
 torch
 transformers
 requests
-nltk>=3.8
 spotipy
 psycopg2-binary
-Flask-APScheduler
 bootstrap-flask
 redis
 tqdm>=4.65.0

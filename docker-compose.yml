@@ -46,44 +46,48 @@ services:
 
   worker:
     build: .
-    command: ["bash", "/app/scripts/docker-entrypoint-worker.sh"]
+    command: bash /app/scripts/docker-entrypoint-worker.sh
+    depends_on:
+      - db
+      - redis
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-development}
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-your_password}@db:5432/${POSTGRES_DB:-spotify_cleanup}
+      - REDIS_URL=redis://redis:6379/0
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - GENIUS_ACCESS_TOKEN=${GENIUS_ACCESS_TOKEN}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      # Performance optimizations for M1 Max with GPU support
+      - OMP_NUM_THREADS=2  # Optimize thread usage per worker
+      - MKL_NUM_THREADS=2  # Intel Math Kernel Library optimization
+      - PYTORCH_ENABLE_MPS_FALLBACK=1  # Enable Metal Performance Shaders on Apple Silicon
+      - PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0  # Optimize MPS memory usage
     volumes:
       - .:/app
-    environment:
-      - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES  # Required for macOS compatibility
-      - PYTHONUNBUFFERED=1
-      - FLASK_ENV=${FLASK_ENV}  # Use environment setting from .env
-      - ENV=${ENV}  # Use environment setting from .env
-      - DATABASE_URL=${DATABASE_URL}
-      - RQ_REDIS_URL=${RQ_REDIS_URL}
-      - RQ_WORKER_BURST=true  # Process jobs in burst mode for faster processing
-      - RQ_WORKER_TIMEOUT=600  # 10 minute timeout for comprehensive analysis
-      - TRANSFORMERS_CACHE=/app/models  # HuggingFace model caching
-      - HF_HOME=/app/models  # HuggingFace model caching
-      - LYRICSGENIUS_API_KEY=${LYRICSGENIUS_API_KEY}
-    depends_on:
-      redis:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import redis; r = redis.from_url('redis://redis:6379/0'); r.ping()"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-    deploy:
-      resources:
-        limits:
-          memory: 1G  # Increased from 512M to 1G per worker
-          cpus: '0.5'
-        reservations:
-          memory: 512M  # Increased from 256M to 512M per worker
-          cpus: '0.25'
-      replicas: 6  # Default to 6 workers for parallel processing
     networks:
       - app-network
+    deploy:
+      replicas: 3  # 3 high-performance workers for M1 Max
+      resources:
+        limits:
+          memory: 8G  # 8GB per worker for M1 Max (3×8=24GB total)
+          cpus: '3.0'  # 3.0 cores per worker (3×3=9 cores total)
+        reservations:
+          memory: 4G  # Reserve 4G minimum per worker
+          cpus: '2.0'  # Reserve 2 cores minimum per worker
+    # Apple Silicon Metal Performance Shaders acceleration (no NVIDIA runtime needed)
 
   db:
     image: postgres:14-alpine

@@ -15,7 +15,6 @@ from app.utils.analysis.analysis_result import AnalysisResult
 from app.utils.analysis.huggingface_analyzer import HuggingFaceAnalyzer
 from .enhanced_scripture_mapper import EnhancedScriptureMapper
 from .enhanced_concern_detector import EnhancedConcernDetector
-from .contextual_theme_detector import ContextualThemeDetector
 from app.services.analyzer_cache import get_shared_analyzer, is_analyzer_ready
 
 logger = logging.getLogger(__name__)
@@ -23,34 +22,18 @@ logger = logging.getLogger(__name__)
 
 class SimplifiedChristianAnalysisService:
     """
-    Simplified Christian song analysis service that uses enhanced AI analysis.
-    
-    This service now uses a shared, cached analyzer to avoid reloading
-    expensive AI models for each analysis.
+    Simplified Christian song analysis service that acts as a coordinator for
+    the comprehensive analysis system. Now uses HuggingFaceAnalyzer as the single source of truth.
     """
     
     def __init__(self):
-        """Initialize the service with cached analyzer"""
-        logger.info("📁 Initializing SimplifiedChristianAnalysisService with cached analyzer...")
+        """Initialize the analysis service components."""
+        # Use HuggingFaceAnalyzer directly as our single source of truth
+        self.hf_analyzer = get_shared_analyzer()
         
-        # Initialize required components
-        self.contextual_detector = ContextualThemeDetector()
+        # Keep other services for educational content and scripture mapping
         self.concern_detector = EnhancedConcernDetector()
         self.scripture_mapper = EnhancedScriptureMapper()
-        
-        # Don't create analyzer here - use lazy loading with cache
-        self._ai_analyzer = None
-        logger.info("✅ SimplifiedChristianAnalysisService initialized (analyzer will be loaded on demand)")
-    
-    @property
-    def ai_analyzer(self):
-        """Get the enhanced AI analyzer instance with cached HuggingFace models"""
-        if self._ai_analyzer is None:
-            logger.info("🔗 Creating enhanced analyzer with cached HuggingFace models...")
-            # Create EnhancedAIAnalyzer - it will use cached HuggingFace analyzer automatically
-            self._ai_analyzer = EnhancedAIAnalyzer(self.contextual_detector)
-            logger.info("✅ Enhanced analyzer created with cached models")
-        return self._ai_analyzer
     
     def analyze_song_content(self, song_title: str, artist: str, lyrics: str) -> Dict[str, Any]:
         """
@@ -66,7 +49,7 @@ class SimplifiedChristianAnalysisService:
                 logger.info("⏳ Shared analyzer not ready, initializing...")
             
             # Use shared analyzer instead of creating new instance
-            analysis_result = self.ai_analyzer.analyze_song(song_title, artist, lyrics)
+            analysis_result = self.hf_analyzer.analyze_song(song_title, artist, lyrics)
             
             logger.info(f"✅ Enhanced analysis completed for '{song_title}'")
             return analysis_result
@@ -123,176 +106,90 @@ class SimplifiedChristianAnalysisService:
             if not has_meaningful_lyrics:
                 return self._create_no_lyrics_result(safe_title, safe_artist, safe_lyrics)
             
-            # 1. Get basic AI analysis first
-            ai_analysis = self.ai_analyzer.analyze_comprehensive(safe_title, safe_artist, safe_lyrics)
+            # 1. Get comprehensive AI analysis (HuggingFaceAnalyzer is now the single source of truth)
+            ai_analysis = self.hf_analyzer.analyze_song(safe_title, safe_artist, safe_lyrics)
             
             # 2. Enhanced concern detection with educational explanations
             concern_analysis = self.concern_detector.analyze_content_concerns(safe_title, safe_artist, safe_lyrics)
             
             # 3. Map to relevant scripture for education (positive themes)
-            scripture_refs = self.scripture_mapper.find_relevant_passages(ai_analysis['themes'])
+            scripture_refs = self.scripture_mapper.find_relevant_passages(ai_analysis.biblical_analysis.get('themes', []))
             
             # 4. Add scriptural foundations for detected concerns (NEW ENHANCEMENT)
-            concern_scripture_refs = self._extract_scriptural_foundations_from_concerns(concern_analysis)
+            if concern_analysis and concern_analysis.get('detailed_concerns'):
+                for concern in concern_analysis['detailed_concerns']:
+                    concern_category = concern.get('category', '')
+                    if concern_category:
+                        concern_scripture = self.scripture_mapper.find_scriptural_foundation_for_concern(concern_category)
+                        scripture_refs.extend(concern_scripture)
             
-            # 5. Combine positive theme scriptures with concern-based scriptures
-            comprehensive_scripture_refs = scripture_refs + concern_scripture_refs
-            
-            # 6. Calculate final score (incorporating concern analysis)
-            final_score = self._calculate_unified_score(ai_analysis, concern_analysis)
-            
-            # 7. Determine concern level (using enhanced analysis)
-            concern_level = self._determine_concern_level(final_score, ai_analysis, concern_analysis)
-            
-            # 8. Generate educational explanation
-            explanation = self._generate_educational_explanation(ai_analysis, concern_analysis, final_score)
-            
-            # 9. Create educational insights (using comprehensive scripture references)
-            educational_insights = self._create_educational_insights(ai_analysis, comprehensive_scripture_refs, concern_analysis)
-            
-            # Create compatible AnalysisResult
+            # 5. Create comprehensive analysis result using HuggingFaceAnalyzer's scoring
             result = AnalysisResult(
                 title=safe_title,
                 artist=safe_artist,
                 lyrics_text=safe_lyrics,
                 processed_text=f"{safe_title} {safe_artist} {safe_lyrics}".lower().strip(),
+                biblical_analysis={
+                    'themes': ai_analysis.biblical_analysis.get('themes', []),
+                    'educational_summary': self._generate_educational_summary(
+                        ai_analysis.biblical_analysis.get('themes', []), 
+                        concern_analysis
+                    ),
+                    'supporting_scripture': scripture_refs
+                },
+                scoring_results=ai_analysis.scoring_results,  # Use HuggingFaceAnalyzer's scoring directly
                 content_analysis={
                     'concern_flags': self._extract_enhanced_concern_flags(concern_analysis),
-                    'safety_assessment': ai_analysis['content_safety'],
-                    'total_penalty': self._calculate_penalty_score(ai_analysis, concern_analysis),
+                    'safety_assessment': ai_analysis.content_analysis,
+                    'total_penalty': 0,  # No longer calculated here - HuggingFaceAnalyzer handles penalties
                     'detailed_concerns': concern_analysis.get('detailed_concerns', []) if concern_analysis else [],
-                    'discernment_guidance': concern_analysis.get('discernment_guidance', []) if concern_analysis else []
+                    'discernment_guidance': concern_analysis.get('discernment_guidance', []) if concern_analysis else [],
+                    'concern_level': ai_analysis.content_analysis.get('concern_level', self._determine_concern_level_fallback(ai_analysis.scoring_results.get('final_score', 50)))
                 },
-                biblical_analysis={
-                    'themes': [{'theme': theme, 'score': 1.0} for theme in ai_analysis['themes']],
-                    'supporting_scripture': comprehensive_scripture_refs,
-                    'biblical_themes_count': len(ai_analysis['themes']),
-                    'educational_insights': educational_insights
-                },
-                model_analysis={
-                    'sentiment': ai_analysis['sentiment'],
-                    'emotions': ai_analysis['emotions'],
-                    'content_safety': ai_analysis['content_safety'],
-                    'theological_depth': ai_analysis.get('theological_depth', 0.5)
-                },
-                scoring_results={
-                    'final_score': final_score,
-                    'quality_level': concern_level,
-                    'explanation': explanation,
-                    'component_scores': {
-                        'ai_sentiment': ai_analysis['sentiment']['score'] * 20,
-                        'ai_safety': (1.0 - ai_analysis['content_safety']['toxicity_score']) * 30,
-                        'theological_depth': ai_analysis.get('theological_depth', 0.5) * 50
-                    }
-                }
+                model_analysis=ai_analysis.model_analysis
             )
             
             analysis_time = time.time() - start_time
-            logger.info(f"Simplified analysis completed for '{safe_title}' in {analysis_time:.2f}s - Score: {final_score}, Concern: {concern_level}")
+            logger.info(f"Simplified analysis completed for '{safe_title}' in {analysis_time:.2f}s - Score: {result.scoring_results.get('final_score', 50)}, Concern: {result.content_analysis.get('concern_level', 'Unknown')}")
             
             return result
             
         except Exception as e:
             logger.error(f"Error in simplified analysis for '{safe_title}': {e}")
+            # Add debugging for KeyError on 'explanation'
+            if "'explanation'" in str(e):
+                import traceback
+                logger.error(f"EXPLANATION KEYERROR DEBUG: {traceback.format_exc()}")
             return self._create_fallback_result(safe_title, safe_artist, safe_lyrics)
     
-    def _calculate_unified_score(self, ai_analysis: Dict[str, Any], concern_analysis: Optional[Dict[str, Any]] = None) -> float:
-        """Calculate unified score from AI analysis and concern detection (replaces multiple scorers)."""
-        sentiment_score = ai_analysis['sentiment']['score']
-        safety_score = 1.0 - ai_analysis['content_safety']['toxicity_score']
-        theological_depth = ai_analysis.get('theological_depth', 0.5)
-        theme_count = len(ai_analysis['themes'])
-        
-        # Enhanced scoring formula for better Christian content recognition
-        if ai_analysis['sentiment']['label'] == 'POSITIVE':
-            base_score = 70 + (sentiment_score * 25)  # Higher base for positive content
-        elif ai_analysis['sentiment']['label'] == 'NEGATIVE':
-            base_score = 15 + (sentiment_score * 25)  # Lower base for negative
-        else:  # NEUTRAL/MIXED - more moderate scoring for nuanced content
-            base_score = 35 + (sentiment_score * 20)  # Lower multiplier for mixed sentiment
-        
-        # Strong bonus for theological depth (Christian themes are key)
-        theological_bonus = theological_depth * 25
-        
-        # Theme count bonus (more Christian themes = higher score)
-        theme_bonus = min(theme_count * 5, 15)  # Max 15 points for themes
-        
-        # Safety is critical
-        safety_score_weighted = safety_score * 20
-        
-        # Calculate final score with enhanced weights
-        final_score = base_score + theological_bonus + theme_bonus + safety_score_weighted
-        
-        # Apply enhanced concern analysis penalties
-        if concern_analysis:
-            concern_penalty = self._calculate_concern_penalty(concern_analysis)
-            final_score -= concern_penalty
-        
-        # Apply severe penalties for inappropriate content
-        if not ai_analysis['content_safety']['is_safe']:
-            final_score *= 0.3  # Severe penalty for unsafe content
-        
-        # Bonus for strong Christian content (high sentiment + themes + safety)
-        if (ai_analysis['sentiment']['label'] == 'POSITIVE' and 
-            sentiment_score >= 0.9 and 
-            theological_depth >= 0.8 and 
-            theme_count >= 3):
-            final_score += 10  # Bonus for excellent Christian content
-        
-        # Moderate mixed/nuanced content appropriately
-        if ai_analysis['sentiment']['label'] in ['MIXED', 'NEUTRAL']:
-            # Stronger moderation for mixed content
-            if sentiment_score < 0.75:
-                final_score *= 0.7  # More significant reduction for truly mixed content
-            else:
-                final_score *= 0.85  # Moderate reduction for slightly mixed content
-        
-        return max(0.0, min(100.0, final_score))
-    
-    def _calculate_concern_penalty(self, concern_analysis: Dict[str, Any]) -> float:
-        """Calculate penalty points based on enhanced concern analysis."""
-        if not concern_analysis:
-            return 0.0
-        
-        concern_score = concern_analysis.get('concern_score', 0)
-        
-        # Convert concern score to penalty points (max 30 points penalty)
-        penalty = min(concern_score * 2, 30)
-        
-        # Additional penalties for high-severity concerns
-        high_severity_concerns = sum(1 for c in concern_analysis.get('detailed_concerns', []) 
-                                   if c.get('severity') == 'high')
-        
-        penalty += high_severity_concerns * 5  # 5 points per high-severity concern
-        
-        return penalty
-    
-    def _determine_concern_level(self, score: float, ai_analysis: Dict[str, Any], concern_analysis: Optional[Dict[str, Any]] = None) -> str:
-        """Determine concern level based on score, AI analysis, and enhanced concern detection."""
-        # Use enhanced concern analysis if available
-        if concern_analysis:
-            enhanced_level = concern_analysis['overall_concern_level']
-            # For Christian songs, prioritize lower concern when scores are high
-            if enhanced_level == 'High' and score <= 30:
-                return 'High'
-            elif enhanced_level == 'Medium' and score <= 50:
-                return 'Medium'
-            elif enhanced_level == 'Low' or score >= 70:
-                return 'Low'
-            elif score >= 85:
-                return 'Very Low'
-            else:
-                return enhanced_level
-        
-        # Corrected logic: Higher scores = Lower concern for positive Christian content
-        if not ai_analysis['content_safety']['is_safe'] or score <= 30:
-            return 'High'
-        elif score <= 50:
-            return 'Medium' 
-        elif score <= 70:
-            return 'Low'
-        else:
+    def _determine_concern_level_fallback(self, score: float, concern_analysis: Optional[Dict[str, Any]] = None) -> str:
+        """Simple fallback concern level determination based on score."""
+        if score >= 85:
             return 'Very Low'
+        elif score >= 70:
+            return 'Low'
+        elif score >= 50:
+            return 'Medium'
+        else:
+            return 'High'
+    
+    def _generate_educational_summary(self, themes: List[Dict], concern_analysis: Optional[Dict[str, Any]]) -> str:
+        """Generate an educational summary based on themes and concerns."""
+        if not themes:
+            return "This song requires further analysis to determine its theological content."
+        
+        theme_names = [theme.get('theme', '') for theme in themes if isinstance(theme, dict)]
+        if not theme_names:
+            return "This song contains various themes that require careful consideration."
+        
+        summary = f"This song explores themes of {', '.join(theme_names[:3])}."
+        
+        if concern_analysis and concern_analysis.get('detailed_concerns'):
+            concern_count = len(concern_analysis['detailed_concerns'])
+            if concern_count > 0:
+                summary += f" Note: {concern_count} area(s) identified for careful consideration."
+        
+        return summary
     
     def _generate_educational_explanation(self, ai_analysis: Dict[str, Any], concern_analysis: Dict[str, Any], score: float) -> str:
         """Generate educational explanation for discernment training."""
@@ -387,33 +284,16 @@ class SimplifiedChristianAnalysisService:
         flags = []
         for concern in concern_analysis['detailed_concerns']:
             flags.append({
-                'type': concern['type'],
-                'severity': concern['severity'],
-                'category': concern['category'],
-                'description': concern['explanation'],
-                'biblical_perspective': concern['biblical_perspective'],
-                'educational_value': concern['educational_value'],
+                'type': concern.get('type', 'Unknown'),
+                'severity': concern.get('severity', 'medium'),
+                'category': concern.get('category', 'General'),
+                'description': concern.get('explanation', concern.get('description', 'No description available')),
+                'biblical_perspective': concern.get('biblical_perspective', ''),
+                'educational_value': concern.get('educational_value', ''),
                 'matches': concern.get('matches', [])
             })
         
         return flags
-    
-    def _calculate_penalty_score(self, ai_analysis: Dict[str, Any], concern_analysis: Optional[Dict[str, Any]] = None) -> int:
-        """Calculate penalty score from AI analysis and enhanced concern detection."""
-        penalty = 0
-        
-        # Original AI-based penalties
-        if not ai_analysis['content_safety']['is_safe']:
-            penalty += 50
-        
-        if ai_analysis['content_safety']['toxicity_score'] > 0.5:
-            penalty += 30
-        
-        # Enhanced concern-based penalties
-        if concern_analysis:
-            penalty += int(self._calculate_concern_penalty(concern_analysis))
-        
-        return penalty
     
     def _create_fallback_result(self, title: str, artist: str, lyrics: str) -> AnalysisResult:
         """Create a fallback result when analysis fails."""
@@ -604,195 +484,6 @@ class SimplifiedChristianAnalysisService:
             'final_score': max(30.0, min(80.0, 50.0 + len(detected_themes) * 10)),
             'explanation': f"Fallback analysis detected {len(detected_themes)} Christian themes"
         }
-
-
-class EnhancedAIAnalyzer:
-    """Enhanced AI analyzer that provides comprehensive analysis."""
-    
-    def __init__(self, contextual_detector=None):
-        """Initialize enhanced AI analyzer with lazy loading."""
-        self.hf_analyzer = None  # Don't create analyzer here - use lazy loading
-        self.contextual_detector = contextual_detector
-    
-    @property
-    def _cached_hf_analyzer(self):
-        """Get the cached HuggingFace analyzer instance (lazy loading)"""
-        if self.hf_analyzer is None:
-            logger.info("🔗 Getting cached HuggingFace analyzer...")
-            self.hf_analyzer = get_shared_analyzer()
-            logger.info("✅ Using cached HuggingFace analyzer")
-        return self.hf_analyzer
-    
-    def analyze_comprehensive(self, title: str, artist: str, lyrics: str) -> Dict[str, Any]:
-        """
-        Perform comprehensive AI analysis using cached HuggingFace models.
-        
-        Returns:
-            Dictionary with sentiment, themes, safety, emotions, and depth analysis
-        """
-        try:
-            # Use cached HuggingFace analyzer for the heavy lifting
-            hf_result = self._cached_hf_analyzer.analyze_song(title, artist, lyrics)
-            
-            # Extract sentiment and emotions first (needed for contextual themes)
-            sentiment_analysis = self._extract_sentiment(hf_result)
-            emotions_analysis = self._extract_emotions(hf_result)
-            
-            # Extract and enhance the analysis
-            analysis = {
-                'sentiment': sentiment_analysis,
-                'themes': self._extract_themes(hf_result, sentiment_analysis, emotions_analysis, lyrics),
-                'content_safety': self._extract_safety(hf_result),
-                'emotions': emotions_analysis,
-                'theological_depth': self._calculate_theological_depth(hf_result)
-            }
-            
-            return analysis
-            
-        except Exception as e:
-            logger.error(f"Error in comprehensive AI analysis: {e}")
-            # Return basic fallback analysis
-            return {
-                'sentiment': {'label': 'NEUTRAL', 'score': 0.5, 'confidence': 0.0},
-                'themes': [],
-                'content_safety': {'is_safe': True, 'toxicity_score': 0.0},
-                'emotions': [],
-                'theological_depth': 0.5
-            }
-    
-    def _extract_sentiment(self, hf_result: AnalysisResult) -> Dict[str, Any]:
-        """Extract sentiment from HuggingFace result."""
-        model_analysis = hf_result.model_analysis or {}
-        sentiment = model_analysis.get('sentiment', {})
-        
-        if 'primary' in sentiment:
-            return {
-                'label': sentiment['primary']['label'],
-                'score': sentiment['primary']['score'],
-                'confidence': sentiment['primary'].get('confidence', sentiment['primary']['score'])
-            }
-        
-        return {'label': 'NEUTRAL', 'score': 0.5, 'confidence': 0.5}
-    
-    def _extract_themes(self, hf_result: AnalysisResult, sentiment_data: Dict, emotion_data: Dict, lyrics: str) -> List[str]:
-        """Extract themes using contextual analysis for improved accuracy."""
-        # Use contextual detector if available
-        if self.contextual_detector:
-            # Convert emotion data to the format expected by contextual detector
-            emotion_analysis = {'primary': {'label': emotion_data[0] if emotion_data else 'neutral', 'score': 0.8}}
-            
-            # Get contextual themes
-            contextual_themes = self.contextual_detector.detect_themes_with_context(
-                lyrics, sentiment_data, emotion_analysis
-            )
-            
-            # Extract theme names from contextual analysis
-            detected_themes = [theme['theme'] for theme in contextual_themes]
-            
-            logger.info(f"Contextual analysis detected {len(detected_themes)} themes: {detected_themes}")
-            return detected_themes
-        
-        # Fallback to original method if contextual detector not available
-        else:
-            # Get existing themes from HF analysis
-            biblical_analysis = hf_result.biblical_analysis or {}
-            themes_list = biblical_analysis.get('themes', [])
-            
-            # Extract theme names from the theme dictionaries
-            detected_themes = []
-            if themes_list and isinstance(themes_list, list) and len(themes_list) > 0:
-                if isinstance(themes_list[0], dict):
-                    detected_themes = [theme.get('theme', '') for theme in themes_list if theme and 'theme' in theme]
-                else:
-                    detected_themes = [str(theme) for theme in themes_list if theme]
-            
-            # Enhance with intelligent keyword-based theme detection
-            lyrics_text = hf_result.lyrics_text or ""
-            title_text = hf_result.title or ""
-            enhanced_themes = self._detect_additional_themes(lyrics_text, title_text, detected_themes)
-            
-            # Combine and deduplicate
-            all_themes = list(set([theme for theme in detected_themes + enhanced_themes if theme]))
-            
-            return all_themes
-    
-    def _detect_additional_themes(self, lyrics: str, title: str, existing_themes: List[str]) -> List[str]:
-        """Simple but effective theme detection using keywords and synonyms."""
-        # Handle None values safely
-        safe_lyrics = lyrics or ""
-        safe_title = title or ""
-        
-        if not safe_lyrics and not safe_title:
-            return []
-        
-        # Combine text for analysis
-        text = f"{safe_title} {safe_lyrics}".lower()
-        
-        # Simple theme mapping with keywords and synonyms (keep it minimal!)
-        theme_keywords = {
-            'God': ['god', 'father', 'creator', 'almighty', 'yahweh', 'jehovah', 'lord god'],
-            'Jesus': ['jesus', 'christ', 'savior', 'redeemer', 'messiah', 'lamb of god', 'son of god'],
-            'worship': ['worship', 'praise', 'glorify', 'honor', 'exalt', 'adore', 'bow down'],
-            'faith': ['faith', 'believe', 'trust', 'hope', 'believe in', 'have faith'],
-            'love': ['love', 'beloved', 'charity', 'compassion', 'kindness', 'care'],
-            'grace': ['grace', 'mercy', 'forgiveness', 'pardon', 'redemption', 'salvation'],
-            'peace': ['peace', 'rest', 'calm', 'tranquil', 'still', 'quiet'],
-            'joy': ['joy', 'rejoice', 'celebrate', 'happiness', 'glad', 'joyful'],
-            'hope': ['hope', 'future', 'promise', 'expectation', 'confident'],
-            'forgiveness': ['forgive', 'forgiveness', 'pardon', 'mercy', 'cleanse']
-        }
-        
-        detected_themes = []
-        
-        for theme, keywords in theme_keywords.items():
-            # Skip if theme already detected
-            if theme.lower() in [t.lower() for t in existing_themes]:
-                continue
-            
-            # Check if any keywords match
-            if any(keyword in text for keyword in keywords):
-                detected_themes.append(theme)
-        
-        return detected_themes
-    
-    def _extract_safety(self, hf_result: AnalysisResult) -> Dict[str, Any]:
-        """Extract content safety from HuggingFace result."""
-        content_analysis = hf_result.content_analysis or {}
-        concern_flags = content_analysis.get('concern_flags', [])
-        
-        # Determine safety based on concern flags
-        is_safe = len(concern_flags) == 0
-        toxicity_score = min(len(concern_flags) * 0.3, 1.0)  # Rough toxicity estimation
-        
-        return {
-            'is_safe': is_safe,
-            'toxicity_score': toxicity_score
-        }
-    
-    def _extract_emotions(self, hf_result: AnalysisResult) -> List[str]:
-        """Extract emotions from HuggingFace result."""
-        model_analysis = hf_result.model_analysis or {}
-        emotions = model_analysis.get('emotions', {})
-        
-        if 'primary' in emotions:
-            return [emotions['primary']['label']]
-        
-        return []
-    
-    def _calculate_theological_depth(self, hf_result: AnalysisResult) -> float:
-        """Calculate theological depth based on analysis."""
-        biblical_analysis = hf_result.biblical_analysis or {}
-        theme_count = biblical_analysis.get('biblical_themes_count', 0)
-        
-        # Simple depth calculation based on number of biblical themes
-        if theme_count >= 3:
-            return 0.8
-        elif theme_count >= 2:
-            return 0.6
-        elif theme_count >= 1:
-            return 0.4
-        else:
-            return 0.2
 
 
  

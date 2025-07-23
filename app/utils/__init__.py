@@ -36,10 +36,6 @@ Examples:
         >>> from app.utils import format_ms_filter
         >>> duration = format_ms_filter(123456)  # Returns "02:03"
         
-    Analysis utilities:
-        >>> from app.utils.analysis import analyze_song_content
-        >>> result = analyze_song_content(lyrics, title, artist)
-        
     Cache utilities:
         >>> from app.utils.cache import get_cached, set_cached
         >>> cached_data = get_cached('key', fetch_function, timeout=3600)

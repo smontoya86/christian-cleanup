@@ -164,8 +164,8 @@ def playlist_detail(playlist_id):
     analyzed_songs = 0
     
     for song, playlist_song in songs_with_position:
-        # Get the most recent analysis for this song (same approach as song_detail)
-        analysis = AnalysisResult.query.filter_by(song_id=song.id).order_by(desc(AnalysisResult.created_at)).first()
+        # Get the most recent analysis for this song (fix ordering to use analyzed_at)
+        analysis = AnalysisResult.query.filter_by(song_id=song.id).order_by(desc(AnalysisResult.analyzed_at)).first()
         
         # Count completed analyses
         if analysis and analysis.status == 'completed':
@@ -231,7 +231,7 @@ def song_detail(song_id, playlist_id=None):
             Playlist.owner_id == current_user.id
         ).first()
     
-    analysis = AnalysisResult.query.filter_by(song_id=song_id).order_by(desc(AnalysisResult.created_at)).first()
+    analysis = AnalysisResult.query.filter_by(song_id=song_id).order_by(desc(AnalysisResult.analyzed_at)).first()
     
     is_whitelisted = Whitelist.query.filter_by(
         user_id=current_user.id,

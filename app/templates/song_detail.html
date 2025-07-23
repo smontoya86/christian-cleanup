@@ -26,7 +26,7 @@
                 {% if analysis and analysis.score is not none %}
                     <div class="mt-3">
                         {% set score = analysis.score if analysis.score > 1 else (analysis.score * 100) %}
-                        {% set concern_level = analysis.concern_level if analysis and analysis.concern_level and analysis.concern_level != 'unknown' else ('high' if score < 70 else ('medium' if score < 85 else 'low')) %}
+                        {% set concern_level = analysis.concern_level if analysis and analysis.concern_level and analysis.concern_level != 'unknown' else ('very_low' if score >= 90 else ('low' if score >= 75 else ('medium' if score >= 50 else 'high'))) %}
                         
                         <div class="d-flex align-items-center gap-3">
                             <div class="score-circle {% if score >= 85 %}score-good{% elif score >= 70 %}score-medium{% else %}score-poor{% endif %}">
@@ -34,7 +34,7 @@
                             </div>
                             <div>
                                 <div class="fw-bold">
-                                    {% if concern_level == 'low' %}
+                                    {% if concern_level in ['very_low', 'low'] %}
                                         ✅ Great Choice
                                     {% elif concern_level == 'medium' %}
                                         ⚠️ Use Discretion
@@ -212,10 +212,15 @@
                     <!-- Enhanced Biblical Content with Categorized Scripture References -->
                     {% if analysis.supporting_scripture is iterable and analysis.supporting_scripture is not string %}
                         {% set positive_scriptures = [] %}
+                        {% set concern_scriptures = [] %}
                         
                         {% for scripture in analysis.supporting_scripture %}
                             {% if scripture is mapping %}
-                                {% set _ = positive_scriptures.append(scripture) %}
+                                {% if scripture.get('concern_type') or scripture.get('concern_category') %}
+                                    {% set _ = concern_scriptures.append(scripture) %}
+                                {% else %}
+                                    {% set _ = positive_scriptures.append(scripture) %}
+                                {% endif %}
                             {% endif %}
                         {% endfor %}
                         
@@ -403,7 +408,7 @@
                                         </button>
                                     </form>
                                 </div>
-                            {% elif calculated_concern in ['low', 'medium'] %}
+                            {% elif calculated_concern in ['very_low', 'low', 'medium'] %}
                                 <div class="d-grid">
                                     <form action="{{ url_for('main.whitelist_song', song_id=song.id) }}" method="POST">
                                         <button type="submit" class="btn btn-success w-100">

@@ -19,21 +19,6 @@ except ImportError:
         def fetch_lyrics(self, artist, title):
             return ""
 
-try:
-    from ..utils.analysis import EnhancedSongAnalyzer
-except ImportError:
-    # Create a mock EnhancedSongAnalyzer if the real one doesn't exist  
-    class EnhancedSongAnalyzer:
-        def analyze_song(self, lyrics, song_metadata):
-            return {
-                'score': 85,
-                'concern_level': 'low',
-                'detailed_concerns': [],
-                'biblical_themes': [],
-                'positive_themes': [],
-                'explanation': 'Mock analysis result'
-            }
-
 
 class UnifiedAnalysisService:
     """

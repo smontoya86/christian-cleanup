@@ -46,7 +46,7 @@ Robust authentication system with session management, secure API key handling, a
 - **Flask** - Web framework with RESTful API design
 - **SQLAlchemy** - Database ORM for data modeling
 - **PostgreSQL** - Primary database for user data and analysis results
-- **Celery** - Distributed task queue for background processing
+- **Redis Queue** - Priority-based background processing with 6 worker containers
 - **Redis** - In-memory cache and message broker
 
 ### **Frontend Technologies**
@@ -156,7 +156,7 @@ Robust authentication system with session management, secure API key handling, a
 │   EXTERNAL APIs     │ │  DATA LAYER     │ │  PROCESSING LAYER   │
 ├─────────────────────┤ ├─────────────────┤ ├─────────────────────┤
 │ Spotify Web API     │ │ PostgreSQL DB   │ │ Background Jobs     │
-│ ├── OAuth 2.0       │ │ ├── Users       │ │ ├── Celery Workers  │
+│ ├── OAuth 2.0       │ │ ├── Users       │ │ ├── Redis Workers   │
 │ ├── Playlists       │ │ ├── Songs       │ │ ├── Analysis Queue  │
 │ ├── Track Data      │ │ ├── Playlists   │ │ └── Progress Track  │
 │ └── User Profile    │ │ ├── Analysis    │ │                     │
@@ -187,7 +187,7 @@ Robust authentication system with session management, secure API key handling, a
 │  ├── Web Application Container                                 │
 │  ├── Database Container (PostgreSQL)                           │
 │  ├── Redis Container                                           │
-│  └── Worker Containers (Celery)                                │
+│  └── Worker Containers (Redis Queue)                          │
 │                                                                 │
 │  Orchestration: Docker Compose                                 │
 │  Monitoring: Logs, Health Checks, Metrics                      │
@@ -208,7 +208,7 @@ Robust authentication system with session management, secure API key handling, a
 ### **Analysis Processing Flow**
 1. User initiates playlist analysis
 2. Background job queued in Redis
-3. Celery worker picks up job
+3. Redis worker picks up job
 4. Songs fetched from Spotify API
 5. Each song processed through AI models
 6. Results stored in PostgreSQL

@@ -205,7 +205,7 @@ def get_song_analysis(song_id):
     ).first_or_404()
     
     analysis = AnalysisResult.query.filter_by(song_id=song_id).order_by(
-        AnalysisResult.created_at.desc()
+        AnalysisResult.analyzed_at.desc()
     ).first()
     
     song_data = {
@@ -407,7 +407,7 @@ def get_song_analysis_status(song_id):
     ).first_or_404()
 
     analysis = AnalysisResult.query.filter_by(song_id=song_id).order_by(
-        AnalysisResult.created_at.desc()
+        AnalysisResult.analyzed_at.desc()
     ).first()
     
     if analysis and analysis.status == 'completed':
