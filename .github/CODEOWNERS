@@ -1,0 +1,8 @@
+# Default owner
+* @smontoya86
+
+# Areas (same owner for now; expandable later)
+app/** @smontoya86
+docs/** @smontoya86
+.github/** @smontoya86
+scripts/** @smontoya86

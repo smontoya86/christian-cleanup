@@ -6,7 +6,7 @@ Welcome to the Christian Music Curator documentation! This hub provides comprehe
 
 ### Getting Started
 - [**README**](../README.md) - Project overview, setup instructions, and enhanced analysis features
-- [**Technical Architecture**](simplified_structure_rebuild.md) - Comprehensive system architecture and technology stack
+- [**Technical Architecture (current)**](simplified_structure_current_impl.md) - Current system architecture and technology stack
 
 ### API Documentation
 - [**API Reference**](api_docs.md) - Complete API endpoint documentation with request/response examples
@@ -90,7 +90,7 @@ The application has evolved from a basic scoring tool into a comprehensive Chris
 ## 🔍 Quick Navigation
 
 ### For Developers
-- [Technical Architecture](simplified_structure_rebuild.md) - Complete system architecture
+- [Technical Architecture (current)](simplified_structure_current_impl.md) - Current system architecture
 - [API Reference](api_docs.md) - Endpoint documentation and examples
 - [Configuration Guide](configuration.md) - Setup and configuration
 
