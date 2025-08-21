@@ -1,8 +1,8 @@
-name: CI Nightly (Full Suite)
+name: CI Weekly (Full Suite)
 
 on:
   schedule:
-    - cron: '0 3 * * *' # Daily at 03:00 UTC
+    - cron: '0 3 * * 1' # Weekly on Monday at 03:00 UTC
   workflow_dispatch: {}
 
 jobs:
