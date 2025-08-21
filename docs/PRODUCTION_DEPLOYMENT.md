@@ -142,14 +142,16 @@ POSTGRES_DB=christian_cleanup_prod
 GRAFANA_ADMIN_PASSWORD=secure_grafana_password
 ```
 
-### 3. Deploy Application
+### 3. Deploy Application (from source or GHCR)
 
 ```bash
-# Run the deployment script
-./scripts/deploy.sh
+# Option A: Build from source
+docker-compose -f docker-compose.prod.yml up -d --build
 
-# Or manually step by step:
-docker-compose -f docker-compose.prod.yml up -d
+# Option B: Pull prebuilt image from GHCR (after tag release)
+export IMAGE=ghcr.io/smontoya86/christian-cleanup:latest
+docker pull $IMAGE
+IMAGE=$IMAGE docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ### 4. Verify Deployment

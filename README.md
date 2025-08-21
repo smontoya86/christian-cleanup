@@ -1,6 +1,9 @@
 # Christian Music Curator
 
 [![CI](https://github.com/smontoya86/christian-cleanup/actions/workflows/ci.yml/badge.svg)](https://github.com/smontoya86/christian-cleanup/actions/workflows/ci.yml)
+[![Weekly Full Suite](https://github.com/smontoya86/christian-cleanup/actions/workflows/ci-nightly.yml/badge.svg)](https://github.com/smontoya86/christian-cleanup/actions/workflows/ci-nightly.yml)
+[![CodeQL](https://github.com/smontoya86/christian-cleanup/actions/workflows/codeql.yml/badge.svg)](https://github.com/smontoya86/christian-cleanup/actions/workflows/codeql.yml)
+[![Gitleaks](https://github.com/smontoya86/christian-cleanup/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/smontoya86/christian-cleanup/actions/workflows/gitleaks.yml)
 
 
 ## 🐳 **DOCKER-FIRST PROJECT**
