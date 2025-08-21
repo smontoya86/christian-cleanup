@@ -1,5 +1,8 @@
 # Christian Music Curator
 
+[![CI](https://github.com/smontoya86/christian-cleanup/actions/workflows/ci.yml/badge.svg)](https://github.com/smontoya86/christian-cleanup/actions/workflows/ci.yml)
+
+
 ## 🐳 **DOCKER-FIRST PROJECT**
 
 **⚠️ IMPORTANT: This is a Docker-first application. All commands should be run through Docker containers, not locally.**
