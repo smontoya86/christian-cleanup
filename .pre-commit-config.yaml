@@ -13,3 +13,29 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        args: ["protect", "--staged", "--redact"]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline", "--exclude-files", "(.*example.*|docs/|tests/)" ]
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        args: ["--skip=*.min.js,*.lock,*.jsonl,*.safetensors,*.bin,*.png,*.jpg,*.jpeg,*.svg", "-w"]
+
+  - repo: local
+    hooks:
+      - id: ban-commented-out-code
+        name: Ban commented-out code (py/js)
+        entry: bash -c 'grep -RInE "^\s*(#|//)\s*(from |import |def |class |if |for |while |return |console\.log|logger\.)" -- . | grep -vE "(tests/|docs/|migrations/|\.md$|\.json$|\.jsonl$)" && exit 1 || exit 0'
+        language: system
+        pass_filenames: false

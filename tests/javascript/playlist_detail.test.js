@@ -239,7 +239,6 @@ describe('Playlist Detail Page JavaScript', () => {
 
     describe('getCellValue', () => {
         test('should get text content from a cell', () => {
-            // console.log('Current DOM state for getCellValue test:', doc.body.innerHTML.substring(0,500)); // Temporary debug
             const row = doc.querySelector('#songTableBody tr'); // Use doc
             expect(row).not.toBeNull();
             expect(getCellValueFromSetup(row, 0)).toBe('1');
