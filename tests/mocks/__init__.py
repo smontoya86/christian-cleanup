@@ -12,14 +12,9 @@ Available Mock Services:
 - MockAnalysisService: Mock implementation of analysis components
 """
 
+from .analysis_mocks import MockAnalysisService
+from .genius_service import MockGeniusService
 from .service_factory import MockServiceFactory
 from .spotify_service import MockSpotifyService
-from .genius_service import MockGeniusService
-from .analysis_mocks import MockAnalysisService
 
-__all__ = [
-    'MockServiceFactory',
-    'MockSpotifyService', 
-    'MockGeniusService',
-    'MockAnalysisService'
-] 
+__all__ = ["MockServiceFactory", "MockSpotifyService", "MockGeniusService", "MockAnalysisService"]

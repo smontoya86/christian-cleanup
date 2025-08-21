@@ -9,4 +9,4 @@ Services:
 - ContextualThemeDetector: Legacy theme detection (replaced by HuggingFaceAnalyzer)
 """
 
-__version__ = '1.0.0' 
+__version__ = "1.0.0"

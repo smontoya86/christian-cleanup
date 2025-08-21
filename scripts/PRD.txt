@@ -151,4 +151,3 @@ These features constitute the Minimum Viable Product (MVP):
     *   `michellejieli/inappropriate_text_classifier`
 *   **Implementation Guidelines:** Refer to `implementation_guidelines_rev4.md` for detailed setup and coding steps.
 *   **Architecture Diagram:** Refer to `simplified_system_diagram_basic.png`.
-

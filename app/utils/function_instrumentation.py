@@ -2,9 +2,11 @@
 Simple function instrumentation replacement.
 Provides minimal interface for performance tracking without complex monitoring.
 """
-import time
+
 import functools
+import time
 from contextlib import contextmanager
+
 
 def instrument_function(func_name=None, category=None, min_duration=None, **kwargs):
     """
@@ -12,12 +14,16 @@ def instrument_function(func_name=None, category=None, min_duration=None, **kwar
     In the simplified version, this just passes through the function.
     Accepts any keyword arguments for compatibility.
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
+
 
 @contextmanager
 def performance_context(operation_name):
@@ -30,4 +36,4 @@ def performance_context(operation_name):
         yield
     finally:
         # In a full implementation, you could log performance metrics here
-        pass 
+        pass

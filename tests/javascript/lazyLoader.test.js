@@ -28,14 +28,14 @@ describe('LazyLoader', () => {
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Create mock DOM element
     mockElement = document.createElement('div');
     mockElement.setAttribute('data-lazy-url', '/api/test');
     mockElement.setAttribute('data-loading-template', 'loading-template');
     mockElement.setAttribute('data-error-template', 'error-template');
     document.body.appendChild(mockElement);
-    
+
     // Create LazyLoader instance
     lazyLoader = new LazyLoader();
   });
@@ -231,9 +231,9 @@ describe('LazyLoader', () => {
 
     test('should clear element content by default', () => {
       mockElement.innerHTML = '<div>existing content</div>';
-      
+
       lazyLoader.renderContent(mockElement, { test: 'data' });
-      
+
       expect(mockElement.innerHTML).toBe('');
     });
   });
@@ -281,7 +281,7 @@ describe('LazyLoader', () => {
       // Create a retry button
       const retryButton = document.createElement('button');
       retryButton.className = 'retry-btn';
-      
+
       // Create container with lazy loading attributes
       const container = document.createElement('div');
       container.setAttribute('data-lazy-url', '/api/retry-test');
@@ -301,4 +301,4 @@ describe('LazyLoader', () => {
       document.body.removeChild(container);
     });
   });
-}); 
+});

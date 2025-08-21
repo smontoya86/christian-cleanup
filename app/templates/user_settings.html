@@ -42,6 +42,42 @@
                     </h5>
                 </div>
                 <div class="card-body">
+                    {% if current_user.is_admin %}
+                    <!-- Backfill Progress (Admin) -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-info">
+                                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-tasks me-2"></i>Analysis Backfill Progress (Admin)
+                                    </h6>
+                                    <div>
+                                        <button id="btn-start-backfill" class="btn btn-light btn-sm me-2" title="Start backfill now">
+                                            <i class="fas fa-play me-1"></i>Start
+                                        </button>
+                                        <button id="btn-refresh-backfill" class="btn btn-light btn-sm" title="Refresh status">
+                                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="backfill-status-empty" class="text-muted small mb-2">No active job detected.</div>
+                                    <div class="progress mb-2" style="height: 22px;">
+                                        <div id="backfill-progress-bar" class="progress-bar bg-info" role="progressbar" style="width: 0%">
+                                            <span id="backfill-progress-label" class="fw-bold">0%</span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-wrap small text-muted">
+                                        <div class="me-3">Processed: <span id="bf-processed">0</span>/<span id="bf-total">0</span></div>
+                                        <div class="me-3">ETA: <span id="bf-eta">–</span></div>
+                                        <div class="me-3">Job: <code id="bf-job">–</code></div>
+                                        <div>Status: <span id="bf-status">idle</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                     <!-- Simple display of user info since update functionality isn't implemented -->
                     <div class="mb-3">
                         <label class="form-label">Display Name</label>
@@ -70,7 +106,7 @@
 
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>Note:</strong> Profile information is automatically synced from your Spotify account. 
+                        <strong>Note:</strong> Profile information is automatically synced from your Spotify account.
                         Any changes to your display name or email should be made in your Spotify account settings.
                     </div>
                 </div>
@@ -90,7 +126,7 @@
                         <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
                         <p class="text-muted">Loading your statistics...</p>
                     </div>
-                    
+
                     <div id="stats-content" style="display: none;">
                         <!-- Stats will be loaded via JavaScript -->
                     </div>
@@ -151,7 +187,7 @@
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         <strong>Warning:</strong> These administrative functions will affect all your playlists and may take significant time to complete.
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <div class="card h-100">
@@ -160,10 +196,10 @@
                                         <i class="fas fa-sync-alt me-2 text-primary"></i>Re-sync All Playlists
                                     </h6>
                                     <p class="card-text small text-muted">
-                                        Refresh all playlist data from Spotify. This will update playlist names, descriptions, 
+                                        Refresh all playlist data from Spotify. This will update playlist names, descriptions,
                                         and song lists to match your current Spotify library.
                                     </p>
-                                    <form method="GET" action="{{ url_for('main.sync_playlists') }}" 
+                                    <form method="GET" action="{{ url_for('main.sync_playlists') }}"
                                           onsubmit="return confirm('Are you sure you want to re-sync ALL playlists? This may take several minutes.');">
                                         <button type="submit" class="btn btn-primary btn-sm w-100">
                                             <i class="fas fa-sync-alt me-1"></i>Start Re-sync
@@ -172,7 +208,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-6 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
@@ -180,7 +216,7 @@
                                         <i class="fas fa-brain me-2 text-danger"></i>Re-analyze All Songs
                                     </h6>
                                     <p class="card-text small text-muted">
-                                        🚀 <strong>Enhanced Re-analysis System:</strong> Force re-analysis of ALL songs in ALL playlists with real-time progress tracking, 
+                                        🚀 <strong>Enhanced Re-analysis System:</strong> Force re-analysis of ALL songs in ALL playlists with real-time progress tracking,
                                         ETA estimation, and cancellation support. Optimized for faster processing with parallel execution.
                                         <br><br>
                                         <strong>Features:</strong>
@@ -199,12 +235,12 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-12">
                             <div class="alert alert-info mb-0">
                                 <i class="fas fa-info-circle me-2"></i>
-                                <strong>Note:</strong> Progress can be monitored on the Dashboard. These operations run in the background 
+                                <strong>Note:</strong> Progress can be monitored on the Dashboard. These operations run in the background
                                 and you can continue using the application normally.
                             </div>
                         </div>
@@ -299,7 +335,7 @@ function resetForm() {
 function showAnalysisStats() {
     const modal = new bootstrap.Modal(document.getElementById('analysisStatsModal'));
     modal.show();
-    
+
     // Simulate loading stats (replace with actual API call)
     setTimeout(function() {
         document.querySelector('#analysisStatsModal .modal-body').innerHTML = `
@@ -350,14 +386,14 @@ function showAnalysisStats() {
 document.querySelector('form').addEventListener('submit', function(e) {
     const displayName = document.getElementById('display_name').value.trim();
     const email = document.getElementById('email').value.trim();
-    
+
     if (!displayName) {
         e.preventDefault();
         alert('Display name is required.');
         document.getElementById('display_name').focus();
         return;
     }
-    
+
     if (email && !email.includes('@')) {
         e.preventDefault();
         alert('Please enter a valid email address.');
@@ -370,16 +406,12 @@ document.querySelector('form').addEventListener('submit', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     // Load account statistics
     loadAccountStats();
-    
-    // Always start monitoring for active reanalysis jobs
-    console.log('🚀 Starting reanalysis monitoring (checks for active jobs)');
-    startReanalysisMonitoring();
 });
 
 function loadAccountStats() {
     const statsLoading = document.getElementById('stats-loading');
     const statsContent = document.getElementById('stats-content');
-    
+
     // Simulate loading account statistics
     setTimeout(function() {
         statsLoading.style.display = 'none';
@@ -410,167 +442,67 @@ function loadAccountStats() {
         statsContent.style.display = 'block';
     }, 1000);
 }
-
-// Reanalysis monitoring functions
-let reanalysisCheckInterval = null;
-
-function startReanalysisMonitoring() {
-    console.log('🔄 Starting reanalysis monitoring on settings page');
-    
-    // Start aggressive checking (every 1 second for first 30 seconds)
-    reanalysisCheckInterval = setInterval(checkReanalysisStatus, 1000);
-    
-    // After 30 seconds, switch to normal interval (every 3 seconds)
-    setTimeout(() => {
-        if (reanalysisCheckInterval) {
-            clearInterval(reanalysisCheckInterval);
-            reanalysisCheckInterval = setInterval(checkReanalysisStatus, 3000);
-            console.log('🔄 Switched to normal reanalysis checking interval');
-        }
-    }, 30000);
-}
-
-function checkReanalysisStatus() {
-    console.log('📡 Checking reanalysis status...');
-    
-    fetch('/api/admin/reanalysis-status')
-        .then(response => {
-            console.log('📡 API Response status:', response.status);
-            return response.json();
-        })
-        .then(data => {
-            console.log('📊 Reanalysis status data:', data);
-            
-            let reanalysisAlert = document.getElementById('reanalysisAlert');
-            
-            if (data.active) {
-                console.log('✅ ACTIVE REANALYSIS DETECTED!');
-                console.log(`   Progress: ${data.progress || 0}%`);
-                console.log(`   Current Song: ${data.current_song || 'Initializing...'}`);
-                console.log(`   Processed: ${data.processed || 0}/${data.total || 0}`);
-                
-                if (!reanalysisAlert) {
-                    console.log('🆕 Creating new progress indicator');
-                    
-                    // Create reanalysis progress alert with prominent styling
-                    const alertDiv = document.createElement('div');
-                    alertDiv.id = 'reanalysisAlert';
-                    alertDiv.className = 'alert alert-info mb-3';
-                    alertDiv.style.border = '2px solid #0dcaf0';
-                    alertDiv.style.boxShadow = '0 4px 8px rgba(13, 202, 240, 0.3)';
-                    alertDiv.style.backgroundColor = 'rgba(13, 202, 240, 0.1)';
-                    alertDiv.innerHTML = `
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-sync-alt fa-spin me-3"></i>
-                            <div class="flex-grow-1">
-                                <div id="reanalysisStatusText"><strong>Re-analyzing songs...</strong></div>
-                                                                <div class="progress mt-2" style="height: 25px; border-radius: 8px; border: 1px solid #0dcaf0;">
-                                    <div id="reanalysisProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-info"
-                                         style="width: ${data.progress || 0}%; font-weight: bold; display: flex; align-items: center; justify-content: center; color: white;">
-                                        <span style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">${data.progress || 0}%</span>
-                                    </div>
-                                </div>
-                                <small id="reanalysisDetails" class="text-muted">
-                                    ${data.current_song || 'Processing...'} (${data.processed || 0}/${data.total || 0} processed)
-                                </small>
-                                <small class="text-muted ms-2">
-                                    <span id="reanalysisProgress">${data.progress || 0}%</span>
-                                </small>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Insert at the top of the container with detailed debugging
-                    const mainContent = document.querySelector('.container');
-                    console.log('🔍 Container search result:', mainContent);
-                    console.log('🔍 Container firstChild:', mainContent ? mainContent.firstChild : 'No container');
-                    console.log('🔍 Container children count:', mainContent ? mainContent.children.length : 'No container');
-                    
-                    if (mainContent && mainContent.firstChild) {
-                        mainContent.insertBefore(alertDiv, mainContent.firstChild);
-                        console.log('✅ Progress indicator added to settings page');
-                    } else if (mainContent) {
-                        // Fallback: append to container if no firstChild
-                        mainContent.appendChild(alertDiv);
-                        console.log('✅ Progress indicator appended to settings page (fallback)');
-                    } else {
-                        console.error('❌ Could not find .container element to insert progress indicator');
-                    }
-                } else {
-                    console.log('🔄 Updating existing progress indicator');
-                    // Update existing alert
-                    const statusText = document.getElementById('reanalysisStatusText');
-                    const progressElement = document.getElementById('reanalysisProgress');
-                    const progressBar = document.getElementById('reanalysisProgressBar');
-                    const detailsElement = document.getElementById('reanalysisDetails');
-                    
-                    if (statusText) statusText.innerHTML = '<strong>Re-analyzing songs...</strong>';
-                    if (progressElement) progressElement.textContent = `${data.progress || 0}%`;
-                    if (progressBar) progressBar.style.width = `${data.progress || 0}%`;
-                    if (detailsElement) {
-                        detailsElement.textContent = `${data.current_song || 'Processing...'} (${data.processed || 0}/${data.total || 0} processed)`;
-                    }
-                }
-            } else if (data.completed) {
-                console.log('✅ REANALYSIS COMPLETED');
-                console.log(`   Total processed: ${data.total_processed}`);
-                console.log(`   Total successful: ${data.total_successful}`);
-                
-                // Show completion message
-                if (reanalysisAlert) {
-                    const statusText = reanalysisAlert.querySelector('#reanalysisStatusText');
-                    const progressBar = reanalysisAlert.querySelector('#reanalysisProgressBar');
-                    const icon = reanalysisAlert.querySelector('i');
-                    
-                    reanalysisAlert.className = 'alert alert-success mb-3';
-                    if (statusText) statusText.innerHTML = `<strong>Re-analysis completed!</strong> ${data.total_successful || 0} songs processed successfully.`;
-                    if (progressBar) {
-                        progressBar.classList.remove('progress-bar-animated', 'bg-info');
-                        progressBar.classList.add('bg-success');
-                        progressBar.style.width = '100%';
-                    }
-                    if (icon) {
-                        icon.classList.remove('fa-sync-alt', 'fa-spin');
-                        icon.classList.add('fa-check-circle');
-                    }
-                    
-                    // Stop monitoring
-                    if (reanalysisCheckInterval) {
-                        clearInterval(reanalysisCheckInterval);
-                        reanalysisCheckInterval = null;
-                        console.log('🛑 Stopped reanalysis monitoring');
-                    }
-                    
-                    // Remove completion message after delay (increased to 15 seconds)
-                    setTimeout(() => {
-                        if (reanalysisAlert && reanalysisAlert.parentNode) {
-                            reanalysisAlert.parentNode.removeChild(reanalysisAlert);
-                            console.log('🗑️ Removed completion message after 15 seconds');
-                        }
-                    }, 15000);
-                }
-            } else {
-                console.log('📝 No active reanalysis');
-                console.log(`   Message: ${data.message}`);
-                
-                // No active job and we have an indicator, remove it
-                if (reanalysisAlert && !data.active) {
-                    console.log('🗑️ Removing inactive progress indicator');
-                    reanalysisAlert.parentNode.removeChild(reanalysisAlert);
-                    
-                    // Stop monitoring if no activity
-                    if (reanalysisCheckInterval) {
-                        clearInterval(reanalysisCheckInterval);
-                        reanalysisCheckInterval = null;
-                        console.log('🛑 Stopped reanalysis monitoring');
-                    }
-                }
-            }
-        })
-        .catch(error => {
-            console.error('❌ Re-analysis status check failed:', error);
-        });
-}
 </script>
 
-{% endblock %} 
+<script>
+// Admin backfill progress widget
+document.addEventListener('DOMContentLoaded', function() {
+    const bar = document.getElementById('backfill-progress-bar');
+    const label = document.getElementById('backfill-progress-label');
+    const processedEl = document.getElementById('bf-processed');
+    const totalEl = document.getElementById('bf-total');
+    const etaEl = document.getElementById('bf-eta');
+    const statusEl = document.getElementById('bf-status');
+    const jobEl = document.getElementById('bf-job');
+    const emptyEl = document.getElementById('backfill-status-empty');
+    const btnRefresh = document.getElementById('btn-refresh-backfill');
+    const btnStart = document.getElementById('btn-start-backfill');
+
+    if (!bar || !btnRefresh) return; // Not admin
+
+    function fmtETA(sec) {
+        if (sec == null || sec < 0) return 'estimating…';
+        const m = Math.floor(sec / 60); const s = sec % 60;
+        if (m >= 120) return `${Math.round(m/60)}h`;
+        if (m >= 1) return `${m}m ${s}s`;
+        return `${s}s`;
+    }
+
+    async function loadBackfillStatus() {
+        try {
+            const res = await fetch('/api/admin/backfill-status', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await res.json();
+            const pct = Math.max(0, Math.min(100, data.progress_percent ?? (data.progress ?? 0)));
+            const processed = data.processed ?? 0;
+            const total = data.total ?? 0;
+            if (emptyEl) emptyEl.style.display = (data.status && data.status !== 'idle') ? 'none' : '';
+            bar.style.width = pct + '%';
+            label.textContent = pct + '%';
+            processedEl.textContent = processed;
+            totalEl.textContent = total;
+            etaEl.textContent = fmtETA(data.eta_seconds);
+            statusEl.textContent = data.status || 'idle';
+            if (data.job_id && jobEl) jobEl.textContent = data.job_id;
+        } catch (e) {
+            // Keep UI silent on errors
+        }
+    }
+
+    btnRefresh.addEventListener('click', function(){ loadBackfillStatus(); });
+    if (btnStart) {
+        btnStart.addEventListener('click', async function(){
+            btnStart.disabled = true;
+            try {
+                const res = await fetch('/api/admin/backfill-all', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                await res.json();
+            } catch (e) {}
+            finally { btnStart.disabled = false; loadBackfillStatus(); }
+        });
+    }
+
+    loadBackfillStatus();
+    setInterval(loadBackfillStatus, 30000);
+});
+</script>
+
+{% endblock %}

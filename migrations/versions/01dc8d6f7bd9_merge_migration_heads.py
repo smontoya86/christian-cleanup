@@ -1,7 +1,7 @@
 """merge migration heads
 
 Revision ID: 01dc8d6f7bd9
-Revises: 
+Revises:
 Create Date: 2025-05-24 14:32:14.564444
 
 """

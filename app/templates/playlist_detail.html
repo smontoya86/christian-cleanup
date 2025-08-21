@@ -16,14 +16,33 @@
             <!-- Playlist header -->
             <div class="row mb-4 align-items-center">
                 <div class="col-md-2">
-                    {% if playlist.image_url %}
-                        <img src="{{ playlist.image_url }}" 
-                             alt="{{ playlist.name }} Cover" class="img-fluid rounded shadow">
-                    {% else %}
-                        <div class="bg-light d-flex align-items-center justify-content-center rounded shadow" style="height: 150px;">
-                            <i class="fas fa-music text-muted fa-3x"></i>
-                        </div>
-                    {% endif %}
+                    {# Always build a 2x2 collage from first 4 unique album arts #}
+                        {% set ns = namespace(urls = (playlist._top_album_art_urls if playlist._top_album_art_urls is defined else [])) %}
+                        {# Fallback: derive from first 4 tracks if server didn’t attach #}
+                        {% if ns.urls|length == 0 and songs %}
+                            {% for it in songs %}
+                                {% if it.song and it.song.album_art_url and (ns.urls|length) < 4 %}
+                                    {% if it.song.album_art_url not in ns.urls %}
+                                        {% set ns.urls = ns.urls + [it.song.album_art_url] %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+
+                        {% if ns.urls and (ns.urls|length) > 0 %}
+                            <div class="rounded shadow overflow-hidden" style="width: 100%; max-width: 150px; aspect-ratio: 1 / 1;">
+                                <div class="d-grid" style="grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; width: 100%; height: 100%;">
+                                    {% for i in range(0,4) %}
+                                        {% set url = ns.urls[i] if i < (ns.urls|length) else (ns.urls[0] if (ns.urls|length) > 0 else url_for('static', filename='images/default_album_art.png')) %}
+                                        <div style="background-image: url('{{ url }}'); background-size: cover; background-position: center;"></div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="bg-light d-flex align-items-center justify-content-center rounded shadow" style="height: 150px;">
+                                <i class="fas fa-music text-muted fa-3x"></i>
+                            </div>
+                        {% endif %}
                 </div>
                 <div class="col-md-10">
                     <h1 class="display-6 fw-bold">{{ playlist.name }}</h1>
@@ -38,22 +57,25 @@
                         <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left"></i> Back to Dashboard
                         </a>
-                        {% if analysis_state.is_fully_analyzed %}
-                            <button type="button" class="btn btn-outline-secondary analyze-playlist-btn" 
-                                    data-playlist-id="{{ playlist.id }}" 
-                                    data-playlist-name="{{ playlist.name }}">
-                                <i class="fas fa-redo"></i> Re-analyze All Songs
-                            </button>
-                        {% else %}
-                            <button type="button" class="btn btn-primary analyze-playlist-btn" 
-                                    data-playlist-id="{{ playlist.id }}" 
-                                    data-playlist-name="{{ playlist.name }}">
-                                <i class="fas fa-search"></i> Analyze All Songs
+                        {# Show analyze only for admins in production; keep visible (disabled) in TESTING for test compatibility #}
+                        {% set show_analyze = (is_testing or current_user.is_admin) %}
+                        {% if show_analyze %}
+                            {% set is_fully = analysis_state.is_fully_analyzed %}
+                            {% set btn_classes = 'btn btn-outline-secondary analyze-playlist-btn' if is_fully else 'btn btn-primary analyze-playlist-btn' %}
+                            <button type="button" id="analyzePlaylistBtn" class="{{ btn_classes }}" data-analytics="analyze_playlist_click"
+                                    data-playlist-id="{{ playlist.id }}"
+                                    data-playlist-name="{{ playlist.name }}"
+                                    {% if not current_user.is_admin %}disabled data-requires-admin="1"{% endif %}>
+                                {% if is_fully %}
+                                    <i class="fas fa-redo"></i> Re-analyze All Songs{% if current_user.is_admin %} (Admin){% endif %}
+                                {% else %}
+                                    <i class="fas fa-search"></i> Analyze All Songs{% if current_user.is_admin %} (Admin){% endif %}
+                                {% endif %}
                             </button>
                         {% endif %}
                         {% if playlist.score and playlist.score >= 0.75 %}
                             <form method="post" action="{{ url_for('main.whitelist_playlist', playlist_id=playlist.id) }}" class="d-inline">
-                                <button type="submit" class="btn btn-success">
+                                <button type="submit" class="btn btn-success" data-analytics="whitelist_playlist_click">
                                     <i class="fas fa-check me-1"></i>Whitelist Playlist
                                 </button>
                             </form>

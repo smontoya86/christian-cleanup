@@ -123,21 +123,29 @@ export class ApiService {
   }
 
   /**
-     * Start playlist analysis
+     * Start playlist analysis (Admin only)
      * @param {string} playlistId - Playlist ID
      * @param {string} analysisType - Type of analysis ('all' or 'unanalyzed')
      * @returns {Promise<Object>} Analysis start response
      */
-  async startPlaylistAnalysis (playlistId, analysisType = 'unanalyzed') {
+  async startPlaylistAnalysis (playlistId, analysisType = 'all') {
     if (!playlistId) {
       throw new Error('Playlist ID is required');
     }
 
-    const endpoint = analysisType === 'all'
-      ? `/api/playlists/${playlistId}/reanalyze-all`
-      : `/api/playlists/${playlistId}/analyze-unanalyzed`;
+    // Use the simplified admin-only endpoint with cache busting
+    const timestamp = Date.now();
+    const endpoint = `/analyze_playlist/${playlistId}?t=${timestamp}`;
+    console.log(`🚨 Making request to: ${endpoint}`);
 
-    return this.post(endpoint);
+    // Add cache-busting headers
+    const cacheHeaders = {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    };
+
+    return this.post(endpoint, {}, cacheHeaders);
   }
 
   /**

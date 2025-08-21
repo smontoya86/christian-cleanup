@@ -1,7 +1,7 @@
 """Initial database schema
 
 Revision ID: 0543cea91b5b
-Revises: 
+Revises:
 Create Date: 2025-05-08 10:22:48.598773
 
 """
@@ -96,8 +96,8 @@ def upgrade():
     op.create_table('playlist_songs',
     sa.Column('playlist_id', sa.Integer(), nullable=False),
     sa.Column('song_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['playlist_id'], ['playlists.id'], ),
-    sa.ForeignKeyConstraint(['song_id'], ['songs.id'], ),
+    sa.ForeignKeyConstraint(['playlist_id'], ['playlists.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['song_id'], ['songs.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('playlist_id', 'song_id')
     )
     # ### end Alembic commands ###

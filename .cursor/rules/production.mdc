@@ -1,9 +1,9 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
-# 
+#
 - high level rules
 - this project will use docker for deployment
 - this project will use port 5001

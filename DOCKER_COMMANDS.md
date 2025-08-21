@@ -144,4 +144,4 @@ docker exec christiancleanupwindsurf-web-1 flask db upgrade
 
 # ❌ WRONG - Local command
 flask db upgrade
-``` 
+```

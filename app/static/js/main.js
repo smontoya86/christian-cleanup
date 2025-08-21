@@ -11,16 +11,16 @@ import { PlaylistAnalysis } from './modules/playlist-analysis.js';
  * Handles global initialization and module coordination
  */
 class ChristianMusicCuratorApp {
-    
+
     constructor() {
         this.modules = new Map();
         this.isInitialized = false;
         this.performanceMetrics = {};
-        
+
         // Bind global error handler
         this.setupGlobalErrorHandling();
     }
-    
+
     /**
      * Initialize the application
      */
@@ -28,7 +28,7 @@ class ChristianMusicCuratorApp {
         if (this.isInitialized) {
             return;
         }
-        
+
         try {
             // Wait for DOM to be ready
             if (document.readyState === 'loading') {
@@ -36,37 +36,50 @@ class ChristianMusicCuratorApp {
                     document.addEventListener('DOMContentLoaded', resolve);
                 });
             }
-            
+
             // Initialize stagewise toolbar in development
             await this.initializeStagewiseToolbar();
-            
+
             // Start performance monitoring
             this.startPerformanceMonitoring();
-            
+
             // Register service worker
             await this.registerServiceWorker();
-            
+
             // Initialize core modules
             this.initializeModules();
-            
+
             // Setup global event listeners
             this.setupGlobalEventListeners();
-            
+
             // Initialize page-specific functionality
             this.initializePageFeatures();
-            
+
+            // Fire login conversion if flagged by URL
+            try {
+                const url = new URL(window.location.href);
+                if (url.searchParams.get('login') === 'success') {
+                    // Remove flag from URL without reload
+                    url.searchParams.delete('login');
+                    window.history.replaceState({}, document.title, url.pathname + url.search);
+                    if (typeof window.gtag === 'function') {
+                        window.gtag('event', 'login_success', { method: 'spotify' });
+                    }
+                }
+            } catch (_) {}
+
             this.isInitialized = true;
             console.log('✅ Application initialized successfully');
-            
+
             // Report initialization performance
             this.reportPerformanceMetric('app_init_time', performance.now());
-            
+
         } catch (error) {
             console.error('❌ Application initialization failed:', error);
             this.handleInitializationError(error);
         }
     }
-    
+
     /**
      * Initialize stagewise toolbar for development
      */
@@ -74,7 +87,7 @@ class ChristianMusicCuratorApp {
         // Stagewise toolbar initialization disabled for now
         console.log('📝 Stagewise toolbar initialization skipped');
     }
-    
+
     /**
      * Start performance monitoring
      */
@@ -90,7 +103,7 @@ class ChristianMusicCuratorApp {
                     }
                 });
                 fcpObserver.observe({ entryTypes: ['paint'] });
-                
+
                 // Monitor Largest Contentful Paint (LCP)
                 const lcpObserver = new PerformanceObserver((list) => {
                     const entries = list.getEntries();
@@ -98,7 +111,7 @@ class ChristianMusicCuratorApp {
                     this.reportPerformanceMetric('lcp', lastEntry.startTime);
                 });
                 lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
-                
+
                 // Monitor First Input Delay (FID)
                 const fidObserver = new PerformanceObserver((list) => {
                     for (const entry of list.getEntries()) {
@@ -106,7 +119,7 @@ class ChristianMusicCuratorApp {
                     }
                 });
                 fidObserver.observe({ entryTypes: ['first-input'] });
-                
+
                 // Monitor Cumulative Layout Shift (CLS)
                 let clsScore = 0;
                 const clsObserver = new PerformanceObserver((list) => {
@@ -118,7 +131,7 @@ class ChristianMusicCuratorApp {
                     }
                 });
                 clsObserver.observe({ entryTypes: ['layout-shift'] });
-                
+
                 // Monitor navigation timing
                 window.addEventListener('load', () => {
                     const navigationTiming = performance.getEntriesByType('navigation')[0];
@@ -128,13 +141,13 @@ class ChristianMusicCuratorApp {
                         this.reportPerformanceMetric('time_to_interactive', navigationTiming.domInteractive - navigationTiming.navigationStart);
                     }
                 });
-                
+
             } catch (error) {
                 console.warn('Performance monitoring setup failed:', error);
             }
         }
     }
-    
+
     /**
      * Register service worker for caching and offline functionality
      */
@@ -143,13 +156,13 @@ class ChristianMusicCuratorApp {
             try {
                 // Register without explicit scope to use default scope (/static/)
                 const registration = await navigator.serviceWorker.register('/static/sw.js');
-                
+
                 console.log('✅ Service Worker registered:', registration.scope);
-                
+
                 // Listen for updates
                 registration.addEventListener('updatefound', () => {
                     console.log('🔄 Service Worker update found');
-                    
+
                     const newWorker = registration.installing;
                     if (newWorker) {
                         newWorker.addEventListener('statechange', () => {
@@ -160,12 +173,12 @@ class ChristianMusicCuratorApp {
                         });
                     }
                 });
-                
+
                 // Handle service worker messages
                 navigator.serviceWorker.addEventListener('message', (event) => {
                     this.handleServiceWorkerMessage(event.data);
                 });
-                
+
                 return registration;
             } catch (error) {
                 console.log('Service Worker registration failed (this is OK):', error.message);
@@ -175,74 +188,74 @@ class ChristianMusicCuratorApp {
             console.log('Service Worker not supported');
         }
     }
-    
+
     /**
      * Initialize core application modules
      */
     initializeModules() {
         // Initialize UI helpers (always available)
         this.modules.set('uiHelpers', new UIHelpers());
-        
+
         // Initialize API service
         this.modules.set('apiService', apiService);
-        
+
         console.log('✅ Core modules initialized');
     }
-    
+
     /**
      * Setup global event listeners
      */
     setupGlobalEventListeners() {
         // Handle global click events for analytics
         document.addEventListener('click', this.handleGlobalClick.bind(this));
-        
+
         // Handle network status changes
         window.addEventListener('online', this.handleOnlineStatus.bind(this));
         window.addEventListener('offline', this.handleOfflineStatus.bind(this));
-        
+
         // Handle page visibility changes
         document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
-        
+
         // Handle unhandled promise rejections
         window.addEventListener('unhandledrejection', this.handleUnhandledRejection.bind(this));
-        
+
         // Setup dark mode toggle
         this.setupThemeToggle();
     }
-    
+
     /**
      * Setup dark mode theme toggle functionality
      */
     setupThemeToggle() {
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
-        
+
         if (!themeToggle || !themeIcon) {
             console.warn('Theme toggle elements not found');
             return;
         }
-        
+
         // Get current theme from localStorage or system preference
         const savedTheme = localStorage.getItem('theme');
         const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         const currentTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
-        
+
         // Apply initial theme
         this.applyTheme(currentTheme);
-        
+
         // Add click handler for theme toggle
         themeToggle.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             this.applyTheme(newTheme);
-            
+
             // Save preference
             localStorage.setItem('theme', newTheme);
-            
+
             // Track analytics
             this.trackAnalyticsEvent('ui', 'theme_toggle', { theme: newTheme });
         });
-        
+
         // Listen for system theme changes
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
             // Only auto-switch if user hasn't manually set a preference
@@ -250,20 +263,20 @@ class ChristianMusicCuratorApp {
                 this.applyTheme(e.matches ? 'dark' : 'light');
             }
         });
-        
+
         console.log('✅ Theme toggle initialized');
     }
-    
+
     /**
      * Apply theme to the document
      * @param {string} theme - 'light' or 'dark'
      */
     applyTheme(theme) {
         const themeIcon = document.getElementById('themeIcon');
-        
+
         // Set theme attribute on document root
         document.documentElement.setAttribute('data-theme', theme);
-        
+
         // Update icon
         if (themeIcon) {
             if (theme === 'dark') {
@@ -274,19 +287,19 @@ class ChristianMusicCuratorApp {
                 themeIcon.parentElement.setAttribute('aria-label', 'Switch to dark mode');
             }
         }
-        
+
         // Update body class for compatibility
         document.body.classList.toggle('dark-theme', theme === 'dark');
-        
+
         console.log(`Theme applied: ${theme}`);
     }
-    
+
     /**
      * Initialize page-specific features based on current page
      */
     initializePageFeatures() {
         const currentPage = this.detectCurrentPage();
-        
+
         switch (currentPage) {
             case 'playlist_detail':
                 this.initializePlaylistDetailPage();
@@ -301,13 +314,13 @@ class ChristianMusicCuratorApp {
                 this.initializeGenericPage();
         }
     }
-    
+
     /**
      * Detect current page type
      */
     detectCurrentPage() {
         const path = window.location.pathname;
-        
+
         if (path.includes('/playlist/')) {
             return 'playlist_detail';
         } else if (path === '/dashboard' || path === '/') {
@@ -315,36 +328,36 @@ class ChristianMusicCuratorApp {
         } else if (path.includes('/song/')) {
             return 'song_detail';
         }
-        
+
         return 'generic';
     }
-    
+
     /**
      * Initialize playlist detail page functionality
      */
     initializePlaylistDetailPage() {
         const playlistContainer = document.querySelector('[data-playlist-id]');
-        
+
         if (playlistContainer) {
             const playlistId = playlistContainer.dataset.playlistId;
             const playlistName = playlistContainer.dataset.playlistName;
-            
+
             if (playlistId) {
                 const playlistAnalysis = new PlaylistAnalysis(playlistId, {
                     playlistName,
                     uiHelpers: this.modules.get('uiHelpers'),
                     apiService: this.modules.get('apiService')
                 });
-                
+
                 // Initialize the playlist analysis module
                 playlistAnalysis.init();
-                
+
                 this.modules.set('playlistAnalysis', playlistAnalysis);
                 console.log('✅ Playlist detail page initialized');
             }
         }
     }
-    
+
     /**
      * Initialize dashboard page functionality
      */
@@ -354,7 +367,7 @@ class ChristianMusicCuratorApp {
         this.initializePlaylistGrid();
         console.log('✅ Dashboard page initialized');
     }
-    
+
     /**
      * Initialize song detail page functionality
      */
@@ -363,7 +376,7 @@ class ChristianMusicCuratorApp {
         this.initializeSongAnalysisDisplay();
         console.log('✅ Song detail page initialized');
     }
-    
+
     /**
      * Initialize generic page functionality
      */
@@ -372,7 +385,7 @@ class ChristianMusicCuratorApp {
         this.initializeGenericFeatures();
         console.log('✅ Generic page initialized');
     }
-    
+
     /**
      * Initialize dashboard statistics
      */
@@ -383,7 +396,7 @@ class ChristianMusicCuratorApp {
             card.classList.add('stat-card-animated');
         });
     }
-    
+
     /**
      * Initialize playlist grid functionality
      */
@@ -394,7 +407,7 @@ class ChristianMusicCuratorApp {
             this.setupPlaylistGridAnimations(playlistGrid);
         }
     }
-    
+
     /**
      * Setup playlist grid animations
      */
@@ -405,7 +418,7 @@ class ChristianMusicCuratorApp {
             card.classList.add('fade-in-up');
         });
     }
-    
+
     /**
      * Initialize song analysis display
      */
@@ -416,7 +429,7 @@ class ChristianMusicCuratorApp {
             this.setupAnalysisCharts(analysisContainer);
         }
     }
-    
+
     /**
      * Setup analysis charts
      */
@@ -424,21 +437,21 @@ class ChristianMusicCuratorApp {
         // Placeholder for future chart implementation
         console.log('Analysis charts initialized');
     }
-    
+
     /**
      * Initialize generic features for all pages
      */
     initializeGenericFeatures() {
         // Initialize tooltips
         this.initializeTooltips();
-        
+
         // Initialize modals
         this.initializeModals();
-        
+
         // Initialize form enhancements
         this.initializeFormEnhancements();
     }
-    
+
     /**
      * Initialize Bootstrap tooltips
      */
@@ -448,7 +461,7 @@ class ChristianMusicCuratorApp {
             new bootstrap.Tooltip(element);
         });
     }
-    
+
     /**
      * Initialize Bootstrap modals
      */
@@ -458,7 +471,7 @@ class ChristianMusicCuratorApp {
             new bootstrap.Modal(element);
         });
     }
-    
+
     /**
      * Initialize form enhancements
      */
@@ -468,7 +481,7 @@ class ChristianMusicCuratorApp {
             this.enhanceForm(form);
         });
     }
-    
+
     /**
      * Enhance a form with better UX
      */
@@ -482,7 +495,7 @@ class ChristianMusicCuratorApp {
             });
         }
     }
-    
+
     /**
      * Handle global click events for analytics
      */
@@ -490,20 +503,23 @@ class ChristianMusicCuratorApp {
         const target = event.target.closest('[data-analytics]');
         if (target) {
             const action = target.dataset.analytics;
+            const datasetPayload = { ...target.dataset };
+            delete datasetPayload.analytics;
             this.trackAnalyticsEvent('click', action, {
                 element: target.tagName,
-                text: target.textContent?.trim().substring(0, 50)
+                text: target.textContent?.trim().substring(0, 50),
+                ...datasetPayload
             });
         }
     }
-    
+
     /**
      * Handle online status
      */
     handleOnlineStatus() {
         console.log('🌐 Back online');
         this.modules.get('uiHelpers')?.showSuccess('Connection restored!');
-        
+
         // Sync any pending offline actions
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
             navigator.serviceWorker.controller.postMessage({
@@ -511,7 +527,7 @@ class ChristianMusicCuratorApp {
             });
         }
     }
-    
+
     /**
      * Handle offline status
      */
@@ -519,7 +535,7 @@ class ChristianMusicCuratorApp {
         console.log('📴 Gone offline');
         this.modules.get('uiHelpers')?.showWarning('You are now offline. Some features may be limited.');
     }
-    
+
     /**
      * Handle page visibility changes
      */
@@ -532,20 +548,20 @@ class ChristianMusicCuratorApp {
             this.reportPerformanceMetric('page_show', performance.now());
         }
     }
-    
+
     /**
      * Handle unhandled promise rejections
      */
     handleUnhandledRejection(event) {
         console.error('Unhandled promise rejection:', event.reason);
-        
+
         // Report to error tracking service
         this.reportError('unhandled_rejection', event.reason);
-        
+
         // Prevent the default error handling
         event.preventDefault();
     }
-    
+
     /**
      * Handle service worker messages
      */
@@ -561,7 +577,7 @@ class ChristianMusicCuratorApp {
                 console.log('Service worker message:', data);
         }
     }
-    
+
     /**
      * Show service worker update prompt
      */
@@ -570,7 +586,7 @@ class ChristianMusicCuratorApp {
         if (uiHelpers) {
             // Show a user-friendly update prompt
             const updateMessage = `
-                A new version of the app is available. 
+                A new version of the app is available.
                 <button class="btn btn-sm btn-primary ms-2" onclick="window.location.reload()">
                     Update Now
                 </button>
@@ -578,7 +594,7 @@ class ChristianMusicCuratorApp {
             uiHelpers.showInfo(updateMessage, 10000); // Show for 10 seconds
         }
     }
-    
+
     /**
      * Setup global error handling
      */
@@ -588,7 +604,7 @@ class ChristianMusicCuratorApp {
             console.error('Global error:', event.error);
             this.reportError('javascript_error', event.error);
         });
-        
+
         // Handle resource loading errors
         window.addEventListener('error', (event) => {
             if (event.target !== window) {
@@ -600,7 +616,7 @@ class ChristianMusicCuratorApp {
             }
         }, true);
     }
-    
+
     /**
      * Handle initialization errors
      */
@@ -610,19 +626,19 @@ class ChristianMusicCuratorApp {
         errorContainer.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x';
         errorContainer.style.zIndex = '9999';
         errorContainer.innerHTML = `
-            <strong>Application Error:</strong> The app failed to start properly. 
+            <strong>Application Error:</strong> The app failed to start properly.
             <button class="btn btn-sm btn-outline-danger ms-2" onclick="window.location.reload()">
                 Reload Page
             </button>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
-        
+
         document.body.appendChild(errorContainer);
-        
+
         // Report the error
         this.reportError('initialization_error', error);
     }
-    
+
     /**
      * Track analytics events
      */
@@ -635,14 +651,24 @@ class ChristianMusicCuratorApp {
             timestamp: Date.now(),
             page: window.location.pathname
         };
-        
+
         // Add to analytics queue
         if (!window.analyticsQueue) {
             window.analyticsQueue = [];
         }
         window.analyticsQueue.push(event);
-        
-        // Optional: Send to analytics endpoint
+
+        // Forward to GA4 if available
+        if (typeof window.gtag === 'function') {
+            window.gtag('event', action, {
+                event_category: type,
+                event_label: data.element || undefined,
+                value: data.value || undefined,
+                ...data
+            });
+        }
+
+        // Optional: Send to custom analytics endpoint
         if (window.analyticsEndpoint) {
             fetch(window.analyticsEndpoint, {
                 method: 'POST',
@@ -653,16 +679,16 @@ class ChristianMusicCuratorApp {
             });
         }
     }
-    
+
     /**
      * Report performance metrics
      */
     reportPerformanceMetric(name, value) {
         this.performanceMetrics[name] = value;
-        
+
         // Log to console for development
         console.log(`📊 Performance: ${name} = ${Math.round(value)}ms`);
-        
+
         // Optional: Send to performance monitoring endpoint
         if (window.performanceEndpoint) {
             fetch(window.performanceEndpoint, {
@@ -679,7 +705,7 @@ class ChristianMusicCuratorApp {
             });
         }
     }
-    
+
     /**
      * Report errors to monitoring service
      */
@@ -692,7 +718,7 @@ class ChristianMusicCuratorApp {
             page: window.location.pathname,
             userAgent: navigator.userAgent
         };
-        
+
         // Optional: Send to error tracking endpoint
         if (window.errorEndpoint) {
             fetch(window.errorEndpoint, {
@@ -704,14 +730,14 @@ class ChristianMusicCuratorApp {
             });
         }
     }
-    
+
     /**
      * Get a module instance
      */
     getModule(name) {
         return this.modules.get(name);
     }
-    
+
     /**
      * Check if app is initialized
      */
@@ -728,4 +754,4 @@ app.init();
 
 // Export for global access
 window.app = app;
-export default app; 
+export default app;

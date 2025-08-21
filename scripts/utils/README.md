@@ -5,7 +5,7 @@ This directory contains production-ready utility scripts for system administrati
 ## Available Utilities
 
 ### `queue_status_checker.py`
-**Purpose**: Monitor RQ queue status and job health  
+**Purpose**: Monitor RQ queue status and job health
 **Usage**:
 ```bash
 # Basic queue status check
@@ -32,7 +32,7 @@ python scripts/utils/queue_status_checker.py --queues high default
 - Command-line argument support
 
 ### `system_verification.py`
-**Purpose**: Comprehensive system health checks  
+**Purpose**: Comprehensive system health checks
 **Usage**:
 ```bash
 # Run full system verification
@@ -88,4 +88,4 @@ When updating these utilities:
 1. Maintain backward compatibility for command-line arguments
 2. Keep error messages clear and actionable
 3. Update this README with any new features
-4. Test with both development and production configurations 
+4. Test with both development and production configurations

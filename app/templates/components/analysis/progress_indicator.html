@@ -1,8 +1,8 @@
-{# 
+{#
 Progress Indicator Component
 
 Parameters:
-- type: 'sync' or 'analysis' 
+- type: 'sync' or 'analysis'
 - title: Display title for the progress
 - message: Current status message
 - show_elapsed: Whether to show elapsed time
@@ -15,7 +15,7 @@ Parameters:
 {% set progress_id = type + 'Progress' %}
 {% set alert_id = type + 'ProgressAlert' %}
 
-<div id="{{ alert_id }}" class="alert alert-{{ 'info' if type == 'sync' else 'warning' }}" role="alert" 
+<div id="{{ alert_id }}" class="alert alert-{{ 'info' if type == 'sync' else 'warning' }}" role="alert"
      {% if not show_by_default %}style="display: none;"{% endif %}>
     <div class="d-flex align-items-center mb-3">
         <i class="fas fa-{{ 'spinner fa-spin' if type == 'sync' else 'brain fa-pulse' }} me-2"></i>
@@ -37,20 +37,20 @@ Parameters:
                 {% endif %}
             </div>
         </div>
-        <button type="button" class="btn-close" 
+        <button type="button" class="btn-close"
                 onclick="hide{{ type|title }}Progress()" aria-label="Close"></button>
     </div>
-    
+
     <!-- Progress Bar -->
     <div class="progress mb-2" style="height: 25px;">
-        <div class="progress-bar progress-bar-striped progress-bar-animated bg-{{ 'primary' if type == 'sync' else 'warning' }}" 
-             role="progressbar" 
-             style="width: 25%" 
+        <div class="progress-bar progress-bar-striped progress-bar-animated bg-{{ 'primary' if type == 'sync' else 'warning' }}"
+             role="progressbar"
+             style="width: 25%"
              id="{{ progress_id }}">
             <span class="progress-text fw-bold">Initializing...</span>
         </div>
     </div>
-    
+
     {% if show_stats and stats %}
     <!-- Progress Stats -->
     <div class="row text-center mt-3">
@@ -74,14 +74,14 @@ Parameters:
         </div>
     </div>
     {% endif %}
-    
+
     {% if job_id %}
     <small class="text-muted d-block mt-2">
         Job ID: {{ job_id }}
         • Started: <span id="{{ type }}Started">just now</span>
     </small>
     {% endif %}
-    
+
     {% if type == 'analysis' %}
     <!-- Analysis-specific details -->
     <div class="mt-3">
@@ -91,4 +91,4 @@ Parameters:
         </small>
     </div>
     {% endif %}
-</div> 
+</div>

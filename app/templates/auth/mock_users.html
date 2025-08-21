@@ -15,7 +15,7 @@
                     <div class="alert alert-info" role="alert">
                         <strong>Testing Mode:</strong> These are mock users created for testing the application without needing real Spotify credentials.
                     </div>
-                    
+
                     {% if users %}
                         <div class="row">
                             {% for user in users %}
@@ -27,7 +27,7 @@
                                             <small class="text-muted">{{ user.email }}</small><br>
                                             <small class="text-muted">ID: {{ user.spotify_id }}</small>
                                         </p>
-                                        <a href="{{ url_for('auth.mock_login', user_id=user.spotify_id) }}" 
+                                        <a href="{{ url_for('auth.mock_login', user_id=user.spotify_id) }}"
                                            class="btn btn-primary btn-sm">
                                             Login as {{ user.display_name }}
                                         </a>
@@ -43,7 +43,7 @@
                             <code>python scripts/create_mock_data.py</code>
                         </div>
                     {% endif %}
-                    
+
                     <div class="mt-4">
                         <h6>Mock Data Features:</h6>
                         <ul class="list-unstyled">
@@ -54,7 +54,7 @@
                             <li>✅ Mixed playlists for curation testing</li>
                         </ul>
                     </div>
-                    
+
                     <div class="mt-3">
                         <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
                             ← Back to Home
@@ -65,4 +65,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

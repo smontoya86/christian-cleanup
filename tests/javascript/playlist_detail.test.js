@@ -18,9 +18,9 @@ function setupDOM(html) {
     global.document = document;
     global.bootstrap = { Toast: jest.fn().mockImplementation(() => ({ show: jest.fn(), dispose: jest.fn() })) };
     global.fetch = jest.fn();
-    global.showToast = jest.fn(); 
+    global.showToast = jest.fn();
 
-    // --- Re-define core JavaScript logic from playlist_detail.html --- 
+    // --- Re-define core JavaScript logic from playlist_detail.html ---
     const getCellValue = (tr, cellIndex) => {
         const cell = tr.children[cellIndex];
         return cell ? (cell.innerText || cell.textContent || '').trim() : '';
@@ -35,7 +35,7 @@ function setupDOM(html) {
             return v1 - v2; // Direct numeric comparison
         } else if (sortType === 'duration') {
             const parseDuration = (durationStr) => {
-                if (durationStr.toLowerCase() === 'n/a') return 0; 
+                if (durationStr.toLowerCase() === 'n/a') return 0;
                 const parts = durationStr.split(':').map(Number);
                 return (parts.length === 2) ? (parts[0] * 60 + parts[1]) : 0;
             };
@@ -55,7 +55,7 @@ function setupDOM(html) {
                 const tableElement = headerCell.closest('table');
                 const tbody = tableElement.querySelector('tbody#songTableBody');
                 if (!tbody) return;
-                
+
                 const columnIdx = Array.from(headerCell.parentNode.children).indexOf(headerCell);
                 const sortType = headerCell.dataset.sortType || 'string';
 
@@ -73,12 +73,12 @@ function setupDOM(html) {
                     const icon = th.querySelector('i.fas');
                     if (icon) icon.className = 'fas fa-sort ms-1';
                 });
-                
+
                 headerCell.classList.toggle('sorted-asc', newAsc);
                 headerCell.classList.toggle('sorted-desc', !newAsc);
                 const icon = headerCell.querySelector('i.fas');
                 if (icon) icon.className = newAsc ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
-                
+
                 Array.from(tbody.querySelectorAll('tr'))
                     .sort(comparer(columnIdx, newAsc, sortType))
                     .forEach(tr => tbody.appendChild(tr));
@@ -112,7 +112,7 @@ function setupDOM(html) {
                 localShowToast(`Initiating analysis for playlist ${playlistId}... (Frontend Only Demo)`, 'info');
             });
         }
-        
+
         document.querySelectorAll('.quick-action-btn').forEach(button => {
             button.addEventListener('click', function () {
                 const songId = this.dataset.songId;
@@ -135,7 +135,7 @@ function setupDOM(html) {
                 .then(data => {
                     if (data.success) {
                         const newStatus = data.new_status;
-                        actionCell.innerHTML = ''; 
+                        actionCell.innerHTML = '';
                         if (newStatus === 'whitelisted') {
                             actionCell.innerHTML = `<button class="btn btn-sm btn-outline-secondary disabled" disabled title="Song is whitelisted"><i class="bi bi-check-circle-fill text-success"></i> <span class="d-none d-md-inline">Whitelisted</span></button>`;
                         } else if (newStatus === 'blacklisted') {
@@ -157,7 +157,7 @@ function setupDOM(html) {
     // --- End of Re-defined script logic ---
 
     initializePlaylistDetailEventListeners(); // This ensures event listeners are set up on the global.document
-    
+
     // Return the specific instances for tests to use, plus the functions themselves if needed directly.
     return { document, window, getCellValue, comparer };
 }
@@ -226,7 +226,7 @@ describe('Playlist Detail Page JavaScript', () => {
         const setup = setupDOM(baseHtml);
         doc = setup.document; // Use this document for querying
         win = setup.window;   // Use this window for events
-        getCellValueFromSetup = setup.getCellValue; 
+        getCellValueFromSetup = setup.getCellValue;
         comparerFromSetup = setup.comparer;
 
         global.fetch.mockClear();
@@ -262,20 +262,20 @@ describe('Playlist Detail Page JavaScript', () => {
             const r1 = mockRow(['10']);
             const r2 = mockRow(['2']);
             expect(comparerFromSetup(0, true, 'number')(r1, r2)).toBeGreaterThan(0);
-            expect(comparerFromSetup(0, false, 'number')(r1, r2)).toBeLessThan(0); 
+            expect(comparerFromSetup(0, false, 'number')(r1, r2)).toBeLessThan(0);
         });
 
         test('should compare strings correctly', () => {
             const r1 = mockRow(['Charlie']);
             const r2 = mockRow(['Alpha']);
-            expect(comparerFromSetup(0, true, 'string')(r1, r2)).toBeGreaterThan(0); 
+            expect(comparerFromSetup(0, true, 'string')(r1, r2)).toBeGreaterThan(0);
             expect(comparerFromSetup(0, false, 'string')(r1, r2)).toBeLessThan(0);
         });
 
         test('should compare durations (mm:ss) correctly', () => {
-            const r1 = mockRow(['2:30']); 
-            const r2 = mockRow(['1:00']); 
-            const r3 = mockRow(['N/A']);  
+            const r1 = mockRow(['2:30']);
+            const r2 = mockRow(['1:00']);
+            const r3 = mockRow(['N/A']);
             expect(comparerFromSetup(0, true, 'duration')(r1, r2)).toBeGreaterThan(0);
             expect(comparerFromSetup(0, true, 'duration')(r2, r3)).toBeGreaterThan(0);
         });
@@ -284,8 +284,8 @@ describe('Playlist Detail Page JavaScript', () => {
             const r1 = mockRow(['75%']);
             const r2 = mockRow(['100%']);
             const r3 = mockRow(['N/A']);
-            expect(comparerFromSetup(0, true, 'score')(r1, r2)).toBeLessThan(0); 
-            expect(comparerFromSetup(0, true, 'score')(r1, r3)).toBeGreaterThan(0); 
+            expect(comparerFromSetup(0, true, 'score')(r1, r2)).toBeLessThan(0);
+            expect(comparerFromSetup(0, true, 'score')(r1, r3)).toBeGreaterThan(0);
         });
     });
 
@@ -294,7 +294,7 @@ describe('Playlist Detail Page JavaScript', () => {
             const filterInput = doc.getElementById('songFilterInput'); // Use doc
             expect(filterInput).not.toBeNull();
             const rows = doc.querySelectorAll('#songTableBody tr'); // Use doc
-            
+
             filterInput.value = 'Foo';
             filterInput.dispatchEvent(new win.Event('keyup')); // Use win
             expect(rows[0].style.display).toBe('');
@@ -304,14 +304,14 @@ describe('Playlist Detail Page JavaScript', () => {
             filterInput.dispatchEvent(new win.Event('keyup')); // Use win
             expect(rows[0].style.display).toBe('none');
             expect(rows[1].style.display).toBe('');
-            
-            filterInput.value = 'album'; 
+
+            filterInput.value = 'album';
             filterInput.dispatchEvent(new win.Event('keyup')); // Use win
             expect(rows[0].style.display).toBe('');
             expect(rows[1].style.display).toBe('');
             expect(rows[2].style.display).toBe('');
 
-            filterInput.value = ''; 
+            filterInput.value = '';
             filterInput.dispatchEvent(new win.Event('keyup')); // Use win
             rows.forEach(row => expect(row.style.display).toBe(''));
         });
@@ -347,10 +347,10 @@ describe('Playlist Detail Page JavaScript', () => {
 
             durationHeader.click();
             let sortedRows = Array.from(tbody.querySelectorAll('tr'));
-            expect(getCellValueFromSetup(sortedRows[0], 5)).toBe('N/A');    
-            expect(getCellValueFromSetup(sortedRows[1], 5)).toBe('0:45');   
-            expect(getCellValueFromSetup(sortedRows[2], 5)).toBe('3:30');   
-            
+            expect(getCellValueFromSetup(sortedRows[0], 5)).toBe('N/A');
+            expect(getCellValueFromSetup(sortedRows[1], 5)).toBe('0:45');
+            expect(getCellValueFromSetup(sortedRows[2], 5)).toBe('3:30');
+
             durationHeader.click();
             sortedRows = Array.from(tbody.querySelectorAll('tr'));
             expect(getCellValueFromSetup(sortedRows[0], 5)).toBe('3:30');
@@ -370,7 +370,7 @@ describe('Playlist Detail Page JavaScript', () => {
 
     describe('Quick Action Buttons (Whitelist/Blacklist)', () => {
         beforeEach(() => {
-            global.fetch.mockReset(); 
+            global.fetch.mockReset();
         });
 
         test('should call fetch and update UI on whitelist success', async () => {
@@ -428,7 +428,7 @@ describe('Playlist Detail Page JavaScript', () => {
             const csrfMeta = doc.querySelector('meta[name="csrf-token"]'); // Use doc
             expect(csrfMeta).not.toBeNull();
             csrfMeta.removeAttribute('content');
-            
+
             const button = doc.querySelector('.quick-action-btn[data-song-id="s1"]'); // Use doc
             expect(button).not.toBeNull();
             button.click();

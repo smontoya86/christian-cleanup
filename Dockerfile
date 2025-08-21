@@ -30,10 +30,18 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
+# Pre-download small embedding model if enabled at build time
+ARG ENABLE_EMBEDDINGS=0
+ENV ENABLE_EMBEDDINGS=${ENABLE_EMBEDDINGS}
+ARG EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+ENV EMBEDDING_MODEL=${EMBEDDING_MODEL}
+RUN if [ "$ENABLE_EMBEDDINGS" = "1" ]; then \
+      python -c "import os; from sentence_transformers import SentenceTransformer; m=os.getenv('EMBEDDING_MODEL','sentence-transformers/all-MiniLM-L6-v2'); SentenceTransformer(m); print('Downloaded embedding model:', m)"; \
+    fi
+
 # Set up HuggingFace model caching
 ENV TRANSFORMERS_CACHE=/app/models
 ENV HF_HOME=/app/models
 RUN mkdir -p /app/models
 
-# Pre-download HuggingFace models to cache them during build
-RUN python -c "from transformers import pipeline; import logging; logging.basicConfig(level=logging.INFO); print('Pre-downloading HuggingFace models...'); pipeline('sentiment-analysis', model='cardiffnlp/twitter-roberta-base-sentiment-latest'); pipeline('text-classification', model='unitary/toxic-bert'); pipeline('text-classification', model='j-hartmann/emotion-english-distilroberta-base'); print('All models cached successfully')"
+# Skip heavyweight HF pre-download since MVP uses LLM analyzer by default

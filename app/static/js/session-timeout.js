@@ -1,6 +1,6 @@
 /**
  * Session Timeout Warning System (Manus recommendation)
- * 
+ *
  * Provides user-friendly session timeout handling with warnings
  * and the ability to extend sessions before they expire.
  */
@@ -11,24 +11,24 @@ class SessionTimeoutManager {
         this.warningSeconds = options.warningSeconds || 600; // 10 minutes warning
         this.checkInterval = options.checkInterval || 60000; // Check every minute
         this.extendUrl = options.extendUrl || '/auth/extend-session';
-        
+
         this.lastActivity = Date.now();
         this.warningShown = false;
-        
+
         this.init();
     }
-    
+
     init() {
         // Track user activity
         this.trackActivity();
-        
+
         // Start timeout checking
         this.startTimeoutCheck();
-        
+
         // Create warning modal
         this.createWarningModal();
     }
-    
+
     trackActivity() {
         const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
         events.forEach(event => {
@@ -38,18 +38,18 @@ class SessionTimeoutManager {
             }, { passive: true });
         });
     }
-    
+
     startTimeoutCheck() {
         setInterval(() => {
             this.checkTimeout();
         }, this.checkInterval);
     }
-    
+
     checkTimeout() {
         const now = Date.now();
         const timeSinceActivity = (now - this.lastActivity) / 1000;
         const timeUntilTimeout = this.timeoutSeconds - timeSinceActivity;
-        
+
         if (timeUntilTimeout <= 0) {
             // Session expired
             this.handleSessionExpired();
@@ -58,21 +58,21 @@ class SessionTimeoutManager {
             this.showWarning(Math.floor(timeUntilTimeout));
         }
     }
-    
+
     showWarning(secondsLeft) {
         this.warningShown = true;
         const modal = document.getElementById('session-warning-modal');
         const countdown = document.getElementById('session-countdown');
-        
+
         if (modal && countdown) {
             countdown.textContent = Math.max(0, secondsLeft);
             modal.style.display = 'flex';
-            
+
             // Update countdown every second
             this.countdownInterval = setInterval(() => {
                 secondsLeft--;
                 countdown.textContent = Math.max(0, secondsLeft);
-                
+
                 if (secondsLeft <= 0) {
                     clearInterval(this.countdownInterval);
                     this.handleSessionExpired();
@@ -80,7 +80,7 @@ class SessionTimeoutManager {
             }, 1000);
         }
     }
-    
+
     hideWarning() {
         if (this.warningShown) {
             this.warningShown = false;
@@ -93,7 +93,7 @@ class SessionTimeoutManager {
             }
         }
     }
-    
+
     async extendSession() {
         try {
             const response = await fetch(this.extendUrl, {
@@ -104,7 +104,7 @@ class SessionTimeoutManager {
                 },
                 credentials: 'same-origin'
             });
-            
+
             if (response.ok) {
                 this.lastActivity = Date.now();
                 this.hideWarning();
@@ -117,18 +117,18 @@ class SessionTimeoutManager {
             this.handleSessionExpired();
         }
     }
-    
+
     handleSessionExpired() {
         // Redirect to login with a helpful message
         window.location.href = '/auth/login?reason=session_expired';
     }
-    
+
     createWarningModal() {
         // Only create if it doesn't already exist
         if (document.getElementById('session-warning-modal')) {
             return;
         }
-        
+
         const modal = document.createElement('div');
         modal.id = 'session-warning-modal';
         modal.style.cssText = `
@@ -144,7 +144,7 @@ class SessionTimeoutManager {
             z-index: 10000;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
         `;
-        
+
         const dialog = document.createElement('div');
         dialog.style.cssText = `
             background: white;
@@ -155,7 +155,7 @@ class SessionTimeoutManager {
             width: 90%;
             text-align: center;
         `;
-        
+
         dialog.innerHTML = `
             <h3 style="margin: 0 0 1rem 0; color: #333;">Session Expiring Soon</h3>
             <p style="margin: 0 0 1.5rem 0; color: #666; line-height: 1.5;">
@@ -183,15 +183,15 @@ class SessionTimeoutManager {
                 ">Logout Now</button>
             </div>
         `;
-        
+
         modal.appendChild(dialog);
         document.body.appendChild(modal);
-        
+
         // Add event listeners
         document.getElementById('extend-session-btn').addEventListener('click', () => {
             this.extendSession();
         });
-        
+
         document.getElementById('logout-btn').addEventListener('click', () => {
             window.location.href = '/auth/logout';
         });
@@ -208,4 +208,4 @@ document.addEventListener('DOMContentLoaded', () => {
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SessionTimeoutManager;
-} 
+}

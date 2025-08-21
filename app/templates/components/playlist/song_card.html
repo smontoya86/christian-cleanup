@@ -1,4 +1,4 @@
-{# 
+{#
 Song Card Component for Playlist Grid View
 
 Expected variables:
@@ -10,16 +10,16 @@ Expected variables:
 <div class="col-md-6 col-lg-4 mb-4">
     <div class="card h-100 {{ 'border-info' if item.is_whitelisted else '' }}">
         <div class="position-relative">
-            <img src="{{ item.song.album_art_url or url_for('static', filename='images/default_album_art.png') }}" 
+            <img src="{{ item.song.album_art_url or url_for('static', filename='images/default_album_art.png') }}"
                  class="card-img-top" alt="Album Art"
                  style="width: 100% !important; height: 200px !important; object-fit: cover !important;">
-            
+
             {% if item.is_whitelisted %}
             <span class="position-absolute top-0 end-0 m-2 badge bg-success">
                 <i class="fas fa-check me-1"></i>Whitelisted
             </span>
             {% endif %}
-            
+
             {% if item.analysis_result and item.analysis_result.score is not none %}
             <span class="position-absolute top-0 start-0 m-2 concern-badge {% if item.analysis_result.concern_level|lower == 'extreme' %}bg-extreme{% elif item.analysis_result.concern_level|lower == 'high' %}bg-high{% elif item.analysis_result.concern_level|lower == 'medium' %}bg-medium{% else %}bg-low{% endif %}">
                 <i class="fas {% if item.analysis_result.concern_level|lower == 'extreme' %}fa-exclamation-triangle{% elif item.analysis_result.concern_level|lower == 'high' %}fa-exclamation-circle{% elif item.analysis_result.concern_level|lower == 'medium' %}fa-info-circle{% else %}fa-check-circle{% endif %}"></i>
@@ -27,7 +27,7 @@ Expected variables:
             </span>
             {% endif %}
         </div>
-        
+
         <div class="card-body d-flex flex-column">
             <h6 class="card-title">
                 <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}" class="text-decoration-none song-title-link">
@@ -36,16 +36,16 @@ Expected variables:
             </h6>
             <p class="card-text text-muted small mb-2">{{ item.song.artist }}</p>
             <p class="card-text text-muted small">{{ item.song.album or 'Unknown Album' }}</p>
-            
+
             {% if item.analysis_result and item.analysis_result.score is not none %}
             <small class="text-muted mb-2">{{ item.analysis_result.concern_level|default('Unknown')|title }} Concern</small>
             {% else %}
             <small class="text-muted mb-2">Not Analyzed</small>
             {% endif %}
-            
+
             <div class="mt-auto">
                 {% if not item.analysis_result or item.analysis_result.status != 'completed' %}
-                    <button class="btn btn-sm btn-primary w-100 analyze-song-btn" 
+                    <button class="btn btn-sm btn-primary w-100 analyze-song-btn"
                             data-song-id="{{ item.song.id }}"
                             data-song-title="{{ item.song.title }}"
                             data-song-artist="{{ item.song.artist }}">
@@ -56,20 +56,20 @@ Expected variables:
                     </button>
                 {% elif item.is_whitelisted %}
                     <form method="post" action="{{ url_for('whitelist.remove_whitelist_song', playlist_id=playlist['spotify_id'], track_id=item.song.spotify_id) }}" class="w-100">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary w-100" 
+                        <button type="submit" class="btn btn-sm btn-outline-secondary w-100"
                                 onclick="return confirm('Remove this song from whitelist?')">
                             <i class="fas fa-times me-1"></i>Remove from Whitelist
                         </button>
                     </form>
-                
+
                     <div class="d-grid gap-2">
                         {% if item.analysis_result.concern_level|lower in ['high', 'extreme'] %}
-                        <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}" 
+                        <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}"
                            class="btn btn-sm btn-outline-warning">
                             <i class="fas fa-eye me-1"></i>Review Details
                         </a>
                         {% endif %}
-                        <button class="btn btn-sm btn-outline-secondary analyze-song-btn" 
+                        <button class="btn btn-sm btn-outline-secondary analyze-song-btn"
                                 data-song-id="{{ item.song.id }}"
                                 data-song-title="{{ item.song.title }}"
                                 data-song-artist="{{ item.song.artist }}">
@@ -83,4 +83,4 @@ Expected variables:
             </div>
         </div>
     </div>
-</div> 
+</div>

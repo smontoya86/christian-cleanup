@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Build Script for Christian Music Curator
- * 
+ *
  * This script orchestrates the frontend build process:
  * - Creates necessary directories
  * - Builds CSS and JavaScript assets
@@ -36,12 +36,12 @@ try {
   // Build CSS
   console.log('🎨 Building CSS...');
   execSync('npm run build:css', { stdio: 'inherit' });
-  
+
   // Build JavaScript
   console.log('📦 Building JavaScript...');
   const jsCommand = isProduction ? 'npm run build:js:prod' : 'npm run build:js:dev';
   execSync(jsCommand, { stdio: 'inherit' });
-  
+
   // Optimize images in production
   if (isProduction) {
     console.log('🖼️  Optimizing images...');
@@ -51,7 +51,7 @@ try {
       console.warn('⚠️  Image optimization failed (optional step):', error.message);
     }
   }
-  
+
   // Generate build manifest
   const manifest = {
     buildTime: new Date().toISOString(),
@@ -68,16 +68,16 @@ try {
       ]
     }
   };
-  
+
   fs.writeFileSync(
     path.join(buildDir, 'manifest.json'),
     JSON.stringify(manifest, null, 2)
   );
-  
+
   console.log('✅ Build completed successfully!');
   console.log(`📋 Build manifest: ${path.join(buildDir, 'manifest.json')}`);
-  
+
 } catch (error) {
   console.error('❌ Build failed:', error.message);
   process.exit(1);
-} 
+}

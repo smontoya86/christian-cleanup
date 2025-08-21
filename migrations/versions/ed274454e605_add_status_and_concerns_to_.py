@@ -24,25 +24,27 @@ def upgrade():
     op.add_column('analysis_results', sa.Column('error_message', sa.Text(), nullable=True))
     op.add_column('analysis_results', sa.Column('created_at', sa.DateTime(), nullable=True))
     op.add_column('analysis_results', sa.Column('updated_at', sa.DateTime(), nullable=True))
-    
+
     # Set default values for existing rows
     op.execute("""
-        UPDATE analysis_results 
-        SET 
+        UPDATE analysis_results
+        SET
             status = 'completed',
             created_at = COALESCE(analyzed_at, NOW()),
             updated_at = COALESCE(analyzed_at, NOW())
         WHERE status IS NULL
     """)
-    
+
     # Now alter the column to be NOT NULL
     op.alter_column('analysis_results', 'status', existing_type=sa.String(length=20), nullable=False)
-    
+
     # Create indexes (only if they don't exist already)
     op.create_index('idx_analysis_concern_level', 'analysis_results', ['concern_level'], unique=False, if_not_exists=True)
     op.create_index('idx_analysis_song_id', 'analysis_results', ['song_id'], unique=False, if_not_exists=True)
     op.create_index('idx_analysis_status', 'analysis_results', ['status'], unique=False, if_not_exists=True)
-    
+    # Add check constraint for allowed statuses (in sync with app constants)
+    op.create_check_constraint('ck_analysis_status_allowed', 'analysis_results', "status IN ('pending','in_progress','completed','failed')")
+
     # Drop the old column
     op.drop_column('analysis_results', 'raw_score')
 

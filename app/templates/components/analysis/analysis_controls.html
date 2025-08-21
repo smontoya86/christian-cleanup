@@ -1,9 +1,9 @@
-{# 
+{#
 Analysis Controls Component
 
 Parameters:
 - show_analyze_new: Whether to show "Analyze New Songs" button
-- show_reanalyze_all: Whether to show "Re-analyze All" button  
+- show_reanalyze_all: Whether to show "Re-analyze All" button
 - show_view_analysis_link: Whether to show "View Analysis" link
 - custom_buttons: Optional list of additional buttons
 #}
@@ -21,13 +21,13 @@ Parameters:
                         <i class="fas fa-search me-1"></i> Analyze New Songs
                     </button>
                     {% endif %}
-                    
+
                     {% if show_reanalyze_all %}
                     <button id="analyzePlaylistBtn" class="btn btn-outline-secondary">
                         <i class="fas fa-redo me-1"></i> Re-analyze All
                     </button>
                     {% endif %}
-                    
+
                     {% if custom_buttons %}
                     {% for button in custom_buttons %}
                     <button class="btn {{ button.class or 'btn-outline-primary' }}"
@@ -38,7 +38,7 @@ Parameters:
                     </button>
                     {% endfor %}
                     {% endif %}
-                    
+
                     {% if show_view_analysis_link %}
                     <div class="ms-auto">
                         <a href="#analysisResults" class="btn btn-sm btn-link text-decoration-none">
@@ -47,7 +47,7 @@ Parameters:
                     </div>
                     {% endif %}
                 </div>
-                
+
                 <!-- Progress Bar -->
                 <div id="analysisProgress" class="mt-3" style="display: none;">
                     <div class="d-flex justify-content-between align-items-center mb-1">
@@ -55,17 +55,17 @@ Parameters:
                         <small id="progressPercent" class="text-muted">0%</small>
                     </div>
                     <div class="progress" style="height: 6px;">
-                        <div id="analysisProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
-                             role="progressbar" style="width: 0%" 
+                        <div id="analysisProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" style="width: 0%"
                              aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Status Messages -->
                 <div id="analysisStatus" class="mt-3 small" style="display: none;"></div>
                 <div id="errorMessage" class="alert alert-danger mt-3" style="display: none;"></div>
             </div>
         </div>
     </div>
-</div> 
+</div>

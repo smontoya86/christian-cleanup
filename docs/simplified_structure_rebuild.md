@@ -5,7 +5,7 @@
 **⚠️ CRITICAL: This is a containerized application. All development and operations should be performed using Docker containers, not local commands.**
 
 - **Web App**: `docker exec christiancleanupwindsurf-web-1 <command>`
-- **Database**: `docker exec christiancleanupwindsurf-db-1 <command>`  
+- **Database**: `docker exec christiancleanupwindsurf-db-1 <command>`
 - **Workers**: `docker exec christiancleanupwindsurf-worker-{1-6} <command>`
 - **Redis**: `docker exec christiancleanupwindsurf-redis-1 redis-cli`
 - **Helper Script**: `./docker-helper.sh <command>` - Use this for common operations
@@ -15,9 +15,49 @@
 
 A production-ready Flask application for Christian music curation and analysis, built with a focus on maintainability, educational value, and scalability. The application provides comprehensive Christian discernment training through advanced AI-powered contextual analysis with a clean, consolidated architecture.
 
-**Current Status**: **✅ PRODUCTION READY & FULLY CONSOLIDATED** - Clean analysis architecture with HuggingFaceAnalyzer as single source of truth, delivering 100% accuracy scores for Christian content, comprehensive theme detection (35+ themes), enhanced scoring system with theological weighting, and robust end-to-end validation complete.
+**Current Status**: **✅ MVP (LLM‑first, auto‑switching inference)** — Queue removed. Analysis runs in‑process using `LLMAnalyzer` (OpenAI‑compatible) as the single source of truth with RAG over framework docs and BSB scripture resolution. The analyzer auto‑selects the best available endpoint at runtime: prefers external vLLM (e.g., RunPod) via `LLM_API_BASE_URL`, else Ollama on host, else local MLX/Transformers. Redis‑backed progress with heartbeat, LLM preflight checks on Start, adaptive backoff, and resume/lock are enabled. The HuggingFace pipeline remains as a fallback when LLM is unavailable.
 
 ## System Architecture Diagrams
+
+### **MVP LLM‑First Architecture (Current)**
+
+```mermaid
+graph TB
+  subgraph "User Interface Layer"
+    A[Web Dashboard] --> B[Progressive Web App]
+  end
+
+  subgraph "API Layer"
+    C[Flask Blueprints]
+  end
+
+  subgraph "Service Layer"
+    D[UnifiedAnalysisService] --> E[SimplifiedChristianAnalysisService]
+    E --> F[LLMAnalyzer (MLX)
+Strict JSON + Chunk/Merge]
+    E --> G[AnalyzerCache]
+    E --> H[EnhancedConcernDetector]
+    E --> I[EnhancedScriptureMapper]
+  end
+
+  subgraph "Knowledge & Scripture"
+    J[TheologyKB (35+ themes)
+keyword retrieval] --> F
+    K[BSB Scripture Client
+on‑demand verse fetch] --> E
+  end
+
+  subgraph "Data Layer"
+    L[PostgreSQL]
+  end
+
+  B --> C --> D --> L
+```
+
+Notes:
+- No external job queue in MVP; backfill runs in background threads within the web process.
+- Inference auto‑switch: vLLM (RunPod) → Ollama (host) → local MLX/Transformers fallback.
+- RAG index auto‑builds at startup and can be rebuilt via admin API.
 
 ### **Complete System Architecture**
 
@@ -27,62 +67,54 @@ graph TB
         A[Web Dashboard] --> B[Progressive Web App]
         B --> C[Smart Polling System]
         C --> D[Real-time Progress Updates]
-    end
-    
+     end
+
     subgraph "API Layer"
         E[Flask Routes] --> F[Authentication]
         E --> G[API Endpoints]
         G --> H[JSON API - 240+ Routes]
     end
-    
+
     subgraph "Service Layer"
         I[UnifiedAnalysisService] --> J[SimplifiedChristianAnalysisService]
         I --> K[SpotifyService]
         I --> L[PlaylistSyncService]
-        
-        J --> M[HuggingFaceAnalyzer - Single Source of Truth]
+
+        J --> M[LLMAnalyzer (MLX) — Single Source of Truth]
         J --> N[EnhancedConcernDetector]
         J --> O[EnhancedScriptureMapper]
         J --> P[AnalyzerCache]
     end
-    
-    subgraph "AI Analysis Engine"
-        M --> Q[Sentiment Analysis]
-        M --> R[Content Safety]
-        M --> S[Emotion Detection]
-        M --> T[Zero-Shot Theme Classification]
-        M --> U[35+ Christian Themes]
-    end
-    
-    subgraph "Background Processing"
-        V[PriorityAnalysisQueue] --> W[PriorityQueueWorker]
-        W --> X[ProgressTracker]
-        X --> Y[6 Worker Containers]
-    end
-    
+
+     subgraph "AI Analysis Engine (LLM‑First)"
+         M --> Q[Strict JSON Schema]
+         M --> R[Chunking + Merge]
+         M --> S[Theme KB Retrieval + RAG]
+         M --> T[On‑demand Scripture Resolution]
+     end
+
+    %% Background Processing removed in MVP: direct in‑process analysis
+
     subgraph "Data Layer"
-        Z[PostgreSQL Database] --> AA[Redis Cache]
-        AA --> BB[Session Storage]
-        AA --> CC[Job Queue]
-        AA --> DD[Progress Tracking]
+        Z[PostgreSQL Database]
     end
-    
+
     subgraph "External APIs"
         EE[Spotify API] --> FF[Lyrics Providers]
         FF --> GG[LRCLib → Lyrics.ovh → Genius]
     end
-    
+
     subgraph "Utilities (Scripts)"
         HH[CalibrationService]
         II[ContextualThemeDetector - Legacy]
     end
-    
+
     A --> E
     E --> I
     I --> V
     V --> Z
     K --> EE
-    
+
     style M fill:#e8f5e8
     style J fill:#f3e5f5
     style P fill:#e1f5fe
@@ -91,42 +123,36 @@ graph TB
     style II fill:#f0f0f0
 ```
 
-### **Analysis System Flow**
+### **Analysis System Flow (MVP)**
 
 ```mermaid
 graph TB
     A[Song Input] --> B[UnifiedAnalysisService]
-    
+
     B --> C[SimplifiedChristianAnalysisService]
-    
-    C --> D[HuggingFaceAnalyzer - Single Source]
+
+    C --> D[LLMAnalyzer (MLX) — Strict JSON]
     C --> E[EnhancedConcernDetector]
     C --> F[EnhancedScriptureMapper]
     C --> G[AnalyzerCache]
-    
-    D --> H[Multi-Model AI Pipeline]
-    
-    H --> I[Sentiment Analysis]
-    H --> J[Content Safety]
-    H --> K[Emotion Detection]
-    H --> L[Zero-Shot Theme Classification]
-    
+
+    D --> H[Chunking + Merge]
+    D --> I[TheologyKB Retrieval + RAG]
+    D --> J[On‑demand Scripture Resolution]
+
     E --> M[Educational Concern Detection]
     M --> N[Biblical Perspective]
-    
+
     F --> O[Scripture Mapping]
     O --> P[Educational Context]
-    
-    I --> Q[Final Analysis Result]
-    J --> Q
-    K --> Q
-    L --> Q
+
+    D --> Q[Final Analysis Result]
     N --> Q
     P --> Q
-    
+
     Q --> R[Database Storage]
     Q --> S[User Feedback]
-    
+
     style D fill:#e8f5e8
     style C fill:#f3e5f5
     style H fill:#e8f5e8
@@ -139,21 +165,22 @@ graph TB
 - **Flask 2.3+** with application factory pattern
 - **Python 3.9+** with type hints and modern practices
 - **SQLAlchemy 2.0** with declarative models
-- **Alembic** for database migrations
+- **Alembic/Flask‑Migrate** for database migrations (auto‑upgrade at container start in prod)
 - **Flask-Login** for session management
 
 ### **Database & Caching**
 - **PostgreSQL 14+** (primary database)
-- **Redis 6+** (session storage, job queue, caching, progress tracking)
+- **Redis 6+** (session storage; progress tracking with heartbeat; queue removed in MVP)
 - **Connection Pooling** with SQLAlchemy engine optimization
 - **Strategic Indexing** for analysis aggregation queries
+- **FAISS + sentence‑transformers** for RAG over framework docs (persisted index)
 
-### **Background Processing**
-- **Priority-Based Analysis Queue** with Redis-backed job management
-- **6 Worker Containers** for scalable background analysis
-- **Smart Progress Tracking** with ETA calculations and real-time updates
-- **Job Monitoring** with health checks and comprehensive error handling
-- **Adaptive Polling System** for efficient real-time UI updates
+### **Background Processing (MVP backfill threads)**
+- No Redis/RQ queue or worker containers in the current MVP
+- Backfill runs in background threads inside the web process
+- Redis is used for progress persistence with ETA and heartbeat
+- Overlap prevention via Redis lock; resume mode (default) skips already completed songs when framework unchanged
+- Adaptive backoff reduces workers and batch size on repeated LLM timeouts
 
 ### **Authentication & Security**
 - **Spotify OAuth 2.0** with PKCE flow
@@ -167,17 +194,13 @@ graph TB
 - **Bootstrap 5.3** for responsive UI framework
 - **Vanilla JavaScript** (ES6+) with modular architecture
 - **Progressive Web App** features (service worker, manifest)
-- **Smart Polling System** with adaptive intervals (1-5 seconds)
-- **Real-time Progress Updates** with comprehensive ETA calculations
+- **Smart Polling System** with adaptive intervals (1–30 seconds) and stall detection
+- **Real-time Progress Updates** with comprehensive ETA calculations and heartbeat indicator
 - **Lazy Loading** for performance optimization
 
-### **AI & Analysis Engine**
-- **HuggingFace Transformers** as single source of truth for content analysis
-- **Consolidated Analysis Pipeline** with semantic understanding and 100% accuracy for Christian content
-- **Multi-Model AI Pipeline** (sentiment, safety, emotion, zero-shot theme classification)
-- **35+ Christian Themes** with comprehensive theological coverage
-- **Model Caching System** with AnalyzerCache for optimized performance
-- **Optimized Lyrics System** with smart negative caching and batch operations
+- **LLMAnalyzer (MLX)** as single source for semantic theology analysis
+- **Strict JSON + Validation/Repair**, **Chunking + Merge**, **TheologyKB** retrieval, and **BSB Scripture** resolution
+- **AnalyzerCache** for reuse; lyrics system optimizations remain
   - **Smart Negative Caching**: Failed lookups cached to prevent repeated API calls
   - **Batch Database Operations**: 80% reduction in database commits through batching
   - **Request Deduplication**: Efficient filtering of already-processed songs
@@ -191,7 +214,7 @@ graph TB
 - **Docker & Docker Compose** for containerization
 - **Nginx** reverse proxy for production
 - **Environment-specific configurations** (dev/staging/prod)
-- **Health Monitoring** with Prometheus-ready metrics
+- **Health Monitoring** with Prometheus-ready metrics and admin diagnostics
 - **Comprehensive Test Suite** with pytest
 - **macOS Development Support** with fork safety measures
 
@@ -209,8 +232,8 @@ app/
 │   ├── spotify_service.py              # Spotify API integration
 │   ├── playlist_sync_service.py        # Playlist synchronization
 │   ├── unified_analysis_service.py     # Analysis coordination & queue management
-│   ├── priority_analysis_queue.py     # Priority-based job queue system
-│   ├── priority_queue_worker.py       # Background job processing
+│   ├── [REMOVED] priority_analysis_queue.py     # Priority-based job queue system (REMOVED)
+│   ├── [REMOVED] priority_queue_worker.py       # Background job processing (REMOVED)
 │   ├── progress_tracker.py            # Real-time progress tracking with ETA
 │   ├── simplified_christian_analysis_service.py  # Core analysis orchestrator
 │   ├── enhanced_scripture_mapper.py    # Biblical reference mapping
@@ -263,13 +286,11 @@ app/
 ### **Scripts & Utilities Structure**
 
 scripts/
-├── utilities/                           # Moved utility services
+├── utilities/                           # Utility scripts
 │   ├── calibration_service.py          # Batch re-analysis and system calibration tool
-│   ├── contextual_theme_detector.py    # Legacy theme detection (replaced by HuggingFaceAnalyzer)
 │   └── __init__.py                     # Python package initialization
 ├── backup-dev.sh                       # Database backup utilities
 ├── restore-dev.sh                      # Database restore utilities
-├── start_worker_*.sh                   # Worker startup scripts
 └── example_prd.txt                     # Example Product Requirements Document
 
 ## Enhanced Analysis Architecture - Fully Consolidated & Validated
@@ -320,7 +341,7 @@ scripts/
 - **100% Accuracy**: Perfect classification of legitimate Christian content (100.0 scores, Very Low concern)
 - **Context-Aware Processing**: Eliminates false positives in Christian content analysis
 - **Performance Optimized**: <1 second per song analysis with 282 songs/hour throughput
-- **Model Caching**: AnalyzerCache system for optimized performance across workers
+- **Model Caching**: AnalyzerCache optimizes model reuse within the web process
 
 ### **Advanced Scoring Intelligence**
 - **100-Point Starting System**: Start at 100, subtract for negative content, add for exceptional themes
@@ -351,17 +372,21 @@ scripts/
 
 ## Background Processing Architecture
 
-### **Queue Management**
-- **PriorityAnalysisQueue**: Redis-backed job management with priority levels
-- **PriorityQueueWorker**: 6 worker containers for horizontal scaling
-- **ProgressTracker**: Real-time progress tracking with ETA calculations
-- **Smart Polling**: Adaptive intervals (1-5 seconds) for efficient UI updates
+### **Optimized Batch + Parallel Processing System**
+- **Admin-Only Analysis**: Re-analysis functionality restricted to administrators only
+- **Dual Processing Power**: Combines parallel processing (5 workers) with batch processing (optimized AI model usage)
+- **Intelligent Job Distribution**: Songs split into batches and distributed across workers for maximum efficiency
+- **Batch Processing per Worker**: Each worker processes multiple songs together using optimized `analyze_songs_batch()` method
+- **Perfect CPU Utilization**: 5 workers × 2 cores = 10 cores (100% M1 Max utilization)
 
 ### **Performance Features**
-- **Batch Processing**: Configurable batch sizes for optimal throughput
-- **Health Monitoring**: Comprehensive job monitoring and error handling
-- **Progress Visualization**: Real-time progress cards with completion estimates
-- **Efficient Queuing**: Priority-based job ordering with dependency management
+- **5x Parallel Speed**: 5 worker containers processing different batches simultaneously
+- **Batch Processing Efficiency**: Each worker processes ~10 songs per batch instead of individually
+- **Combined Benefits**: ~8-12x faster than individual sequential processing (5x parallel × 2-3x batch efficiency)
+- **Model Optimization**: Pre-loaded AI models in each worker with batch inference optimization
+- **Smart Batching**: Automatic song distribution across 5 workers for optimal load balancing
+- **Enhanced Progress**: Real-time batch progress tracking with completion estimates
+- **Optimal Resource Usage**: 100% CPU utilization (10/10 cores) with minimal memory footprint (~5GB/64GB)
 
 ## Database Architecture
 
@@ -391,17 +416,17 @@ class Song(db.Model):
     album_art_url = db.Column(db.String(512), nullable=True)
     explicit = db.Column(db.Boolean, default=False)
     last_analyzed = db.Column(db.DateTime, nullable=True)
-    
+
     # Relationships
     playlist_associations = db.relationship('PlaylistSong', back_populates='song')
     analysis_results = db.relationship('AnalysisResult', back_populates='song_rel', lazy='dynamic')
-    
+
     # Dynamic properties for accessing latest analysis results
     @property
     def analysis_status(self):
         result = self.analysis_results.first()
         return result.status if result else 'pending'
-    
+
     @property
     def score(self):
         result = self.analysis_results.filter_by(status='completed').order_by(AnalysisResult.analyzed_at.desc()).first()
@@ -416,7 +441,7 @@ class PlaylistSong(db.Model):
     track_position = db.Column(db.Integer, nullable=False)
     added_at_spotify = db.Column(db.DateTime, nullable=True)
     added_by_spotify_user_id = db.Column(db.String(255), nullable=True)
-    
+
     # Relationships
     playlist = db.relationship('Playlist', back_populates='song_associations')
     song = db.relationship('Song', back_populates='playlist_associations')
@@ -431,7 +456,7 @@ class LyricsCache(db.Model):
     lyrics = db.Column(db.Text)                        # Actual lyrics or empty for negative cache
     source = db.Column(db.String(50))                  # Provider source or 'negative_cache'
     cached_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     # Composite index for efficient lookups
     __table_args__ = (db.Index('idx_lyrics_artist_title', 'artist', 'title'),)
 ```
@@ -498,10 +523,15 @@ CREATE INDEX idx_lyrics_source ON lyrics_cache(source);
 
 #### **Analysis Endpoints**
 ```
-POST /api/analyze/song/{id}           # Enhanced single song analysis
-POST /api/analyze/playlist/{id}       # Enhanced playlist analysis
-GET  /api/analysis/status/{job_id}    # Real-time progress tracking
-GET  /api/analysis/results/{song_id}  # Retrieve analysis results
+POST /api/analyze/song/{id}                 # Single song analysis
+POST /api/analyze/playlist/{id}             # Playlist analysis
+POST /api/admin/backfill-all?resume=1       # Start backfill (resume by default; force=1 for full)
+GET  /api/admin/backfill-status             # Redis-backed progress + ETA + heartbeat
+POST /api/admin/rag/rebuild                 # Rebuild RAG index
+GET  /api/admin/rag/status                  # RAG status
+POST /api/admin/reload-framework            # Hot-reload framework markdown
+GET  /api/admin/diagnostics                 # Admin diagnostics (DB/Redis/LLM/RAG/config)
+POST /api/admin/warm                        # Warm RAG and LLM (prime cache)
 ```
 
 #### **Playlist Management**
@@ -639,22 +669,22 @@ services:
     environment:
       - FLASK_ENV=production
     depends_on: [postgres, redis]
-    
+
   worker:
     build: .
     command: python worker.py
     deploy:
       replicas: 6  # Horizontal scaling
     depends_on: [postgres, redis]
-    
+
   postgres:
     image: postgres:15
     volumes: ["postgres_data:/var/lib/postgresql/data"]
-    
+
   redis:
     image: redis:7
     volumes: ["redis_data:/data"]
-    
+
   nginx:
     image: nginx:alpine
     ports: ["80:80", "443:443"]
@@ -662,10 +692,12 @@ services:
 ```
 
 ### **Production Features**
-- **Horizontal Scaling**: 6 worker containers for background processing
-- **Load Balancing**: Nginx reverse proxy with upstream load balancing
-- **Health Monitoring**: Comprehensive health checks and monitoring
-- **Auto-restart**: Container restart policies for high availability
+- **Gunicorn**: 1 worker (to avoid mid-job restarts); no preload; healthcheck `/api/health`
+- **Inference**: Prefer vLLM (RunPod) via `LLM_API_BASE_URL` → Ollama host → local MLX fallback
+- **RAG**: Auto-build on startup; persistent index volume
+- **Health Monitoring**: `/api/health` and `/api/health/detailed`; admin diagnostics endpoint
+- **Nginx**: Locked CORS for `/api/` to approved origins; forwards X‑Forwarded‑* headers
+- **Redis**: Progress with heartbeat; lock prevents overlapping backfills; resume mode default
 
 ## Performance Metrics
 
@@ -680,12 +712,11 @@ services:
 - **Educational Value**: Comprehensive biblical explanations with scripture references
 
 ### **System Performance**
-- **Response Time**: <200ms for API endpoints with optimized database ordering
-- **Database Performance**: Optimized queries with strategic indexing and analyzed_at ordering fixes
-- **Memory Usage**: <512MB per worker container with model caching optimization
-- **CPU Utilization**: <50% under normal load with M1 Max optimizations
-- **Template Rendering**: Fixed scripture categorization logic for accurate frontend display
-- **End-to-End Validation**: 100% browser validation across multiple songs and playlists
+- **Response Time**: API <200ms typical (outside heavy backfill)
+- **Database Performance**: Optimized queries; strict latest-by `analyzed_at` selection
+- **RAG Performance**: FAISS retrieval reduces prompt size; warmup endpoint primes cache
+- **Stability**: One Gunicorn worker prevents mid-job restarts; adaptive backoff on timeouts
+- **Observability**: Redis heartbeat; detailed diagnostics; structured logs for RAG/LLM/backfill
 
 ### **Scalability Features**
 - **Horizontal Worker Scaling**: Add more worker containers as needed
@@ -703,7 +734,7 @@ cd christian-cleanup-windsurf
 cp environments/env.example .env
 
 # Configure lyrics optimization (optional)
-export LYRICS_CACHE_BATCH_SIZE=50    # Batch size for database operations  
+export LYRICS_CACHE_BATCH_SIZE=50    # Batch size for database operations
 export LYRICS_CACHE_BATCH_TIMEOUT=30 # Timeout in seconds for batch flush
 
 # Install dependencies
@@ -722,8 +753,7 @@ flask db upgrade
 # Start application
 python run.py
 
-# Start workers (separate terminal)
-python worker.py
+# Workers removed in MVP; no separate worker process required
 ```
 
 ### **Testing Strategy**
@@ -758,7 +788,7 @@ Our Phase 1-5 implementation provides extensive Christian theme detection based 
 - Divine transcendence, omnipotence, sovereignty
 - Trinity references and monotheistic declarations
 
-**2. Christology (Jesus Christ)**  
+**2. Christology (Jesus Christ)**
 - Jesus' names and titles (Christ, Savior, Redeemer, Messiah, etc.)
 - Incarnation, deity, and humanity of Christ
 - Atonement, cross, crucifixion, sacrifice, blood

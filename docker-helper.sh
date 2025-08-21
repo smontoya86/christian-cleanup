@@ -45,7 +45,7 @@ restart_service() {
 # Function to check analysis status
 check_analysis() {
     echo -e "${BLUE}🔍 Checking analysis status...${NC}"
-    
+
     # Get background analysis status with formatted output
     echo -e "${GREEN}Background analysis status:${NC}"
     curl -s http://localhost:5001/api/background-analysis/public-status | jq -r '
@@ -55,7 +55,7 @@ check_analysis() {
             "❌ " + .message
         end
     ' 2>/dev/null || echo "❌ Failed to get analysis status"
-    
+
     echo ""
     echo -e "${BLUE}📊 Queue status:${NC}"
     echo "Medium priority queue: $(docker exec $REDIS_CONTAINER redis-cli llen "priority_queue:medium") jobs"
@@ -68,16 +68,16 @@ check_analysis() {
 check_job_health() {
     echo -e "${BLUE}🔍 Basic Job Health Check${NC}"
     echo ""
-    
+
     # Check for active analysis jobs
     echo -e "${BLUE}Checking job status...${NC}"
     active_job=$(docker exec ${REDIS_CONTAINER} redis-cli get "analysis_active")
-    
+
     if [ -z "$active_job" ]; then
         echo -e "${GREEN}✅ No active analysis jobs${NC}"
     else
         echo -e "${GREEN}✅ Active analysis job: $active_job${NC}"
-        
+
         # Check if job exists in jobs list
         job_exists=$(docker exec ${REDIS_CONTAINER} redis-cli sismember "analysis_jobs" "$active_job")
         if [ "$job_exists" = "1" ]; then
@@ -87,12 +87,12 @@ check_job_health() {
             echo -e "${BLUE}💡 Restart web service to reconnect: docker-compose restart web${NC}"
         fi
     fi
-    
+
     # Check worker health
     echo ""
     echo -e "${BLUE}Worker Status:${NC}"
     active_workers=$(docker exec ${REDIS_CONTAINER} redis-cli smembers "active_workers")
-    
+
     if [ -z "$active_workers" ]; then
         echo -e "${RED}❌ No active workers found${NC}"
     else
@@ -116,7 +116,7 @@ show_recovery_help() {
     echo -e "${GREEN}3. If still stuck, restart workers:${NC}"
     echo "   docker restart \$(docker ps -q --filter \"name=worker\")"
     echo ""
-    
+
     # Show recent app logs for recovery information
     echo -e "${BLUE}Recent application logs:${NC}"
     docker logs ${WEB_CONTAINER} 2>&1 | grep -E "(Reconnected|orphaned)" | tail -3 || echo "No recent recovery messages found"
@@ -219,4 +219,4 @@ case ${1:-menu} in
         echo -e "${BLUE}📊 Monitoring: ${GREEN}http://localhost:3000${NC} (Grafana)"
         echo ""
         ;;
-esac 
+esac

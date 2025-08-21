@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the comprehensive macOS fork safety measures implemented to resolve worker crashes caused by Objective-C runtime conflicts during process forking.
+This legacy document described macOS fork safety measures for background workers. The queue/worker system has been removed in the MVP, so this is kept for archival reference only.
 
 ## Problem Description
 
@@ -21,7 +21,7 @@ This document describes the comprehensive macOS fork safety measures implemented
 ## Solution Implementation
 
 ### 1. Environment Variable Configuration
-**Key Fix**: Set `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` before any Objective-C libraries are loaded.
+Note: Not applicable in the MVP (no worker processes).
 
 **Implementation Locations**:
 - `worker.py`: Sets the variable at the very beginning of the script
@@ -37,7 +37,7 @@ if platform.system() == 'Darwin':  # macOS
 ```
 
 ### 3. Startup Script Wrapper
-**File**: `start_worker_macos.sh`
+Legacy file (removed): `start_worker_macos.sh`
 - Detects macOS environment using `$OSTYPE`
 - Sets environment variables at shell level
 - Provides clear feedback about configuration
@@ -46,8 +46,8 @@ if platform.system() == 'Darwin':  # macOS
 ## Files Modified
 
 ### Core Implementation
-- **`worker.py`**: Added early macOS detection and environment variable setting
-- **`start_worker_macos.sh`**: New startup script for optimal macOS compatibility
+- [REMOVED] `worker.py`
+- [REMOVED] `start_worker_macos.sh`
 - **`README.md`**: Updated documentation with macOS-specific instructions
 
 ### Documentation
@@ -57,16 +57,10 @@ if platform.system() == 'Darwin':  # macOS
 ## Usage Instructions
 
 ### Recommended Approach (macOS)
-```bash
-# Use the optimized startup script
-./start_worker_macos.sh
-```
+No worker startup required in MVP.
 
 ### Alternative Approach
-```bash
-# Direct Python execution (auto-detects macOS)
-python worker.py
-```
+No direct worker execution required in MVP.
 
 ### Docker/Linux
 No changes required - the implementation automatically detects the platform and only applies macOS-specific measures when needed.
@@ -146,4 +140,4 @@ The implemented solution provides:
 - **Automatic platform detection** and appropriate configuration
 - **Comprehensive documentation** for maintenance and troubleshooting
 
-This implementation ensures that the Christian Cleanup application works seamlessly on macOS development environments while maintaining full compatibility with production Docker/Linux deployments. 
+This implementation ensures that the Christian Cleanup application works seamlessly on macOS development environments while maintaining full compatibility with production Docker/Linux deployments.

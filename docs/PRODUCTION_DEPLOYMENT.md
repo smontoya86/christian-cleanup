@@ -19,10 +19,10 @@ This guide covers the complete production deployment of the Christian Music Cura
 Internet → Nginx (Port 80/443) → Flask App (Port 5000)
                  ↓
          Static Files (Direct)
-                 
+
 App Container → PostgreSQL (Internal)
               → Redis (Internal)
-              → Workers (Internal)
+               → (Workers removed in MVP; analysis runs synchronously in app)
 ```
 
 ## Prerequisites
@@ -190,7 +190,9 @@ docker-compose -f docker-compose.prod.yml ps
 |----------|---------|-------------|
 | `ANALYSIS_BATCH_SIZE` | 50 | Songs per analysis batch |
 | `CACHE_LYRICS_TTL` | 604800 | Lyrics cache TTL (seconds) |
-| `RQ_DEFAULT_TIMEOUT` | 3600 | Job timeout (seconds) |
+| `USE_LLM_ANALYZER` | 1 | Use local OpenAI-compatible LLM analyzer |
+| `LLM_API_BASE_URL` | http://host.docker.internal:8080/v1 | Local MLX/llama.cpp endpoint |
+| `LLM_MODEL` | mlx-community/Meta-Llama-3.1-8B-Instruct-4bit | Default local model |
 
 ### Resource Limits
 
@@ -217,7 +219,7 @@ The production configuration includes resource limits:
 #### Application Metrics
 - Response time and throughput
 - Error rates by endpoint
-- Queue length and worker status
+ - Analysis throughput and error rates
 - Analysis completion rates
 
 #### Infrastructure Metrics
@@ -471,11 +473,10 @@ docker-compose -f docker-compose.prod.yml restart service_name
 3. Monitor worker queue length
 4. Check system resource usage
 
-#### Queue Backlog
-1. Scale worker containers
-2. Optimize analysis algorithms
-3. Check for stuck jobs
-4. Review job priority settings
+#### Analysis Performance
+1. Verify MLX/llama.cpp server health (`LLM_API_BASE_URL`)
+2. Adjust concurrency (`ANALYSIS_MAX_CONCURRENCY` if applicable)
+3. Review prompt and chunking settings
 
 ### Emergency Procedures
 
@@ -530,6 +531,6 @@ docker stats --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}"
 
 ---
 
-**Last Updated**: [Current Date]  
-**Version**: 1.0  
-**Maintained By**: Development Team 
+**Last Updated**: [Current Date]
+**Version**: 1.0
+**Maintained By**: Development Team

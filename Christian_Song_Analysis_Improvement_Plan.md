@@ -15,7 +15,7 @@ This project implements a Test-Driven Development (TDD) approach to improve the 
 
 ### Themes to Implement
 - **Christ-Centered**: Jesus as Savior, Lord, or King (+10 points)
-- **Gospel Presentation**: Cross, resurrection, salvation by grace (+10 points)  
+- **Gospel Presentation**: Cross, resurrection, salvation by grace (+10 points)
 - **Redemption**: Deliverance by grace (+7 points)
 - **Sacrificial Love**: Christlike self-giving (+6 points)
 - **Light vs Darkness**: Spiritual clarity and contrast (+5 points)
@@ -29,23 +29,23 @@ class TestCoreGospelThemes:
     def test_christ_centered_detection_positive_cases(self):
         # Test songs with clear Christ-centered themes
         # Expected: +10 points, high confidence
-        
+
     def test_gospel_presentation_detection(self):
         # Test cross, resurrection, salvation themes
         # Expected: +10 points, gospel category
-        
+
     def test_redemption_theme_detection(self):
         # Test deliverance and grace themes
         # Expected: +7 points, redemption category
-        
+
     def test_sacrificial_love_detection(self):
         # Test self-giving, love themes
         # Expected: +6 points, love category
-        
+
     def test_light_vs_darkness_detection(self):
         # Test spiritual contrast themes
         # Expected: +5 points, spiritual warfare category
-        
+
     def test_false_positive_prevention(self):
         # Ensure secular songs don't trigger gospel themes
         # Expected: No false positives
@@ -71,13 +71,13 @@ class TestCoreGospelThemes:
 class TestPhase1Regression:
     def test_existing_analysis_still_works(self):
         # Ensure all existing functionality remains intact
-        
+
     def test_scoring_backwards_compatibility(self):
         # Verify scores are still in 0-100 range
-        
+
     def test_database_models_unchanged(self):
         # Ensure no breaking changes to data structures
-        
+
     def test_api_endpoints_functional(self):
         # Verify all API endpoints still work
 ```
@@ -90,7 +90,7 @@ class TestPhase1Regression:
 - **Endurance**: Perseverance by faith (+6 points)
 - **Obedience**: Willingness to follow God (+5 points)
 - **Justice**: Advocacy for truth and righteousness (+5 points)
-- **Mercy**: Compassion for others (+4 points)  
+- **Mercy**: Compassion for others (+4 points)
 - **Truth**: Moral and doctrinal fidelity (+4 points)
 - **Identity in Christ**: New creation reality (+5 points)
 - **Victory in Christ**: Triumph over sin and death (+4 points)
@@ -143,13 +143,13 @@ class TestPhase1Regression:
 class TestNegativeThemes:
     def test_blasphemy_detection_severe_penalty(self):
         # Test obvious blasphemy gets -30 points
-        
+
     def test_occult_themes_detection(self):
         # Test sorcery/magic themes get -20 points
-        
+
     def test_context_prevents_false_negatives(self):
         # Ensure legitimate spiritual warfare songs aren't penalized
-        
+
     def test_graduated_penalties(self):
         # Verify different severities get appropriate penalties
 ```
@@ -187,13 +187,13 @@ class TestNegativeThemes:
 class TestScoringEnhancements:
     def test_theological_weighting_applied(self):
         # Core gospel themes get 1.5x boost
-        
+
     def test_formational_multiplier_applied(self):
         # Severe content gets -10 penalty
-        
+
     def test_verdict_format_structure(self):
         # Proper summary and guidance format
-        
+
     def test_score_range_validation(self):
         # Scores stay within 0-100 range
 ```
@@ -240,13 +240,13 @@ formation_guidance = Column(Text)       # Spiritual formation guidance
 class TestCalibrationSystem:
     def test_batch_reanalysis_performance(self):
         # Ensure reanalysis completes efficiently
-        
+
     def test_score_distribution_realistic(self):
         # Verify scores are well-distributed
-        
+
     def test_improved_accuracy_metrics(self):
         # Confirm reduced false positives/negatives
-        
+
     def test_system_stability_under_load(self):
         # Verify system handles large reanalysis batches
 ```
@@ -300,7 +300,7 @@ class TestCalibrationSystem:
 POSITIVE_TEST_SONGS = [
     {
         "title": "Amazing Grace",
-        "artist": "Traditional", 
+        "artist": "Traditional",
         "lyrics": "Amazing grace how sweet the sound...",
         "expected_themes": ["redemption", "grace", "salvation"],
         "expected_score": 95+
@@ -355,7 +355,7 @@ EDGE_CASE_SONGS = [
 - [ ] Run regression tests
 - [ ] Verify no functionality breaks
 
-### Phase 2: Character & Spiritual Themes  
+### Phase 2: Character & Spiritual Themes
 - [ ] Expand theme detection tests
 - [ ] Implement additional themes
 - [ ] Add theological weighting
@@ -414,4 +414,4 @@ EDGE_CASE_SONGS = [
 
 ---
 
-This plan follows your exact 5-phase approach while ensuring comprehensive TDD methodology and regression testing at every step. Each phase builds incrementally on the previous one, with full testing to prevent any breaking changes. 
+This plan follows your exact 5-phase approach while ensuring comprehensive TDD methodology and regression testing at every step. Each phase builds incrementally on the previous one, with full testing to prevent any breaking changes.

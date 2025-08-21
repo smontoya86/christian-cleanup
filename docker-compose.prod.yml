@@ -27,30 +27,49 @@ services:
           memory: 256M
           cpus: '0.5'
 
-  # Main Flask application (scalable)
+  # Main Flask application (optimized for ML models)
   web:
     build:
       context: .
       dockerfile: Dockerfile.prod
-    command: gunicorn --bind 0.0.0.0:5000 --workers 4 --worker-class gevent --worker-connections 1000 --timeout 120 --max-requests 1000 --max-requests-jitter 100 --preload run:app
+    # Optimized for ML models: reduced workers, increased timeout and memory
+    command: gunicorn --bind 0.0.0.0:5000 --workers 1 --timeout 1800 --worker-connections 500 run:app
     expose:
       - "5000"
     volumes:
       - app_logs:/app/logs
       - ./uploads:/app/uploads:rw
+      # Add model cache volume for persistent storage
+      - model_cache:/root/.cache/huggingface
     environment:
+      # Analyzer configuration (LLM-first with internal vLLM service; auto-falls back to HF if unavailable)
+      - USE_LLM_ANALYZER=1
+      - LLM_API_BASE_URL=http://llm:8000/v1
+      - LLM_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct
+      - ENABLE_EMBEDDINGS=1
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
       - FLASK_ENV=production
       - FLASK_DEBUG=false
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - RQ_REDIS_URL=redis://redis:6379/0
       - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
       - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
       - SPOTIFY_REDIRECT_URI=${SPOTIFY_REDIRECT_URI}
       - LYRICSGENIUS_API_KEY=${LYRICSGENIUS_API_KEY}
       - BIBLE_API_KEY=${BIBLE_API_KEY}
+      # Google Analytics
+      - GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID}
+      - GA4_API_SECRET=${GA4_API_SECRET}
+      - GA4_DEBUG_MODE=${GA4_DEBUG_MODE}
       - LOG_LEVEL=INFO
+      # ML optimization settings
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+      - PYTORCH_ENABLE_MPS_FALLBACK=1
+      - OMP_NUM_THREADS=8
+      - MKL_NUM_THREADS=8
     depends_on:
+      llm:
+        condition: service_healthy
       db:
         condition: service_healthy
       redis:
@@ -59,62 +78,60 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 90s      # Increased interval due to model load time
+      timeout: 45s       # Increased timeout
       retries: 3
-      start_period: 40s
+      start_period: 180s # Longer startup for model loading
     deploy:
-      replicas: 2
+      replicas: 1  # Reduced replicas due to memory requirements
       resources:
         limits:
-          memory: 1G
-          cpus: '1.0'
+          memory: 12G     # PRODUCTION: Even higher memory for ML models (was 1G)
+          cpus: '4.0'     # PRODUCTION: More CPUs for ML processing (was 1.0)
+        reservations:
+          memory: 6G      # PRODUCTION: Higher reservation for ML models
+          cpus: '2.0'     # PRODUCTION: Higher CPU reservation
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 10s
         max_attempts: 3
+        window: 180s
 
-  # Background workers (scalable)
-  worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    command: python -m rq worker --url redis://redis:6379/0 --with-scheduler --logging_level INFO analysis_queue default_queue
-    volumes:
-      - app_logs:/app/logs
+  # Queue workers removed: analysis runs synchronously within web container
+
+  # Single-model LLM inference service (vLLM OpenAI-compatible)
+  llm:
+    image: vllm/vllm-openai:latest
+    command: --model meta-llama/Meta-Llama-3.1-8B-Instruct --host 0.0.0.0 --port 8000 --download-dir /data/models --gpu-memory-utilization 0.9
     environment:
-      - FLASK_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - RQ_REDIS_URL=redis://redis:6379/0
-      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
-      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
-      - LYRICSGENIUS_API_KEY=${LYRICSGENIUS_API_KEY}
-      - BIBLE_API_KEY=${BIBLE_API_KEY}
-      - LOG_LEVEL=INFO
-    depends_on:
-      redis:
-        condition: service_healthy
-      db:
-        condition: service_healthy
+      - HF_HUB_ENABLE_HF_TRANSFER=1
+    volumes:
+      - model_cache:/data/models
+    expose:
+      - "8000"
     restart: unless-stopped
     networks:
       - backend
     healthcheck:
-      test: ["CMD", "python", "-c", "import redis; r = redis.from_url('redis://redis:6379/0'); r.ping()"]
-      interval: 30s
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/models"]
+      interval: 60s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 120s
     deploy:
-      replicas: 3
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
+          memory: 24G
+          cpus: '8.0'
+        reservations:
+          memory: 16G
+          cpus: '4.0'
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 10s
         max_attempts: 3
+        window: 180s
 
   # PostgreSQL database with optimization
   db:
@@ -340,6 +357,12 @@ volumes:
       type: none
       o: bind
       device: ./data/redis
+  model_cache:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/models
   prometheus_data:
     driver: local
   grafana_data:
@@ -357,4 +380,4 @@ volumes:
   grafana_logs:
     driver: local
   alertmanager_data:
-    driver: local 
+    driver: local

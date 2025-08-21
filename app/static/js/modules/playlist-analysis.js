@@ -76,20 +76,20 @@ export class PlaylistAnalysis {
   bindSongAnalysisButtons () {
     const songAnalysisButtons = document.querySelectorAll('.analyze-song-btn');
     console.log(`🎵 Found ${songAnalysisButtons.length} song analysis buttons`);
-    
+
     songAnalysisButtons.forEach((btn, index) => {
       UIHelpers.safeAddEventListener(btn, 'click', () => {
         const songId = btn.dataset.songId;
         const songTitle = btn.dataset.songTitle;
         const songArtist = btn.dataset.songArtist;
-        
+
         console.log(`🎵 Song analysis button ${index + 1} clicked:`, {
           songId,
           songTitle,
           songArtist,
           button: btn
         });
-        
+
         this.analyzeSingleSong(songId, songTitle, songArtist, btn);
       });
       console.log(`✅ Song analysis button ${index + 1} bound (ID: ${btn.dataset.songId})`);
@@ -97,7 +97,7 @@ export class PlaylistAnalysis {
   }
 
   /**
-     * Start playlist analysis
+     * Start playlist analysis (Admin only) - Uses workers for parallel processing
      * @param {string} analysisType - Type of analysis ('all' or 'unanalyzed')
      */
   async startAnalysis (analysisType) {
@@ -120,72 +120,88 @@ export class PlaylistAnalysis {
     }
 
     try {
-      console.log('Starting analysis process...');
+      console.log('Starting direct queue-free analysis...');
       this.isAnalysisInProgress = true;
       this.disableAnalysisButtons();
-      
-      console.log('Calling UIHelpers.showProgress()...');
-      UIHelpers.showProgress();
-      
-      console.log('Updating progress to 0%...');
-      UIHelpers.updateProgress(0, 'Starting analysis...');
+
+      // Show processing indicator
+      UIHelpers.showProgress('Processing songs directly (queue-free)...', 0);
 
       console.log('Calling apiService.startPlaylistAnalysis...');
       const response = await apiService.startPlaylistAnalysis(this.playlistId, analysisType);
-      
+
       console.log('API response:', response);
 
       if (response.success) {
-        console.log('Analysis started successfully, beginning polling...');
-        UIHelpers.updateProgress(10, 'Analysis started successfully...');
-        this.pollAnalysisStatus();
+        // Direct processing completed immediately!
+        const successRate = Math.round((response.songs_analyzed / response.total_songs) * 100);
+        const message = `✅ Analysis completed immediately! ${response.songs_analyzed}/${response.total_songs} songs analyzed (${successRate}%)`;
+        const details = response.direct_processing && response.queue_bypassed
+          ? `🚀 Direct processing bypassed queue system - no more clogging issues!`
+          : `Analysis processed efficiently`;
+
+        UIHelpers.showSuccess(`${message}\n${details}`);
+
+        // Hide progress and refresh page to show results
+        UIHelpers.hideProgress();
+
+        // Refresh the page after a brief delay to show the updated analysis results
+        setTimeout(() => {
+          console.log('Refreshing page to show analysis results...');
+          window.location.reload();
+        }, 1500);
+
       } else {
-        throw new Error(response.message || 'Analysis failed to start');
+        throw new Error(response.message || 'Analysis failed');
       }
     } catch (error) {
       console.error('Error in startAnalysis:', error);
-      UIHelpers.showError(`Failed to start analysis: ${error.message}`);
+      UIHelpers.hideProgress();
+      if (error.message.includes('Access denied')) {
+        UIHelpers.showError('Access denied. Analysis is restricted to administrators.');
+      } else {
+        UIHelpers.showError(`Failed to complete analysis: ${error.message}`);
+      }
       this.resetAnalysisState();
     }
   }
 
+
+
   /**
-     * Poll for analysis status updates
-     */
-  async pollAnalysisStatus () {
-    try {
-      await apiService.pollForCompletion(
-        () => apiService.getPlaylistAnalysisStatus(this.playlistId),
-        {
-          maxAttempts: 200,
-          initialInterval: 3000,
-          onProgress: (status) => this.handleAnalysisProgress(status)
+   * Enhanced polling for batch completion
+   */
+  async pollForBatchCompletion(totalSongs, batchesQueued, workersActive) {
+    console.log(`Starting enhanced batch completion polling for ${totalSongs} songs...`);
+
+    let attempts = 0;
+    const maxAttempts = 30; // 30 * 10 seconds = 5 minutes max
+
+    const checkCompletion = async () => {
+      attempts++;
+      console.log(`Batch completion check ${attempts}/${maxAttempts}`);
+
+      try {
+        // For simplified system, just reload page after reasonable time
+        if (attempts >= maxAttempts) {
+          UIHelpers.showAlert(`Batch analysis should be complete. Refreshing page to show results...`, 'info');
+          setTimeout(() => window.location.reload(), 2000);
+          return;
         }
-      );
 
-      // Analysis completed successfully
-      UIHelpers.updateProgress(100, 'Analysis complete!');
-      UIHelpers.showSuccess('Analysis completed successfully!');
+        // Check again in 10 seconds (workers handle the processing)
+        setTimeout(checkCompletion, 10000);
 
-      // Reload page to show results
-      setTimeout(() => window.location.reload(), 1500);
-    } catch (error) {
-      UIHelpers.showError(`Analysis failed: ${error.message}`);
-      this.resetAnalysisState();
-    }
+      } catch (error) {
+        console.error('Error in batch completion polling:', error);
+        this.resetAnalysisState();
+      }
+    };
+
+    // Start checking after 20 seconds (give workers time to process)
+    setTimeout(checkCompletion, 20000);
   }
 
-  /**
-     * Handle analysis progress updates
-     * @param {Object} status - Analysis status response
-     */
-  handleAnalysisProgress (status) {
-    if (status.progress !== undefined) {
-      const message = status.message || 'Processing...';
-      const currentItem = status.current_song || '';
-      UIHelpers.updateProgress(status.progress, message, currentItem);
-    }
-  }
 
   /**
      * Analyze a single song with progress tracking
@@ -198,14 +214,14 @@ export class PlaylistAnalysis {
     console.log('🎵 Starting single song analysis:', {
       songId, songTitle, songArtist
     });
-    
+
     try {
       // Prevent double-clicks
       if (button.disabled) {
         console.log('⚠️ Button already disabled, ignoring click');
         return;
       }
-      
+
       UIHelpers.toggleButtonLoading(button, true);
       console.log('🔄 Button set to loading state');
 
@@ -219,7 +235,7 @@ export class PlaylistAnalysis {
 
       if (response.success) {
         console.log('🎯 Starting progress tracking...');
-        
+
         // Start progress tracking with real-time updates
         this.startSongProgressTracking(songId, songTitle, button);
       } else {
@@ -237,45 +253,45 @@ export class PlaylistAnalysis {
    */
   async startSongProgressTracking(songId, songTitle, button) {
     console.log('🎯 Starting song progress tracking for:', songId);
-    
+
     const startTime = Date.now();
     let attempts = 0;
     const maxAttempts = 30; // 30 attempts * 2 seconds = 1 minute max
-    
+
     const checkProgress = async () => {
       attempts++;
       console.log(`🔍 Progress check #${attempts} for song ${songId}`);
-      
+
       try {
         const status = await apiService.getSongAnalysisStatus(songId);
         console.log('📊 Progress status:', status);
-        
+
         if (status.completed) {
           console.log('✅ Analysis completed!');
-          
+
           // Update button to success state
           button.innerHTML = '✓ Analyzed';
           button.className = 'btn btn-sm btn-success';
           button.disabled = true;
-          
+
           // Update score column if results available
           if (status.result && status.result.score !== undefined) {
             this.updateSongScoreDisplay(songId, status.result);
           }
-          
+
           // Show completion notification
           UIHelpers.showAlert(`Analysis completed for "${songTitle}"!`, 'success');
-          
+
           return; // Stop polling
         }
-        
+
         if (status.failed) {
           console.log('❌ Analysis failed');
           UIHelpers.toggleButtonLoading(button, false);
           UIHelpers.showAlert(`Analysis failed for "${songTitle}": ${status.error || 'Unknown error'}`, 'error');
           return; // Stop polling
         }
-        
+
         // Continue polling if not complete and under max attempts
         if (attempts < maxAttempts) {
           console.log(`⏳ Analysis in progress, checking again in 2 seconds...`);
@@ -285,14 +301,14 @@ export class PlaylistAnalysis {
           UIHelpers.toggleButtonLoading(button, false);
           UIHelpers.showAlert(`Analysis for "${songTitle}" is taking longer than expected. Please refresh the page to check results.`, 'warning');
         }
-        
+
       } catch (error) {
         console.error('❌ Error checking progress:', error);
         UIHelpers.toggleButtonLoading(button, false);
         UIHelpers.showAlert(`Error tracking progress for "${songTitle}": ${error.message}`, 'error');
       }
     };
-    
+
     // Start checking progress after 3 seconds (give analysis time to start)
     setTimeout(checkProgress, 3000);
   }
@@ -302,7 +318,7 @@ export class PlaylistAnalysis {
    */
   updateSongScoreDisplay(songId, result) {
     console.log('🎯 Updating score display for song:', songId, result);
-    
+
     const songRow = document.querySelector(`tr[data-song-id="${songId}"]`);
     if (!songRow) {
       console.log('⚠️ Song row not found for ID:', songId);
@@ -318,15 +334,15 @@ export class PlaylistAnalysis {
     if (result.score !== undefined) {
       const score = Math.round(result.score);
       const concernLevel = result.concern_level || 'unknown';
-      
-      const badgeClass = score >= 80 ? 'bg-success' : 
+
+      const badgeClass = score >= 80 ? 'bg-success' :
                         score >= 60 ? 'bg-warning' : 'bg-danger';
-      
+
       scoreCell.innerHTML = `
         <span class="badge ${badgeClass} fs-6">${score}%</span>
         <div class="small text-muted">${concernLevel}</div>
       `;
-      
+
       console.log('✅ Score display updated:', { score, concernLevel });
     }
   }
@@ -465,7 +481,7 @@ export class PlaylistAnalysis {
       playlistId: this.playlistId,
       options: this.options
     });
-    
+
     this.bindEventListeners();
     this.initializeElements();
     console.log('✅ PlaylistAnalysis module fully initialized');
@@ -473,7 +489,7 @@ export class PlaylistAnalysis {
 
   bindEventListeners () {
     console.log('🔗 Binding event listeners for PlaylistAnalysis...');
-    
+
     // Bind playlist-level analysis button
     const analyzePlaylistBtn = document.querySelector('.analyze-playlist-btn');
     if (analyzePlaylistBtn) {
@@ -488,21 +504,21 @@ export class PlaylistAnalysis {
     // Bind individual song analysis buttons
     const analyzeSongBtns = document.querySelectorAll('.analyze-song-btn');
     console.log(`🎵 Found ${analyzeSongBtns.length} song analysis buttons`);
-    
+
     analyzeSongBtns.forEach((btn, index) => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         const songId = btn.dataset.songId;
         const songTitle = btn.dataset.songTitle;
         const songArtist = btn.dataset.songArtist;
-        
+
         console.log(`🎵 Song analysis button ${index + 1} clicked:`, {
           songId,
           songTitle,
           songArtist,
           button: btn
         });
-        
+
         this.analyzeSingleSong(songId, songTitle, songArtist, btn);
       });
       console.log(`✅ Song analysis button ${index + 1} bound (ID: ${btn.dataset.songId})`);

@@ -1,16 +1,27 @@
 services:
   web:
     build: .
-    command: gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 600 run:app
+    # Optimized for ML models: reduced workers, increased timeout and memory
+    # Disable max-requests jitter to avoid mid-batch restarts during analysis in dev
+    command: gunicorn --bind 0.0.0.0:5000 --workers 1 --timeout 1800 --worker-connections 100 run:app
     ports:
       - "5001:5000"  # Changed external port to 5001 to avoid conflict with macOS Control Center
     volumes:
       - .:/app
+      # Add model cache volume for persistent storage
+      - model_cache:/root/.cache/huggingface
     environment:
       - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES  # Required for macOS compatibility
       - FLASK_ENV=${FLASK_ENV}  # Use environment setting from .env
       - ENV=${ENV}  # Use environment setting from .env
       - DEBUG=false  # Production mode
+      # Analyzer configuration (Dev -> host Ollama; Prod -> internal vLLM)
+      - USE_LLM_ANALYZER=1
+      - LLM_API_BASE_URL=http://host.docker.internal:11434/v1
+      - LLM_MODEL=llama3.1:8b
+      - ENABLE_EMBEDDINGS=1
+      - ENABLE_RULES_RAG=1
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
       - SECRET_KEY=${SECRET_KEY}
       - SPOTIPY_CLIENT_ID=${SPOTIPY_CLIENT_ID}
       - SPOTIPY_CLIENT_SECRET=${SPOTIPY_CLIENT_SECRET}
@@ -18,10 +29,23 @@ services:
       - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
       - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
       - DATABASE_URL=${DATABASE_URL}
-      - RQ_REDIS_URL=${RQ_REDIS_URL}
       - REDIS_URL=${REDIS_URL}
       - LYRICSGENIUS_API_KEY=${LYRICSGENIUS_API_KEY}
+      # Google Analytics
+      - GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID}
+      - GA4_API_SECRET=${GA4_API_SECRET}
+      - GA4_DEBUG_MODE=${GA4_DEBUG_MODE}
+      # ML optimization settings
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+      - PYTORCH_ENABLE_MPS_FALLBACK=1
+      - OMP_NUM_THREADS=4
+      - MKL_NUM_THREADS=4
+      - TOKENIZERS_PARALLELISM=false
+      # Parallel backfill configuration
+      - BACKFILL_WORKERS=3
+      - BACKFILL_BATCH_SIZE=25
     depends_on:
+      # In dev with host Ollama, web does not depend on internal llm
       db:
         condition: service_healthy
       redis:
@@ -29,65 +53,30 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 60s    # Increased interval due to model load time
+      timeout: 30s     # Increased timeout
       retries: 3
-      start_period: 30s
+      start_period: 120s  # Longer startup for model loading
     deploy:
       resources:
         limits:
-          memory: 2G
-          cpus: '1.0'
+          memory: 8G      # INCREASED: 4x previous for ML models (was 2G)
+          cpus: '2.0'     # INCREASED: 2x previous for ML processing (was 1.0)
         reservations:
-          memory: 1G
-          cpus: '0.5'
+          memory: 4G      # INCREASED: 4x previous for ML models (was 1G)
+          cpus: '1.0'     # INCREASED: 2x previous for ML processing (was 0.5)
     networks:
       - app-network
 
-  worker:
-    build: .
-    command: bash /app/scripts/docker-entrypoint-worker.sh
-    depends_on:
-      - db
-      - redis
-    environment:
-      - FLASK_ENV=${FLASK_ENV:-development}
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-your_password}@db:5432/${POSTGRES_DB:-spotify_cleanup}
-      - REDIS_URL=redis://redis:6379/0
-      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
-      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
-      - GENIUS_ACCESS_TOKEN=${GENIUS_ACCESS_TOKEN}
-      - SECRET_KEY=${SECRET_KEY:-dev-secret-key}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - XAI_API_KEY=${XAI_API_KEY}
-      - OLLAMA_API_KEY=${OLLAMA_API_KEY}
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
-      # Performance optimizations for M1 Max with GPU support
-      - OMP_NUM_THREADS=2  # Optimize thread usage per worker
-      - MKL_NUM_THREADS=2  # Intel Math Kernel Library optimization
-      - PYTORCH_ENABLE_MPS_FALLBACK=1  # Enable Metal Performance Shaders on Apple Silicon
-      - PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0  # Optimize MPS memory usage
-    volumes:
-      - .:/app
-    networks:
-      - app-network
-    deploy:
-      replicas: 3  # 3 high-performance workers for M1 Max
-      resources:
-        limits:
-          memory: 8G  # 8GB per worker for M1 Max (3×8=24GB total)
-          cpus: '3.0'  # 3.0 cores per worker (3×3=9 cores total)
-        reservations:
-          memory: 4G  # Reserve 4G minimum per worker
-          cpus: '2.0'  # Reserve 2 cores minimum per worker
-    # Apple Silicon Metal Performance Shaders acceleration (no NVIDIA runtime needed)
+  # REMOVED: Worker containers no longer needed
+  # Queue system removed - all analysis performed directly in web container using batch processing
+  # worker:
+  #   build: .
+  #   command: bash /app/scripts/docker-entrypoint-worker.sh
+  #   depends_on:
+  #     - db
+  #     - redis
+  #   [... configuration removed ...]
 
   db:
     image: postgres:14-alpine
@@ -137,6 +126,26 @@ services:
         reservations:
           memory: 512M
           cpus: '0.25'
+    networks:
+      - app-network
+
+  llm:
+    image: vllm/vllm-openai:latest
+    command: --model meta-llama/Meta-Llama-3.1-8B-Instruct --host 0.0.0.0 --port 8000 --download-dir /data/models --gpu-memory-utilization 0.9
+    environment:
+      - HF_HUB_ENABLE_HF_TRANSFER=1
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+    volumes:
+      - model_cache:/data/models
+    expose:
+      - "8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/models"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     networks:
       - app-network
 
@@ -209,6 +218,7 @@ services:
 
 volumes:
   postgres_data:
+  model_cache:  # Persistent storage for HuggingFace model files
   redis_data:
   prometheus_data:
   grafana_data:

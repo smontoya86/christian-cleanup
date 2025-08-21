@@ -1,6 +1,6 @@
 /**
  * Smart Progress Polling Utility
- * 
+ *
  * Provides efficient polling for job progress updates with adaptive intervals,
  * error handling, and automatic cleanup.
  */
@@ -12,10 +12,10 @@ class ProgressPoller {
         this.maxInterval = options.maxInterval || 5000; // Max 5 seconds
         this.errorBackoffMultiplier = options.errorBackoffMultiplier || 2;
         this.maxErrorRetries = options.maxErrorRetries || 3;
-        
+
         // Active polling jobs
         this.activePolls = new Map();
-        
+
         // Event callbacks
         this.callbacks = {
             progress: new Map(),
@@ -68,12 +68,12 @@ class ProgressPoller {
                 clearTimeout(pollState.timeoutId);
             }
             this.activePolls.delete(jobId);
-            
+
             // Clean up callbacks
             this.callbacks.progress.delete(jobId);
             this.callbacks.complete.delete(jobId);
             this.callbacks.error.delete(jobId);
-            
+
             console.log(`⏹️ Stopped polling for job ${jobId}`);
         }
     }
@@ -112,19 +112,19 @@ class ProgressPoller {
 
         try {
             const response = await fetch(`${this.baseUrl}/progress/${pollState.jobId}`);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
-            
+
             if (data.success) {
                 const progress = data.progress;
-                
+
                 // Reset error count on successful response
                 pollState.errorCount = 0;
-                
+
                 // Call progress callback
                 const progressCallback = this.callbacks.progress.get(pollState.jobId);
                 if (progressCallback) {
@@ -150,9 +150,9 @@ class ProgressPoller {
 
         } catch (error) {
             console.warn(`⚠️ Polling error for job ${pollState.jobId}:`, error.message);
-            
+
             pollState.errorCount++;
-            
+
             // Call error callback
             const errorCallback = this.callbacks.error.get(pollState.jobId);
             if (errorCallback) {
@@ -187,7 +187,7 @@ class ProgressPoller {
      * @returns {boolean} True if job is complete
      */
     _isJobComplete(progress) {
-        return progress.progress >= 1.0 || 
+        return progress.progress >= 1.0 ||
                progress.current_step === 'complete' ||
                ['completed', 'failed', 'cancelled'].includes(progress.status);
     }
@@ -223,7 +223,7 @@ class ProgressPoller {
  */
 function pollJobProgress(jobId, options = {}) {
     const poller = new ProgressPoller(options);
-    
+
     return new Promise((resolve, reject) => {
         poller.startPolling(jobId, {
             onProgress: options.onProgress || (() => {}),
@@ -249,7 +249,7 @@ function pollJobProgress(jobId, options = {}) {
 function pollMultipleJobs(jobIds, options = {}) {
     const poller = new ProgressPoller(options);
     const results = {};
-    
+
     return new Promise((resolve, reject) => {
         let completedJobs = 0;
         let hasError = false;
@@ -265,11 +265,11 @@ function pollMultipleJobs(jobIds, options = {}) {
                 onComplete: (progress) => {
                     results[jobId] = progress;
                     completedJobs++;
-                    
+
                     if (options.onJobComplete) {
                         options.onJobComplete(jobId, progress);
                     }
-                    
+
                     if (completedJobs === jobIds.length) {
                         if (options.onAllComplete) options.onAllComplete(results);
                         resolve(results);
@@ -295,4 +295,4 @@ if (typeof module !== 'undefined' && module.exports) {
     window.ProgressPoller = ProgressPoller;
     window.pollJobProgress = pollJobProgress;
     window.pollMultipleJobs = pollMultipleJobs;
-} 
+}

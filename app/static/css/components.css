@@ -340,19 +340,19 @@ td .concern-badge {
     }
 }
 
-.notification-info { 
-    background: #17a2b8; 
+.notification-info {
+    background: #17a2b8;
 }
 
-.notification-success { 
-    background: var(--success-color); 
+.notification-success {
+    background: var(--success-color);
 }
 
-.notification-error { 
-    background: var(--danger-color); 
+.notification-error {
+    background: var(--danger-color);
 }
 
-.notification-warning { 
+.notification-warning {
     background: var(--warning-color);
     color: #212529;
 }
@@ -505,45 +505,45 @@ td .concern-badge {
         gap: 15px;
         justify-content: center;
     }
-    
+
     .stat-item {
         min-width: 100px;
     }
-    
+
     .song-progress-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
     }
-    
+
     .song-info {
         margin-right: 0;
         width: 100%;
     }
-    
+
     .song-progress-bar-container {
         width: 100%;
         margin-right: 0;
     }
-    
+
     .notification {
         top: 10px;
         right: 10px;
         left: 10px;
         max-width: none;
     }
-    
+
     .active-job-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
     }
-    
+
     .job-progress {
         width: 100%;
         justify-content: space-between;
     }
-    
+
     .progress-bar-small {
         flex: 1;
         margin-right: 10px;
@@ -621,26 +621,26 @@ td .concern-badge {
         width: 100%;
         margin-bottom: 0.5rem;
     }
-    
+
     .status-cell {
         min-width: 100%;
         text-align: left;
         padding: 0.75rem 0.5rem;
     }
-    
+
     .table-responsive {
         margin-bottom: 1rem;
     }
-    
-    .table th, 
+
+    .table th,
     .table td {
         padding: 0.75rem 0.5rem;
     }
-    
+
     #analysisResults .card {
         margin-bottom: 1rem;
     }
-    
+
     #overallScore {
         font-size: 2rem;
     }
@@ -652,63 +652,63 @@ td .concern-badge {
         background-color: var(--card-bg);
         border-color: var(--border-color);
     }
-    
+
     .card-header {
         background-color: var(--card-bg);
         border-bottom-color: var(--border-color);
     }
-    
+
     .table {
         color: var(--dark-text);
     }
-    
+
     .table-hover tbody tr:hover {
         background-color: var(--hover-bg);
     }
-    
-    .table td, 
+
+    .table td,
     .table th {
         border-color: var(--border-color);
     }
-    
+
     .text-muted {
         color: var(--muted-text) !important;
     }
-    
+
     .btn-outline-secondary {
         color: var(--muted-text);
         border-color: var(--border-color);
     }
-    
+
     .btn-outline-secondary:hover {
         background-color: var(--light-bg);
         border-color: var(--border-color);
         color: var(--dark-text);
     }
-    
+
     /* Dark mode improvements for concern badges */
     .bg-high {
         background-color: var(--concern-high) !important;
         color: #000 !important;
     }
-    
+
     .bg-medium {
         background-color: var(--concern-medium) !important;
         color: #fff !important;
     }
-    
+
     /* Improve progress bar for dark mode */
     .progress {
         background-color: var(--border-color);
     }
-    
+
     /* Alert improvements for dark mode */
     .alert-warning {
         background-color: rgba(255, 193, 7, 0.15);
         border-color: rgba(255, 193, 7, 0.3);
         color: var(--dark-text);
     }
-    
+
     .alert-success {
         background-color: rgba(25, 135, 84, 0.15);
         border-color: rgba(25, 135, 84, 0.3);
@@ -735,7 +735,7 @@ td .concern-badge {
     background-color: var(--hover-bg);
 }
 
-[data-theme="dark"] .table td, 
+[data-theme="dark"] .table td,
 [data-theme="dark"] .table th {
     border-color: var(--border-color);
 }
@@ -909,18 +909,18 @@ td .concern-badge {
     .actions-cell {
         min-width: 120px;
     }
-    
+
     .actions-cell .btn {
         font-size: 0.8rem;
         padding: 0.25rem 0.5rem;
     }
-    
+
     .actions-cell .gap-2 {
         gap: 0.5rem !important;
     }
-    
+
     .actions-cell .dropdown-menu {
         min-width: 140px;
         font-size: 0.8rem;
     }
-} 
+}

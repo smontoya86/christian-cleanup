@@ -73,7 +73,7 @@ def config_status():
     """Show configuration status for debugging (development only)"""
     if not current_app.debug:
         return redirect(url_for('main.index'))
-    
+
     # Returns JSON with configuration status and OAuth readiness
     return jsonify({
         'spotify_config': config_status,
@@ -97,11 +97,11 @@ def config_status():
     <p><a href="{{ url_for('auth.login') }}" class="btn btn-success btn-lg">
         <i class="fab fa-spotify"></i> Login with Spotify to get started
     </a></p>
-    
+
     <div class="mt-3">
         <small class="text-muted">
             <i class="fas fa-info-circle"></i>
-            You'll be redirected to Spotify to authorize this application. 
+            You'll be redirected to Spotify to authorize this application.
             We only request access to read your playlists and analyze song content.
         </small>
     </div>
@@ -160,7 +160,7 @@ SPOTIFY_CLIENT_SECRET=REQUIRED_SPOTIFY_CLIENT_SECRET_FROM_DEVELOPER_DASHBOARD
 response = client.get('/auth/login', follow_redirects=True)
 assert 'client secret not configured' in response.get_data(as_text=True).lower()
 
-# UI enhancement test  
+# UI enhancement test
 response = client.get('/')
 content = response.get_data(as_text=True)
 assert 'btn btn-success btn-lg' in content
@@ -173,7 +173,7 @@ assert 'alert alert-danger' in content
 
 ### **Test Results**
 - ✅ Configuration validation prevents OAuth with invalid secrets
-- ✅ Enhanced UI provides better user experience  
+- ✅ Enhanced UI provides better user experience
 - ✅ Error messages are specific and actionable
 - ✅ Flash message system functioning properly
 - ✅ Development tools available for testing
@@ -225,6 +225,6 @@ To complete the authentication fix, the user must:
 
 **Status**: ✅ **AUTHENTICATION SYSTEM FULLY FUNCTIONAL**
 - All critical issues resolved
-- Enhanced user experience implemented  
+- Enhanced user experience implemented
 - Development tools available
-- Ready for production with valid Spotify credentials 
+- Ready for production with valid Spotify credentials

@@ -1,4 +1,4 @@
-{# 
+{#
 Song Row Component - SIMPLIFIED
 Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
 #}
@@ -6,16 +6,18 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
 <tr class="song-row {{ 'table-info' if item.is_whitelisted else '' }}" data-song-id="{{ item.song.id }}">
     <!-- Position -->
     <td class="text-center">{{ item.position }}</td>
-    
+
     <!-- Album Art -->
     <td class="text-center">
         <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}" class="text-decoration-none">
-            <img src="{{ item.song.album_art_url or url_for('static', filename='images/default_album_art.png') }}" 
-                 alt="Album Art" class="rounded" 
+            {% set art = item.song.album_art_url %}
+            <img src="{{ art or url_for('static', filename='images/default_album_art.png') }}"
+                 alt="Album Art" class="rounded"
+                 referrerpolicy="no-referrer" loading="lazy"
                  style="width: 50px !important; height: 50px !important; object-fit: cover !important; display: block !important; margin: 0 auto !important;">
         </a>
     </td>
-    
+
     <!-- Song Title & Artist -->
     <td>
         <div class="d-flex flex-column">
@@ -25,10 +27,10 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
             <span class="text-muted small song-artist">{{ item.song.artist }}</span>
         </div>
     </td>
-    
+
     <!-- Album -->
     <td>{{ item.song.album or 'Unknown Album' }}</td>
-    
+
     <!-- Analysis Score -->
     <td class="score-cell">
         {% if item.analysis and item.analysis.score is not none %}
@@ -40,7 +42,7 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
             <span class="text-muted">Not Analyzed</span>
         {% endif %}
     </td>
-    
+
     <!-- Actions -->
     <td class="actions-cell">
         {% if item.is_whitelisted %}
@@ -50,7 +52,7 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                     <i class="fas fa-check"></i> Whitelisted
                 </span>
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
                             data-bs-toggle="dropdown" aria-expanded="false" title="More actions">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
@@ -63,7 +65,7 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="post" action="{{ url_for('main.remove_whitelist', song_id=item.song.id) }}" class="d-inline w-100">
-                                <button type="submit" class="dropdown-item text-danger" 
+                                <button type="submit" class="dropdown-item text-danger"
                                         onclick="return confirm('Remove this song from whitelist?')">
                                     Remove from Whitelist
                                 </button>
@@ -71,10 +73,8 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                         </li>
                         <li>
                             <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
-                                <button type="submit" class="dropdown-item text-danger" 
-                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">
-                                    <i class="fas fa-trash me-2"></i>Remove from Playlist
-                                </button>
+                                <button type="submit" class="dropdown-item text-danger fas fa-trash"
+                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">Remove from Playlist</button>
                             </form>
                         </li>
                     </ul>
@@ -85,23 +85,23 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
             <div class="d-flex align-items-center gap-2">
                 {% if item.analysis.concern_level|lower in ['high', 'extreme'] %}
                     <!-- High Concern: Review Primary -->
-                    <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}" 
+                    <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}"
                        class="btn btn-sm btn-warning fw-bold">
                         Review
                     </a>
                 {% else %}
                     <!-- Low/Medium Concern: Whitelist Primary -->
                     <form method="post" action="{{ url_for('main.whitelist_song', song_id=item.song.id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-success fw-bold" 
+                        <button type="submit" class="btn btn-sm btn-success fw-bold"
                                 title="Add to Whitelist">
                             Whitelist
                         </button>
                     </form>
                 {% endif %}
-                
+
                 <!-- Overflow Menu for Secondary Actions -->
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
                             data-bs-toggle="dropdown" aria-expanded="false" title="More actions">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
@@ -112,7 +112,7 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                             </a>
                         </li>
                         <li>
-                            <button type="button" class="dropdown-item analyze-song-btn" 
+                            <button type="button" class="dropdown-item analyze-song-btn"
                                     data-song-id="{{ item.song.id }}"
                                     data-song-title="{{ item.song.title }}"
                                     data-song-artist="{{ item.song.artist }}">
@@ -132,10 +132,8 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
-                                <button type="submit" class="dropdown-item text-danger" 
-                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">
-                                    <i class="fas fa-trash me-2"></i>Remove from Playlist
-                                </button>
+                                <button type="submit" class="dropdown-item text-danger fas fa-trash"
+                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">Remove from Playlist</button>
                             </form>
                         </li>
                     </ul>
@@ -144,17 +142,17 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
         {% else %}
             <!-- Unanalyzed State: Primary Action + Menu -->
             <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-sm btn-primary fw-bold analyze-song-btn" 
+                <button type="button" class="btn btn-sm btn-primary fw-bold analyze-song-btn"
                         data-song-id="{{ item.song.id }}"
                         data-song-title="{{ item.song.title }}"
                         data-song-artist="{{ item.song.artist }}"
                         title="Analyze Song Content">
                     Analyze
                 </button>
-                
+
                 <!-- Overflow Menu -->
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
                             data-bs-toggle="dropdown" aria-expanded="false" title="More actions">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
@@ -167,10 +165,8 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
-                                <button type="submit" class="dropdown-item text-danger" 
-                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">
-                                    <i class="fas fa-trash me-2"></i>Remove from Playlist
-                                </button>
+                                <button type="submit" class="dropdown-item text-danger fas fa-trash"
+                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">Remove from Playlist</button>
                             </form>
                         </li>
                     </ul>
@@ -178,4 +174,4 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
             </div>
         {% endif %}
     </td>
-</tr> 
+</tr>

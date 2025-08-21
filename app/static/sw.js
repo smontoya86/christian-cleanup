@@ -44,7 +44,7 @@ const CACHE_BYPASS = [
  */
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
-  
+
   event.waitUntil(
     Promise.all([
       // Cache static assets
@@ -69,15 +69,15 @@ self.addEventListener('install', (event) => {
  */
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...');
-  
+
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => {
             // Remove old cache versions
-            return cacheName.startsWith('christian-music-curator') && 
-                   cacheName !== CACHE_NAME && 
+            return cacheName.startsWith('christian-music-curator') &&
+                   cacheName !== CACHE_NAME &&
                    cacheName !== API_CACHE_NAME;
           })
           .map((cacheName) => {
@@ -99,17 +99,17 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   // Skip non-GET requests
   if (request.method !== 'GET') {
     return;
   }
-  
+
   // Skip cache bypass URLs
   if (shouldBypassCache(request.url)) {
     return;
   }
-  
+
   // Handle different types of requests
   if (isStaticAsset(request.url)) {
     event.respondWith(handleStaticAsset(request));
@@ -128,20 +128,20 @@ async function handleStaticAsset(request) {
   try {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request);
-    
+
     if (cached) {
       console.log('[SW] Serving static asset from cache:', request.url);
       return cached;
     }
-    
+
     console.log('[SW] Fetching static asset:', request.url);
     const response = await fetch(request);
-    
+
     // Cache successful responses
     if (response.ok) {
       cache.put(request, response.clone());
     }
-    
+
     return response;
   } catch (error) {
     console.error('[SW] Static asset fetch failed:', error);
@@ -158,22 +158,22 @@ async function handleAPIRequest(request) {
     // Try network first
     console.log('[SW] Fetching API request:', request.url);
     const response = await fetch(request, { timeout: 5000 });
-    
+
     if (response.ok) {
       // Cache successful API responses
       const cache = await caches.open(API_CACHE_NAME);
       cache.put(request, response.clone());
       console.log('[SW] Cached API response:', request.url);
     }
-    
+
     return response;
   } catch (error) {
     console.log('[SW] Network failed, trying cache for:', request.url);
-    
+
     // Fallback to cache
     const cache = await caches.open(API_CACHE_NAME);
     const cached = await cache.match(request);
-    
+
     if (cached) {
       console.log('[SW] Serving API response from cache:', request.url);
       // Add a header to indicate this is cached
@@ -181,7 +181,7 @@ async function handleAPIRequest(request) {
       response.headers.set('X-Served-By', 'ServiceWorker');
       return response;
     }
-    
+
     // Return offline response for API requests
     return new Response(
       JSON.stringify({
@@ -204,25 +204,25 @@ async function handlePageRequest(request) {
   try {
     console.log('[SW] Fetching page:', request.url);
     const response = await fetch(request);
-    
+
     if (response.ok) {
       // Cache successful page responses
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, response.clone());
     }
-    
+
     return response;
   } catch (error) {
     console.log('[SW] Network failed, trying cache for page:', request.url);
-    
+
     // Try cache
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request);
-    
+
     if (cached) {
       return cached;
     }
-    
+
     // Fallback to offline page
     return getOfflinePage();
   }
@@ -262,7 +262,7 @@ function isAPIRequest(url) {
  * Check if request is a page request
  */
 function isPageRequest(request) {
-  return request.headers.get('Accept') && 
+  return request.headers.get('Accept') &&
          request.headers.get('Accept').includes('text/html');
 }
 
@@ -329,7 +329,7 @@ function getOfflinePage() {
     </body>
     </html>
   `;
-  
+
   return new Response(offlineHTML, {
     headers: { 'Content-Type': 'text/html' }
   });
@@ -352,7 +352,7 @@ async function doBackgroundSync() {
   try {
     // Get pending actions from IndexedDB or localStorage
     const pendingActions = await getPendingActions();
-    
+
     for (const action of pendingActions) {
       try {
         await processPendingAction(action);
@@ -395,7 +395,7 @@ async function removePendingAction(actionId) {
  */
 self.addEventListener('push', (event) => {
   if (!event.data) return;
-  
+
   const data = event.data.json();
   const options = {
     body: data.body || 'New update available',
@@ -415,7 +415,7 @@ self.addEventListener('push', (event) => {
       }
     ]
   };
-  
+
   event.waitUntil(
     self.registration.showNotification(data.title || 'Christian Music Curator', options)
   );
@@ -426,7 +426,7 @@ self.addEventListener('push', (event) => {
  */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
+
   if (event.action === 'open' || !event.action) {
     const url = event.notification.data || '/';
     event.waitUntil(
@@ -456,4 +456,4 @@ async function syncPlaylistsInBackground() {
   }
 }
 
-console.log('[SW] Service worker script loaded'); 
+console.log('[SW] Service worker script loaded');

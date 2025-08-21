@@ -14,7 +14,7 @@ This directory contains regression tests for the Christian Music Curator applica
 - **Focus**: Graceful handling of rate limits from external APIs
 - **Key Scenarios**: Spotify and Genius API rate limits, concurrent request handling, provider fallback
 
-### `test_sqlalchemy_issues.py`  
+### `test_sqlalchemy_issues.py`
 - **Purpose**: Tests database session management and SQLAlchemy functionality
 - **Focus**: Proper session lifecycle, model relationships, transaction safety
 - **Key Scenarios**: Session management, relationship integrity, concurrent access, rollback behavior
@@ -58,4 +58,4 @@ When adding new regression tests:
 - `@pytest.mark.database`: Database/SQLAlchemy related tests
 - `@pytest.mark.api`: External API related tests
 
-These tests help ensure the system maintains its reliability and graceful error handling as it evolves. 
+These tests help ensure the system maintains its reliability and graceful error handling as it evolves.

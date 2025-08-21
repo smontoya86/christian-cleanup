@@ -1,4 +1,4 @@
-{# 
+{#
 Page Header Component
 
 Parameters:
@@ -14,7 +14,7 @@ Parameters:
         {% if subtitle %}
         <p class="text-muted mb-2">{{ subtitle }}</p>
         {% endif %}
-        
+
         {% if meta_info %}
         <div class="d-flex flex-wrap gap-3 text-muted small">
             {% for item in meta_info %}
@@ -26,12 +26,12 @@ Parameters:
         </div>
         {% endif %}
     </div>
-    
+
     {% if actions %}
     <div class="d-flex gap-2">
         {% for action in actions %}
         {% if action.href %}
-        <a href="{{ action.href }}" 
+        <a href="{{ action.href }}"
            class="btn {{ action.class or 'btn-outline-primary' }}"
            {% if action.target %}target="{{ action.target }}"{% endif %}
            {% if action.title %}title="{{ action.title }}"{% endif %}
@@ -41,7 +41,7 @@ Parameters:
         </a>
         {% elif action.form_action %}
         <form action="{{ action.form_action }}" method="{{ action.method or 'POST' }}" class="d-inline">
-            <button type="submit" 
+            <button type="submit"
                     class="btn {{ action.class or 'btn-outline-primary' }}"
                     {% if action.disabled %}disabled{% endif %}
                     {% if action.id %}id="{{ action.id }}"{% endif %}
@@ -62,4 +62,4 @@ Parameters:
         {% endfor %}
     </div>
     {% endif %}
-</div> 
+</div>

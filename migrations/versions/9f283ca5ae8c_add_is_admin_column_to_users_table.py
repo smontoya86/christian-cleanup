@@ -21,10 +21,10 @@ def upgrade():
     # First, add the column as nullable
     with op.batch_alter_table('users', schema=None) as batch_op:
         batch_op.add_column(sa.Column('is_admin', sa.Boolean(), nullable=True))
-    
+
     # Set default value for existing rows
     op.execute('UPDATE users SET is_admin = FALSE')
-    
+
     # Then alter the column to be non-nullable
     with op.batch_alter_table('users', schema=None) as batch_op:
         batch_op.alter_column('is_admin', existing_type=sa.Boolean(), nullable=False)

@@ -1,0 +1,133 @@
+---
+# Docker Compose configuration optimized for sustained ML model operation
+# This configuration accounts for heavy transformer models with proper resource allocation
+
+services:
+  web:
+    build: .
+    # Reduced workers to manage memory, increased timeout for ML processing
+    command: gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 1200 --worker-connections 100 --max-requests 50 --max-requests-jitter 10 --preload run:app
+    ports:
+      - "5001:5000"
+    volumes:
+      - .:/app
+      # Add model cache volume for persistent storage
+      - model_cache:/root/.cache/huggingface
+    environment:
+      - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+      - FLASK_ENV=${FLASK_ENV}
+      - ENV=${ENV}
+      - DEBUG=false
+      - USE_LLM_ANALYZER=1
+      - LLM_API_BASE_URL=http://host.docker.internal:8080/v1
+      - LLM_MODEL=mlx-community/Meta-Llama-3.1-8B-Instruct-4bit
+      - SECRET_KEY=${SECRET_KEY}
+      - SPOTIPY_CLIENT_ID=${SPOTIPY_CLIENT_ID}
+      - SPOTIPY_CLIENT_SECRET=${SPOTIPY_CLIENT_SECRET}
+      - SPOTIPY_REDIRECT_URI=${SPOTIPY_REDIRECT_URI}
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - LYRICSGENIUS_API_KEY=${LYRICSGENIUS_API_KEY}
+      # ML optimization settings
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+      - PYTORCH_ENABLE_MPS_FALLBACK=1
+      - OMP_NUM_THREADS=4
+      - MKL_NUM_THREADS=4
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 60s    # Increased interval due to model load time
+      timeout: 30s     # Increased timeout
+      retries: 3
+      start_period: 120s  # Longer startup for model loading
+    deploy:
+      resources:
+        limits:
+          memory: 8G      # 🔥 INCREASED: 4x previous (was 2G)
+          cpus: '2.0'     # 🔥 INCREASED: 2x previous (was 1.0)
+        reservations:
+          memory: 4G      # 🔥 INCREASED: 4x previous (was 1G)
+          cpus: '1.0'     # 🔥 INCREASED: 2x previous (was 0.5)
+    networks:
+      - app-network
+
+  # Remove worker service for now - models run in web service
+  # worker:
+  #   # Commented out to reduce resource usage since analysis happens in web service
+
+  db:
+    image: postgres:14-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  model_cache:  # 🔥 NEW: Persistent storage for model files
+
+networks:
+  app-network:
+    driver: bridge
+
+# 🔥 PRODUCTION VARIANT: Even more resources for production
+---
+x-production-web-resources: &production-web-resources
+  deploy:
+    resources:
+      limits:
+        memory: 12G     # Production: Even higher memory
+        cpus: '4.0'     # Production: More CPUs
+      reservations:
+        memory: 6G
+        cpus: '2.0'
+    restart_policy:
+      condition: on-failure
+      delay: 10s
+      max_attempts: 3
+      window: 120s

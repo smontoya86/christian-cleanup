@@ -21,4 +21,4 @@ flask db upgrade
 
 # Start the application
 echo "Starting application..."
-exec "$@" 
+exec "$@"

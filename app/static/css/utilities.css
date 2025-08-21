@@ -2,12 +2,12 @@
 
 /* Loading Animations */
 @keyframes loading {
-    0% { 
-        background-position: 200% 0; 
+    0% {
+        background-position: 200% 0;
     }
 
-    100% { 
-        background-position: -200% 0; 
+    100% {
+        background-position: -200% 0;
     }
 }
 
@@ -246,18 +246,18 @@
         flex-direction: column;
         text-align: center;
     }
-    
+
     .skeleton-summary-stats {
         margin-left: 0;
         margin-top: 20px;
         width: 100%;
     }
-    
+
     .skeleton-analysis-card {
         flex-direction: column;
         text-align: center;
     }
-    
+
     .skeleton-score {
         width: 40px;
         height: 40px;
@@ -275,14 +275,14 @@
         background-size: 200% 100%;
         animation: loading 1.5s infinite;
     }
-    
+
     .skeleton-card,
     .skeleton-analysis-card,
     .skeleton-playlist-summary {
         background: var(--card-bg);
         box-shadow: var(--box-shadow);
     }
-    
+
     .error-container {
         background-color: #4a1d1d;
         color: #ff6b6b;
@@ -300,15 +300,15 @@
         animation: none;
         opacity: 0.6;
     }
-    
+
     .analyzing {
         animation: none;
     }
-    
+
     .card,
     .btn,
     .concern-badge,
     .playlist-cover-img-detail {
         transition: none;
     }
-} 
+}

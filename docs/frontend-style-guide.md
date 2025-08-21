@@ -34,11 +34,11 @@ app/static/css/
   ```css
   /* Block */
   .analysis-progress {}
-  
+
   /* Element */
   .analysis-progress__bar {}
   .analysis-progress__text {}
-  
+
   /* Modifier */
   .analysis-progress--complete {}
   .analysis-progress__bar--danger {}
@@ -185,16 +185,16 @@ Always include proper ARIA attributes and alt text:
 
 ```html
 <!-- ✅ Good -->
-<button 
-  class="btn btn-primary" 
+<button
+  class="btn btn-primary"
   aria-label="Analyze playlist {{ playlist.name }}"
   data-playlist-id="{{ playlist.id }}">
   <i class="fas fa-chart-line" aria-hidden="true"></i>
   Analyze
 </button>
 
-<img 
-  src="{{ playlist.image_url }}" 
+<img
+  src="{{ playlist.image_url }}"
   alt="Cover art for {{ playlist.name }} playlist"
   loading="lazy">
 ```
@@ -366,4 +366,4 @@ Following these guidelines ensures:
 4. **Accessibility**: Inclusive design for all users
 5. **Quality**: Reliable, tested, and production-ready code
 
-For questions or suggestions about these guidelines, please refer to the project documentation or create an issue in the repository. 
+For questions or suggestions about these guidelines, please refer to the project documentation or create an issue in the repository.

@@ -1,7 +1,7 @@
 <!-- Lazy Loading Demo Template -->
 <div class="lazy-loading-demo">
   <h3>Lazy Loading Analysis Results Demo</h3>
-  
+
   <!-- Loading Template -->
   <template id="analysis-loading-template">
     <div class="skeleton-card">
@@ -10,7 +10,7 @@
       <div class="skeleton-row medium"></div>
     </div>
   </template>
-  
+
   <!-- Error Template -->
   <template id="analysis-error-template">
     <div class="error-card">
@@ -18,11 +18,11 @@
       <button onclick="retryLoad(this)" class="retry-btn">Retry</button>
     </div>
   </template>
-  
+
   <!-- Lazy loaded content containers -->
   <div class="analysis-results">
     {% for playlist in playlists %}
-    <div 
+    <div
       data-lazy-url="/api/analysis/playlist/{{ playlist.spotify_id }}"
       data-loading-template="analysis-loading-template"
       data-error-template="analysis-error-template"
@@ -31,9 +31,9 @@
       <!-- Content will be loaded here -->
     </div>
     {% endfor %}
-    
+
     {% for song in songs %}
-    <div 
+    <div
       data-lazy-url="/api/analysis/song/{{ song.id }}"
       data-loading-template="analysis-loading-template"
       data-error-template="analysis-error-template"
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
     retryLimit: 3,
     retryDelay: 2000
   });
-  
+
   // Observe all lazy load containers
   const containers = document.querySelectorAll('.lazy-load-container');
   containers.forEach(container => {
@@ -70,7 +70,7 @@ function retryLoad(button) {
     const url = container.dataset.lazyUrl;
     const loadingTemplate = container.dataset.loadingTemplate;
     const errorTemplate = container.dataset.errorTemplate;
-    
+
     // Create new lazy loader instance for retry
     const retryLoader = new LazyLoader();
     retryLoader.loadContent(container, url, loadingTemplate, errorTemplate, 0);
@@ -118,4 +118,4 @@ function retryLoad(button) {
 .retry-btn:hover {
   background: #1565c0;
 }
-</style> 
+</style>

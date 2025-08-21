@@ -72,7 +72,7 @@ else:
 
 ### 🎯 Provider Advantages
 - **LRCLib**: Time-synced lyrics, no rate limits, free
-- **Lyrics.ovh**: Simple, reliable, free  
+- **Lyrics.ovh**: Simple, reliable, free
 - **Genius**: Comprehensive database, detailed metadata
 
 ### ⚙️ Smart Configuration
@@ -117,4 +117,4 @@ services:
 
 The Genius API integration is **already complete and production-ready**. Simply add your token to enable the Genius provider as a tertiary fallback source. The system will work excellently even without it thanks to the robust multi-provider architecture.
 
-**Status**: ✅ **COMPLETE** - No additional development needed! 
+**Status**: ✅ **COMPLETE** - No additional development needed!

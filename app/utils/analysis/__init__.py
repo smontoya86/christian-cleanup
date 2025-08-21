@@ -7,8 +7,6 @@ The main analysis is handled by SimplifiedChristianAnalysisService in the servic
 
 from .analysis_result import AnalysisResult
 
-__all__ = [
-    'AnalysisResult'
-]
+__all__ = ["AnalysisResult"]
 
-__version__ = '2.0.0' 
+__version__ = "2.0.0"

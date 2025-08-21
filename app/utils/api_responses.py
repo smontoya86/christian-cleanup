@@ -6,12 +6,13 @@ especially for error conditions, with proper HTTP status codes, error IDs,
 and structured response formats.
 """
 
-import uuid
-import traceback
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional, Union, List
-from flask import jsonify, current_app, request, g
 import logging
+import traceback
+import uuid
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Union
+
+from flask import current_app, g, jsonify
 
 logger = logging.getLogger(__name__)
 
@@ -20,17 +21,17 @@ def success_response(
     data: Any = None,
     message: str = "Success",
     status_code: int = 200,
-    meta: Optional[Dict[str, Any]] = None
+    meta: Optional[Dict[str, Any]] = None,
 ) -> tuple:
     """
     Generate a standardized success response.
-    
+
     Args:
         data: Response data
         message: Success message
         status_code: HTTP status code
         meta: Optional metadata
-        
+
     Returns:
         Tuple of (response, status_code)
     """
@@ -38,12 +39,12 @@ def success_response(
         "status": "success",
         "data": data,
         "message": message,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    
+
     if meta:
         response["meta"] = meta
-        
+
     return jsonify(response), status_code
 
 
@@ -54,11 +55,11 @@ def error_response(
     details: Any = None,
     error_id: str = None,
     request_id: str = None,
-    force_include_details: bool = False
+    force_include_details: bool = False,
 ) -> tuple:
     """
     Generate a standardized error response.
-    
+
     Args:
         status_code: HTTP status code
         message: User-friendly error message
@@ -67,24 +68,24 @@ def error_response(
         error_id: Unique identifier for the error
         request_id: Request identifier for tracing
         force_include_details: Force inclusion of details regardless of config
-        
+
     Returns:
         Tuple of (response, status_code)
     """
     if error_id is None:
         error_id = str(uuid.uuid4())
-    
+
     if request_id is None:
         try:
             request_id = getattr(g, "request_id", None)
         except RuntimeError:
             # No application context
             request_id = None
-    
+
     # Always provide a request_id for consistency
     if request_id is None:
         request_id = str(uuid.uuid4())
-    
+
     # Build error response
     response = {
         "status": "error",
@@ -96,10 +97,10 @@ def error_response(
             "message": message,
             "id": error_id,
             "request_id": request_id,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        },
     }
-    
+
     # Include details based on context and environment
     include_details = True  # Default to including details
     if not force_include_details:
@@ -107,148 +108,117 @@ def error_response(
             # In testing, we usually want details for assertions
             # Only exclude details if explicitly in production mode simulation
             is_production_simulation = (
-                current_app.config.get("DEBUG") is False and 
-                current_app.config.get("TESTING") is False
+                current_app.config.get("DEBUG") is False
+                and current_app.config.get("TESTING") is False
             )
-            
+
             if is_production_simulation:
                 include_details = False
-                
+
         except RuntimeError:
             # No application context, include details for safety (likely in testing)
             include_details = True
-    
+
     if details is not None and include_details:
         response["error"]["details"] = details
-    
+
     return jsonify(response), status_code
 
 
 def validation_error(
     errors: Union[str, Dict[str, Any], List[str]],
     message: str = "Validation error",
-    field: str = None
+    field: str = None,
 ) -> tuple:
     """
     Helper for validation errors with field-specific details.
-    
+
     Args:
         errors: Validation error details
         message: Error message
         field: Specific field that failed validation
-        
+
     Returns:
         Tuple of (response, status_code)
     """
     details = {"validation_errors": errors}
     if field:
         details["field"] = field
-        
-    return error_response(
-        400,
-        message,
-        "ValidationError",
-        details
-    )
+
+    return error_response(400, message, "ValidationError", details)
 
 
-def not_found_error(
-    resource_type: str,
-    resource_id: Union[str, int],
-    message: str = None
-) -> tuple:
+def not_found_error(resource_type: str, resource_id: Union[str, int], message: str = None) -> tuple:
     """
     Helper for resource not found errors.
-    
+
     Args:
         resource_type: Type of resource (e.g., 'Playlist', 'Song')
         resource_id: ID of the resource that wasn't found
         message: Custom error message
-        
+
     Returns:
         Tuple of (response, status_code)
     """
     if message is None:
         message = f"{resource_type} with ID '{resource_id}' not found"
-        
-    details = {
-        "resource_type": resource_type,
-        "resource_id": str(resource_id)
-    }
-    
-    return error_response(
-        404,
-        message,
-        "ResourceNotFound",
-        details
-    )
+
+    details = {"resource_type": resource_type, "resource_id": str(resource_id)}
+
+    return error_response(404, message, "ResourceNotFound", details)
 
 
 def unauthorized_error(
-    message: str = "Authentication required",
-    auth_type: str = "bearer"
+    message: str = "Authentication required", auth_type: str = "bearer"
 ) -> tuple:
     """
     Helper for authentication errors.
-    
+
     Args:
         message: Error message
         auth_type: Type of authentication required
-        
+
     Returns:
         Tuple of (response, status_code)
     """
     details = {"auth_type": auth_type}
-    
-    return error_response(
-        401,
-        message,
-        "AuthenticationError",
-        details
-    )
+
+    return error_response(401, message, "AuthenticationError", details)
 
 
-def forbidden_error(
-    message: str = "Access denied",
-    required_permission: str = None
-) -> tuple:
+def forbidden_error(message: str = "Access denied", required_permission: str = None) -> tuple:
     """
     Helper for authorization errors.
-    
+
     Args:
         message: Error message
         required_permission: Permission required for access
-        
+
     Returns:
         Tuple of (response, status_code)
     """
     details = None
     if required_permission:
         details = {"required_permission": required_permission}
-        
-    return error_response(
-        403,
-        message,
-        "AuthorizationError",
-        details
-    )
+
+    return error_response(403, message, "AuthorizationError", details)
 
 
 def rate_limit_error(
     message: str = "Rate limit exceeded",
     retry_after: int = None,
     limit: int = None,
-    remaining: int = None
+    remaining: int = None,
 ) -> tuple:
     """
     Helper for rate limiting errors.
-    
+
     Args:
         message: Error message
         retry_after: Seconds to wait before retrying
         limit: Rate limit threshold
         remaining: Remaining requests in current window
-        
+
     Returns:
         Tuple of (response, status_code)
     """
@@ -259,165 +229,144 @@ def rate_limit_error(
         details["limit"] = limit
     if remaining is not None:
         details["remaining"] = remaining
-    
-    # Only pass details if there are actual details to include    
+
+    # Only pass details if there are actual details to include
     details_to_pass = details if details else None
-        
-    return error_response(
-        429,
-        message,
-        "RateLimitError",
-        details_to_pass
-    )
+
+    return error_response(429, message, "RateLimitError", details_to_pass)
 
 
 def server_error(
     exception: Exception,
     message: str = "An unexpected error occurred",
-    include_traceback: bool = None
+    include_traceback: bool = None,
 ) -> tuple:
     """
     Helper for server errors with automatic logging.
-    
+
     Args:
         exception: The exception that caused the error
         message: User-friendly error message
         include_traceback: Whether to include traceback in response
-        
+
     Returns:
         Tuple of (response, status_code)
     """
     error_id = str(uuid.uuid4())
-    
+
     # Log the error with full details
     logger.error(
         f"Server error {error_id}: {str(exception)}",
         extra={
-            'error_id': error_id,
-            'exception_type': type(exception).__name__,
-            'exception_message': str(exception),
-            'traceback': traceback.format_exc()
+            "error_id": error_id,
+            "exception_type": type(exception).__name__,
+            "exception_message": str(exception),
+            "traceback": traceback.format_exc(),
         },
-        exc_info=True
+        exc_info=True,
     )
-    
+
     # Prepare details for response
     details = None
     try:
         debug_mode = current_app.config.get("DEBUG", False)
         testing_mode = current_app.config.get("TESTING", False)
-        
+
         if include_traceback is None:
             include_traceback = debug_mode or testing_mode
-            
+
         if include_traceback:
             details = {
                 "exception_type": type(exception).__name__,
                 "exception_message": str(exception),
-                "traceback": traceback.format_exc().split('\n')
+                "traceback": traceback.format_exc().split("\n"),
             }
     except RuntimeError:
         # No application context
         if include_traceback:
             details = {
                 "exception_type": type(exception).__name__,
-                "exception_message": str(exception)
+                "exception_message": str(exception),
             }
-    
-    return error_response(
-        500,
-        message,
-        "ServerError",
-        details,
-        error_id
-    )
+
+    return error_response(500, message, "ServerError", details, error_id)
 
 
 def external_service_error(
     service_name: str,
     error_details: str = None,
     status_code: int = 502,
-    retry_possible: bool = True
+    retry_possible: bool = True,
 ) -> tuple:
     """
     Helper for external service errors.
-    
+
     Args:
         service_name: Name of the external service
         error_details: Details about the error
         status_code: HTTP status code
         retry_possible: Whether retrying the request might succeed
-        
+
     Returns:
         Tuple of (response, status_code)
     """
     message = f"Error communicating with {service_name}"
     if not retry_possible:
         message += " (retry not recommended)"
-        
-    details = {
-        "service_name": service_name,
-        "retry_possible": retry_possible
-    }
-    
+
+    details = {"service_name": service_name, "retry_possible": retry_possible}
+
     if error_details:
         details["error_details"] = error_details
-        
+
     return error_response(
         status_code,
         message,
         "ExternalServiceError",
         details,
-        force_include_details=True  # Always include details for external service errors
+        force_include_details=True,  # Always include details for external service errors
     )
 
 
-def timeout_error(
-    operation: str,
-    timeout_duration: float,
-    message: str = None
-) -> tuple:
+def timeout_error(operation: str, timeout_duration: float, message: str = None) -> tuple:
     """
     Helper for timeout errors.
-    
+
     Args:
         operation: Description of the operation that timed out
         timeout_duration: Timeout duration in seconds
         message: Custom error message
-        
+
     Returns:
         Tuple of (response, status_code)
     """
     if message is None:
         message = f"Operation '{operation}' timed out after {timeout_duration}s"
-        
-    details = {
-        "operation": operation,
-        "timeout_duration": timeout_duration
-    }
-    
+
+    details = {"operation": operation, "timeout_duration": timeout_duration}
+
     return error_response(
         408,
         message,
         "TimeoutError",
         details,
-        force_include_details=True  # Always include details for timeout errors
+        force_include_details=True,  # Always include details for timeout errors
     )
 
 
 def conflict_error(
     message: str = "Resource conflict",
     conflicting_resource: str = None,
-    conflict_reason: str = None
+    conflict_reason: str = None,
 ) -> tuple:
     """
     Helper for resource conflict errors.
-    
+
     Args:
         message: Error message
         conflicting_resource: Description of conflicting resource
         conflict_reason: Reason for the conflict
-        
+
     Returns:
         Tuple of (response, status_code)
     """
@@ -426,22 +375,19 @@ def conflict_error(
         details["conflicting_resource"] = conflicting_resource
     if conflict_reason:
         details["conflict_reason"] = conflict_reason
-    
-    # Only pass details if there are actual details to include    
+
+    # Only pass details if there are actual details to include
     details_to_pass = details if details else None
     # Force include details for conflict errors when they exist
     force_include = bool(details)
-        
+
     return error_response(
-        409,
-        message,
-        "ConflictError",
-        details_to_pass,
-        force_include_details=force_include
+        409, message, "ConflictError", details_to_pass, force_include_details=force_include
     )
 
 
 # UI Formatting Utilities for Enhanced Analysis Status Indicators
+
 
 def create_success_response(data: Any = None, message: str = "Success") -> Dict[str, Any]:
     """Create a standardized success response for internal use."""
@@ -449,7 +395,7 @@ def create_success_response(data: Any = None, message: str = "Success") -> Dict[
         "success": True,
         "message": message,
         "data": data,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -459,15 +405,12 @@ def create_error_response(message: str, status_code: int = 400) -> Dict[str, Any
         "success": False,
         "message": message,
         "status_code": status_code,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
 def create_paginated_response(
-    items: List[Any], 
-    page: int, 
-    per_page: int, 
-    total: int
+    items: List[Any], page: int, per_page: int, total: int
 ) -> Dict[str, Any]:
     """Create a paginated response with metadata."""
     return {
@@ -477,18 +420,18 @@ def create_paginated_response(
             "page": page,
             "per_page": per_page,
             "total": total,
-            "pages": (total + per_page - 1) // per_page  # Ceiling division
-        }
+            "pages": (total + per_page - 1) // per_page,  # Ceiling division
+        },
     }
 
 
 def format_analysis_status(analysis) -> Dict[str, Any]:
     """
     Format analysis status for UI display with enhanced indicators.
-    
+
     Args:
         analysis: AnalysisResult object or None
-        
+
     Returns:
         Dict with formatted status information
     """
@@ -496,47 +439,40 @@ def format_analysis_status(analysis) -> Dict[str, Any]:
         return {
             "status": "not_analyzed",
             "display": "⚪ Not analyzed",
-            "badge_class": "badge-secondary"
+            "badge_class": "badge-secondary",
         }
-    
+
     status_map = {
         "completed": {
-            "display": f"✅ Completed (Score: {analysis.score})" if analysis.score else "✅ Completed",
-            "badge_class": "badge-success"
+            "display": f"✅ Completed (Score: {analysis.score})"
+            if analysis.score
+            else "✅ Completed",
+            "badge_class": "badge-success",
         },
-        "pending": {
-            "display": "⏳ Analysis pending...",
-            "badge_class": "badge-warning"
-        },
-        "processing": {
-            "display": "🔄 Processing...",
-            "badge_class": "badge-info"
-        },
-        "failed": {
-            "display": "❌ Analysis failed",
-            "badge_class": "badge-danger"
-        }
+        "pending": {"display": "⏳ Analysis pending...", "badge_class": "badge-warning"},
+        "processing": {"display": "🔄 Processing...", "badge_class": "badge-info"},
+        "failed": {"display": "❌ Analysis failed", "badge_class": "badge-danger"},
     }
-    
-    status_info = status_map.get(analysis.status, {
-        "display": f"❓ {analysis.status.title()}",
-        "badge_class": "badge-secondary"
-    })
-    
+
+    status_info = status_map.get(
+        analysis.status,
+        {"display": f"❓ {analysis.status.title()}", "badge_class": "badge-secondary"},
+    )
+
     return {
         "status": analysis.status,
         "display": status_info["display"],
-        "badge_class": status_info["badge_class"]
+        "badge_class": status_info["badge_class"],
     }
 
 
 def format_song_for_ui(song) -> Dict[str, Any]:
     """
     Format song data for UI display with enhanced analysis status indicators.
-    
+
     Args:
         song: Song model instance
-        
+
     Returns:
         Dict with formatted song data including analysis status
     """
@@ -544,7 +480,7 @@ def format_song_for_ui(song) -> Dict[str, Any]:
     latest_analysis = None
     if song.analysis_results:
         latest_analysis = max(song.analysis_results, key=lambda a: a.created_at)
-    
+
     # Format basic song information
     song_data = {
         "id": song.id,
@@ -553,37 +489,43 @@ def format_song_for_ui(song) -> Dict[str, Any]:
         "album": song.album,
         "duration_ms": song.duration_ms,
         "explicit": song.explicit,
-        "spotify_id": song.spotify_id
+        "spotify_id": song.spotify_id,
     }
-    
+
     # Add analysis status information
     if latest_analysis:
-        song_data.update({
-            "analysis_status": latest_analysis.status,
-            "analysis_score": latest_analysis.score,
-            "concern_level": latest_analysis.concern_level,
-            "analysis_date": latest_analysis.created_at.isoformat() if latest_analysis.created_at else None,
-            "can_reanalyze": latest_analysis.status in ['completed', 'failed']
-        })
-        
+        song_data.update(
+            {
+                "analysis_status": latest_analysis.status,
+                "analysis_score": latest_analysis.score,
+                "concern_level": latest_analysis.concern_level,
+                "analysis_date": latest_analysis.created_at.isoformat()
+                if latest_analysis.created_at
+                else None,
+                "can_reanalyze": latest_analysis.status in ["completed", "failed"],
+            }
+        )
+
         # Add formatted status display
         status_info = format_analysis_status(latest_analysis)
         song_data["status_display"] = status_info["display"]
         song_data["badge_class"] = status_info["badge_class"]
-        
+
         # Special handling for pending status
-        if latest_analysis.status == 'pending':
+        if latest_analysis.status == "pending":
             song_data["status_display"] = "Analysis pending..."
     else:
         # No analysis exists
-        song_data.update({
-            "analysis_status": "not_analyzed",
-            "analysis_score": None,
-            "concern_level": None,
-            "analysis_date": None,
-            "can_reanalyze": True,
-            "status_display": "Not analyzed",
-            "badge_class": "badge-secondary"
-        })
-    
-    return song_data 
+        song_data.update(
+            {
+                "analysis_status": "not_analyzed",
+                "analysis_score": None,
+                "concern_level": None,
+                "analysis_date": None,
+                "can_reanalyze": True,
+                "status_display": "Not analyzed",
+                "badge_class": "badge-secondary",
+            }
+        )
+
+    return song_data

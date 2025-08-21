@@ -1,0 +1,369 @@
+[
+  {
+    "theme": "Gospel Presentation",
+    "definition": "Proclaims Christ’s atoning work, cross, resurrection, and salvation by grace through faith.",
+    "keywords": ["gospel", "good news", "cross", "resurrection", "salvation", "born again", "jesus saves"],
+    "scripture": [
+      {"reference": "1 Corinthians 15:3-4", "theme": "Gospel Presentation"},
+      {"reference": "John 3:16", "theme": "Gospel Presentation"}
+    ]
+  },
+  {
+    "theme": "Grace",
+    "definition": "Undeserved favor of God that saves and trains in godliness.",
+    "keywords": ["grace", "amazing grace", "unmerited favor", "gift"],
+    "scripture": [
+      {"reference": "Ephesians 2:8-9", "theme": "Grace"},
+      {"reference": "Titus 2:11-12", "theme": "Grace"}
+    ]
+  },
+  {
+    "theme": "Salvation",
+    "definition": "Deliverance from sin and death through Christ alone.",
+    "keywords": ["save", "salvation", "redeemed", "deliver", "born again"],
+    "scripture": [
+      {"reference": "Acts 4:12", "theme": "Salvation"},
+      {"reference": "Romans 10:9-10", "theme": "Salvation"}
+    ]
+  },
+  {
+    "theme": "Repentance",
+    "definition": "Turning from sin to God with godly sorrow and faith.",
+    "keywords": ["repent", "turn back", "change of heart", "confess"],
+    "scripture": [
+      {"reference": "Acts 3:19", "theme": "Repentance"},
+      {"reference": "2 Corinthians 7:10", "theme": "Repentance"}
+    ]
+  },
+  {
+    "theme": "Faith",
+    "definition": "Trust in Christ and His promises, receiving justification by faith.",
+    "keywords": ["faith", "believe", "trust", "confidence in god"],
+    "scripture": [
+      {"reference": "Hebrews 11:1", "theme": "Faith"},
+      {"reference": "Ephesians 2:8", "theme": "Faith"}
+    ]
+  },
+  {
+    "theme": "Love (Agape)",
+    "definition": "Self-giving love modeled by Christ and commanded to believers.",
+    "keywords": ["love", "agape", "charity", "greater love", "loving others"],
+    "scripture": [
+      {"reference": "1 Corinthians 13:4-7", "theme": "Love (Agape)"},
+      {"reference": "John 13:34-35", "theme": "Love (Agape)"}
+    ]
+  },
+  {
+    "theme": "Holiness",
+    "definition": "Set-apart life reflecting God’s character.",
+    "keywords": ["holy", "holiness", "set apart", "be holy"],
+    "scripture": [
+      {"reference": "1 Peter 1:15-16", "theme": "Holiness"},
+      {"reference": "Hebrews 12:14", "theme": "Holiness"}
+    ]
+  },
+  {
+    "theme": "Sanctification",
+    "definition": "Ongoing growth in Christlikeness by the Spirit.",
+    "keywords": ["sanctify", "sanctification", "grow", "renew", "transformed"],
+    "scripture": [
+      {"reference": "1 Thessalonians 4:3", "theme": "Sanctification"},
+      {"reference": "John 17:17", "theme": "Sanctification"}
+    ]
+  },
+  {
+    "theme": "Justification",
+    "definition": "God’s legal declaration of righteousness by faith in Christ.",
+    "keywords": ["justify", "righteous by faith", "no condemnation"],
+    "scripture": [
+      {"reference": "Romans 5:1", "theme": "Justification"},
+      {"reference": "Galatians 2:16", "theme": "Justification"}
+    ]
+  },
+  {
+    "theme": "Redemption",
+    "definition": "Bought back by Christ’s blood from slavery to sin.",
+    "keywords": ["redeem", "redemption", "ransom", "bought", "price"],
+    "scripture": [
+      {"reference": "Ephesians 1:7", "theme": "Redemption"},
+      {"reference": "1 Peter 1:18-19", "theme": "Redemption"}
+    ]
+  },
+  {
+    "theme": "Atonement",
+    "definition": "Christ’s substitutionary sacrifice bearing sin and satisfying justice.",
+    "keywords": ["atonement", "sacrifice", "lamb", "paid", "blood"],
+    "scripture": [
+      {"reference": "Isaiah 53:5", "theme": "Atonement"},
+      {"reference": "2 Corinthians 5:21", "theme": "Atonement"}
+    ]
+  },
+  {
+    "theme": "Cross of Christ",
+    "definition": "Centrality of the cross as God’s wisdom and power.",
+    "keywords": ["cross", "crucified", "calvary", "tree"],
+    "scripture": [
+      {"reference": "1 Corinthians 1:18", "theme": "Cross of Christ"},
+      {"reference": "Galatians 6:14", "theme": "Cross of Christ"}
+    ]
+  },
+  {
+    "theme": "Resurrection",
+    "definition": "Christ’s victory over death and believers’ future hope.",
+    "keywords": ["resurrection", "rise", "risen", "alive", "empty tomb"],
+    "scripture": [
+      {"reference": "1 Corinthians 15:17-20", "theme": "Resurrection"},
+      {"reference": "John 11:25", "theme": "Resurrection"}
+    ]
+  },
+  {
+    "theme": "Lordship of Christ",
+    "definition": "Jesus as Lord and King demands allegiance and obedience.",
+    "keywords": ["jesus is lord", "king", "lordship", "bow", "knees"],
+    "scripture": [
+      {"reference": "Romans 10:9", "theme": "Lordship of Christ"},
+      {"reference": "Philippians 2:9-11", "theme": "Lordship of Christ"}
+    ]
+  },
+  {
+    "theme": "Trinity",
+    "definition": "One God in three Persons: Father, Son, and Holy Spirit.",
+    "keywords": ["trinity", "father son spirit", "triune"],
+    "scripture": [
+      {"reference": "Matthew 28:19", "theme": "Trinity"},
+      {"reference": "2 Corinthians 13:14", "theme": "Trinity"}
+    ]
+  },
+  {
+    "theme": "God’s Sovereignty",
+    "definition": "God reigns over all things with wise and holy authority.",
+    "keywords": ["sovereign", "reign", "control", "rule"],
+    "scripture": [
+      {"reference": "Romans 11:36", "theme": "God’s Sovereignty"},
+      {"reference": "Psalm 115:3", "theme": "God’s Sovereignty"}
+    ]
+  },
+  {
+    "theme": "Providence",
+    "definition": "God orchestrates all things for His glory and our good.",
+    "keywords": ["works for good", "plans", "purpose", "guides"],
+    "scripture": [
+      {"reference": "Romans 8:28", "theme": "Providence"}
+    ]
+  },
+  {
+    "theme": "Worship of God",
+    "definition": "Right praise and adoration directed to God alone.",
+    "keywords": ["worship", "praise", "glory", "adore", "hallelujah"],
+    "scripture": [
+      {"reference": "John 4:24", "theme": "Worship of God"},
+      {"reference": "Psalm 95:6", "theme": "Worship of God"}
+    ]
+  },
+  {
+    "theme": "Prayer",
+    "definition": "Dependent communion with God in all things.",
+    "keywords": ["pray", "prayer", "call on", "seek god", "ask"],
+    "scripture": [
+      {"reference": "Philippians 4:6", "theme": "Prayer"},
+      {"reference": "Matthew 6:9-13", "theme": "Prayer"}
+    ]
+  },
+  {
+    "theme": "Scripture Authority",
+    "definition": "The Bible is God-breathed, sufficient, and authoritative.",
+    "keywords": ["the word", "scripture", "bible", "god’s word", "truth"],
+    "scripture": [
+      {"reference": "2 Timothy 3:16-17", "theme": "Scripture Authority"}
+    ]
+  },
+  {
+    "theme": "Obedience",
+    "definition": "Loving Christ evidenced by keeping His commands.",
+    "keywords": ["obey", "keep commandments", "follow", "walk"],
+    "scripture": [
+      {"reference": "John 14:15", "theme": "Obedience"},
+      {"reference": "James 1:22", "theme": "Obedience"}
+    ]
+  },
+  {
+    "theme": "Fruit of the Spirit",
+    "definition": "Spirit-produced character in believers’ lives.",
+    "keywords": ["love", "joy", "peace", "patience", "kindness", "goodness", "faithfulness", "gentleness", "self-control"],
+    "scripture": [
+      {"reference": "Galatians 5:22-23", "theme": "Fruit of the Spirit"}
+    ]
+  },
+  {
+    "theme": "Humility",
+    "definition": "Lowliness of mind and others-first posture.",
+    "keywords": ["humble", "lowly", "meek", "serve"],
+    "scripture": [
+      {"reference": "Philippians 2:3-4", "theme": "Humility"},
+      {"reference": "James 4:6", "theme": "Humility"}
+    ]
+  },
+  {
+    "theme": "Justice and Mercy",
+    "definition": "Doing justice, loving mercy, and walking humbly with God.",
+    "keywords": ["justice", "mercy", "oppressed", "poor", "widow", "orphan"],
+    "scripture": [
+      {"reference": "Micah 6:8", "theme": "Justice and Mercy"},
+      {"reference": "Matthew 23:23", "theme": "Justice and Mercy"}
+    ]
+  },
+  {
+    "theme": "Compassion for the Poor",
+    "definition": "Care for the vulnerable as worship to God.",
+    "keywords": ["poor", "needy", "hungry", "widow", "orphan"],
+    "scripture": [
+      {"reference": "James 1:27", "theme": "Compassion for the Poor"},
+      {"reference": "Matthew 25:35-40", "theme": "Compassion for the Poor"}
+    ]
+  },
+  {
+    "theme": "Forgiveness",
+    "definition": "Extending grace to others as forgiven people.",
+    "keywords": ["forgive", "mercy", "grace", "pardon"],
+    "scripture": [
+      {"reference": "Ephesians 4:32", "theme": "Forgiveness"},
+      {"reference": "Matthew 6:14-15", "theme": "Forgiveness"}
+    ]
+  },
+  {
+    "theme": "Reconciliation",
+    "definition": "Peace with God and one another through Christ.",
+    "keywords": ["reconcile", "peace", "restore", "unity"],
+    "scripture": [
+      {"reference": "2 Corinthians 5:18-19", "theme": "Reconciliation"}
+    ]
+  },
+  {
+    "theme": "New Creation / Heaven",
+    "definition": "Hope of renewal, resurrection, and eternal life.",
+    "keywords": ["heaven", "new creation", "new earth", "glory", "eternity"],
+    "scripture": [
+      {"reference": "Revelation 21:1-5", "theme": "New Creation / Heaven"},
+      {"reference": "2 Corinthians 5:17", "theme": "New Creation / Heaven"}
+    ]
+  },
+  {
+    "theme": "Stewardship",
+    "definition": "Faithful management of resources unto the Lord.",
+    "keywords": ["steward", "faithful", "resources", "talents", "time"],
+    "scripture": [
+      {"reference": "1 Corinthians 4:2", "theme": "Stewardship"}
+    ]
+  },
+  {
+    "theme": "Purity of Speech",
+    "definition": "Speech that builds up and honors God.",
+    "keywords": ["pure speech", "edify", "no corrupt talk", "truth in love"],
+    "scripture": [
+      {"reference": "Ephesians 4:29", "theme": "Purity of Speech"},
+      {"reference": "Colossians 4:6", "theme": "Purity of Speech"}
+    ]
+  },
+  {
+    "theme": "Marriage Fidelity",
+    "definition": "Honor and faithfulness in marriage as covenant.",
+    "keywords": ["marriage", "fidelity", "faithful", "covenant", "vows"],
+    "scripture": [
+      {"reference": "Hebrews 13:4", "theme": "Marriage Fidelity"},
+      {"reference": "Matthew 19:6", "theme": "Marriage Fidelity"}
+    ]
+  },
+  {
+    "theme": "Church / Community",
+    "definition": "Life together, worship, and mutual upbuilding.",
+    "keywords": ["church", "community", "body", "fellowship", "gather"],
+    "scripture": [
+      {"reference": "Hebrews 10:24-25", "theme": "Church / Community"},
+      {"reference": "Acts 2:42", "theme": "Church / Community"}
+    ]
+  },
+  {
+    "theme": "Spiritual Warfare (Healthy)",
+    "definition": "Resisting evil with God’s armor and truth.",
+    "keywords": ["armor of god", "resist", "stand", "battle", "enemy"],
+    "scripture": [
+      {"reference": "Ephesians 6:10-18", "theme": "Spiritual Warfare (Healthy)"}
+    ]
+  },
+  {
+    "theme": "Evangelism",
+    "definition": "Proclaiming Christ and calling to faith.",
+    "keywords": ["share good news", "witness", "preach", "go", "mission"],
+    "scripture": [
+      {"reference": "Matthew 28:19-20", "theme": "Evangelism"},
+      {"reference": "Romans 1:16", "theme": "Evangelism"}
+    ]
+  },
+  {
+    "theme": "Discipleship",
+    "definition": "Following Jesus daily and helping others follow Him.",
+    "keywords": ["follow me", "deny yourself", "take up cross", "disciple"],
+    "scripture": [
+      {"reference": "Luke 9:23", "theme": "Discipleship"},
+      {"reference": "2 Timothy 2:2", "theme": "Discipleship"}
+    ]
+  },
+  {
+    "theme": "Thankfulness",
+    "definition": "Giving thanks in all circumstances.",
+    "keywords": ["thank", "gratitude", "give thanks"],
+    "scripture": [
+      {"reference": "1 Thessalonians 5:18", "theme": "Thankfulness"}
+    ]
+  },
+  {
+    "theme": "Joy",
+    "definition": "God-rooted gladness regardless of circumstances.",
+    "keywords": ["joy", "rejoice", "glad", "delight"],
+    "scripture": [
+      {"reference": "Philippians 4:4", "theme": "Joy"}
+    ]
+  },
+  {
+    "theme": "Peace",
+    "definition": "Peace with God and peace from God that guards hearts.",
+    "keywords": ["peace", "shalom", "rest", "quiet heart"],
+    "scripture": [
+      {"reference": "John 14:27", "theme": "Peace"}
+    ]
+  },
+  {
+    "theme": "Truth",
+    "definition": "Living in and speaking truth; Jesus as the Truth.",
+    "keywords": ["truth", "true", "honest", "integrity"],
+    "scripture": [
+      {"reference": "John 14:6", "theme": "Truth"},
+      {"reference": "Ephesians 4:15", "theme": "Truth"}
+    ]
+  },
+
+  {"theme": "Profanity", "definition": "Obscene or degrading language.", "keywords": ["f***", "s***", "b****", "curse", "obscene"], "scripture": [{"reference": "Ephesians 4:29", "theme": "Profanity"}]},
+  {"theme": "Sexual Immorality", "definition": "Lust, adultery, fornication, pornographic content.", "keywords": ["lust", "adultery", "fornication", "hookup", "porn"], "scripture": [{"reference": "1 Corinthians 6:18", "theme": "Sexual Immorality"}, {"reference": "1 Thessalonians 4:3", "theme": "Sexual Immorality"}]},
+  {"theme": "Substance Abuse", "definition": "Glorifying drunkenness or drug abuse.", "keywords": ["drunk", "wasted", "high", "stoned"], "scripture": [{"reference": "Ephesians 5:18", "theme": "Substance Abuse"}, {"reference": "Proverbs 20:1", "theme": "Substance Abuse"}]},
+  {"theme": "Violence", "definition": "Glorifying harm, revenge, or murder.", "keywords": ["kill", "murder", "shoot", "revenge", "blood"], "scripture": [{"reference": "Romans 12:17-19", "theme": "Violence"}, {"reference": "Matthew 5:9", "theme": "Violence"}]},
+  {"theme": "Greed / Materialism", "definition": "Love of money and possessions.", "keywords": ["money", "riches", "bling", "more", "flex"], "scripture": [{"reference": "Luke 12:15", "theme": "Greed / Materialism"}, {"reference": "1 Timothy 6:10", "theme": "Greed / Materialism"}]},
+  {"theme": "Pride / Arrogance", "definition": "Self-exaltation and boasting.", "keywords": ["proud", "better than", "boast", "self-made"], "scripture": [{"reference": "James 4:6", "theme": "Pride / Arrogance"}, {"reference": "Proverbs 16:18", "theme": "Pride / Arrogance"}]},
+  {"theme": "Idolatry", "definition": "Worship of created things or self.", "keywords": ["idol", "worship me", "gold", "fame", "clout"], "scripture": [{"reference": "Exodus 20:3-5", "theme": "Idolatry"}, {"reference": "1 Corinthians 10:14", "theme": "Idolatry"}]},
+  {"theme": "Blasphemy", "definition": "Misusing God’s name or reviling the holy.", "keywords": ["gd*mn", "take god’s name in vain", "mock god"], "scripture": [{"reference": "Exodus 20:7", "theme": "Blasphemy"}, {"reference": "Colossians 3:8", "theme": "Blasphemy"}]},
+  {"theme": "Occult / Witchcraft", "definition": "Sorcery, spells, divination.", "keywords": ["witch", "spell", "curse", "tarot", "astrology"], "scripture": [{"reference": "Deuteronomy 18:10-12", "theme": "Occult / Witchcraft"}, {"reference": "Acts 19:19", "theme": "Occult / Witchcraft"}]},
+  {"theme": "Hatred / Unforgiveness", "definition": "Sustained malice and refusal to forgive.", "keywords": ["hate", "never forgive", "enemy forever"], "scripture": [{"reference": "1 John 3:15", "theme": "Hatred / Unforgiveness"}, {"reference": "Matthew 6:15", "theme": "Hatred / Unforgiveness"}]},
+  {"theme": "Envy / Jealousy", "definition": "Resentment of others’ good.", "keywords": ["jealous", "envy", "wish it was me"], "scripture": [{"reference": "James 3:16", "theme": "Envy / Jealousy"}, {"reference": "Galatians 5:26", "theme": "Envy / Jealousy"}]},
+  {"theme": "Covetousness", "definition": "Inordinate desire for what is another’s.", "keywords": ["covet", "want yours", "steal your man/woman"], "scripture": [{"reference": "Exodus 20:17", "theme": "Covetousness"}, {"reference": "Colossians 3:5", "theme": "Covetousness"}]},
+  {"theme": "Deception / Lies", "definition": "Falsehood and manipulation.", "keywords": ["lie", "fake", "front", "cap"], "scripture": [{"reference": "Proverbs 12:22", "theme": "Deception / Lies"}, {"reference": "Ephesians 4:25", "theme": "Deception / Lies"}]},
+  {"theme": "Self-Glorification", "definition": "Vainglory and self-worship.", "keywords": ["all about me", "self-made god", "glory to me"], "scripture": [{"reference": "Jeremiah 9:23-24", "theme": "Self-Glorification"}, {"reference": "2 Timothy 3:2", "theme": "Self-Glorification"}]},
+  {"theme": "Nihilism / Despair", "definition": "Hopelessness and meaninglessness exalted.", "keywords": ["nothing matters", "meaningless", "pointless"], "scripture": [{"reference": "Psalm 42:5", "theme": "Nihilism / Despair"}, {"reference": "Romans 15:13", "theme": "Nihilism / Despair"}]},
+  {"theme": "Misogyny / Abuse", "definition": "Degrading or abusing women or others.", "keywords": ["b****es", "hoes", "own her", "hit"], "scripture": [{"reference": "Genesis 1:27", "theme": "Misogyny / Abuse"}, {"reference": "Ephesians 5:25", "theme": "Misogyny / Abuse"}]},
+  {"theme": "Racism / Partiality", "definition": "Showing sinful favoritism or prejudice.", "keywords": ["superior race", "keep them out", "hate group"], "scripture": [{"reference": "James 2:1-9", "theme": "Racism / Partiality"}, {"reference": "Galatians 3:28", "theme": "Racism / Partiality"}]},
+  {"theme": "Suicide / Self-harm Glorification", "definition": "Promoting or romanticizing self-harm.", "keywords": ["end it", "better off dead", "cut"], "scripture": [{"reference": "1 Corinthians 6:19-20", "theme": "Suicide / Self-harm Glorification"}, {"reference": "Psalm 34:18", "theme": "Suicide / Self-harm Glorification"}]},
+  {"theme": "Vulgarity / Obscenity", "definition": "Crude joking and obscene talk.", "keywords": ["filthy", "dirty talk", "obscene jokes"], "scripture": [{"reference": "Ephesians 5:4", "theme": "Vulgarity / Obscenity"}]},
+  {"theme": "Hedonism", "definition": "Pleasure as the highest good.", "keywords": ["live for pleasure", "feel good only", "no rules"], "scripture": [{"reference": "2 Timothy 3:4", "theme": "Hedonism"}, {"reference": "Titus 3:3", "theme": "Hedonism"}]},
+  {"theme": "Revenge", "definition": "Personal vengeance celebrated.", "keywords": ["payback", "get even", "vengeance"], "scripture": [{"reference": "Romans 12:19", "theme": "Revenge"}, {"reference": "Matthew 5:38-48", "theme": "Revenge"}]},
+  {"theme": "Pornography / Explicit Sex", "definition": "Sexual content designed to arouse and degrade.", "keywords": ["explicit", "nsfw", "onlyfans", "x-rated"], "scripture": [{"reference": "Matthew 5:28", "theme": "Pornography / Explicit Sex"}, {"reference": "Job 31:1", "theme": "Pornography / Explicit Sex"}]},
+  {"theme": "Domestic Abuse", "definition": "Violence or cruelty in home relationships.", "keywords": ["hit her", "control", "own you"], "scripture": [{"reference": "Colossians 3:19", "theme": "Domestic Abuse"}, {"reference": "1 Peter 3:7", "theme": "Domestic Abuse"}]},
+  {"theme": "Crime / Wrongdoing Glorified", "definition": "Pride in theft, fraud, or illegal acts.", "keywords": ["steal", "rob", "scam", "crime pays"], "scripture": [{"reference": "1 Peter 4:15", "theme": "Crime / Wrongdoing Glorified"}, {"reference": "Romans 13:1-4", "theme": "Crime / Wrongdoing Glorified"}]}
+]

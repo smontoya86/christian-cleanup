@@ -66,7 +66,7 @@ from app.utils.security import sanitize_html_input, validate_sql_safe_input
 # ✅ DO: Sanitize HTML inputs
 def update_user_profile():
     display_name = sanitize_html_input(request.form.get('display_name'))
-    
+
     # Validate for SQL injection patterns
     if not validate_sql_safe_input(display_name):
         raise SecurityError("Invalid input detected")
@@ -89,9 +89,9 @@ from app.utils.security import validate_file_upload
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
-    
+
     file = request.files['file']
-    
+
     # Validate file using security utility
     try:
         validate_file_upload(
@@ -101,7 +101,7 @@ def upload_file():
         )
     except SecurityError as e:
         return jsonify({'error': str(e)}), 400
-    
+
     # Process validated file...
 
 # ❌ DON'T: Accept files without validation
@@ -121,7 +121,7 @@ def playlist_detail(playlist_id):
     # Validate Spotify playlist ID format
     if not re.match(r'^[a-zA-Z0-9]{22}$', playlist_id):
         abort(400, description="Invalid playlist ID format")
-    
+
     # Continue processing...
 
 # ❌ DON'T: Use URL parameters directly
@@ -164,7 +164,7 @@ from app.utils.security import generate_session_fingerprint
 def login_user(user):
     session['user_id'] = user.id
     session['csrf_token'] = secrets.token_hex(32)
-    
+
     # Generate session fingerprint for security
     fingerprint = generate_session_fingerprint(request)
     user.session_fingerprint = fingerprint
@@ -188,11 +188,11 @@ Implement proper authorization controls:
 def edit_playlist(playlist_id):
     user = g.current_user
     playlist = Playlist.query.filter_by(spotify_id=playlist_id).first_or_404()
-    
+
     # Check if user owns the playlist
     if playlist.user_id != user.id:
         abort(403, description="You don't have permission to edit this playlist")
-    
+
     # Continue with authorized operation...
 
 # ❌ DON'T: Skip authorization checks
@@ -234,7 +234,7 @@ def create_playlist_with_songs(playlist_data, song_ids):
         playlist = Playlist(**playlist_data)
         db.session.add(playlist)
         db.session.flush()  # Get playlist ID without committing
-        
+
         # Add songs to playlist
         for song_id in song_ids:
             playlist_song = PlaylistSong(
@@ -242,7 +242,7 @@ def create_playlist_with_songs(playlist_data, song_ids):
                 song_id=song_id
             )
             db.session.add(playlist_song)
-        
+
         db.session.commit()
         return playlist
     except Exception as e:
@@ -254,7 +254,7 @@ def unsafe_create_playlist(playlist_data, song_ids):
     playlist = Playlist(**playlist_data)
     db.session.add(playlist)
     db.session.commit()
-    
+
     # If this fails, playlist exists without songs
     for song_id in song_ids:
         playlist_song = PlaylistSong(playlist_id=playlist.id, song_id=song_id)
@@ -346,7 +346,7 @@ def handle_security_error(error):
         'user_agent': request.headers.get('User-Agent'),
         'endpoint': request.endpoint
     })
-    
+
     # Return generic error to user
     return jsonify({
         'status': 'error',
@@ -376,9 +376,9 @@ audit_logger = SecurityAuditLogger()
 def login():
     username = request.json.get('username')
     password = request.json.get('password')
-    
+
     user = User.query.filter_by(username=username).first()
-    
+
     if user and user.check_password(password):
         # Log successful authentication
         audit_logger.log_authentication_attempt(
@@ -425,7 +425,7 @@ class User(db.Model):
             # Fallback to plaintext with warning
             app.logger.warning("Token encryption failed, storing plaintext")
             self.access_token = token
-    
+
     def get_access_token(self):
         """Retrieve and decrypt access token"""
         if self.access_token_encrypted:
@@ -439,7 +439,7 @@ class User(db.Model):
 # ❌ DON'T: Store sensitive data in plaintext
 class UnsafeUser(db.Model):
     access_token = db.Column(db.String(500))  # Plaintext storage
-    
+
     def set_token(self, token):
         self.access_token = token  # No encryption
 ```
@@ -454,11 +454,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # ✅ DO: Use proper password hashing
 class User(db.Model):
     password_hash = db.Column(db.String(128))
-    
+
     def set_password(self, password):
         """Hash password before storing"""
         self.password_hash = generate_password_hash(password)
-    
+
     def check_password(self, password):
         """Verify password against hash"""
         return check_password_hash(self.password_hash, password)
@@ -466,7 +466,7 @@ class User(db.Model):
 # ❌ DON'T: Store passwords in plaintext or use weak hashing
 class UnsafeUser(db.Model):
     password = db.Column(db.String(50))  # Plaintext password
-    
+
     def set_password(self, password):
         import hashlib
         self.password = hashlib.md5(password.encode()).hexdigest()  # Weak hashing
@@ -493,10 +493,10 @@ def api_search():
     # Check rate limits
     if not rate_limiter.can_make_request(request.remote_addr):
         abort(429, description="Rate limit exceeded")
-    
+
     # Record request
     rate_limiter.record_request(request.remote_addr)
-    
+
     # Process search...
 
 # ❌ DON'T: Leave APIs without rate limiting
@@ -521,7 +521,7 @@ def create_playlist():
     # Validate CSRF token
     csrf_token = request.headers.get('X-CSRF-Token')
     validate_csrf_token(csrf_token)
-    
+
     # Process playlist creation...
 
 # ❌ DON'T: Skip CSRF protection
@@ -543,7 +543,7 @@ Structure API responses securely:
 @token_required
 def get_user_profile():
     user = g.current_user
-    
+
     # Return only necessary data
     return jsonify({
         'status': 'success',
@@ -558,7 +558,7 @@ def get_user_profile():
 # ❌ DON'T: Expose sensitive data in responses
 def unsafe_user_profile():
     user = g.current_user
-    
+
     # Exposes all user data including sensitive fields
     return jsonify(user.to_dict())  # May include tokens, hashes, etc.
 ```
@@ -621,7 +621,7 @@ async function loadUserData() {
     try {
         const response = await fetch('/api/user/profile');
         const data = await response.json();
-        
+
         // Validate response structure
         if (data.status === 'success' && data.data) {
             // Escape content before DOM insertion
@@ -675,11 +675,11 @@ Handle secrets properly:
 def validate_configuration():
     required_secrets = ['FLASK_SECRET_KEY', 'ENCRYPTION_KEY', 'DATABASE_URL']
     missing_secrets = []
-    
+
     for secret in required_secrets:
         if not getattr(config, secret.lower(), None):
             missing_secrets.append(secret)
-    
+
     if missing_secrets:
         raise ConfigurationError(f"Missing required secrets: {missing_secrets}")
 
@@ -706,11 +706,11 @@ def test_authorization_check():
     # Create two users
     user1 = create_test_user('user1@example.com')
     user2 = create_test_user('user2@example.com')
-    
+
     # User1 tries to access User2's data
     with client.session_transaction() as sess:
         sess['user_id'] = user1.id
-    
+
     response = client.get(f'/api/user/{user2.id}/playlists')
     assert response.status_code == 403
 
@@ -737,12 +737,12 @@ Create tests to prevent security regressions:
 def test_sql_injection_prevention():
     """Ensure SQL injection attempts are blocked"""
     malicious_input = "'; DROP TABLE users; --"
-    
+
     response = client.get(f'/api/search?q={malicious_input}')
-    
+
     # Should not crash and should return safe response
     assert response.status_code in [200, 400]
-    
+
     # Verify database integrity
     user_count = User.query.count()
     assert user_count > 0  # Table should still exist
@@ -750,7 +750,7 @@ def test_sql_injection_prevention():
 def test_xss_prevention():
     """Ensure XSS payloads are properly handled"""
     xss_payload = '<script>alert("xss")</script>'
-    
+
     # Test input sanitization
     sanitized = sanitize_html_input(xss_payload)
     assert '<script>' not in sanitized
@@ -859,30 +859,30 @@ Document security decisions in code:
 def process_user_input(user_input):
     """
     Process user input with security validation.
-    
+
     Security considerations:
     - Input is validated against injection patterns
     - Length limits enforced to prevent DoS
     - HTML entities escaped to prevent XSS
     - Rate limiting applied to prevent abuse
-    
+
     Args:
         user_input (str): Raw user input to process
-        
+
     Returns:
         str: Sanitized and validated input
-        
+
     Raises:
         SecurityError: If input fails security validation
     """
     # Validate input length (DoS prevention)
     if len(user_input) > MAX_INPUT_LENGTH:
         raise SecurityError("Input exceeds maximum length")
-    
+
     # Check for SQL injection patterns
     if not validate_sql_safe_input(user_input):
         raise SecurityError("Potentially malicious input detected")
-    
+
     # Sanitize HTML to prevent XSS
     return sanitize_html_input(user_input)
 
@@ -909,6 +909,6 @@ Following these secure coding practices helps protect our application and users 
 
 For questions about security practices or to report security concerns, contact the security team or refer to our [Security Documentation](SECURITY.md) and [Incident Response Plan](INCIDENT_RESPONSE_PLAN.md).
 
-**Document Version**: 1.0  
-**Last Updated**: [Current Date]  
-**Next Review**: [Date + 6 months] 
+**Document Version**: 1.0
+**Last Updated**: [Current Date]
+**Next Review**: [Date + 6 months]

@@ -27,11 +27,11 @@ window.playlistDetailPage = {
     getPlaylistAnalysis() {
         return app.getModule('playlistAnalysis');
     },
-    
+
     showError(message) {
         window.showNotification(message, 'error');
     },
-    
+
     showSuccess(message) {
         window.showNotification(message, 'success');
     }

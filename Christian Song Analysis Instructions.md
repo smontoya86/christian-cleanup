@@ -14,15 +14,15 @@ The current keyword-based approach in `huggingface_analyzer.py` is inaccurate be
 **For Theological Content Analysis:**
 ```python
 # Replace the current sentiment models with:
-theological_classifier = pipeline("text-classification", 
+theological_classifier = pipeline("text-classification",
     model="microsoft/DialoGPT-medium")  # Better for understanding religious context
 
 # For detecting harmful content (beyond just profanity):
-toxicity_detector = pipeline("text-classification", 
+toxicity_detector = pipeline("text-classification",
     model="unitary/toxic-bert")
 
 # For understanding themes and concepts:
-theme_analyzer = pipeline("zero-shot-classification", 
+theme_analyzer = pipeline("zero-shot-classification",
     model="facebook/bart-large-mnli")
 ```
 
@@ -36,27 +36,27 @@ def analyze_christian_themes(self, lyrics):
     # Define specific Christian themes to look for
     christian_themes = [
         "worship and praise of God",
-        "salvation through Jesus Christ", 
+        "salvation through Jesus Christ",
         "biblical love and relationships",
         "spiritual growth and discipleship",
         "biblical hope and comfort",
         "gratitude and thanksgiving"
     ]
-    
+
     # Define concerning themes
     concerning_themes = [
         "materialism and greed",
-        "sexual immorality", 
+        "sexual immorality",
         "violence and aggression",
         "substance abuse",
         "occult or false spirituality",
         "pride and self-worship"
     ]
-    
+
     # Use zero-shot classification instead of keyword matching
     positive_results = self.theme_analyzer(lyrics, christian_themes)
     negative_results = self.theme_analyzer(lyrics, concerning_themes)
-    
+
     return positive_results, negative_results
 ```
 
@@ -68,27 +68,27 @@ def analyze_christian_themes(self, lyrics):
 ```python
 def calculate_score(self, positive_themes, negative_themes, toxicity_score):
     score = 0
-    
+
     # Earn points for positive Christian themes (max 70 points)
     for theme in positive_themes:
         if theme['score'] > 0.7:  # High confidence
             score += 15
-        elif theme['score'] > 0.5:  # Medium confidence  
+        elif theme['score'] > 0.5:  # Medium confidence
             score += 8
-    
+
     # Lose points for concerning themes
     for theme in negative_themes:
         if theme['score'] > 0.7:
             score -= 20
         elif theme['score'] > 0.5:
             score -= 10
-    
+
     # Factor in toxicity
     if toxicity_score > 0.8:
         score -= 30
     elif toxicity_score > 0.5:
         score -= 15
-        
+
     # Keep score between 0-100
     return max(0, min(100, score))
 ```
@@ -128,7 +128,7 @@ Add these fields to your existing `Analysis` model:
 # Add to your existing models.py
 class Analysis(Base):
     # ... existing fields ...
-    
+
     # Add these new fields:
     detected_themes = Column(JSON)  # Store the themes found
     biblical_references = Column(JSON)  # Store relevant verses
@@ -169,4 +169,3 @@ After implementation, test with these examples:
 3. **Context Understanding:** A worship song that uses metaphorical language should be recognized as Christian content
 
 This approach uses proven HuggingFace models with simple logic improvements rather than building complex custom systems.
-

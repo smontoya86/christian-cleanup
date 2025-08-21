@@ -97,7 +97,7 @@ export class UIHelpers {
      */
   static showProgress () {
     console.log('UIHelpers.showProgress() called');
-    
+
     // Fix: Show the main progress container #analysisProgress, not just .progress
     const progressContainer = document.getElementById('analysisProgress');
     const progressBar = document.querySelector('.progress-bar');

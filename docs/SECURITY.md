@@ -88,7 +88,7 @@ All user inputs are validated using Marshmallow schemas:
 ```python
 class PlaylistRequestSchema(Schema):
     playlist_id = fields.String(
-        required=True, 
+        required=True,
         validate=validate.Length(min=22, max=22)
     )
     analysis_depth = fields.Integer(
@@ -456,4 +456,4 @@ For security issues or questions:
 
 ---
 
-*This document should be reviewed and updated regularly to reflect changes in the security landscape and application architecture.* 
+*This document should be reviewed and updated regularly to reflect changes in the security landscape and application architecture.*

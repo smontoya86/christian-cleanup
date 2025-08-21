@@ -200,4 +200,4 @@ This document outlines planned enhancements for the Christian Music Curator appl
 
 ---
 
-**Note**: This roadmap is subject to change based on user feedback, technical discoveries, and ministry needs. The focus remains on supporting Christian discernment and spiritual growth through music curation. 
+**Note**: This roadmap is subject to change based on user feedback, technical discoveries, and ministry needs. The focus remains on supporting Christian discernment and spiritual growth through music curation.

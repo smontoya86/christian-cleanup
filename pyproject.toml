@@ -1,0 +1,20 @@
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = [
+  ".venv",
+  "migrations",
+]
+
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle errors
+  "F",  # pyflakes
+  "I",  # isort
+]
+ignore = [
+  # Keep initial footprint small; expand later
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

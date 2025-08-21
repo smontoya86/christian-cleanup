@@ -138,7 +138,7 @@
         <div class="col-12">
             <h3>📋 Current System Metrics</h3>
         </div>
-        
+
         {% if current_metrics %}
         <!-- System Resource Metrics -->
         <div class="col-lg-3 col-md-6">
@@ -217,7 +217,7 @@
             <h3>⚡ Profiling Status</h3>
             {% if profiling_status %}
             <div class="profiling-status {% if profiling_status.active_sessions > 0 %}profiling-active{% else %}profiling-inactive{% endif %}">
-                <strong>Status:</strong> 
+                <strong>Status:</strong>
                 {% if profiling_status.active_sessions > 0 %}
                     🟢 Active ({{ profiling_status.active_sessions }} sessions)
                 {% else %}
@@ -372,12 +372,12 @@ new Chart(ctx, {
 function testAlertSystem() {
     const button = document.querySelector('.alert-test-btn');
     const resultDiv = document.getElementById('alert-test-result');
-    
+
     // Disable button and show loading
     button.disabled = true;
     button.innerHTML = '⏳ Sending...';
     resultDiv.innerHTML = '<div class="alert alert-info">Sending test alert...</div>';
-    
+
     // Send test alert
     fetch('{{ url_for("system.test_alert_notification") }}', {
         method: 'POST',
@@ -400,7 +400,7 @@ function testAlertSystem() {
         // Re-enable button
         button.disabled = false;
         button.innerHTML = '📧 Send Test Alert';
-        
+
         // Clear result after 10 seconds
         setTimeout(() => {
             resultDiv.innerHTML = '';
@@ -413,4 +413,4 @@ setTimeout(() => {
     location.reload();
 }, 30000);
 </script>
-{% endblock %} 
+{% endblock %}

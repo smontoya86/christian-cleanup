@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
 ---
@@ -45,7 +45,7 @@ For each task, follow these steps:
    - Add examples or usage notes to help other developers
 
 7. **Remove tests**
-   - Upon full passing, remove tests. 
+   - Upon full passing, remove tests.
 
 ## Task Management with task-master
 
@@ -61,7 +61,7 @@ task-master show <task_id>
 # Mark a task as complete
 task-master set-status --id=<task_id> --status=done
 
-# Add notes to a task 
+# Add notes to a task
 task-master add-notes --id=<task_id> --notes="Implementation notes here"
 ```
 
@@ -77,7 +77,7 @@ Tests should mirror the structure of the code they're testing:
 │   │   └── __tests__/
 │   │       └── components/
 │   │           └── Button.test.tsx
-│   
+│
 ├── backend/
 │   ├── src/
 │   │   ├── controllers/
@@ -103,7 +103,7 @@ Consider task #2.1: "Implement Spotify OAuth Login Button Component"
    // frontend/src/__tests__/components/SpotifyLoginButton.test.tsx
    import { render, screen, fireEvent } from '@testing-library/react';
    import SpotifyLoginButton from '../../components/SpotifyLoginButton';
-   
+
    describe('SpotifyLoginButton', () => {
      it('renders a button with Spotify branding', () => {
        render(<SpotifyLoginButton />);
@@ -111,7 +111,7 @@ Consider task #2.1: "Implement Spotify OAuth Login Button Component"
        expect(button).toHaveTextContent('Login with Spotify');
        expect(button).toHaveClass('spotify-login-btn');
      });
-     
+
      it('calls the login function when clicked', () => {
        const mockLogin = jest.fn();
        render(<SpotifyLoginButton onLogin={mockLogin} />);
@@ -126,27 +126,27 @@ Consider task #2.1: "Implement Spotify OAuth Login Button Component"
    ```typescript
    // frontend/src/components/SpotifyLoginButton.tsx
    import { signIn } from 'next-auth/react';
-   
+
    interface SpotifyLoginButtonProps {
      onLogin?: () => void;
    }
-   
+
    const SpotifyLoginButton = ({ onLogin }: SpotifyLoginButtonProps) => {
      const handleLogin = () => {
        signIn('spotify', { callbackUrl: '/dashboard' });
        if (onLogin) onLogin();
      };
-     
+
      return (
-       <button 
-         className="spotify-login-btn" 
+       <button
+         className="spotify-login-btn"
          onClick={handleLogin}
        >
          Login with Spotify
        </button>
      );
    };
-   
+
    export default SpotifyLoginButton;
    ```
 
@@ -160,4 +160,4 @@ Consider task #2.1: "Implement Spotify OAuth Login Button Component"
 
 5. **Update Documentation** if needed
 
-Following this workflow ensures high-quality, well-tested code for each task in our project. 
+Following this workflow ensures high-quality, well-tested code for each task in our project.

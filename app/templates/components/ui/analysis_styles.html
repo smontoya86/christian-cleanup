@@ -49,29 +49,29 @@
     .bg-high { background-color: #ea580c; }
     .bg-medium { background-color: #ca8a04; }
     .bg-low { background-color: #16a34a; }
-    
+
     /* Playlist specific styles */
     .playlist-cover-img-detail {
-        max-height: 300px; 
+        max-height: 300px;
         width: auto;
     }
-    
+
     /* Song row styles */
     .song-row {
         transition: background-color 0.2s ease;
     }
-    
+
     .song-row:hover {
         background-color: rgba(0, 123, 255, 0.1);
     }
-    
+
     .album-art {
-        width: 50px !important; 
-        height: 50px !important; 
+        width: 50px !important;
+        height: 50px !important;
         object-fit: cover !important;
         aspect-ratio: 1/1 !important;
     }
-    
+
     /* Album art square containers */
     .album-art-square {
         width: 50px !important;
@@ -80,14 +80,14 @@
         aspect-ratio: 1/1 !important;
         display: block !important;
     }
-    
+
     .album-art-card {
         width: 100% !important;
         aspect-ratio: 1/1 !important;
         object-fit: cover !important;
         display: block !important;
     }
-    
+
     .album-art-detail {
         width: 150px !important;
         height: 150px !important;
@@ -95,113 +95,113 @@
         aspect-ratio: 1/1 !important;
         display: block !important;
     }
-    
+
     /* Analysis result styles */
     .badge-score {
         font-size: 0.9rem;
         padding: 0.4rem 0.8rem;
     }
-    
+
     .concern-badge {
         font-size: 0.7rem;
         padding: 0.2rem 0.5rem;
         margin-right: 0.25rem;
     }
-    
+
     /* Song title and text styles for proper dark mode support */
     .song-title-link {
         color: var(--dark-text);
         transition: color 0.2s ease;
     }
-    
+
     .song-title-link:hover {
         color: var(--primary-color);
     }
-    
+
     .song-album-text {
         color: var(--dark-text);
     }
-    
+
     /* Enhanced table styles for dark mode */
     .table-light {
         --bs-table-color: var(--dark-text);
         --bs-table-bg: var(--light-bg);
         --bs-table-border-color: var(--border-color);
     }
-    
+
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {
         .song-row:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
-        
+
         .table-light {
             --bs-table-color: var(--dark-text);
             --bs-table-bg: var(--card-bg);
             --bs-table-border-color: var(--border-color);
         }
-        
+
         .table thead th {
             color: var(--dark-text);
             background-color: var(--card-bg);
             border-color: var(--border-color);
         }
-        
+
         .table tbody td {
             color: var(--dark-text);
             border-color: var(--border-color);
         }
-        
+
         .song-title-link {
             color: var(--dark-text);
         }
-        
+
         .song-title-link:hover {
             color: var(--primary-color);
         }
-        
+
         .song-album-text {
             color: var(--dark-text);
         }
-        
+
         .card-title {
             color: var(--dark-text);
         }
-        
+
         .card-body {
             color: var(--dark-text);
         }
-        
+
         /* Fix dropdown and form elements */
         .form-select, .form-control {
             background-color: var(--card-bg);
             border-color: var(--border-color);
             color: var(--dark-text);
         }
-        
+
         .form-select:focus, .form-control:focus {
             background-color: var(--card-bg);
             border-color: var(--primary-color);
             color: var(--dark-text);
             box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
         }
-        
+
         .input-group-text {
             background-color: var(--card-bg);
             border-color: var(--border-color);
             color: var(--dark-text);
         }
-        
+
         /* Fix button styles */
         .btn-outline-secondary {
             color: var(--muted-text);
             border-color: var(--border-color);
         }
-        
+
         .btn-outline-secondary:hover {
             background-color: var(--light-bg);
             border-color: var(--border-color);
             color: var(--dark-text);
         }
     }
-</style> 
+</style>

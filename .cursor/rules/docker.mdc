@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: false
 ---
 ---
@@ -18,7 +18,7 @@ alwaysApply: true
 ### **Container Names & Services**
 
 - **Web Application**: `christiancleanupwindsurf-web-1`
-- **Database**: `christiancleanupwindsurf-db-1` 
+- **Database**: `christiancleanupwindsurf-db-1`
 - **Redis Cache/Queue**: `christiancleanupwindsurf-redis-1`
 - **Background Workers**: `christiancleanupwindsurf-worker-{1-6}`
 - **Monitoring**: `christiancleanupwindsurf-grafana-1`, `christiancleanupwindsurf-prometheus-1`
@@ -59,7 +59,7 @@ docker-compose logs -f web
 # These commands will fail or cause environment issues:
 python run.py              # ❌ NO - Use Docker web container
 flask shell                # ❌ NO - Use docker exec
-pip install                # ❌ NO - Use Dockerfile/requirements.txt  
+pip install                # ❌ NO - Use Dockerfile/requirements.txt
 psql                       # ❌ NO - Use docker exec to database container
 redis-cli                  # ❌ NO - Use docker exec to Redis container
 python -m pytest          # ❌ NO - Use docker exec to web container
@@ -104,20 +104,20 @@ python -m pytest          # ❌ NO - Use docker exec to web container
 **When working on this project:**
 
 1. ✅ **ALWAYS check container status first**: `docker-compose ps`
-2. ✅ **Use docker exec for all app commands**: Never run Python/Flask locally  
+2. ✅ **Use docker exec for all app commands**: Never run Python/Flask locally
 3. ✅ **Use helper script when possible**: `./docker-helper.sh <command>`
 4. ✅ **Monitor via Docker logs**: `docker logs <container>`
 5. ✅ **Restart services via Docker**: `docker-compose restart <service>`
 
 **Key Questions to Ask Yourself:**
-- Am I running this command in a Docker container? 
+- Am I running this command in a Docker container?
 - Does this command start with `docker exec` or `docker-compose`?
 - Am I using the correct container name?
 
 ### **Common Mistakes to Avoid**
 
 - **Environment Confusion**: Running Flask locally while containers expect Docker environment
-- **Port Conflicts**: Local services conflicting with Docker port mappings  
+- **Port Conflicts**: Local services conflicting with Docker port mappings
 - **Dependency Issues**: Installing packages locally instead of via Docker
 - **Database Access**: Trying to connect to localhost instead of Docker database
 - **Session Issues**: Local cookies/sessions incompatible with Docker app

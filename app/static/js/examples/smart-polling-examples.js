@@ -1,6 +1,6 @@
 /**
  * Smart Polling Integration Examples
- * 
+ *
  * These examples show how to integrate the ProgressPoller with existing UI components
  * for real-time progress updates during analysis jobs.
  */
@@ -10,7 +10,7 @@ function analyzeSongWithProgress(songId, progressBarElement, statusElement) {
     // Show initial loading state
     progressBarElement.style.width = '0%';
     statusElement.textContent = 'Starting analysis...';
-    
+
     // Start the analysis
     fetch(`/api/songs/${songId}/analyze`, { method: 'POST' })
         .then(response => response.json())
@@ -22,7 +22,7 @@ function analyzeSongWithProgress(songId, progressBarElement, statusElement) {
                         // Update progress bar
                         const percent = Math.round(progress.progress * 100);
                         progressBarElement.style.width = `${percent}%`;
-                        
+
                         // Update status text
                         const stepMessages = {
                             'starting': 'Initializing analysis...',
@@ -31,7 +31,7 @@ function analyzeSongWithProgress(songId, progressBarElement, statusElement) {
                             'complete': 'Analysis complete!'
                         };
                         statusElement.textContent = stepMessages[progress.current_step] || 'Processing...';
-                        
+
                         // Show ETA if available
                         if (progress.eta_seconds && progress.eta_seconds > 5) {
                             statusElement.textContent += ` (${Math.round(progress.eta_seconds)}s remaining)`;
@@ -40,7 +40,7 @@ function analyzeSongWithProgress(songId, progressBarElement, statusElement) {
                     onComplete: (progress) => {
                         progressBarElement.style.width = '100%';
                         statusElement.textContent = 'Analysis complete!';
-                        
+
                         // Reload the page or update the analysis results
                         setTimeout(() => {
                             window.location.reload();
@@ -80,13 +80,13 @@ function analyzePlaylistWithProgress(playlistId, containerElement) {
             <!-- Individual song progress will be added here -->
         </div>
     `;
-    
+
     containerElement.appendChild(progressContainer);
-    
+
     const overallProgressBar = document.getElementById('overall-progress-bar');
     const overallStatus = document.getElementById('overall-status');
     const songProgressList = document.getElementById('song-progress-list');
-    
+
     // Start playlist analysis
     fetch(`/api/playlists/${playlistId}/analyze-unanalyzed`, { method: 'POST' })
         .then(response => response.json())
@@ -97,13 +97,13 @@ function analyzePlaylistWithProgress(playlistId, containerElement) {
                         // Update overall progress
                         const percent = Math.round(progress.progress * 100);
                         overallProgressBar.style.width = `${percent}%`;
-                        
+
                         // Update status with song count
                         if (progress.metadata && progress.metadata.total_songs) {
                             const current = progress.metadata.processed_songs || 0;
                             const total = progress.metadata.total_songs;
                             overallStatus.textContent = `Analyzing songs: ${current}/${total}`;
-                            
+
                             if (progress.eta_seconds && progress.eta_seconds > 10) {
                                 const etaMinutes = Math.round(progress.eta_seconds / 60);
                                 if (etaMinutes < 60) {
@@ -114,7 +114,7 @@ function analyzePlaylistWithProgress(playlistId, containerElement) {
                                 }
                             }
                         }
-                        
+
                         // Update individual song progress if available
                         if (progress.metadata && progress.metadata.current_song) {
                             updateSongProgress(songProgressList, progress.metadata.current_song, progress.metadata.song_progress || 0);
@@ -123,7 +123,7 @@ function analyzePlaylistWithProgress(playlistId, containerElement) {
                     onComplete: (progress) => {
                         overallProgressBar.style.width = '100%';
                         overallStatus.textContent = 'Playlist analysis complete!';
-                        
+
                         // Show completion message and reload
                         setTimeout(() => {
                             alert('Playlist analysis completed! The page will refresh to show results.');
@@ -143,7 +143,7 @@ function analyzePlaylistWithProgress(playlistId, containerElement) {
 // Helper function to update individual song progress
 function updateSongProgress(containerElement, songInfo, progress) {
     let songElement = document.getElementById(`song-progress-${songInfo.id}`);
-    
+
     if (!songElement) {
         songElement = document.createElement('div');
         songElement.id = `song-progress-${songInfo.id}`;
@@ -160,13 +160,13 @@ function updateSongProgress(containerElement, songInfo, progress) {
         `;
         containerElement.appendChild(songElement);
     }
-    
+
     const progressBar = songElement.querySelector('.song-progress-bar');
     const statusElement = songElement.querySelector('.song-status');
-    
+
     const percent = Math.round(progress * 100);
     progressBar.style.width = `${percent}%`;
-    
+
     if (progress >= 1.0) {
         statusElement.textContent = 'Complete';
         progressBar.style.backgroundColor = '#28a745'; // Green for complete
@@ -182,22 +182,22 @@ function updateSongProgress(containerElement, songInfo, progress) {
 function startBackgroundAnalysisWithNotification(userId) {
     // Show a small notification
     const notification = createNotification('Starting background analysis...', 'info');
-    
+
     fetch(`/api/admin/reanalyze-user/${userId}`, { method: 'POST' })
         .then(response => response.json())
         .then(data => {
             if (data.success && data.job_id) {
                 updateNotification(notification, 'Background analysis in progress...', 'info');
-                
+
                 pollJobProgress(data.job_id, {
                     initialInterval: 5000, // Poll every 5 seconds for background jobs
                     maxInterval: 30000,    // Max 30 seconds between polls
-                    
+
                     onProgress: (progress) => {
                         if (progress.metadata && progress.metadata.total_songs) {
                             const current = progress.metadata.processed_songs || 0;
                             const total = progress.metadata.total_songs;
-                            updateNotification(notification, 
+                            updateNotification(notification,
                                 `Background analysis: ${current}/${total} songs processed`, 'info');
                         }
                     },
@@ -242,9 +242,9 @@ function createQueueStatusDashboard(containerElement) {
             </div>
         </div>
     `;
-    
+
     containerElement.innerHTML = dashboardHTML;
-    
+
     // Poll queue status every 3 seconds
     function updateQueueStatus() {
         Promise.all([
@@ -255,14 +255,14 @@ function createQueueStatusDashboard(containerElement) {
             document.getElementById('pending-jobs').textContent = queueData.queue_size || 0;
             document.getElementById('active-jobs').textContent = queueData.active_jobs || 0;
             document.getElementById('worker-status').textContent = workerData.status || 'Unknown';
-            
+
             // Update active jobs list
             updateActiveJobsList(queueData.active_jobs_details || []);
         }).catch(error => {
             console.error('Queue status update error:', error);
         });
     }
-    
+
     // Update immediately and then every 3 seconds
     updateQueueStatus();
     setInterval(updateQueueStatus, 3000);
@@ -270,12 +270,12 @@ function createQueueStatusDashboard(containerElement) {
 
 function updateActiveJobsList(activeJobs) {
     const container = document.getElementById('active-jobs-list');
-    
+
     if (activeJobs.length === 0) {
         container.innerHTML = '<p class="no-jobs">No active jobs</p>';
         return;
     }
-    
+
     container.innerHTML = activeJobs.map(job => `
         <div class="active-job-item" data-job-id="${job.job_id}">
             <div class="job-info">
@@ -300,11 +300,11 @@ function createNotification(message, type = 'info') {
         <span class="notification-message">${message}</span>
         <button class="notification-close" onclick="removeNotification(this.parentElement)">×</button>
     `;
-    
+
     // Add to notification container or body
     const container = document.getElementById('notification-container') || document.body;
     container.appendChild(notification);
-    
+
     return notification;
 }
 
@@ -474,4 +474,4 @@ if (typeof module !== 'undefined' && module.exports) {
         createQueueStatusDashboard,
         exampleCSS
     };
-} 
+}

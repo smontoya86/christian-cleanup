@@ -318,7 +318,7 @@ Join Response Channel: [Link/Channel name]
 ```
 Subject: Service Alert - [Brief Description]
 
-We are currently experiencing [brief description of issue]. 
+We are currently experiencing [brief description of issue].
 
 What happened: [Simple explanation]
 Impact: [What users are experiencing]
@@ -762,7 +762,7 @@ This incident response plan should be:
 - Tested annually through tabletop exercises
 - Validated through simulated incident drills
 
-**Document Version**: 1.0  
-**Last Updated**: [Date]  
-**Next Review Date**: [Date + 3 months]  
-**Document Owner**: Security Lead 
+**Document Version**: 1.0
+**Last Updated**: [Date]
+**Next Review Date**: [Date + 3 months]
+**Document Owner**: Security Lead
