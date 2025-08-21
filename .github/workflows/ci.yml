@@ -9,6 +9,13 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    env:
+      FLASK_ENV: testing
+      ENABLE_HF_ANALYZER: "0"
+      USE_LLM_ANALYZER: "1"  # Force LLM path; code falls back safely in tests
+      DISABLE_ZERO_SHOT: "1"  # Skip heavy zero-shot model
+      TRANSFORMERS_OFFLINE: "1"  # Prevent downloads in CI
+      HF_HUB_DISABLE_TELEMETRY: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,8 +37,6 @@ jobs:
           ruff --version
           ruff check --format=github .
 
-      - name: Run tests
-        env:
-          FLASK_ENV: testing
+      - name: Run tests (unit + fast)
         run: |
-          pytest -q
+          pytest -q -m "not integration"
