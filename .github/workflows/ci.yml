@@ -25,10 +25,10 @@ jobs:
           pip install -r requirements.txt
           pip install ruff==0.6.5
 
-      - name: Lint (ruff report only)
+      - name: Lint (ruff blocking)
         run: |
           ruff --version
-          ruff check --format=github --exit-zero .
+          ruff check --format=github .
 
       - name: Run tests
         env:
