@@ -1,7 +1,3 @@
----
-# Docker Compose configuration optimized for sustained ML model operation
-# This configuration accounts for heavy transformer models with proper resource allocation
-
 services:
   web:
     build: .
@@ -109,25 +105,8 @@ services:
 
 volumes:
   postgres_data:
-  model_cache:  # 🔥 NEW: Persistent storage for model files
+  model_cache:
 
 networks:
   app-network:
     driver: bridge
-
-# 🔥 PRODUCTION VARIANT: Even more resources for production
----
-x-production-web-resources: &production-web-resources
-  deploy:
-    resources:
-      limits:
-        memory: 12G     # Production: Even higher memory
-        cpus: '4.0'     # Production: More CPUs
-      reservations:
-        memory: 6G
-        cpus: '2.0'
-    restart_policy:
-      condition: on-failure
-      delay: 10s
-      max_attempts: 3
-      window: 120s
