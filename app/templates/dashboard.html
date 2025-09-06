@@ -9,17 +9,17 @@
         <div class="btn-group" role="group">
             {% if sync_status and sync_status.has_active_sync %}
                 <button class="btn btn-outline-secondary" disabled id="syncButton">
-                    <i class="fas fa-spinner fa-spin me-2"></i>Syncing...
+                    Syncing...
                 </button>
             {% else %}
                 <form action="{{ url_for('main.sync_playlists') }}" method="POST" class="d-inline">
                     <button type="submit" class="btn btn-outline-primary" id="syncButton" data-analytics="sync_playlists_click">
-                        <i class="fas fa-sync-alt me-2"></i>Sync Playlists
+                        🔄 Sync Playlists
                     </button>
                 </form>
             {% endif %}
             <button class="btn btn-outline-secondary" onclick="location.reload()">
-                <i class="fas fa-redo me-2"></i>Refresh
+                🔄 Refresh
             </button>
         </div>
     </div>
@@ -30,13 +30,13 @@
             <div class="text-end">
                 {% if last_sync_info and last_sync_info.last_sync_at %}
                     <small class="text-muted">
-                        <i class="fas fa-sync-alt me-1"></i>
+                        🔄
                         Last sync: <span id="lastSync" data-timestamp="{{ last_sync_info.last_sync_at }}">{{ last_sync_info.last_sync_at }}</span><br>
                     </small>
                 {% endif %}
                 {% if sync_status and sync_status.checked_at %}
                     <small class="text-muted">
-                        <i class="fas fa-clock me-1"></i>
+                        ⏰
                         Status checked: <span id="lastChecked" data-timestamp="{{ sync_status.checked_at }}">{{ sync_status.checked_at }}</span>
                     </small>
                 {% endif %}
@@ -46,17 +46,19 @@
 
     {% if error_message %}
         <div class="alert alert-danger" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>{{ error_message }}
+            ⚠️ {{ error_message }}
         </div>
     {% endif %}
 
     <!-- Analysis Controls -->
-    {% if stats.total_songs > stats.analyzed_songs %}
+    {% set total_songs_safe = stats.total_songs|default(0, true)|int %}
+    {% set analyzed_safe = stats.analyzed_songs|default(0, true)|int %}
+    {% if total_songs_safe > analyzed_safe %}
     <div id="unanalyzedSongsAlert" class="alert alert-info" role="alert">
-        <i class="fas fa-info-circle me-2"></i>
+        ℹ️
         You have {{ stats.total_songs - stats.analyzed_songs }} unanalyzed songs. Click "Analyze All" to start.
         <button id="start-analysis-btn" class="btn btn-primary btn-sm ms-2" data-analytics="analyze_all_click">
-            <i class="fas fa-play"></i> Analyze All
+            ▶️ Analyze All
         </button>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
@@ -65,7 +67,7 @@
     <!-- Song Analysis Progress Indicator (ONLY ONE) -->
     <div id="analysisProgressAlert" class="alert alert-warning" role="alert" style="display: none;">
         <div class="d-flex align-items-center mb-3">
-            <i class="fas fa-brain fa-pulse me-2"></i>
+            🧠
             <div class="flex-grow-1">
                 <strong>Song Analysis in Progress</strong>
                 <div class="d-flex justify-content-between align-items-center mt-1">
@@ -120,15 +122,15 @@
     </div>
 
     <!-- Quick Stats Section (ONLY ONE) -->
-    <div class="row mb-4 g-3">
+    <div class="row mb-4 g-3" data-stat-card>
         <div class="col-md-4">
             <div class="card text-center h-100 border-primary">
                 <div class="card-body">
-                    <h5 class="card-title text-primary"><i class="fas fa-list-music me-2"></i>Total Playlists</h5>
-                    <p class="card-text fs-2 fw-bold text-primary">{{ stats.total_playlists }}</p>
+                    <h5 class="card-title text-primary">Total Playlists</h5>
+                    <p class="card-text fs-2 fw-bold text-primary" id="totalPlaylists">{{ stats.total_playlists }}</p>
                     <small class="text-muted">
-                        {% if stats.total_songs > 0 %}
-                            {{ stats.total_songs }} total songs
+                        {% if (stats.total_songs|default(0, true)) > 0 %}
+                            {{ stats.total_songs|default(0, true) }} total songs
                         {% else %}
                             No playlists synced yet
                         {% endif %}
@@ -136,24 +138,24 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4" data-stat-card>
             <div class="card text-center h-100 border-info">
                 <div class="card-body">
-                    <h5 class="card-title text-info"><i class="fas fa-music me-2"></i>Songs Analyzed</h5>
-                    <p class="card-text fs-2 fw-bold text-info" id="totalAnalyzedSongs">{{ stats.analyzed_songs }}</p>
+                    <h5 class="card-title text-info">Songs Analyzed</h5>
+                    <p class="card-text fs-2 fw-bold text-info" id="totalAnalyzedSongs">{{ analyzed_safe }}</p>
                     <small class="text-muted">
-                        {% if stats.total_songs > 0 %}
-                            <span id="analysisPercentage">{{ '%.1f'|format((stats.analyzed_songs / stats.total_songs) * 100) }}%</span> of total songs
+                        {% if total_songs_safe > 0 %}
+                            <span id="analysisPercentage">{{ '%.1f'|format((analyzed_safe / total_songs_safe) * 100) }}</span>% of total songs
                         {% else %}
                             Ready for analysis
                         {% endif %}
                     </small>
                     <!-- Analysis Progress Mini-Bar -->
-                    {% if stats.total_songs > 0 %}
+                    {% if total_songs_safe > 0 %}
                     <div class="progress mt-2" style="height: 8px;">
                         <div class="progress-bar bg-info"
                              role="progressbar"
-                             style="width: {% if stats.analyzed_songs and stats.total_songs %}{{ '%.1f'|format((stats.analyzed_songs / stats.total_songs) * 100) }}{% else %}0{% endif %}%"
+                             style="width: {{ '%.1f'|format((analyzed_safe / (total_songs_safe if total_songs_safe > 0 else 1)) * 100) }}%"
                              id="miniAnalysisProgress">
                         </div>
                     </div>
@@ -161,13 +163,13 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4" data-stat-card>
             <div class="card text-center h-100 border-success">
                 <div class="card-body">
-                    <h5 class="card-title text-success"><i class="fas fa-check-circle me-2"></i>Clean Playlists</h5>
-                    <p class="card-text fs-2 fw-bold text-success">{{ stats.clean_playlists }}</p>
+                    <h5 class="card-title text-success">Clean Playlists</h5>
+                    <p class="card-text fs-2 fw-bold text-success" id="cleanPlaylists">{{ stats.clean_playlists if stats.clean_playlists is not none else '-' }}</p>
                     <small class="text-muted">
-                        {% if stats.total_playlists > 0 %}
+                        {% if stats.total_playlists is number and stats.total_playlists > 0 and stats.clean_playlists is number %}
                             {{ '%.1f'|format((stats.clean_playlists / stats.total_playlists) * 100) }}% of playlists
                         {% else %}
                             Score ≥ 75%
@@ -194,7 +196,7 @@
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <span class="input-group-text">🔍</span>
                 <input class="form-control" type="search" id="playlistSearchInput" placeholder="Search playlists by name or description..." aria-label="Search">
             </div>
         </div>
@@ -229,21 +231,33 @@
                      data-tracks="{{ playlist.track_count or 0 }}">
                     {% set is_unlocked = (not unlocked_playlist_id) or (playlist.id == unlocked_playlist_id) or current_user.is_admin %}
                     <div class="card h-100 shadow-sm playlist-card-custom position-relative">
-                        {% set urls = playlist._top_album_art_urls if playlist._top_album_art_urls is defined else [] %}
-                        {% if urls and urls|length > 0 %}
+                        {# Use ONLY cover_collage_urls (pre-computed in backend) for consistent rendering #}
+                        {% if playlist.cover_collage_urls and playlist.cover_collage_urls|length > 0 %}
+                            {% set collage_urls = playlist.cover_collage_urls %}
                             <div class="card-img-top overflow-hidden" style="height: 200px;">
-                                <div class="w-100 h-100" style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;">
-                                    {% for i in range(0,4) %}
-                                        {% set url = urls[i] if i < (urls|length) else (urls[0] if (urls|length) > 0 else url_for('static', filename='images/default_album_art.png')) %}
-                                        <img src="{{ url }}" alt="Album art" style="width:100%; height:100%; object-fit: cover;" referrerpolicy="no-referrer" loading="lazy">
-                                    {% endfor %}
-                                </div>
+                                {% if collage_urls|length <= 2 %}
+                                    <div class="w-100 h-100" style="display: grid; grid-template-columns: 1fr 1fr;">
+                                        {% for i in range(0, 2) %}
+                                            {% set url = collage_urls[i] if i < collage_urls|length else url_for('static', filename='images/default_album_art.png') %}
+                                            <img src="{{ url }}" alt="Album art" style="width:100%; height:100%; object-fit: cover;" referrerpolicy="no-referrer" loading="lazy" onerror="this.src='{{ url_for('static', filename='images/default_album_art.png') }}'">
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="w-100 h-100" style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1px; height: 200px;">
+                                        {% for i in range(0, 4) %}
+                                            {% set url = collage_urls[i] if i < collage_urls|length else url_for('static', filename='images/default_album_art.png') %}
+                                            <div style="width: 100%; height: 99px; overflow: hidden;">
+                                                <img src="{{ url }}" alt="Album art" style="width: 100%; height: 100%; object-fit: cover; display: block;" referrerpolicy="no-referrer" loading="lazy" onerror="this.src='{{ url_for('static', filename='images/default_album_art.png') }}'">
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
                         {% elif playlist.image_url %}
-                            <img src="{{ playlist.image_url }}" class="card-img-top" alt="{{ playlist.name }} cover" style="height: 200px; object-fit: cover;" referrerpolicy="no-referrer" loading="lazy">
+                            <img src="{{ playlist.image_url }}" class="card-img-top" alt="{{ playlist.name }} cover" style="height: 200px; object-fit: cover;" referrerpolicy="no-referrer" loading="lazy" onerror="this.src='{{ url_for('static', filename='images/default_album_art.png') }}'">
                         {% else %}
                             <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
-                                <i class="fas fa-music text-muted fa-3x"></i>
+                                <div class="text-muted" style="font-size: 3rem;">🎵</div>
                             </div>
                         {% endif %}
                         <div class="card-body d-flex flex-column {% if not is_unlocked %}blurred-overlay{% endif %}">
@@ -254,11 +268,11 @@
                             <div class="mt-auto">
                                 <ul class="list-unstyled mb-3 text-muted small">
                                     <li class="d-flex justify-content-between">
-                                        <span><i class="fas fa-music me-1"></i>Tracks:</span>
+                                        <span>Tracks:</span>
                                         <strong>{{ playlist.track_count or 0 }}</strong>
                                     </li>
                                     <li class="d-flex justify-content-between">
-                                        <span><i class="fas fa-star me-1"></i>Score:</span>
+                                        <span>Score:</span>
                                         {% if playlist.score is not none %}
                                             {% set score_percent = playlist.score * 100 %}
                                             <strong class="
@@ -274,7 +288,7 @@
                                 </ul>
                                 <a href="{{ url_for('main.playlist_detail', playlist_id=playlist.id) }}"
                                    class="btn btn-primary btn-sm w-100 mb-2" {% if not is_unlocked %}disabled aria-disabled="true"{% endif %} data-analytics="view_playlist_click">
-                                    <i class="fas fa-eye me-1"></i>View Details
+View Details
                                 </a>
 
                                 {% if playlist.score is not none %}
@@ -282,7 +296,7 @@
                                     {% if score_percent >= 75 %}
                                         <form method="post" action="{{ url_for('main.whitelist_playlist', playlist_id=playlist.id) }}" class="d-inline w-100">
                                             <button type="submit" class="btn btn-success btn-sm w-100" data-analytics="whitelist_playlist_click">
-                                                <i class="fas fa-check me-1"></i>Whitelist Playlist
+Whitelist Playlist
                                             </button>
                                         </form>
                                     {% endif %}
@@ -304,9 +318,9 @@
             {% endfor %}
         </div>
 
-        <!-- Pagination Controls -->
+        <!-- Pagination Controls / Load More -->
         {% if pagination and pagination.total_pages > 1 %}
-        <nav aria-label="Playlist pagination" class="mt-4">
+        <nav aria-label="Playlist pagination" class="mt-4 d-none d-md-block">
             <div class="row align-items-center">
                 <div class="col-auto">
                     <p class="text-muted mb-0">
@@ -318,7 +332,7 @@
                         <!-- First Page -->
                         {% if pagination.page > 1 %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('core.dashboard', page=1) }}" aria-label="First">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=1) }}" aria-label="First">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
                         </li>
@@ -331,7 +345,7 @@
                         <!-- Previous Page -->
                         {% if pagination.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('core.dashboard', page=pagination.prev_num) }}" aria-label="Previous">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.prev_num) }}" aria-label="Previous">
                                 <span aria-hidden="true">&lsaquo;</span>
                             </a>
                         </li>
@@ -347,7 +361,7 @@
 
                         {% if start_page > 1 %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('core.dashboard', page=1) }}">1</a>
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=1) }}">1</a>
                         </li>
                         {% if start_page > 2 %}
                         <li class="page-item disabled">
@@ -363,7 +377,7 @@
                             </li>
                             {% else %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('core.dashboard', page=page_num) }}">{{ page_num }}</a>
+                                <a class="page-link" href="{{ url_for('main.dashboard', page=page_num) }}">{{ page_num }}</a>
                             </li>
                             {% endif %}
                         {% endfor %}
@@ -375,14 +389,14 @@
                         </li>
                         {% endif %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('core.dashboard', page=pagination.total_pages) }}">{{ pagination.total_pages }}</a>
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.total_pages) }}">{{ pagination.total_pages }}</a>
                         </li>
                         {% endif %}
 
                         <!-- Next Page -->
                         {% if pagination.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('core.dashboard', page=pagination.next_num) }}" aria-label="Next">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.next_num) }}" aria-label="Next">
                                 <span aria-hidden="true">&rsaquo;</span>
                             </a>
                         </li>
@@ -395,7 +409,7 @@
                         <!-- Last Page -->
                         {% if pagination.page < pagination.total_pages %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('core.dashboard', page=pagination.total_pages) }}" aria-label="Last">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=pagination.total_pages) }}" aria-label="Last">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>
@@ -408,20 +422,27 @@
                 </div>
             </div>
         </nav>
+        <div class="d-grid gap-2 d-md-none mt-3">
+            {% if pagination.has_next %}
+            <a class="btn btn-outline-primary" href="{{ url_for('main.dashboard', page=pagination.next_num) }}" id="loadMoreBtn">
+                ➕ Load more
+            </a>
+            {% endif %}
+        </div>
         {% endif %}
     {% else %}
         <div class="text-center py-5">
-            <i class="fas fa-spotify fa-4x text-success mb-4"></i>
+            <div class="text-success mb-4" style="font-size: 4rem;">🎵</div>
             <h4>Ready to Sync Your Playlists!</h4>
             {% if error_message %}
                 <p class="text-muted">There was an error loading your playlists. Please try refreshing the page.</p>
                 <button class="btn btn-primary mt-3" onclick="location.reload()">
-                    <i class="fas fa-sync-alt me-2"></i>Try Again
+                    🔄 Try Again
                 </button>
             {% else %}
                 <p class="text-muted mb-3">You're successfully logged in to Spotify! Click "Sync Playlists" above to load your music library and start analyzing your songs.</p>
                 <div class="alert alert-info d-inline-block text-start" style="max-width: 500px;">
-                    <h6><i class="fas fa-info-circle me-2"></i>What happens when you sync?</h6>
+                    <h6>ℹ️ What happens when you sync?</h6>
                     <ul class="mb-0 small">
                         <li>We'll fetch all your Spotify playlists</li>
                         <li>Import song information (titles, artists, albums)</li>
@@ -431,7 +452,7 @@
                 </div>
                 <div class="mt-4">
                     <a href="{{ url_for('main.sync_playlists') }}" class="btn btn-success btn-lg">
-                        <i class="fas fa-download me-2"></i>Sync My Playlists
+                        ⬇️ Sync My Playlists
                     </a>
                 </div>
             {% endif %}
@@ -443,7 +464,7 @@
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
     <div id="syncCompleteToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header">
-            <i class="fas fa-check-circle text-success me-2"></i>
+            ✅
             <strong class="me-auto">Playlist Sync</strong>
             <small class="text-muted">just now</small>
             <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
@@ -456,6 +477,69 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Async populate dashboard stats
+    try {
+        fetch('/api/dashboard/stats', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(d => {
+                if (!d || d.success !== true || !d.totals) return;
+                const t = d.totals;
+                const elPlaylists = document.getElementById('totalPlaylists');
+                const elAnalyzed = document.getElementById('totalAnalyzedSongs');
+                const elPercent = document.getElementById('analysisPercentage');
+                const elMini = document.getElementById('miniAnalysisProgress');
+                const elClean = document.getElementById('cleanPlaylists');
+
+                if (elPlaylists && typeof t.total_playlists === 'number') {
+                    elPlaylists.textContent = t.total_playlists;
+                    
+                    // Update the total songs subtitle
+                    const playlistsSubtitle = elPlaylists.parentElement.querySelector('.text-muted');
+                    if (playlistsSubtitle && t.total_songs > 0) {
+                        playlistsSubtitle.textContent = t.total_songs + ' total songs';
+                    }
+                }
+                if (elAnalyzed && typeof t.analyzed_songs === 'number') {
+                    elAnalyzed.textContent = t.analyzed_songs;
+                    
+                    // Update the subtitle text
+                    const analyzedSubtitle = elAnalyzed.parentElement.querySelector('.text-muted');
+                    if (analyzedSubtitle && t.total_songs > 0) {
+                        analyzedSubtitle.innerHTML = `<span id="analysisPercentage">${t.analysis_progress.toFixed(1)}</span>% of total songs`;
+                        
+                        // Show the progress bar if it's hidden and add it if it doesn't exist
+                        let progressContainer = elAnalyzed.parentElement.querySelector('.progress');
+                        if (!progressContainer) {
+                            progressContainer = document.createElement('div');
+                            progressContainer.className = 'progress mt-2';
+                            progressContainer.style.height = '8px';
+                            progressContainer.innerHTML = '<div class="progress-bar bg-info" role="progressbar" id="miniAnalysisProgress"></div>';
+                            analyzedSubtitle.parentElement.appendChild(progressContainer);
+                        }
+                        progressContainer.style.display = 'block';
+                        
+                        // Update the progress bar width
+                        const progressBar = progressContainer.querySelector('.progress-bar');
+                        if (progressBar) {
+                            progressBar.style.width = t.analysis_progress + '%';
+                        }
+                    }
+                }
+                if (elPercent && typeof t.analysis_progress === 'number') elPercent.textContent = t.analysis_progress.toFixed(1) + '%';
+                if (elMini && typeof t.analysis_progress === 'number') elMini.style.width = t.analysis_progress + '%';
+                if (elClean && typeof t.clean_playlists === 'number') {
+                    elClean.textContent = t.clean_playlists;
+                    
+                    // Update clean playlists percentage
+                    const cleanPercentElement = elClean.parentElement.querySelector('.text-muted');
+                    if (cleanPercentElement && t.total_playlists > 0) {
+                        const cleanPct = ((t.clean_playlists / t.total_playlists) * 100).toFixed(1);
+                        cleanPercentElement.textContent = cleanPct + '% of playlists';
+                    }
+                }
+            })
+            .catch(() => {});
+    } catch(_) {}
     const searchInput = document.getElementById('playlistSearchInput');
     const scoreFilter = document.getElementById('scoreFilter');
     const playlistItems = document.querySelectorAll('.playlist-item');
@@ -1013,36 +1097,36 @@ function updateAllProgressDisplays(data) {
         }
     }
 
-    // ===== 2. UPDATE SONGS ANALYZED CARD (CRITICAL FIX) =====
-    const totalAnalyzedSongsElement = document.getElementById('totalAnalyzedSongs');
-    const analysisPercentageElement = document.getElementById('analysisPercentage');
-    const miniProgressBar = document.getElementById('miniAnalysisProgress');
+    // ===== 2. UPDATE SONGS ANALYZED CARD (ONLY DURING ACTIVE ANALYSIS) =====
+    // Only update dashboard stats if there's actually an active analysis running
+    // Otherwise, let the dashboard stats API update handle the final counts
+    if (data && data.active === true && (completed > 0 || total > 0)) {
+        const totalAnalyzedSongsElement = document.getElementById('totalAnalyzedSongs');
+        const analysisPercentageElement = document.getElementById('analysisPercentage');
+        const miniProgressBar = document.getElementById('miniAnalysisProgress');
 
-    // Update the songs analyzed count
-                    if (totalAnalyzedSongsElement && data.active) {
-                    const oldValue = totalAnalyzedSongsElement.textContent;
-                    totalAnalyzedSongsElement.textContent = completed;
-        console.log(`✅ Songs Analyzed Card: Updated count from ${oldValue} to ${completed}`);
-    } else {
-        console.error(`❌ Element 'totalAnalyzedSongs' not found!`);
-    }
+        // Update the songs analyzed count (silent if element missing)
+        if (totalAnalyzedSongsElement) {
+            const oldValue = totalAnalyzedSongsElement.textContent;
+            totalAnalyzedSongsElement.textContent = completed;
+            console.log(`✅ Songs Analyzed Card: Updated count from ${oldValue} to ${completed}`);
+        }
 
-    // Update the percentage text
-                    if (analysisPercentageElement && data.active) {
-                    const oldValue = analysisPercentageElement.textContent;
-                    analysisPercentageElement.textContent = `${percentage.toFixed(1)}%`;
-        console.log(`✅ Songs Analyzed Card: Updated percentage from ${oldValue} to ${percentage.toFixed(1)}%`);
-    } else {
-        console.error(`❌ Element 'analysisPercentage' not found!`);
-    }
+        // Update the percentage text (silent if element missing)
+        if (analysisPercentageElement) {
+            const oldValue = analysisPercentageElement.textContent || '';
+            analysisPercentageElement.textContent = `${percentage.toFixed(1)}%`;
+            console.log(`✅ Songs Analyzed Card: Updated percentage from ${oldValue} to ${percentage.toFixed(1)}%`);
+        }
 
-    // Update the mini progress bar
-                    if (miniProgressBar && data.active) {
-                    const oldWidth = miniProgressBar.style.width;
-                    miniProgressBar.style.width = `${percentage}%`;
-        console.log(`✅ Songs Analyzed Card: Updated mini progress bar from ${oldWidth} to ${percentage}%`);
+        // Update the mini progress bar (silent if element missing)
+        if (miniProgressBar) {
+            const oldWidth = miniProgressBar.style.width || '';
+            miniProgressBar.style.width = `${percentage}%`;
+            console.log(`✅ Songs Analyzed Card: Updated mini progress bar from ${oldWidth} to ${percentage}%`);
+        }
     } else {
-        console.error(`❌ Element 'miniAnalysisProgress' not found!`);
+        console.log(`⏭️ Skipping Songs Analyzed card update (no active analysis or completed=${completed}, total=${total})`);
     }
 
     console.log(`🎯 UNIFIED PROGRESS UPDATE COMPLETE: All displays now show ${completed}/${total} (${percentage}%)`);
@@ -1144,7 +1228,7 @@ function hideAnalysisProgress() {
     if (startBtn) {
         startBtn.style.display = 'inline-block';
         startBtn.disabled = false;
-        startBtn.innerHTML = '<i class="fas fa-play"></i> Analyze All';
+        startBtn.innerHTML = '▶️ Analyze All';
         console.log('✅ Showed and reset start analysis button');
     }
 }
@@ -1152,7 +1236,7 @@ function hideAnalysisProgress() {
 async function startBackgroundAnalysis() {
     const btn = document.getElementById('start-analysis-btn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+    btn.innerHTML = '⏳ Starting...';
 
     try {
                     const response = await fetch('/api/analyze-all', {
@@ -1167,14 +1251,14 @@ async function startBackgroundAnalysis() {
         if (data.success) {
             if (data.already_complete) {
                 // All songs are already analyzed
-                btn.innerHTML = '<i class="fas fa-check-circle text-success"></i> All Songs Analyzed';
+                btn.innerHTML = '✅ All Songs Analyzed';
                 btn.disabled = true;
 
                 // Show a brief success message
                 const alertDiv = document.createElement('div');
                 alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
                 alertDiv.innerHTML = `
-                    <i class="fas fa-check-circle"></i>
+                    ✅
                     <strong>Analysis Complete!</strong> ${data.message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 `;
@@ -1204,7 +1288,7 @@ async function startBackgroundAnalysis() {
         console.error('Error starting analysis:', error);
         alert('Failed to start analysis. Please try again.');
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-play"></i> Analyze All';
+        btn.innerHTML = '▶️ Analyze All';
     }
 }
 </script>

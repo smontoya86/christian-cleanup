@@ -118,7 +118,6 @@ class TestAnalyzePlaylistButton:
             # Add completed analysis
             analysis = AnalysisResult(
                 song_id=song.id,
-                status="completed",
                 score=85.5,
                 concern_level="low",
                 positive_themes_identified={"love": True, "hope": True},
@@ -170,7 +169,6 @@ class TestAnalyzePlaylistButton:
             if i < 2:
                 analysis = AnalysisResult(
                     song_id=song.id,
-                    status="completed",
                     score=85.5,
                     concern_level="low",
                     positive_themes_identified={"love": True},
@@ -221,19 +219,17 @@ class TestAnalyzePlaylistButton:
         mock_service.assert_called_once()
         mock_analyzer.enqueue_analysis_job.assert_called()
 
-    def test_javascript_includes_song_analyzer(self, authenticated_client, sample_playlist):
-        """Test that the playlist detail page includes the song-analyzer.js script"""
+    def test_playlist_detail_includes_progress_ui(self, authenticated_client, sample_playlist):
+        """Test that the playlist detail page includes in-page progress UI elements"""
         response = authenticated_client.get(
             url_for("main.playlist_detail", playlist_id=sample_playlist.id)
         )
         soup = BeautifulSoup(response.data, "html.parser")
-
-        # Check for the JavaScript include
-        script_tags = soup.find_all("script", src=True)
-        song_analyzer_scripts = [
-            script for script in script_tags if "song-analyzer.js" in script.get("src", "")
-        ]
-        assert len(song_analyzer_scripts) > 0, "song-analyzer.js should be included in the page"
+        # Check for in-page progress elements
+        assert soup.find(id="analysisProgress") is not None
+        assert soup.find(id="progressText") is not None
+        assert soup.find(id="progressPercent") is not None
+        assert soup.find(id="analysisStatus") is not None
 
     def test_analyze_button_has_data_attributes(self, authenticated_client, sample_playlist):
         """Test that the analyze button has the correct data attributes for JavaScript"""
@@ -280,12 +276,8 @@ class TestAnalyzePlaylistButton:
         assert analyze_btn.get("data-playlist-id") == str(playlist.id)
         assert analyze_btn.get("data-playlist-name") == playlist.name
 
-        # Verify the song-analyzer.js script is included
-        script_tags = soup.find_all("script", src=True)
-        song_analyzer_scripts = [
-            script for script in script_tags if "song-analyzer.js" in script.get("src", "")
-        ]
-        assert len(song_analyzer_scripts) > 0, "song-analyzer.js should be included"
+        # Verify progress UI exists
+        assert soup.find(id="analysisProgress") is not None
 
         # Test that the route exists and works (this simulates what the JavaScript would do)
         analysis_response = authenticated_client.post(
@@ -314,12 +306,8 @@ class TestAnalyzePlaylistButton:
         analyze_btn = soup.find("button", class_="analyze-playlist-btn")
         assert analyze_btn is not None
 
-        # The JavaScript should be able to poll for playlist analysis status
-        # This test verifies the infrastructure exists for progress tracking
-        script_content = response.data.decode("utf-8")
-        assert (
-            "song-analyzer.js" in script_content
-        ), "Should include song analyzer script for progress tracking"
+        # The page should include progress container for JS polling updates
+        assert b"analysisProgress" in response.data
 
     def test_playlist_progress_api_endpoint(self, authenticated_client, sample_playlist_with_songs):
         """Test that the playlist progress API endpoint returns expected data format"""

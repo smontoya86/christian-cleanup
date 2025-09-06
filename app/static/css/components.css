@@ -924,3 +924,244 @@ td .concern-badge {
         font-size: 0.8rem;
     }
 }
+
+/* ===== HOMEPAGE STYLES ===== */
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--body-bg) 0%, var(--light-bg) 100%);
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+}
+
+.min-vh-75 {
+    min-height: 75vh;
+}
+
+.hero-content h1 {
+    line-height: 1.2;
+}
+
+.scripture-callout {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: var(--primary-purple) !important;
+}
+
+.scripture-callout blockquote {
+    font-size: 1.1rem;
+    color: var(--dark-text);
+}
+
+/* Mockup Card */
+.mockup-container {
+    perspective: 1000px;
+}
+
+.mockup-container .card {
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: rotateY(-5deg) rotateX(5deg);
+    transition: transform 0.3s ease;
+}
+
+.mockup-container:hover .card {
+    transform: rotateY(0deg) rotateX(0deg);
+}
+
+.metric-box {
+    background: var(--light-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    transition: all 0.2s ease;
+}
+
+.metric-box:hover {
+    background: var(--card-bg);
+}
+
+.insight-box {
+    background: var(--light-bg) !important;
+}
+
+/* Process Steps */
+.process-step .step-number {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Feature Cards */
+.bg-gradient {
+    background: linear-gradient(135deg, var(--light-bg) 0%, var(--card-bg) 100%);
+}
+
+.feature-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.feature-icon {
+    font-size: 3rem;
+}
+
+/* Social Proof / Testimonials */
+.testimonial-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.testimonial-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.stars {
+    color: #ffc107;
+    font-size: 1.1rem;
+}
+
+.testimonial-author {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1rem;
+    margin-top: auto;
+}
+
+/* FAQ Section */
+.accordion-item {
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.accordion-button {
+    background: var(--card-bg);
+    color: var(--dark-text);
+    border: none;
+    font-weight: 600;
+    padding: 1.25rem 1.5rem;
+}
+
+.accordion-button:not(.collapsed) {
+    background: var(--light-bg);
+    color: var(--dark-text);
+    box-shadow: none;
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+    border: none;
+}
+
+.accordion-button::after {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23f8fafc'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+}
+
+.accordion-body {
+    background: var(--card-bg);
+    color: var(--muted-text);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+}
+
+/* Final CTA */
+.final-cta-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.final-cta-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-purple));
+}
+
+/* Trust badges */
+.trust-badges {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    align-items: center;
+    opacity: 0.7;
+}
+
+.trust-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--muted-text);
+}
+
+/* Contact page */
+.contact-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.contact-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.contact-icon {
+    font-size: 2.5rem;
+}
+
+/* Legal pages content */
+.content-section h2 {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hero-section {
+        min-height: auto;
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+    }
+    
+    .mockup-container .card {
+        transform: none;
+    }
+    
+    .display-4 {
+        font-size: 2.5rem;
+    }
+    
+    .testimonial-card {
+        margin-bottom: 1rem;
+    }
+    
+    .final-cta-card {
+        padding: 2rem !important;
+    }
+}

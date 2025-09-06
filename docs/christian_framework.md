@@ -442,3 +442,29 @@ Songs within ±3 points of verdict thresholds flagged as **"Needs Review"**
 - **Formation Risk**: Low
 
 #### **Verdict**: **Context Required**
+
+## 🧪 Evaluation Schema (v3.1)
+
+Use this schema to validate model outputs consistently:
+
+- **Verdict** (tier): freely_listen | context_required | caution_limit | avoid_formation
+- **Score** (0–100): purity score, with caps and multipliers applied
+- **Concern Flags**: set of categories with severities (low|medium|high|critical)
+- **Scripture Support**: passage references that align with detected themes
+- **Formation Risk**: very_low | low | high | critical
+- **Doctrinal Clarity**: sound | thin | confused | null
+- **Narrative Voice**: artist | character | ambiguous
+- **Lament Filter**: applied/not applied (criteria met)
+
+Evaluation Metrics:
+
+- Verdict accuracy (macro‑F1)
+- Score correlation (Pearson/Spearman) and MAE
+- Concern flag precision/recall/F1 (micro and macro)
+- Scripture overlap (Jaccard over references)
+- Latency p50/p90/p99 per 100‑song batch
+
+Reviewer Notes:
+- Use BSB for verse text when quoting in feedback
+- Apply framework caps and escalators; document boundary cases near thresholds
+- Flag “Needs Review” when outputs fall within ±3 points of verdict thresholds

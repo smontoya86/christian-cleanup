@@ -1,0 +1,11 @@
+id,verdict_true,verdict_pred,score_true,score_pred
+db-10558,,"The song reflects biblical themes of purpose and perseverance but lacks explicit theological framing. Its focus on personal transformation aligns with Christian concepts of spiritual growth, though the narrative leans more toward emotional catharsis than doctrinal exposition.",50.0,75.0
+db-10415,,"Secular song with thematic parallels to biblical creation and eschatology, but lacks doctrinal clarity and spiritual depth.",50.0,6.0
+db-9938,,"The song contains biblically resonant themes of seeking divine light and love, but lacks explicit doctrinal grounding and specific scriptural references. Its poetic longing aligns with psalmic laments and Christological themes, but could benefit from clearer theological articulation.",50.0,7.0
+db-9336,,"Reflective of biblical themes of transformation and forgiveness, but lacks explicit theological framing",50.0,75.0
+db-10849,,"Metaphorical exploration of spiritual struggle with potential for theological reflection, but requires contextual clarification",50.0,8.0
+db-10113,,"The song contains metaphorical elements that could be interpreted through biblical lenses, but lacks explicit theological articulation or scriptural reference points.",50.0,2.5
+db-9699,,"Secular song with potential theological parallels to biblical themes of integrity and wisdom, but lacks explicit doctrinal content.",50.0,65.0
+db-11387,,"The song expresses positive relational themes but lacks theological depth and biblical context, raising concerns about its spiritual appropriateness in a Christian framework.",50.0,7.0
+db-9459,,"The song contains biblical themes of moral accountability and critique of materialism, but its aggressive tone and secular context require careful interpretation to avoid conflating social commentary with doctrinal statements.",50.0,7.0
+db-9451,,Contains biblical themes of grace and endurance but requires contextual clarification to avoid theological oversimplification,50.0,7.0

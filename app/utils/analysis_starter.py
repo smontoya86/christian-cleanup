@@ -39,8 +39,8 @@ def start_user_analysis(app, user_id: int) -> dict:
                 .order_by(AnalysisResult.created_at.desc())
                 .first()
             )
-            if latest and latest.status == "completed":
-                continue
+            if latest:
+                continue  # All stored analyses are completed by definition
             eligible_ids.append(s.id)
 
         # Create or update progress snapshot

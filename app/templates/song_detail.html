@@ -9,7 +9,7 @@
         <div class="row mb-4 align-items-center">
             <div class="col-md-2 text-center text-md-start mb-3 mb-md-0">
                 {% if song.album_art_url %}
-                    <img src="{{ song.album_art_url }}" alt="{{ song.album }} cover" class="rounded shadow-sm"
+                    <img src="{{ song.album_art_url }}" alt="{{ song.title }} album art" class="rounded shadow-sm"
                      style="width: 150px !important; height: 150px !important; object-fit: cover !important;">
                 {% else %}
                     <div class="bg-light d-flex align-items-center justify-content-center rounded shadow-sm" style="width: 150px; height: 150px;">
@@ -390,6 +390,7 @@
                         {% if playlist %}
                             <div class="d-grid mb-3">
                                 <form action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist.id, song_id=song.id) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                     <button type="submit" class="btn btn-outline-danger w-100 fas fa-trash" data-analytics="remove_song_click"
                                             onclick="return confirm('Remove this song from {{ playlist.name }}? This action cannot be undone.')">Remove from Playlist</button>
                                 </form>
@@ -405,6 +406,7 @@
                                 </div>
                                 <div class="d-grid">
                                     <form action="{{ url_for('main.whitelist_song', song_id=song.id) }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                         <button type="submit" class="btn btn-warning w-100" data-analytics="whitelist_song_click"
                                                 onclick="return confirm('This song has high concern level. Are you sure?')">
                                             <i class="fas fa-check me-2"></i>Whitelist Anyway
@@ -414,6 +416,7 @@
                             {% elif calculated_concern in ['very_low', 'low', 'medium'] %}
                                 <div class="d-grid">
                                     <form action="{{ url_for('main.whitelist_song', song_id=song.id) }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                         <button type="submit" class="btn btn-success w-100" data-analytics="whitelist_song_click">
                                             <i class="fas fa-check me-2"></i>Add to Whitelist
                                         </button>
@@ -426,6 +429,7 @@
                             </div>
                             <div class="d-grid">
                                 <form action="{{ url_for('main.remove_whitelist', song_id=song.id) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                     <button type="submit" class="btn btn-outline-secondary w-100" data-analytics="remove_whitelist_click"
                                             onclick="return confirm('Remove from whitelist?')">
                                         <i class="fas fa-times me-2"></i>Remove from Whitelist
@@ -587,6 +591,5 @@
 }
 </style>
 
-<!-- Include the song analyzer JavaScript -->
-<script src="{{ url_for('static', filename='js/song-analyzer.js') }}"></script>
+{# Legacy song-analyzer.js removed; handled by module scripts in base main.js #}
 {% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us — Music Disciple{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h1 class="display-5 fw-bold mb-4">Contact Us</h1>
+            <p class="lead text-muted mb-5">We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
+            
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="contact-card p-4 h-100">
+                        <div class="contact-icon mb-3">📧</div>
+                        <h3 class="h5 fw-bold mb-3">General Support</h3>
+                        <p class="text-muted mb-3">Questions about using Music Disciple or need help with your account?</p>
+                        <a href="mailto:support@musicdisciple.com" class="btn btn-outline-primary">support@musicdisciple.com</a>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="contact-card p-4 h-100">
+                        <div class="contact-icon mb-3">⛪</div>
+                        <h3 class="h5 fw-bold mb-3">Biblical Questions</h3>
+                        <p class="text-muted mb-3">Have questions about our biblical analysis or theological approach?</p>
+                        <a href="mailto:theology@musicdisciple.com" class="btn btn-outline-primary">theology@musicdisciple.com</a>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="contact-card p-4 h-100">
+                        <div class="contact-icon mb-3">🔒</div>
+                        <h3 class="h5 fw-bold mb-3">Privacy & Legal</h3>
+                        <p class="text-muted mb-3">Privacy concerns, data requests, or legal inquiries?</p>
+                        <a href="mailto:legal@musicdisciple.com" class="btn btn-outline-primary">legal@musicdisciple.com</a>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="contact-card p-4 h-100">
+                        <div class="contact-icon mb-3">💡</div>
+                        <h3 class="h5 fw-bold mb-3">Feedback & Ideas</h3>
+                        <p class="text-muted mb-3">Suggestions for improving Music Disciple or feature requests?</p>
+                        <a href="mailto:feedback@musicdisciple.com" class="btn btn-outline-primary">feedback@musicdisciple.com</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-5 p-4 bg-light rounded">
+                <h3 class="h5 fw-bold mb-3">Ministry Partnerships</h3>
+                <p class="text-muted mb-3">Are you a pastor, worship leader, or ministry organization interested in partnering with Music Disciple? We'd love to explore how we can serve your community together.</p>
+                <a href="mailto:partnerships@musicdisciple.com" class="btn btn-success">partnerships@musicdisciple.com</a>
+            </div>
+
+            <div class="text-center mt-5">
+                <a href="{{ url_for('main.index') }}" class="btn btn-primary">← Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

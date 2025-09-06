@@ -3,8 +3,9 @@
  * Handles caching of static assets, API responses, and offline functionality
  */
 
-const CACHE_NAME = 'christian-music-curator-v1.0.0';
-const API_CACHE_NAME = 'christian-music-curator-api-v1.0.0';
+// Bump cache versions to invalidate stale HTML/JS/CSS
+const CACHE_NAME = 'christian-music-curator-v1.0.1';
+const API_CACHE_NAME = 'christian-music-curator-api-v1.0.1';
 
 // Static assets to cache immediately
 const STATIC_CACHE = [
@@ -126,22 +127,17 @@ self.addEventListener('fetch', (event) => {
  */
 async function handleStaticAsset(request) {
   try {
+    // Do not cache images to prevent visual flashing and stale art
+    if (/\.(png|jpg|jpeg|gif|svg)$/i.test(request.url)) {
+      return fetch(request, { cache: 'no-store' });
+    }
+
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request);
+    if (cached) return cached;
 
-    if (cached) {
-      console.log('[SW] Serving static asset from cache:', request.url);
-      return cached;
-    }
-
-    console.log('[SW] Fetching static asset:', request.url);
     const response = await fetch(request);
-
-    // Cache successful responses
-    if (response.ok) {
-      cache.put(request, response.clone());
-    }
-
+    if (response.ok) cache.put(request, response.clone());
     return response;
   } catch (error) {
     console.error('[SW] Static asset fetch failed:', error);
@@ -202,28 +198,11 @@ async function handleAPIRequest(request) {
  */
 async function handlePageRequest(request) {
   try {
-    console.log('[SW] Fetching page:', request.url);
-    const response = await fetch(request);
-
-    if (response.ok) {
-      // Cache successful page responses
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
-    }
-
-    return response;
+    // Always fetch fresh HTML; do NOT cache pages to avoid stale templates
+    console.log('[SW] Fetching page (no-cache):', request.url);
+    return await fetch(request, { cache: 'no-store' });
   } catch (error) {
-    console.log('[SW] Network failed, trying cache for page:', request.url);
-
-    // Try cache
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request);
-
-    if (cached) {
-      return cached;
-    }
-
-    // Fallback to offline page
+    console.log('[SW] Network failed for page:', request.url);
     return getOfflinePage();
   }
 }

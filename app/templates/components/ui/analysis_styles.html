@@ -50,6 +50,51 @@
     .bg-medium { background-color: #ca8a04; }
     .bg-low { background-color: #16a34a; }
 
+    /* Circular score pill like screenshot */
+    .score-circle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        min-width: 56px;
+        min-height: 56px;
+        border-radius: 50%;
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        line-height: 1;
+        padding: 0; /* ensure no extra padding affects circular shape */
+        aspect-ratio: 1 / 1; /* enforce perfect circle */
+    }
+
+    .reason-snippet {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Color standardization by score */
+    .score-green { background-color: #16a34a; }
+    .score-yellow { background-color: #f59e0b; }
+    .score-red { background-color: #dc2626; }
+
+    /* Playlist score pill */
+    .playlist-score-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 9999px;
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+        white-space: nowrap;
+    }
+
     /* Playlist specific styles */
     .playlist-cover-img-detail {
         max-height: 300px;

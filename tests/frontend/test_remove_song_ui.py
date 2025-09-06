@@ -43,7 +43,7 @@ class TestRemoveSongPlaylistDetailUI:
 
         # Add analysis for first song
         analysis = AnalysisResult(
-            song_id=songs[0].id, score=75.0, concern_level="low", status="completed"
+            song_id=songs[0].id, score=75.0, concern_level="low", explanation="Test analysis"
         )
         db.session.add(analysis)
         db.session.commit()

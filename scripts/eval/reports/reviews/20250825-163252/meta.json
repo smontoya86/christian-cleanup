@@ -1,0 +1,9 @@
+{
+  "timestamp": "20250825-163252",
+  "input": "scripts/eval/smoke2.jsonl",
+  "model": "llama3.1:8b",
+  "api_base": "http://host.docker.internal:11434/v1",
+  "local": 0,
+  "max_tokens": 1500,
+  "temperature": 0.1
+}

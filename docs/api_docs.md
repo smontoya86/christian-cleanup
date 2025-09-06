@@ -246,65 +246,65 @@ Base path: `/api`
 ### Analyze Single Song
 
 *   **Endpoint:** `POST /api/songs/<int:song_id>/analyze`
-*   **Description:** Initiates analysis for a single song. Analysis is performed asynchronously.
-*   **Success Response (`202 Accepted`):**
-    ```json
-    {
-      "success": true,
-      "message": "Song analysis started",
-      "song_id": 123,
-      "job_id": "abc123def456"
-    }
-    ```
+*   **Description:** Performs analysis immediately using the simplified local analyzer.
+*   **Success Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "status": "success",
+  "message": "Analysis completed using local models",
+  "song_id": 123,
+  "analysis_id": 456
+}
+```
 *   **Error Responses:**
-    *   `404 Not Found` - Song not found
-    *   `409 Conflict` - Song already being analyzed
+*   *   `404 Not Found` - Song not found or access denied
 
 ### Reanalyze Single Song
 
 *   **Endpoint:** `POST /api/songs/<int:song_id>/reanalyze`
 *   **Description:** Forces re-analysis of a song that has already been analyzed.
 *   **Success Response (`202 Accepted`):**
-    ```json
-    {
-      "success": true,
-      "message": "Song reanalysis started",
-      "song_id": 123,
-      "job_id": "def456ghi789"
-    }
-    ```
+```json
+{
+  "success": true,
+  "message": "Song reanalysis started",
+  "song_id": 123,
+  "job_id": "def456ghi789"
+}
+```
 
 ### Get Playlist Analysis Status
 
 *   **Endpoint:** `GET /api/playlists/<playlist_id>/analysis-status`
 *   **Description:** Retrieves analysis status summary for all songs in a playlist.
-*   **Success Response (`200 OK`):**
-    ```json
-    {
-      "playlist_id": "spotify_playlist_id",
-      "total_songs": 25,
-      "analyzed_songs": 23,
-      "pending_songs": 2,
-      "failed_songs": 0,
-      "analysis_progress": 92.0,
-      "last_updated": "2024-12-01T10:30:00Z"
-    }
-    ```
+*   **Success Response (`200 OK`):
+```json
+{
+  "playlist_id": "spotify_playlist_id",
+  "total_songs": 25,
+  "analyzed_songs": 23,
+  "pending_songs": 2,
+  "failed_songs": 0,
+  "analysis_progress": 92.0,
+  "last_updated": "2024-12-01T10:30:00Z"
+}
+```
 
 ### Analyze Unanalyzed Playlist Songs
 
 *   **Endpoint:** `POST /api/playlists/<playlist_id>/analyze-unanalyzed`
-*   **Description:** Starts analysis for all unanalyzed songs in a playlist.
-*   **Success Response (`202 Accepted`):**
-    ```json
-    {
-      "success": true,
-      "message": "Playlist analysis started for 5 unanalyzed songs",
-      "playlist_id": "spotify_playlist_id",
-      "songs_to_analyze": 5,
-      "job_ids": ["job1", "job2", "job3", "job4", "job5"]
-    }
-    ```
+*   **Description:** Analyzes all songs in a playlist that do not yet have a completed analysis.
+*   **Success Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "message": "Analyzed 5 songs",
+  "playlist_id": 12,
+  "analyzed_count": 5,
+  "errors": []
+}
+```
 
 ### Get Analysis Data
 

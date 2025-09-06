@@ -112,9 +112,10 @@ class TestSQLAlchemyRegression:
                 # Create an analysis result
                 analysis = AnalysisResult(
                     song_id=song.id,
-                    status=AnalysisResult.STATUS_COMPLETED,
+                    # No status field needed - all stored analyses are completed
                     score=85,
                     concern_level="Low",
+                    explanation="Test analysis for regression testing",
                     themes={"worship": True},
                     concerns=[],
                     analyzed_at=datetime.now(timezone.utc),
@@ -250,9 +251,10 @@ class TestSQLAlchemyRegression:
                 for i, song in enumerate(songs):
                     analysis = AnalysisResult(
                         song_id=song.id,
-                        status=AnalysisResult.STATUS_COMPLETED,
+                        # No status field needed - all stored analyses are completed
                         score=80 + i * 5,
                         concern_level="Low" if i < 2 else "Medium",
+                        explanation=f"Test analysis {i+1} for aggregation testing",
                         themes={"worship": True},
                         concerns=[],
                         analyzed_at=datetime.now(timezone.utc),
@@ -267,7 +269,7 @@ class TestSQLAlchemyRegression:
 
                 avg_score = (
                     db_session.query(func.avg(AnalysisResult.score))
-                    .filter(AnalysisResult.status == AnalysisResult.STATUS_COMPLETED)
+                    # No status filter needed - all stored analyses are completed
                     .scalar()
                 )
 

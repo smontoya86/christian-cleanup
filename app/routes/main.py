@@ -13,6 +13,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 from flask_login import current_user, login_required
@@ -23,6 +24,7 @@ from ..models import AnalysisResult, Playlist, PlaylistSong, Song, Whitelist
 from ..services.spotify_service import SpotifyService
 from ..services.unified_analysis_service import UnifiedAnalysisService
 from ..utils.freemium import free_playlist_id_for_user, freemium_enabled, is_playlist_unlocked
+from ..utils.cache import cache_delete
 
 bp = Blueprint("main", __name__)
 
@@ -30,17 +32,62 @@ bp = Blueprint("main", __name__)
 @bp.route("/")
 def index():
     """Homepage"""
+    # Clear any lingering logout session flags
+    session.pop('just_logged_out', None)
+    session.pop('force_logged_out', None)
+    
     if current_user.is_authenticated:
         return redirect(url_for("main.dashboard"))
     return render_template("index.html")
+
+
+@bp.route("/privacy")
+def privacy():
+    """Privacy Policy"""
+    return render_template("legal/privacy.html")
+
+
+@bp.route("/terms")
+def terms():
+    """Terms of Service"""
+    return render_template("legal/terms.html")
+
+
+@bp.route("/contact")
+def contact():
+    """Contact Us"""
+    return render_template("legal/contact.html")
 
 
 @bp.route("/dashboard")
 @login_required
 def dashboard():
     """User dashboard showing playlists and stats"""
-    # Get user's playlists with stats
-    playlists = Playlist.query.filter_by(owner_id=current_user.id).all()
+    # Pagination
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except Exception:
+        page = 1
+    per_page = 12
+
+    base_q = Playlist.query.filter_by(owner_id=current_user.id)
+    # Use explicit COUNT on primary key to avoid subquery selecting all columns (robust to schema drift)
+    total_items = (
+        db.session.query(func.count(Playlist.id))
+        .filter_by(owner_id=current_user.id)
+        .scalar()
+        or 0
+    )
+    total_pages = (total_items + per_page - 1) // per_page if total_items else 1
+    if page > total_pages:
+        page = total_pages
+
+    playlists = (
+        base_q.order_by(Playlist.created_at.desc() if hasattr(Playlist, "created_at") else Playlist.id.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
     playlist_ids = [p.id for p in playlists]
 
     # Batch compute track counts per playlist (avoids N+1)
@@ -54,7 +101,7 @@ def dashboard():
         )
         track_counts = {pid: cnt for pid, cnt in rows}
 
-    # Batch compute average analysis score per playlist (completed only)
+    # Batch compute average analysis score per playlist (simplified - direct FK)
     avg_scores = {}
     if playlist_ids:
         rows = (
@@ -63,7 +110,6 @@ def dashboard():
             .join(AnalysisResult, AnalysisResult.song_id == Song.id)
             .filter(
                 PlaylistSong.playlist_id.in_(playlist_ids),
-                AnalysisResult.status == "completed",
                 AnalysisResult.score.isnot(None),
             )
             .group_by(PlaylistSong.playlist_id)
@@ -92,80 +138,37 @@ def dashboard():
 
     # Apply batched data to playlist objects
     for playlist in playlists:
-        playlist.track_count = int(track_counts.get(playlist.id, 0))
+        # Set actual track count
+        actual_count = int(track_counts.get(playlist.id, 0))
+        playlist.track_count = actual_count
+        
+        # Set actual average score for display
         if playlist.id in avg_scores:
+            # avg_scores is already on 0-100 scale from DB, no conversion needed
             playlist.overall_alignment_score = avg_scores[playlist.id]
-        urls = album_art_map.get(playlist.id, [])
-        if not urls and getattr(playlist, "image_url", None):
-            urls = [playlist.image_url]
-        playlist._top_album_art_urls = urls
+        else:
+            playlist.overall_alignment_score = None
+        
+        # Ensure cover_collage_urls is populated if missing (for playlists synced before this feature)
+        if not playlist.cover_collage_urls:
+            urls = album_art_map.get(playlist.id, [])
+            if urls:
+                # Store up to 4 unique URLs in the database for consistent rendering
+                playlist.cover_collage_urls = urls[:4]
+                # Note: This will be committed at the end of the request
+            elif getattr(playlist, "image_url", None):
+                playlist.cover_collage_urls = [playlist.image_url]
 
         # Calculate overall stats (using simple, working queries)
-    total_playlists = len(playlists)
-    total_songs = (
-        db.session.query(Song.id)
-        .join(PlaylistSong)
-        .join(Playlist)
-        .filter(Playlist.owner_id == current_user.id)
-        .distinct()
-        .count()
-    )
-
-    # Count unique songs with completed analysis
-    analyzed_songs = (
-        db.session.query(Song.id)
-        .join(AnalysisResult)
-        .join(PlaylistSong)
-        .join(Playlist)
-        .filter(Playlist.owner_id == current_user.id, AnalysisResult.status == "completed")
-        .distinct()
-        .count()
-    )
-
-    # Count unique songs with flagged analysis
-    flagged_songs = (
-        db.session.query(Song.id)
-        .join(AnalysisResult)
-        .join(PlaylistSong)
-        .join(Playlist)
-        .filter(
-            Playlist.owner_id == current_user.id,
-            AnalysisResult.status == "completed",
-            AnalysisResult.concern_level.in_(["medium", "high"]),
-        )
-        .distinct()
-        .count()
-    )
-
-    # Calculate clean playlists (playlists with no flagged songs)
-    clean_playlists = (
-        db.session.query(Playlist)
-        .filter(
-            Playlist.owner_id == current_user.id,
-            ~Playlist.id.in_(
-                db.session.query(Playlist.id)
-                .join(PlaylistSong)
-                .join(Song)
-                .join(AnalysisResult)
-                .filter(
-                    Playlist.owner_id == current_user.id,
-                    AnalysisResult.status == "completed",
-                    AnalysisResult.concern_level.in_(["medium", "high"]),
-                )
-            ),
-        )
-        .count()
-    )
-
+    # Use total_items (across all pages) not len(playlists) (current page only)
+    # Safe defaults; API will asynchronously populate real numbers post-render
     stats = {
-        "total_playlists": total_playlists,
-        "total_songs": total_songs,
-        "analyzed_songs": analyzed_songs,
-        "flagged_songs": flagged_songs,
-        "clean_playlists": clean_playlists,
-        "analysis_progress": round(
-            (analyzed_songs / total_songs * 100) if total_songs > 0 else 0, 1
-        ),
+        "total_playlists": total_items,  # Total across all pages, not just current page
+        "total_songs": 0,
+        "analyzed_songs": 0,
+        "flagged_songs": 0,
+        "clean_playlists": 0,
+        "analysis_progress": 0.0,
     }
 
     # Queue system removed - background analysis status checking no longer needed
@@ -176,8 +179,23 @@ def dashboard():
     if freemium_enabled() and not current_user.is_admin:
         unlocked_id = free_playlist_id_for_user(current_user.id)
 
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total_items": total_items,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+        "prev_num": page - 1 if page > 1 else None,
+        "next_num": page + 1 if page < total_pages else None,
+    }
+
     return render_template(
-        "dashboard.html", playlists=playlists, stats=stats, unlocked_playlist_id=unlocked_id
+        "dashboard.html",
+        playlists=playlists,
+        stats=stats,
+        unlocked_playlist_id=unlocked_id,
+        pagination=pagination,
     )
 
 
@@ -192,6 +210,12 @@ def sync_playlists():
     except Exception as e:
         current_app.logger.error(f"Playlist sync error: {e}")
         flash("Error refreshing playlists. Please try again.", "error")
+
+    # Invalidate cached dashboard stats for this user
+    try:
+        cache_delete(f"dashboard:stats:{current_user.id}")
+    except Exception:
+        pass
 
     return redirect(url_for("main.dashboard"))
 
@@ -238,8 +262,8 @@ def playlist_detail(playlist_id):
             .first()
         )
 
-        # Count completed analyses
-        if analysis and analysis.status == "completed":
+        # Count completed analyses (all stored analyses are completed by definition)
+        if analysis:
             analyzed_songs += 1
 
         # Check if song is whitelisted
@@ -506,11 +530,8 @@ def analyze_playlist(playlist_id):
                     .order_by(AnalysisResult.created_at.desc())
                     .first()
                 )
-                if not analysis:
-                    analysis = AnalysisResult(song_id=s.id, status="in_progress")
-                    db.session.add(analysis)
-                else:
-                    analysis.status = "in_progress"
+                # No need to pre-create AnalysisResult records - they're created when analysis completes
+                pass
             db.session.commit()
         except Exception as mark_err:
             current_app.logger.warning(f"Failed to pre-mark songs as in_progress: {mark_err}")

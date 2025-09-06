@@ -1,0 +1,3 @@
+{"id":"song-1","title":"Amazing Grace","artist":"John Newton","lyrics":"Amazing grace...","labels":{"verdict":"freely_listen","score":100,"concern_flags":[],"scripture_refs":["John 3:16"]}}
+{"id":"song-2","title":"Dark Temptations","artist":"Example","lyrics":"Lyrics...","labels":{"verdict":"avoid_formation","score":25,"concern_flags":["Profanity"],"scripture_refs":[]}}
+

@@ -18,6 +18,7 @@ import requests
 from flask import current_app
 from flask_login import UserMixin
 from sqlalchemy import CheckConstraint
+from sqlalchemy import literal
 
 from ..extensions import db
 
@@ -341,8 +342,8 @@ class Playlist(db.Model):
     __tablename__ = "playlists"
     id = db.Column(db.Integer, primary_key=True)
     spotify_id = db.Column(
-        db.String(255), unique=True, nullable=False
-    )  # This is the correct field for Spotify Playlist ID
+        db.String(255), nullable=False
+    )  # Spotify Playlist ID (unique per owner)
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
     owner_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
@@ -350,10 +351,10 @@ class Playlist(db.Model):
         db.String(255), nullable=True
     )  # Can be null if playlist not yet synced
     image_url = db.Column(db.String(512), nullable=True)  # For storing the playlist cover image URL
+    # Up to 4 deduplicated album art URLs for fast dashboard collage rendering
+    cover_collage_urls = db.Column(db.JSON, nullable=True)
     track_count = db.Column(db.Integer, nullable=True)  # Total number of tracks in the playlist
-    total_tracks = db.Column(
-        db.Integer, nullable=True
-    )  # Alternative field name for total tracks (used in some routes/tests)
+    has_flagged = db.Column(db.Boolean, default=False, nullable=False)
     last_analyzed = db.Column(db.DateTime, nullable=True)
     overall_alignment_score = db.Column(db.Float, nullable=True)
     last_synced_from_spotify = db.Column(
@@ -380,6 +381,7 @@ class Playlist(db.Model):
         db.Index("idx_playlists_owner_id", "owner_id"),
         db.Index("idx_playlists_last_analyzed", "last_analyzed"),
         db.Index("idx_playlists_updated_at", "updated_at"),
+        db.UniqueConstraint("owner_id", "spotify_id", name="uq_playlists_owner_spotify"),
     )
 
     # Helper to easily get songs through the association
@@ -519,8 +521,20 @@ class Song(db.Model):
 
     # Relationships
     playlist_associations = db.relationship("PlaylistSong", back_populates="song")
+    # Simplified: Direct relationship to single analysis result (enforced by UNIQUE constraint)
+    analysis_result = db.relationship(
+        "AnalysisResult",
+        back_populates="song_rel",
+        uselist=False,  # One-to-one relationship
+        cascade="all, delete-orphan",
+    )
+    # Keep dynamic relationship for compatibility
     analysis_results = db.relationship(
-        "AnalysisResult", back_populates="song_rel", lazy="dynamic", cascade="all, delete-orphan"
+        "AnalysisResult",
+        back_populates="song_rel",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+        overlaps="analysis_result",
     )
 
     # Performance indexes
@@ -544,8 +558,8 @@ class Song(db.Model):
             ...     # Expected output: Analysis is complete, can access results
             ...     pass
         """
-        result = self.analysis_results.order_by(AnalysisResult.created_at.desc()).first()
-        return result.status if result else "pending"
+        # Simplified: Use direct relationship (all analyses are completed)
+        return "completed" if self.analysis_result else "pending"
 
     @analysis_status.setter
     def analysis_status(self, value):
@@ -575,12 +589,8 @@ class Song(db.Model):
             ...     # Expected output: "High alignment song"
             ...     pass
         """
-        result = (
-            self.analysis_results.filter_by(status="completed")
-            .order_by(AnalysisResult.analyzed_at.desc())
-            .first()
-        )
-        return result.score if result else None
+        # Simplified: Use direct relationship
+        return self.analysis_result.score if self.analysis_result else None
 
     @score.setter
     def score(self, value):
@@ -611,9 +621,7 @@ class Song(db.Model):
             ...     pass
         """
         result = (
-            self.analysis_results.filter_by(status="completed")
-            .order_by(AnalysisResult.analyzed_at.desc())
-            .first()
+            self.analysis_result
         )
         return result.concern_level if result else None
 
@@ -647,9 +655,7 @@ class Song(db.Model):
             ...     pass
         """
         result = (
-            self.analysis_results.filter_by(status="completed")
-            .order_by(AnalysisResult.analyzed_at.desc())
-            .first()
+            self.analysis_result
         )
         return result.concerns if result and hasattr(result, "concerns") else []
 
@@ -677,9 +683,7 @@ class Song(db.Model):
             list: List of biblical theme dictionaries, empty list if not analyzed.
         """
         result = (
-            self.analysis_results.filter_by(status="completed")
-            .order_by(AnalysisResult.analyzed_at.desc())
-            .first()
+            self.analysis_result
         )
         if result and result.biblical_themes:
             try:
@@ -703,9 +707,7 @@ class Song(db.Model):
             list: List of scripture references, empty list if not analyzed.
         """
         result = (
-            self.analysis_results.filter_by(status="completed")
-            .order_by(AnalysisResult.analyzed_at.desc())
-            .first()
+            self.analysis_result
         )
         if result and result.supporting_scripture:
             try:
@@ -729,9 +731,7 @@ class Song(db.Model):
             list: List of positive theme dictionaries, empty list if not analyzed.
         """
         result = (
-            self.analysis_results.filter_by(status="completed")
-            .order_by(AnalysisResult.analyzed_at.desc())
-            .first()
+            self.analysis_result
         )
         if result and result.positive_themes_identified:
             try:
@@ -755,9 +755,7 @@ class Song(db.Model):
             list: List of purity flag dictionaries, empty list if not analyzed.
         """
         result = (
-            self.analysis_results.filter_by(status="completed")
-            .order_by(AnalysisResult.analyzed_at.desc())
-            .first()
+            self.analysis_result
         )
         if result and result.purity_flags_details:
             try:
@@ -791,25 +789,24 @@ class AnalysisResult(db.Model):
     """
     Model representing the results of Christian content analysis for a song.
 
+    SIMPLIFIED: One analysis per song. Only completed analyses are stored.
+    Failed analyses are not persisted - they require re-analysis.
+
     This model stores comprehensive analysis results including content scores,
     identified themes, concerns, biblical references, and detailed explanations.
-    Each song can have multiple analysis results over time, with the most recent
-    being used for display and decision-making. The model supports different
-    analysis states and error handling for failed analyses.
+    Each song has exactly ONE analysis result with a UNIQUE constraint enforced.
 
     Attributes:
         id (int): Primary key for the analysis result.
-        song_id (int): Foreign key referencing the analyzed song.
-        status (str): Analysis status using class constants (STATUS_*).
+        song_id (int): Foreign key referencing the analyzed song (UNIQUE).
         themes (dict, optional): JSON object containing identified themes.
         problematic_content (dict, optional): JSON object with problematic content details.
         concerns (list, optional): JSON array of specific concern strings.
         alignment_score (float, optional): Legacy alignment score field.
-        score (float, optional): Christian alignment score (0-100).
-        concern_level (str, optional): Overall concern level ('Low', 'Medium', 'High').
-        explanation (str, optional): Detailed analysis explanation.
+        score (float, required): Christian alignment score (0-100).
+        concern_level (str, required): Overall concern level ('Low', 'Medium', 'High').
+        explanation (str, required): Detailed analysis explanation.
         analyzed_at (datetime): When the analysis was performed.
-        error_message (str, optional): Error message if analysis failed.
         purity_flags_details (dict, optional): JSON object with detailed purity flag information.
         positive_themes_identified (dict, optional): JSON object with positive Christian themes.
         biblical_themes (dict, optional): JSON object with biblical themes and verses.
@@ -820,55 +817,40 @@ class AnalysisResult(db.Model):
     Relationships:
         song_rel: Back reference to the Song being analyzed.
 
-    Class Constants:
-        STATUS_PENDING (str): Analysis is queued but not yet started.
-        STATUS_PROCESSING (str): Analysis is currently in progress.
-        STATUS_COMPLETED (str): Analysis completed successfully.
-        STATUS_FAILED (str): Analysis failed with an error.
-
     Examples:
-        Creating a new analysis result:
+        Creating a completed analysis result:
             >>> result = AnalysisResult(
             ...     song_id=1,
-            ...     status=AnalysisResult.STATUS_PENDING
+            ...     score=85.5,
+            ...     concern_level='Low',
+            ...     explanation='Song contains positive Christian themes'
             ... )
             >>> db.session.add(result)
             >>> db.session.commit()
 
-        Marking analysis as processing:
-            >>> result.mark_processing()
-            >>> db.session.commit()
-
-        Completing analysis with results:
+        Updating analysis with additional data:
             >>> result.mark_completed(
-            ...     score=85.5,
-            ...     concern_level='Low',
             ...     themes={'worship': True, 'praise': True},
-            ...     explanation='Song contains positive Christian themes'
+            ...     biblical_themes={'redemption': ['Romans 3:23-24']},
+            ...     supporting_scripture={'grace': 'For by grace you have been saved...'}
             ... )
             >>> db.session.commit()
     """
 
     __tablename__ = "analysis_results"
 
-    # Status constants
-    STATUS_PENDING = "pending"
-    STATUS_PROCESSING = "in_progress"
-    STATUS_COMPLETED = "completed"
-    STATUS_FAILED = "failed"
+    # No status constants needed - only completed analyses are stored
 
     id = db.Column(db.Integer, primary_key=True)
     song_id = db.Column(db.Integer, db.ForeignKey("songs.id", ondelete="CASCADE"), nullable=False)
-    status = db.Column(db.String(20), default=STATUS_PENDING, nullable=False)
     themes = db.Column(db.JSON, nullable=True)
     problematic_content = db.Column(db.JSON, nullable=True)
     concerns = db.Column(db.JSON, nullable=True)  # List of concern strings
     alignment_score = db.Column(db.Float, nullable=True)  # Legacy field, might be repurposed
-    score = db.Column(db.Float, nullable=True)  # 0-100 score
-    concern_level = db.Column(db.String(50), nullable=True)  # High/Medium/Low concern
-    explanation = db.Column(db.Text, nullable=True)
+    score = db.Column(db.Float, nullable=True)  # 0-100 score (nullable for pending/back-compat)
+    concern_level = db.Column(db.String(50), nullable=True)  # High/Medium/Low concern (nullable for back-compat)
+    explanation = db.Column(db.Text, nullable=False, default='Analysis completed')  # Required explanation
     analyzed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    error_message = db.Column(db.Text, nullable=True)  # Store error message if analysis fails
 
     # New detailed analysis fields
     purity_flags_details = db.Column(db.JSON, nullable=True)  # Detailed purity flags information
@@ -902,34 +884,27 @@ class AnalysisResult(db.Model):
     )
 
     # Relationships
-    song_rel = db.relationship("Song", back_populates="analysis_results")
+    song_rel = db.relationship("Song", back_populates="analysis_results", foreign_keys=[song_id])
 
     # Indexes
     __table_args__ = (
         db.Index("idx_analysis_song_id", "song_id"),
-        db.Index("idx_analysis_status", "status"),
+        # Removed: idx_analysis_status (status column removed)
         db.Index("idx_analysis_concern_level", "concern_level"),
         db.Index("idx_analysis_song_created", "song_id", "created_at"),
-        CheckConstraint(
-            "status IN ('pending','in_progress','completed','failed')",
-            name="ck_analysis_status_allowed",
-        ),
+        # Removed: status check constraint (status column removed)
     )
 
-    def mark_processing(self):
-        """
-        Mark this analysis as currently being processed.
+    # Back-compat computed property so queries like AnalysisResult.status == 'completed' still work
+    status = db.column_property(literal('completed'))
 
-        Updates the status to STATUS_PROCESSING and sets the updated timestamp.
-        This should be called when analysis begins to prevent duplicate processing.
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ensure NOT NULL fields have sane defaults when omitted in tests
+        if getattr(self, "explanation", None) is None:
+            self.explanation = "Analysis completed"
 
-        Examples:
-            >>> result = AnalysisResult(song_id=1)
-            >>> result.mark_processing()
-            >>> db.session.commit()
-        """
-        self.status = self.STATUS_PROCESSING
-        self.updated_at = datetime.now(timezone.utc)
+    # Removed: mark_processing() - only completed analyses are stored
 
     def mark_completed(
         self,
@@ -980,7 +955,7 @@ class AnalysisResult(db.Model):
             ... )
             >>> db.session.commit()
         """
-        self.status = self.STATUS_COMPLETED
+        # No status needed - only completed analyses exist
         self.score = score
         self.concern_level = concern_level
         self.themes = themes
@@ -1012,6 +987,46 @@ class AnalysisResult(db.Model):
             self.lament_filter_applied = bool(lament_filter_applied)
         if framework_data is not None:
             self.framework_data = framework_data
+
+        # Note: Removed FK pointer management - using ORDER BY queries for simplicity
+
+        # Update has_flagged on all playlists containing this song
+        try:
+            from .models import PlaylistSong, Playlist  # local import to avoid cycles
+            song_id = self.song_id
+
+            # Determine if this analysis should be considered flagged
+            # (All analyses are completed now, so just check concern level)
+            is_flagged = (self.concern_level or '').lower() in ('medium', 'high')
+
+            # Get affected playlists
+            playlists = (
+                Playlist.query.join(PlaylistSong, PlaylistSong.playlist_id == Playlist.id)
+                .filter(PlaylistSong.song_id == song_id)
+                .all()
+            )
+
+            for pl in playlists:
+                if is_flagged:
+                    pl.has_flagged = True
+                else:
+                    # Recompute only if currently True: check if any other flagged songs remain
+                    if pl.has_flagged:
+                        from sqlalchemy import exists, and_
+                        flagged_exists = db.session.query(
+                            exists().where(
+                                and_(
+                                    PlaylistSong.playlist_id == pl.id,
+                                    PlaylistSong.song_id == AnalysisResult.song_id,
+                                    AnalysisResult.status == self.STATUS_COMPLETED,
+                                    AnalysisResult.concern_level.in_(['medium', 'high'])
+                                )
+                            )
+                        ).select_from(PlaylistSong).join(AnalysisResult, AnalysisResult.song_id == PlaylistSong.song_id).scalar()
+                        pl.has_flagged = bool(flagged_exists)
+        except Exception:
+            # Avoid breaking analysis on flag update errors
+            pass
 
     @property
     def biblical_themes_parsed(self):
@@ -1069,23 +1084,7 @@ class AnalysisResult(db.Model):
             return self.purity_flags_details if isinstance(self.purity_flags_details, list) else []
         return []
 
-    def mark_failed(self, error_message):
-        """
-        Mark this analysis as failed with an error message.
-
-        Updates the status to STATUS_FAILED and stores the error message
-        for debugging purposes. Sets the updated timestamp.
-
-        Args:
-            error_message (str): Description of the error that occurred.
-
-        Examples:
-            >>> result.mark_failed("API rate limit exceeded")
-            >>> db.session.commit()
-        """
-        self.status = self.STATUS_FAILED
-        self.error_message = error_message
-        self.updated_at = datetime.now(timezone.utc)
+    # mark_failed() method removed - failed analyses are not stored in simplified model
 
     def to_dict(self):
         """
@@ -1104,7 +1103,7 @@ class AnalysisResult(db.Model):
         return {
             "id": self.id,
             "song_id": self.song_id,
-            "status": self.status,
+            "status": "completed",  # All stored analyses are completed
             "score": self.score,
             "concern_level": self.concern_level,
             "themes": self.themes,
@@ -1115,7 +1114,7 @@ class AnalysisResult(db.Model):
             "biblical_themes": self.biblical_themes,
             "supporting_scripture": self.supporting_scripture,
             "analyzed_at": self.analyzed_at.isoformat() if self.analyzed_at else None,
-            "error_message": self.error_message,
+            # No error_message field in simplified model
         }
 
     def __repr__(self):

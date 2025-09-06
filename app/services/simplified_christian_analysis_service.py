@@ -11,6 +11,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from app.services.analyzer_cache import get_shared_analyzer, is_analyzer_ready
+from app.services.provider_resolver import get_analyzer as get_provider_analyzer
 from app.utils.analysis.analysis_result import AnalysisResult
 
 from .enhanced_concern_detector import EnhancedConcernDetector
@@ -22,15 +23,18 @@ logger = logging.getLogger(__name__)
 class SimplifiedChristianAnalysisService:
     """
     Simplified Christian song analysis service that acts as a coordinator for
-    the comprehensive analysis system. Now uses HuggingFaceAnalyzer as the single source of truth.
+    the comprehensive analysis system. Router analyzer is the single source of truth.
     """
 
     def __init__(self):
         """Initialize the analysis service components."""
-        # Use shared analyzer (defaults to HF unless LLM explicitly enabled)
-        self.hf_analyzer = get_shared_analyzer()
+        # Router-first analyzer via provider; fallback to shared HF analyzer for batch path compatibility
+        try:
+            self.analyzer = get_provider_analyzer()
+        except Exception:
+            self.analyzer = get_shared_analyzer()
         # Back-compat: many tests expect an 'ai_analyzer' attribute
-        self.ai_analyzer = self.hf_analyzer
+        self.ai_analyzer = self.analyzer
 
         # Keep other services for educational content and scripture mapping
         self.concern_detector = EnhancedConcernDetector()
@@ -50,7 +54,7 @@ class SimplifiedChristianAnalysisService:
                 logger.info("⏳ Shared analyzer not ready, initializing...")
 
             # Use shared analyzer instead of creating new instance
-            analysis_result = self.hf_analyzer.analyze_song(song_title, artist, lyrics)
+            analysis_result = self.analyzer.analyze_song(song_title, artist, lyrics)
 
             logger.info(f"✅ Enhanced analysis completed for '{song_title}'")
             return analysis_result
@@ -101,11 +105,23 @@ class SimplifiedChristianAnalysisService:
                     )
                     no_lyrics_results.append((i, no_lyrics_result))
 
-            # Batch process songs with lyrics using HuggingFaceAnalyzer
+            # Batch process songs with lyrics using analyzer
             ai_results = []
             if songs_with_lyrics:
                 logger.info(f"📝 Batch processing {len(songs_with_lyrics)} songs with lyrics")
-                ai_results = self.hf_analyzer.analyze_songs_batch(songs_with_lyrics)
+                # If analyzer supports batch, use it; else map per-item
+                if hasattr(self.analyzer, "analyze_songs_batch"):
+                    ai_results = self.analyzer.analyze_songs_batch(songs_with_lyrics)  # type: ignore[attr-defined]
+                else:
+                    ai_results = [
+                        self._map_router_json_to_result(
+                            s.get("title", ""),
+                            s.get("artist", ""),
+                            s.get("lyrics", ""),
+                            self.analyzer.analyze_song(s.get("title", ""), s.get("artist", ""), s.get("lyrics", "")),
+                        )
+                        for s in songs_with_lyrics
+                    ]
 
             # Process enhanced concern detection and scripture mapping for each song
             final_results = []
@@ -148,12 +164,17 @@ class SimplifiedChristianAnalysisService:
                     # Adjust score downward if concerns exist
                     adjusted_score = ai_analysis.scoring_results.get("final_score", 100.0)
                     if concern_analysis and concern_analysis.get("detailed_concerns"):
-                        # Subtract 15 points per concern up to 45 max to ensure stronger penalty in tests
-                        adjusted_score = max(
-                            0.0,
-                            adjusted_score
-                            - min(45, 15 * len(concern_analysis["detailed_concerns"])),
-                        )
+                        # Stronger penalty per concern; severe concerns weigh more
+                        penalty = 0.0
+                        for c in concern_analysis["detailed_concerns"]:
+                            sev = (c or {}).get("severity", "medium").lower()
+                            if sev == "high":
+                                penalty += 20.0
+                            elif sev == "medium":
+                                penalty += 15.0
+                            else:
+                                penalty += 10.0
+                        adjusted_score = max(0.0, adjusted_score - min(60.0, penalty))
                     # Ensure problematic content is scored below the "generally safe" threshold
                     if (
                         concern_analysis
@@ -325,19 +346,22 @@ class SimplifiedChristianAnalysisService:
             if not has_meaningful_lyrics:
                 return self._create_no_lyrics_result(safe_title, safe_artist, safe_lyrics)
 
-            # 1. Get comprehensive AI analysis (shared analyzer, defaults to LLM)
+            # 1. Get comprehensive AI analysis (provider analyzer)
             # Prefer an 'analyze_comprehensive' API when available (for test compatibility)
             ai_raw: Optional[Dict[str, Any]] = None
             ai_analysis = None
             try:
                 if hasattr(self.ai_analyzer, "analyze_comprehensive"):
-                    ai_raw = self.ai_analyzer.analyze_comprehensive(
+                    ai_raw = self.ai_analyzer.analyze_comprehensive(  # type: ignore[attr-defined]
                         safe_title, safe_artist, safe_lyrics
                     )
                 else:
-                    ai_analysis = self.hf_analyzer.analyze_song(
-                        safe_title, safe_artist, safe_lyrics
-                    )
+                    resp = self.analyzer.analyze_song(safe_title, safe_artist, safe_lyrics)
+                    # Some analyzers may already return AnalysisResult
+                    if hasattr(resp, "scoring_results") and hasattr(resp, "biblical_analysis"):
+                        ai_analysis = resp  # type: ignore[assignment]
+                    else:
+                        ai_raw = resp  # router JSON
             except Exception as e:
                 logger.error(f"AI analysis failed, using fallback heuristic: {e}")
                 ai_raw = self._fallback_analysis(safe_title, safe_artist, safe_lyrics)
@@ -347,6 +371,8 @@ class SimplifiedChristianAnalysisService:
             concern_analysis = self.concern_detector.analyze_content_concerns(
                 safe_title, safe_artist, safe_lyrics
             )
+            if not isinstance(concern_analysis, dict):
+                concern_analysis = {}
 
             # 3. Map to relevant scripture for education (positive themes)
             detected_themes = []
@@ -357,25 +383,34 @@ class SimplifiedChristianAnalysisService:
                     t.get("theme", "") if isinstance(t, dict) else str(t) for t in detected_themes
                 ]
             elif isinstance(ai_raw, dict):
-                raw_themes = ai_raw.get("themes", []) or []
+                raw_themes = (ai_raw.get("themes") or ai_raw.get("biblical_themes") or [])
                 mapper_theme_names = [
                     str(t) if not isinstance(t, dict) else t.get("theme", "") for t in raw_themes
                 ]
                 detected_themes = [{"theme": name} for name in mapper_theme_names if name]
             scripture_refs = self.scripture_mapper.find_relevant_passages(mapper_theme_names)
             # Include educational insights alongside scripture for UI/tests
-            educational_insights = self._generate_educational_explanation(
-                {
-                    "sentiment": {"label": "NEUTRAL"},
-                    "themes": mapper_theme_names,
-                    "content_safety": {"is_safe": True, "toxicity_score": 0.0},
-                },
-                concern_analysis or {},
-                75.0,
-            )
-            educational_insights_list = (
-                [educational_insights] if isinstance(educational_insights, str) else []
-            )
+            # Provide at least one educational insight for UI/tests
+            base_ai_info = {
+                "sentiment": {"label": "NEUTRAL"},
+                "themes": mapper_theme_names,
+                "content_safety": {"is_safe": True, "toxicity_score": 0.0},
+            }
+            try:
+                educational_insights_list = self._create_educational_insights(
+                    base_ai_info, scripture_refs, concern_analysis or {}
+                )
+            except Exception:
+                educational_insights_list = []
+            if not educational_insights_list:
+                try:
+                    explanation_text = self._generate_educational_explanation(
+                        base_ai_info, concern_analysis or {}, 75.0
+                    )
+                except Exception:
+                    explanation_text = ""
+                if explanation_text:
+                    educational_insights_list = [explanation_text]
 
             # 4. Add scriptural foundations for detected concerns (NEW ENHANCEMENT)
             if concern_analysis and concern_analysis.get("detailed_concerns"):
@@ -390,14 +425,43 @@ class SimplifiedChristianAnalysisService:
                         scripture_refs.extend(concern_scripture)
 
             # 5. Create comprehensive analysis result
+            if (
+                ai_analysis is None
+                and isinstance(ai_raw, dict)
+                and (
+                    "score" in ai_raw
+                    or "concern_level" in ai_raw
+                    or "verdict" in ai_raw
+                    or "biblical_themes" in ai_raw
+                )
+            ):
+                # Map Router-style JSON into AnalysisResult for downstream logic
+                ai_analysis = self._map_router_json_to_result(safe_title, safe_artist, safe_lyrics, ai_raw)
+
             if ai_analysis is not None:
+                # If we mapped Router JSON to an AnalysisResult with fallback scriptures, prefer them when missing
+                if not scripture_refs:
+                    try:
+                        scripture_refs = (
+                            ai_analysis.biblical_analysis.get("supporting_scripture", [])
+                            if isinstance(ai_analysis.biblical_analysis, dict)
+                            else []
+                        ) or []
+                    except Exception:
+                        scripture_refs = []
                 # Apply stronger penalty for detected concerns to reflect problematic content
                 adjusted_score = ai_analysis.scoring_results.get("final_score", 100.0)
                 if concern_analysis and concern_analysis.get("detailed_concerns"):
-                    adjusted_score = max(
-                        0.0,
-                        adjusted_score - min(45, 15 * len(concern_analysis["detailed_concerns"])),
-                    )
+                    penalty = 0.0
+                    for c in concern_analysis["detailed_concerns"]:
+                        sev = (c or {}).get("severity", "medium").lower()
+                        if sev == "high":
+                            penalty += 20.0
+                        elif sev == "medium":
+                            penalty += 15.0
+                        else:
+                            penalty += 10.0
+                    adjusted_score = max(0.0, adjusted_score - min(60.0, penalty))
                 # Ensure problematic content is scored below the "generally safe" threshold
                 if (
                     concern_analysis
@@ -406,6 +470,46 @@ class SimplifiedChristianAnalysisService:
                 ):
                     adjusted_score = 69.0
                 quality_level = self._determine_concern_level_fallback(adjusted_score)
+
+                # Build educational insights and explanation
+                ai_info = {
+                    "sentiment": (
+                        ai_analysis.model_analysis.get("framework", {}).get("sentiment")
+                        if isinstance(ai_analysis.model_analysis, dict)
+                        else {"label": "NEUTRAL"}
+                    )
+                    if isinstance(ai_analysis.model_analysis, dict)
+                    else {"label": "NEUTRAL"},
+                    "themes": [
+                        t.get("theme", t) if isinstance(t, dict) else str(t)
+                        for t in (ai_analysis.biblical_analysis.get("themes", []))
+                    ],
+                    "content_safety": (
+                        ai_analysis.content_analysis.get("safety_assessment")
+                        if isinstance(ai_analysis.content_analysis, dict)
+                        else {"is_safe": True, "toxicity_score": 0.0}
+                    ),
+                }
+                try:
+                    educational_insights_list = self._create_educational_insights(
+                        ai_info, scripture_refs, concern_analysis
+                    )
+                except Exception:
+                    educational_insights_list = []
+                try:
+                    explanation_text = self._generate_educational_explanation(
+                        ai_info, concern_analysis or {}, adjusted_score
+                    )
+                except Exception:
+                    explanation_text = ""
+
+                if not educational_insights_list:
+                    if explanation_text:
+                        educational_insights_list = [explanation_text]
+                    else:
+                        educational_insights_list = [
+                            "Scripture connections and themes offer guidance for Christian discernment."
+                        ]
 
                 result = AnalysisResult(
                     title=safe_title,
@@ -424,10 +528,15 @@ class SimplifiedChristianAnalysisService:
                         **ai_analysis.scoring_results,
                         "final_score": adjusted_score,
                         "quality_level": quality_level,
+                        "explanation": explanation_text,
                     },
                     content_analysis={
                         "concern_flags": self._extract_enhanced_concern_flags(concern_analysis),
-                        "safety_assessment": ai_analysis.content_analysis,
+                        "safety_assessment": (
+                            ai_analysis.content_analysis.get("safety_assessment", {"is_safe": True, "toxicity_score": 0.0})
+                            if isinstance(ai_analysis.content_analysis, dict)
+                            else {"is_safe": True, "toxicity_score": 0.0}
+                        ),
                         "total_penalty": 0,
                         "detailed_concerns": concern_analysis.get("detailed_concerns", [])
                         if concern_analysis
@@ -435,12 +544,11 @@ class SimplifiedChristianAnalysisService:
                         "discernment_guidance": concern_analysis.get("discernment_guidance", [])
                         if concern_analysis
                         else [],
-                        "concern_level": ai_analysis.content_analysis.get(
-                            "concern_level",
-                            self._determine_concern_level_fallback(
-                                ai_analysis.scoring_results.get("final_score", 50)
-                            ),
-                        ),
+                        "concern_level": (
+                            ai_analysis.content_analysis.get("concern_level")
+                            if isinstance(ai_analysis.content_analysis, dict)
+                            else self._determine_concern_level_fallback(ai_analysis.scoring_results.get("final_score", 50))
+                        ) or self._determine_concern_level_fallback(ai_analysis.scoring_results.get("final_score", 50)),
                     },
                     model_analysis=ai_analysis.model_analysis,
                 )
@@ -544,11 +652,8 @@ class SimplifiedChristianAnalysisService:
 
         except Exception as e:
             logger.error(f"Error in simplified analysis for '{safe_title}': {e}")
-            # Add debugging for KeyError on 'explanation'
-            if "'explanation'" in str(e):
-                import traceback
-
-                logger.error(f"EXPLANATION KEYERROR DEBUG: {traceback.format_exc()}")
+            import traceback
+            logger.error(traceback.format_exc())
             return self._create_fallback_result(safe_title, safe_artist, safe_lyrics)
 
     def _determine_concern_level_fallback(
@@ -753,6 +858,104 @@ class SimplifiedChristianAnalysisService:
                     "ai_safety": 30.0,
                     "theological_depth": 10.0,
                 },
+            },
+        )
+
+    def _map_router_json_to_result(self, title: str, artist: str, lyrics: str, data: Dict[str, Any]) -> AnalysisResult:
+        """Map RouterAnalyzer JSON into AnalysisResult."""
+        score = float(data.get("score", 50))
+        concern_level = str(data.get("concern_level", "Unknown"))
+        themes = data.get("biblical_themes", []) or []
+        scriptures = data.get("supporting_scripture", []) or []
+        concerns = data.get("concerns", []) or []
+        verdict = data.get("verdict", {})
+        if not isinstance(verdict, dict):
+            verdict = {"summary": str(verdict)}
+
+        # Normalize concerns to our flag format
+        concern_flags = []
+        for c in concerns:
+            if isinstance(c, dict):
+                concern_flags.append(
+                    {
+                        "type": c.get("category", "General"),
+                        "severity": str(c.get("severity", "medium")).lower(),
+                        "description": c.get("explanation", ""),
+                        "category": c.get("category", "General"),
+                    }
+                )
+        # Normalize/augment themes
+        normalized_themes: List[Dict[str, Any]] = []
+        for t in themes:
+            if isinstance(t, dict) and t.get("theme"):
+                try:
+                    conf = float(t.get("confidence", 0.0))
+                except Exception:
+                    conf = 0.0
+                normalized_themes.append({"theme": t.get("theme"), "confidence": conf})
+            elif isinstance(t, str) and t.strip():
+                normalized_themes.append({"theme": t.strip(), "confidence": 0.0})
+
+        # Always augment with high-signal keyword themes if present in text and not already included
+        text = (lyrics or f"{title} {artist}").lower()
+        keyword_to_theme = {
+            "jesus": "Jesus",
+            "christ": "Christ",
+            "lord": "Lord",
+            "god": "God",
+            "grace": "Grace",
+            "salvation": "Salvation",
+            "redemption": "Redemption",
+            "worship": "Worship",
+            "praise": "Praise",
+            "faith": "Faith",
+        }
+        existing = {str(d.get("theme", "")).lower() for d in normalized_themes if isinstance(d, dict)}
+        for kw, th in keyword_to_theme.items():
+            if kw in text and th.lower() not in existing:
+                normalized_themes.append({"theme": th, "confidence": 0.7})
+                existing.add(th.lower())
+
+        # Fallback scripture mapping
+        if not scriptures and normalized_themes:
+            names = [d.get("theme", "") for d in normalized_themes if d.get("theme")]
+            try:
+                scriptures = self.scripture_mapper.find_relevant_passages(names)
+            except Exception:
+                scriptures = []
+
+        return AnalysisResult(
+            title=title,
+            artist=artist,
+            lyrics_text=lyrics,
+            processed_text=f"{title} {artist} {lyrics}".lower().strip() if lyrics else f"{title} {artist}".lower().strip(),
+            biblical_analysis={
+                "themes": normalized_themes,
+                "supporting_scripture": scriptures,
+                "educational_summary": str(verdict.get("summary", "")),
+            },
+            content_analysis={
+                "concern_flags": concern_flags,
+                "safety_assessment": {
+                    "is_safe": concern_level in ("Very Low", "Low"),
+                    "toxicity_score": 0.0,
+                },
+                "concern_level": concern_level,
+            },
+            scoring_results={
+                "final_score": score,
+                "quality_level": concern_level,
+                "component_scores": {},
+            },
+            model_analysis={
+                "framework": {
+                    "narrative_voice": data.get("narrative_voice"),
+                    "lament_filter_applied": data.get("lament_filter_applied"),
+                    "doctrinal_clarity": data.get("doctrinal_clarity"),
+                    "confidence": data.get("confidence"),
+                    "needs_review": data.get("needs_review"),
+                    "verdict": verdict,
+                }
             },
         )
 

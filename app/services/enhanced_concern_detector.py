@@ -155,6 +155,38 @@ class EnhancedConcernDetector:
                 "biblical_perspective": "Deuteronomy 18:10-12 warns against involvement in occult practices.",
                 "explanation": "Occult involvement opens doors to spiritual deception and darkness.",
             },
+            # New: detect vague spirituality where spiritual language lacks biblical referent
+            "vague_spirituality": {
+                "category": "Vague Spirituality",
+                "severity": "medium",
+                "patterns": [
+                    r"\b(nameless love|higher power|the universe|send(ing)? energy|manifest(ing)?|inner light)\b",
+                    r"\boffer (praise|prayers?)\b(?!.*\b(god|lord|jesus|christ)\b)",
+                    r"\b(sacred|holy)\b\s+(vibes|energy|universe|space)",
+                ],
+                "exclusions": [
+                    r"\b(god|lord|jesus|christ|holy spirit)\b",
+                ],
+                "biblical_perspective": "John 4:24 teaches true worship is in Spirit and truth directed to the living God.",
+                "explanation": "Spiritual language without reference to the Triune God encourages relativism and detaches worship from biblical truth.",
+            },
+            # New: detect idolatry/false worship where worship is directed to non-biblical objects
+            "false_worship": {
+                "category": "False Worship",
+                "severity": "high",
+                "patterns": [
+                    r"\bworship\s+(the\s+)?(stars|self|idols?|universe|creation|money|fame)\b",
+                    r"\baltar\s+to\s+(the\s+)?(unknown|stars|idols?|universe)\b",
+                    r"\bpray(ing)?\s+to\s+(the\s+)?(universe|idols?|ancestors)\b",
+                    r"\bcall it holy\b(?!.*\b(god|lord|jesus|christ)\b)",
+                ],
+                "exclusions": [
+                    r"\b(god|lord|jesus|christ|holy spirit)\b",
+                    r"\b(against|no|not)\s+(idols?|idolatry)\b",  # negate false positives
+                ],
+                "biblical_perspective": "Exodus 20:3-5 forbids idolatry; true worship belongs to God alone.",
+                "explanation": "Directing worship or prayer to created things or impersonal forces violates biblical worship.",
+            },
         }
 
     def detect_concerns(self, lyrics: str, title: str = "", artist: str = "") -> Dict[str, Any]:

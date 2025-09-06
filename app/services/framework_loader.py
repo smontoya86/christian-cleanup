@@ -20,7 +20,11 @@ import os
 import re
 from typing import Any, Dict, List
 
-from flask import current_app
+try:
+    from flask import current_app
+except Exception:
+    current_app = None  # type: ignore
+import logging
 
 _CACHE: Dict[str, Any] = {
     "hash": None,
@@ -33,7 +37,13 @@ def _read(path: str) -> str:
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
     except Exception as e:
-        current_app.logger.warning(f"Framework read failed for {path}: {e}")
+        try:
+            if current_app:
+                current_app.logger.warning(f"Framework read failed for {path}: {e}")
+            else:
+                logging.getLogger(__name__).warning(f"Framework read failed for {path}: {e}")
+        except Exception:
+            logging.getLogger(__name__).warning(f"Framework read failed for {path}: {e}")
         return ""
 
 
@@ -130,10 +140,22 @@ def get_rules(force_refresh: bool = False) -> Dict[str, Any]:
         if force_refresh or _CACHE["hash"] != digest:
             _CACHE["hash"] = digest
             _CACHE["rules"] = rules
-            current_app.logger.info(f"Framework rules loaded (hash={digest[:8]}…)")
+            try:
+                if current_app:
+                    current_app.logger.info(f"Framework rules loaded (hash={digest[:8]}…)")
+                else:
+                    logging.getLogger(__name__).info(f"Framework rules loaded (hash={digest[:8]}…)")
+            except Exception:
+                logging.getLogger(__name__).info(f"Framework rules loaded (hash={digest[:8]}…)")
         return _CACHE["rules"] or rules
     except Exception as e:
-        current_app.logger.error(f"Framework rule load failed: {e}")
+        try:
+            if current_app:
+                current_app.logger.error(f"Framework rule load failed: {e}")
+            else:
+                logging.getLogger(__name__).error(f"Framework rule load failed: {e}")
+        except Exception:
+            logging.getLogger(__name__).error(f"Framework rule load failed: {e}")
         # Fallback minimal rules
         return {
             "version_hash": "fallback",

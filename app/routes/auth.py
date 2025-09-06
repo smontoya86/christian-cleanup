@@ -281,12 +281,52 @@ def callback():
 @bp.route("/logout")
 def logout():
     """Log out the current user"""
-    if current_user.is_authenticated:
+    from flask import make_response
+    
+    was_authenticated = current_user.is_authenticated
+    
+    if was_authenticated:
         logout_user()
+    
+    # Clear server-side session data completely
+    session.clear()
+    
+    # Create response and clear all cookies
+    response = make_response(redirect(url_for("auth.logout_success")))
+    
+    # Clear Flask-Login session cookie
+    response.set_cookie('session', '', expires=0, path='/')
+    response.set_cookie('remember_token', '', expires=0, path='/')
+    
+    # Clear any other session-related cookies
+    for cookie_name in request.cookies:
+        response.set_cookie(cookie_name, '', expires=0, path='/')
+    
+    if was_authenticated:
         flash("You have been logged out successfully.", "info")
     else:
         flash("You are not currently logged in.", "info")
-    return redirect(url_for("main.index"))
+    
+    return response
+
+
+@bp.route("/logout-success")
+def logout_success():
+    """Logout success page - ensures clean logged-out state"""
+    from flask import make_response
+    
+    # Double-check that user is actually logged out
+    if current_user.is_authenticated:
+        logout_user()
+        session.clear()
+    
+    # Create response and ensure no caching
+    response = make_response(render_template("auth/logout_success.html"))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    return response
 
 
 @bp.route("/refresh_token")

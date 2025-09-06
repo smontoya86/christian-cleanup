@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy — Music Disciple{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h1 class="display-5 fw-bold mb-4">Privacy Policy</h1>
+            <p class="lead text-muted mb-5">Last updated: January 1, 2025</p>
+            
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Information We Collect</h2>
+                <p>Music Disciple collects minimal information to provide our biblical music analysis service:</p>
+                <ul>
+                    <li><strong>Spotify Account Information:</strong> We access your Spotify playlists through read-only permissions to analyze song content.</li>
+                    <li><strong>Analysis Data:</strong> We temporarily process song lyrics and metadata for biblical analysis purposes.</li>
+                    <li><strong>Account Information:</strong> Basic profile information needed to maintain your account and preferences.</li>
+                </ul>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">How We Use Your Information</h2>
+                <p>Your information is used solely to:</p>
+                <ul>
+                    <li>Provide biblical analysis of your music content</li>
+                    <li>Maintain your account and analysis history</li>
+                    <li>Improve our analysis accuracy and service quality</li>
+                </ul>
+                <p><strong>We never:</strong> Sell your data, share your listening habits, or use your information for advertising.</p>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Data Security</h2>
+                <p>We implement industry-standard security measures to protect your data, including encrypted connections and secure data storage. Your Spotify credentials are never stored on our servers.</p>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Third-Party Services</h2>
+                <p>Music Disciple integrates with Spotify's API under their terms of service. We do not share your personal information with any other third parties except as required by law.</p>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Your Rights</h2>
+                <p>You have the right to:</p>
+                <ul>
+                    <li>Access your personal data</li>
+                    <li>Request deletion of your account and data</li>
+                    <li>Revoke Spotify access permissions at any time</li>
+                </ul>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Contact Us</h2>
+                <p>If you have questions about this Privacy Policy, please contact us at <a href="mailto:privacy@musicdisciple.com">privacy@musicdisciple.com</a>.</p>
+            </div>
+
+            <div class="text-center mt-5">
+                <a href="{{ url_for('main.index') }}" class="btn btn-primary">← Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

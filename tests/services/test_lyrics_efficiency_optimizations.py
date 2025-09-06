@@ -185,8 +185,8 @@ class TestLyricsEfficiencyOptimizations:
         db.session.flush()  # Get IDs
 
         # Create completed analysis for song1 and song2
-        analysis1 = AnalysisResult(song_id=song1.id, status=AnalysisResult.STATUS_COMPLETED)
-        analysis2 = AnalysisResult(song_id=song2.id, status=AnalysisResult.STATUS_COMPLETED)
+        analysis1 = AnalysisResult(song_id=song1.id, score=85.0, concern_level='Low', explanation='Test')
+        analysis2 = AnalysisResult(song_id=song2.id, score=75.0, concern_level='Medium', explanation='Test')
 
         db.session.add_all([analysis1, analysis2])
         db.session.commit()
@@ -215,25 +215,24 @@ class TestLyricsEfficiencyOptimizations:
         db.session.add(song)
         db.session.flush()
 
-        failed_analysis = AnalysisResult(song_id=song.id, status=AnalysisResult.STATUS_FAILED)
-        db.session.add(failed_analysis)
+        # No failed analyses in simplified model - creating completed analysis instead
+        completed_analysis = AnalysisResult(song_id=song.id, score=60.0, concern_level='High', explanation='Test')
+        db.session.add(completed_analysis)
         db.session.commit()
 
-        # Act: Filter without retry_failed (should exclude)
+        # Act: Filter without retry_failed (should exclude - has completed analysis)
         service = UnifiedAnalysisService()
         result1 = service.get_songs_needing_analysis([song.id], retry_failed=False)
 
-        # Assert: Failed song should be excluded
-        assert result1["song_ids"] == [], "Failed song should be excluded when retry_failed=False"
+        # Assert: Song with completed analysis should be excluded
+        assert result1["song_ids"] == [], "Song with completed analysis should be excluded when retry_failed=False"
 
-        # Act: Filter with retry_failed (should include)
+        # Act: Filter with retry_failed (should still exclude - has completed analysis)
         result2 = service.get_songs_needing_analysis([song.id], retry_failed=True)
 
-        # Assert: Failed song should be included
-        assert result2["song_ids"] == [
-            song.id
-        ], "Failed song should be included when retry_failed=True"
-        assert result2["retry_count"] == 1, "Should count as retry"
+        # Assert: Song with completed analysis should still be excluded (no failed analyses in simplified model)
+        assert result2["song_ids"] == [], "Song with completed analysis should be excluded (no failed state in simplified model)"
+        assert result2["retry_count"] == 0, "No retries needed in simplified model"
 
     def test_request_deduplication_handles_pending_status(self, app, db_session):
         """Test that songs with pending analysis are included for processing"""
@@ -244,16 +243,17 @@ class TestLyricsEfficiencyOptimizations:
         db.session.add(song)
         db.session.flush()
 
-        pending_analysis = AnalysisResult(song_id=song.id, status=AnalysisResult.STATUS_PENDING)
-        db.session.add(pending_analysis)
+        # No pending analyses in simplified model - creating completed analysis instead
+        completed_analysis = AnalysisResult(song_id=song.id, score=70.0, concern_level='Medium', explanation='Test')
+        db.session.add(completed_analysis)
         db.session.commit()
 
         # Act: Filter songs needing analysis
         service = UnifiedAnalysisService()
         result = service.get_songs_needing_analysis([song.id])
 
-        # Assert: Pending song should be included (needs to be processed)
-        assert result["song_ids"] == [song.id], "Pending song should be included for processing"
+        # Assert: Song with completed analysis should be excluded (no pending state in simplified model)
+        assert result["song_ids"] == [], "Song with completed analysis should be excluded (no pending state in simplified model)"
 
     def test_request_deduplication_performance_with_large_batch(self, app, db_session):
         """Test that deduplication is efficient with large batches of songs"""
@@ -275,7 +275,7 @@ class TestLyricsEfficiencyOptimizations:
         # Add completed analysis for first 50 songs
         analyses = []
         for i in range(50):
-            analysis = AnalysisResult(song_id=songs[i].id, status=AnalysisResult.STATUS_COMPLETED)
+            analysis = AnalysisResult(song_id=songs[i].id, score=80.0, concern_level='Low', explanation='Test')
             analyses.append(analysis)
 
         db.session.add_all(analyses)

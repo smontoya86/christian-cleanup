@@ -155,7 +155,7 @@ class TestPlaylistAPI:
 
         # Add analysis result
         analysis = AnalysisResult(
-            song_id=sample_song.id, status="completed", score=85, concern_level="low"
+            song_id=sample_song.id, score=85, concern_level="Low", explanation="Test analysis"
         )
         auth_data["db"].session.add(analysis)
         auth_data["db"].session.commit()
@@ -215,9 +215,8 @@ class TestSongAnalysisAPI:
         # Add detailed analysis
         analysis = AnalysisResult(
             song_id=sample_song.id,
-            status="completed",
             score=92,
-            concern_level="low",
+            concern_level="Low",
             themes=["worship", "praise"],
             explanation="Strong Christian worship themes detected",
         )
@@ -241,7 +240,7 @@ class TestSongAnalysisAPI:
         analysis_data = data["analysis"]
         assert analysis_data["status"] == "completed"
         assert analysis_data["score"] == 92
-        assert analysis_data["concern_level"] == "low"
+        assert analysis_data["concern_level"] == "Low"
 
     @pytest.mark.api
     def test_get_song_analysis_handles_no_analysis(
@@ -314,7 +313,7 @@ class TestProgressAPI:
 
         # Add analysis for 3 out of 5 songs
         for i in range(3):
-            analysis = AnalysisResult(song_id=songs[i].id, status="completed", score=80 + i)
+            analysis = AnalysisResult(song_id=songs[i].id, score=80 + i, concern_level="Low", explanation="Test analysis")
             auth_data["db"].session.add(analysis)
 
         auth_data["db"].session.commit()

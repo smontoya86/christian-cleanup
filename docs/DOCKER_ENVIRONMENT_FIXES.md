@@ -154,25 +154,25 @@ christiancleanupwindsurf-worker-6   Up (healthy)
 ### Starting the Environment
 ```bash
 # Start all services with updated configuration
-docker-compose up -d
+docker compose up -d
 
 # Check status of all containers
-docker-compose ps
+docker compose ps
 
 # View logs for specific service
-docker-compose logs worker
+docker compose logs worker
 ```
 
 ### Testing Connectivity
 ```bash
 # Test Redis connectivity from web container
-docker-compose exec web python -c "import redis; r = redis.from_url('redis://redis:6379/0'); print(r.ping())"
+docker compose exec web python -c "import redis; r = redis.from_url('redis://redis:6379/0'); print(r.ping())"
 
 # Test Redis connectivity from worker container
-docker-compose exec worker python -c "import redis; r = redis.from_url('redis://redis:6379/0'); print(r.ping())"
+docker compose exec worker python -c "import redis; r = redis.from_url('redis://redis:6379/0'); print(r.ping())"
 
 # Test job processing
-docker-compose exec web python -c "from rq import Queue; from redis import Redis; q = Queue(connection=Redis.from_url('redis://redis:6379/0')); q.enqueue('time.sleep', 0.1)"
+docker compose exec web python -c "from rq import Queue; from redis import Redis; q = Queue(connection=Redis.from_url('redis://redis:6379/0')); q.enqueue('time.sleep', 0.1)"
 ```
 
 ### Health Check Verification
@@ -181,26 +181,26 @@ docker-compose exec web python -c "from rq import Queue; from redis import Redis
 curl http://localhost:5001/health
 
 # Check all container health status
-docker-compose ps
+docker compose ps
 ```
 
 ## Troubleshooting
 
 ### If Containers Show as Unhealthy
-1. Check logs: `docker-compose logs [service-name]`
-2. Verify health check command manually: `docker-compose exec [service] [health-check-command]`
-3. Restart specific service: `docker-compose restart [service-name]`
-4. Force recreate if needed: `docker-compose up -d --force-recreate [service-name]`
+1. Check logs: `docker compose logs [service-name]`
+2. Verify health check command manually: `docker compose exec [service] [health-check-command]`
+3. Restart specific service: `docker compose restart [service-name]`
+4. Force recreate if needed: `docker compose up -d --force-recreate [service-name]`
 
 ### If Network Connectivity Fails
 1. Verify network exists: `docker network ls | grep app-network`
 2. Check container network assignment: `docker inspect [container-name] | grep NetworkMode`
-3. Test connectivity: `docker-compose exec [service1] python -c "import socket; socket.create_connection(('[service2]', [port]))"`
+3. Test connectivity: `docker compose exec [service1] python -c "import socket; socket.create_connection(('[service2]', [port]))"`
 
 ### If Environment Variables Missing
 1. Verify `.env.docker` file exists and contains required variables
-2. Check environment in container: `docker-compose exec [service] env | grep [VARIABLE_NAME]`
-3. Restart containers to reload environment: `docker-compose restart`
+2. Check environment in container: `docker compose exec [service] env | grep [VARIABLE_NAME]`
+3. Restart containers to reload environment: `docker compose restart`
 
 ## Performance Impact
 
@@ -213,7 +213,7 @@ docker-compose ps
 
 ### Monitoring
 - All containers now have proper health checks for monitoring
-- Health status visible in `docker-compose ps`
+- Health status visible in `docker compose ps`
 - Ready for integration with monitoring tools (Prometheus, etc.)
 
 ### Scaling

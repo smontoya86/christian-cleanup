@@ -91,12 +91,8 @@ class UnifiedAnalysisService:
         # Use the analyze_song_complete method for consistent analysis
         analysis_data = self.analyze_song_complete(song, force=False, user_id=user_id)
 
-        # Get existing analysis record or create new one
-        analysis = (
-            AnalysisResult.query.filter_by(song_id=song_id)
-            .order_by(AnalysisResult.created_at.desc())
-            .first()
-        )
+        # Get existing analysis record or create new one (simplified - only one per song)
+        analysis = AnalysisResult.query.filter_by(song_id=song_id).first()
         if not analysis:
             analysis = AnalysisResult(song_id=song_id)
             db.session.add(analysis)
@@ -137,12 +133,8 @@ class UnifiedAnalysisService:
         # Get analysis data using the complete method (allow cache reuse)
         analysis_data = self.analyze_song_complete(song, force=False, user_id=user_id)
 
-        # Get existing analysis record or create new one
-        analysis = (
-            AnalysisResult.query.filter_by(song_id=song_id)
-            .order_by(AnalysisResult.created_at.desc())
-            .first()
-        )
+        # Get existing analysis record or create new one (simplified - only one per song)
+        analysis = AnalysisResult.query.filter_by(song_id=song_id).first()
         if not analysis:
             analysis = AnalysisResult(song_id=song_id)
             db.session.add(analysis)
@@ -183,7 +175,7 @@ class UnifiedAnalysisService:
                     .order_by(AnalysisResult.created_at.desc())
                     .first()
                 )
-                if existing and existing.status == "completed":
+                if existing:  # All stored analyses are completed by definition
                     return {
                         "score": existing.score,
                         "concern_level": existing.concern_level,
@@ -504,7 +496,7 @@ class UnifiedAnalysisService:
                     .join(PlaylistSong, Song.id == PlaylistSong.song_id)
                     .filter(
                         PlaylistSong.playlist_id == playlist.id,
-                        AnalysisResult.status == "completed",
+                        # All stored analyses are completed by definition
                         AnalysisResult.score.isnot(None),
                     )
                     .scalar()
@@ -645,24 +637,26 @@ class UnifiedAnalysisService:
                         # Create or update analysis record with results
                         analysis = AnalysisResult.query.filter_by(song_id=song.id).first()
                         if not analysis:
-                            analysis = AnalysisResult(
-                                song_id=song.id,
-                                status="completed",
-                                score=analysis_result.scoring_results["final_score"],
-                                concern_level=analysis_result.scoring_results["quality_level"],
-                                themes=analysis_result.biblical_analysis.get("themes", []),
-                                explanation=analysis_result.scoring_results["explanation"],
-                                created_at=datetime.now(),
-                            )
+                            analysis = AnalysisResult(song_id=song.id)
                             db.session.add(analysis)
+                            # fall through to mark_completed to set fields consistently
                         else:
-                            analysis.status = "completed"
-                            analysis.score = analysis_result.scoring_results["final_score"]
-                            analysis.concern_level = analysis_result.scoring_results[
-                                "quality_level"
-                            ]
-                            analysis.themes = analysis_result.biblical_analysis.get("themes", [])
-                            analysis.explanation = analysis_result.scoring_results["explanation"]
+                            # No status field to update - analysis is completed by definition
+                            pass
+
+                        # Normalize concern level and set completed fields
+                        _quality = analysis_result.scoring_results.get("quality_level", "Unknown")
+                        _concern = self._map_concern_level(_quality)
+                        analysis.mark_completed(
+                            score=analysis_result.scoring_results.get("final_score", 0),
+                            concern_level=_concern,
+                            themes=analysis_result.biblical_analysis.get("themes", []),
+                            explanation=analysis_result.scoring_results.get("explanation", "Analysis completed"),
+                            purity_flags_details=analysis_result.content_analysis.get("detailed_concerns", []),
+                            positive_themes_identified=analysis_result.biblical_analysis.get("themes", []),
+                            biblical_themes=analysis_result.biblical_analysis.get("themes", []),
+                            supporting_scripture=analysis_result.biblical_analysis.get("supporting_scripture", []),
+                        )
 
                         analyzed_count += 1
                     except Exception as e:
@@ -1060,7 +1054,7 @@ class UnifiedAnalysisService:
 
         # Get existing analysis records
         existing_query = db.session.query(
-            AnalysisResult.song_id, AnalysisResult.status, AnalysisResult.created_at
+            AnalysisResult.song_id, AnalysisResult.created_at
         ).filter(AnalysisResult.song_id.in_(song_ids))
 
         existing_analyses = {row.song_id: row for row in existing_query.all()}
@@ -1086,14 +1080,8 @@ class UnifiedAnalysisService:
             # Check if analysis exists and is valid
             if not analysis:
                 needs_analysis = True
-            elif analysis.status == "failed":
-                if retry_failed:
-                    needs_analysis = True
-                    retry_count += 1
-                else:
-                    needs_analysis = False
-            elif analysis.status != "completed":
-                needs_analysis = True
+            # All stored analyses are completed and valid by definition
+            # No failed or incomplete analyses exist in the simplified model
             elif max_analysis_age_days and analysis.created_at:
                 # Check if analysis is too old
                 from datetime import timezone

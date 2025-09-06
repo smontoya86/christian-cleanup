@@ -1,26 +1,26 @@
 /* Base CSS - Core variables, typography, and layout */
 
-/* CSS Custom Properties (Variables) */
+/* CSS Custom Properties (Variables) - Dark Theme */
 :root {
     /* Colors */
-    --primary-purple: #6f42c1;
-    --primary-color: #4361ee;
-    --light-purple: #e0d6f9;
-    --success-color: #2ecc71;
-    --warning-color: #f39c12;
-    --danger-color: #e74c3c;
-    --info-color: #0dcaf0;
+    --primary-purple: #8b5cf6;
+    --primary-color: #6366f1;
+    --light-purple: #312e81;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #06b6d4;
 
     /* Text Colors */
-    --dark-text: #333;
-    --light-text: #fff;
-    --muted-text: #6c757d;
+    --dark-text: #f8fafc;
+    --light-text: #f8fafc;
+    --muted-text: #94a3b8;
 
     /* Background Colors */
-    --body-bg: #fff;
-    --card-bg: #fff;
-    --light-bg: #f8f9fa;
-    --footer-bg: #f8f9fa;
+    --body-bg: #0f172a;
+    --card-bg: #1e293b;
+    --light-bg: #334155;
+    --footer-bg: #1e293b;
 
     /* Concern Level Colors */
     --concern-extreme: #dc3545;

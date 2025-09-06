@@ -1,7 +1,7 @@
 {
-  "name": "Christian Music Curator",
-  "short_name": "CMC",
-  "description": "Analyze your Spotify playlists for alignment with Christian values",
+  "name": "Music Disciple",
+  "short_name": "Music Disciple",
+  "description": "Analyze your Spotify playlists for discipleship through music",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

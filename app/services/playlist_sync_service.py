@@ -192,6 +192,7 @@ class PlaylistSyncService:
                 tracks_synced = 0
                 new_tracks = 0
                 playlist_songs_to_add = []
+                album_art_urls = []
 
                 for i, track_data in enumerate(spotify_tracks):
                     try:
@@ -211,6 +212,10 @@ class PlaylistSyncService:
                             if hasattr(song, "_is_new") and song._is_new:
                                 new_tracks += 1
 
+                            # Collect album art URL for collage
+                            if song.album_art_url:
+                                album_art_urls.append(song.album_art_url)
+
                     except Exception as e:
                         self.logger.error(f"Error syncing track: {e}")
                         # Continue with other tracks but track the error
@@ -222,6 +227,20 @@ class PlaylistSyncService:
 
                 # Update playlist track count
                 playlist.track_count = tracks_synced
+
+                # Compute up to 4 deduplicated collage URLs in-order of appearance
+                if album_art_urls:
+                    seen = set()
+                    deduped = []
+                    for url in album_art_urls:
+                        if url and url not in seen:
+                            seen.add(url)
+                            deduped.append(url)
+                        if len(deduped) >= 4:
+                            break
+                    playlist.cover_collage_urls = deduped if deduped else None
+                else:
+                    playlist.cover_collage_urls = None
 
                 # Commit all changes in single transaction
                 db.session.commit()

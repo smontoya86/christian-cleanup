@@ -8,7 +8,8 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "jest",
+    "test": "bash scripts/test_all.sh",
+    "test:smoke": "bash scripts/test_smoke.sh",
     "clean": "rm -rf app/static/dist",
     "build": "node scripts/build.js",
     "build:css": "postcss app/static/css/*.css --dir app/static/dist/css --use autoprefixer cssnano",
@@ -62,5 +63,11 @@
     "postcss-cli": "^11.0.0",
     "stylelint": "^16.2.1",
     "stylelint-config-standard": "^36.0.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testEnvironmentOptions": {
+      "url": "http://localhost"
+    }
   }
 }

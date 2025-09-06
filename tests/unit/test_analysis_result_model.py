@@ -26,7 +26,7 @@ class TestAnalysisResultModel:
         # Create a test analysis result
         self.analysis_result = AnalysisResult(
             song_id=self.song.id,
-            status=AnalysisResult.STATUS_COMPLETED,
+            # No status field needed - all stored analyses are completed
             themes={"faith": 0.9, "hope": 0.8},
             problematic_content={"explicit": False, "violence": False},
             concerns=["potential religious references"],
@@ -46,22 +46,32 @@ class TestAnalysisResultModel:
 
     def test_analysis_result_creation(self, db_session):
         """Test creating a new analysis result."""
+        # Create a different song since we already have an analysis for self.song
+        from app.models.models import Song
+        new_song = Song(
+            spotify_id="new_test_song_456",
+            title="New Test Song",
+            artist="New Test Artist"
+        )
+        db.session.add(new_song)
+        db.session.flush()  # Get the ID
+        
         # Create a new analysis result
         new_analysis = AnalysisResult(
-            song_id=self.song.id,
-            status=AnalysisResult.STATUS_PENDING,
+            song_id=new_song.id,
+            # No status field needed - all stored analyses are completed
             themes={},
             problematic_content={},
             concerns=[],
-            score=None,
-            concern_level=None,
-            explanation=None,
+            score=85.0,
+            concern_level='Low',
+            explanation='Test analysis',
         )
         db.session.add(new_analysis)
         db.session.commit()
 
         assert new_analysis.id is not None
-        assert new_analysis.status == AnalysisResult.STATUS_PENDING
+        assert new_analysis.score == 85.0
         assert new_analysis.created_at is not None
         assert new_analysis.updated_at is not None
 
@@ -74,27 +84,28 @@ class TestAnalysisResultModel:
         assert analysis.song_rel.id == self.song.id
 
     def test_analysis_result_status_constants(self):
-        """Test the status constants are defined correctly."""
-        assert hasattr(AnalysisResult, "STATUS_PENDING")
-        assert hasattr(AnalysisResult, "STATUS_PROCESSING")
-        assert hasattr(AnalysisResult, "STATUS_COMPLETED")
-        assert hasattr(AnalysisResult, "STATUS_FAILED")
+        """Test that status constants are no longer needed."""
+        # Status constants removed in simplified model
+        assert not hasattr(AnalysisResult, "STATUS_PENDING")
+        assert not hasattr(AnalysisResult, "STATUS_PROCESSING")
+        assert not hasattr(AnalysisResult, "STATUS_COMPLETED")
+        assert not hasattr(AnalysisResult, "STATUS_FAILED")
 
     def test_analysis_result_update(self, db_session):
         """Test updating an analysis result."""
         # Get the analysis result using SQLAlchemy 2.0 pattern
         analysis = get_by_id(AnalysisResult, self.analysis_result.id)
 
-        # Update fields
-        analysis.status = AnalysisResult.STATUS_FAILED
-        analysis.error_message = "Analysis failed due to timeout"
+        # Update fields (no status or error_message in simplified model)
+        analysis.score = 90.0
+        analysis.explanation = "Updated analysis"
         analysis.updated_at = datetime.now(timezone.utc)
         db.session.commit()
 
         # Verify updates using SQLAlchemy 2.0 pattern
         updated = get_by_id(AnalysisResult, self.analysis_result.id)
-        assert updated.status == AnalysisResult.STATUS_FAILED
-        assert updated.error_message == "Analysis failed due to timeout"
+        assert updated.score == 90.0
+        assert updated.explanation == "Updated analysis"
 
     def test_analysis_result_json_serialization(self, db_session):
         """Test that the model can be serialized to JSON."""

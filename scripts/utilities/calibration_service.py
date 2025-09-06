@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from app.utils.analysis.huggingface_analyzer import HuggingFaceAnalyzer
+from app.services.analyzers.router_analyzer import RouterAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 class CalibrationService:
     """Main calibration service for batch re-analysis of songs"""
 
-    def __init__(self, analyzer: Optional[HuggingFaceAnalyzer] = None):
-        self.analyzer = analyzer or HuggingFaceAnalyzer()
+    def __init__(self, analyzer: Optional[RouterAnalyzer] = None):
+        self.analyzer = analyzer or RouterAnalyzer()
         self.config_manager = CalibrationConfigManager()
 
     def batch_reanalyze(

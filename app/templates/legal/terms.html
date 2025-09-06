@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Terms of Service — Music Disciple{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h1 class="display-5 fw-bold mb-4">Terms of Service</h1>
+            <p class="lead text-muted mb-5">Last updated: January 1, 2025</p>
+            
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Acceptance of Terms</h2>
+                <p>By accessing and using Music Disciple, you accept and agree to be bound by the terms and provision of this agreement.</p>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Description of Service</h2>
+                <p>Music Disciple provides biblical analysis of music content to help Christians make informed decisions about their listening habits. Our service:</p>
+                <ul>
+                    <li>Analyzes song lyrics against biblical principles</li>
+                    <li>Provides educational insights and discernment guidance</li>
+                    <li>Offers recommendations based on Christian values</li>
+                </ul>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">User Responsibilities</h2>
+                <p>As a user, you agree to:</p>
+                <ul>
+                    <li>Provide accurate account information</li>
+                    <li>Use the service for personal, non-commercial purposes</li>
+                    <li>Respect intellectual property rights</li>
+                    <li>Not attempt to reverse engineer or exploit the service</li>
+                </ul>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Disclaimer of Warranties</h2>
+                <p>Music Disciple's analysis is provided for educational and informational purposes. While we strive for accuracy, biblical discernment is ultimately a personal responsibility. Our analysis should not be considered the final authority on music choices.</p>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Limitation of Liability</h2>
+                <p>Music Disciple shall not be liable for any indirect, incidental, special, or consequential damages resulting from the use or inability to use our service.</p>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Account Termination</h2>
+                <p>We reserve the right to terminate accounts that violate these terms. You may cancel your account at any time through your account settings.</p>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Changes to Terms</h2>
+                <p>We may update these terms from time to time. Continued use of the service constitutes acceptance of any changes.</p>
+            </div>
+
+            <div class="content-section mb-5">
+                <h2 class="h4 fw-bold mb-3">Contact Information</h2>
+                <p>For questions about these Terms of Service, contact us at <a href="mailto:legal@musicdisciple.com">legal@musicdisciple.com</a>.</p>
+            </div>
+
+            <div class="text-center mt-5">
+                <a href="{{ url_for('main.index') }}" class="btn btn-primary">← Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

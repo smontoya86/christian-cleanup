@@ -1,0 +1,11 @@
+id,verdict_true,verdict_pred,score_true,score_pred
+db-10558,,freely_listen,50.0,93.0
+db-10415,,context_required,50.0,68.0
+db-9938,,freely_listen,50.0,93.0
+db-9336,,context_required,50.0,78.0
+db-10849,,context_required,50.0,78.0
+db-10113,,context_required,50.0,78.0
+db-9699,,freely_listen,50.0,88.0
+db-11387,,context_required,50.0,70.0
+db-9459,,caution_limit,50.0,55.0
+db-9451,,context_required,50.0,78.0

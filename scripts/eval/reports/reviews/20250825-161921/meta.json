@@ -1,0 +1,9 @@
+{
+  "timestamp": "20250825-161921",
+  "input": "scripts/eval/reports/reviews/db_gpt_review_inputs.jsonl",
+  "model": "llama3.1:8b",
+  "api_base": "http://host.docker.internal:11434/v1",
+  "local": 0,
+  "max_tokens": 2000,
+  "temperature": 0.05
+}

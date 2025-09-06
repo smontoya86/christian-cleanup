@@ -12,7 +12,7 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
         <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}" class="text-decoration-none">
             {% set art = item.song.album_art_url %}
             <img src="{{ art or url_for('static', filename='images/default_album_art.png') }}"
-                 alt="Album Art" class="rounded"
+                 alt="{{ item.song.title }} album art" class="rounded"
                  referrerpolicy="no-referrer" loading="lazy"
                  style="width: 50px !important; height: 50px !important; object-fit: cover !important; display: block !important; margin: 0 auto !important;">
         </a>
@@ -65,6 +65,7 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="post" action="{{ url_for('main.remove_whitelist', song_id=item.song.id) }}" class="d-inline w-100">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                 <button type="submit" class="dropdown-item text-danger"
                                         onclick="return confirm('Remove this song from whitelist?')">
                                     Remove from Whitelist
@@ -73,6 +74,7 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                         </li>
                         <li>
                             <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                 <button type="submit" class="dropdown-item text-danger fas fa-trash"
                                         onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">Remove from Playlist</button>
                             </form>
@@ -92,6 +94,7 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                 {% else %}
                     <!-- Low/Medium Concern: Whitelist Primary -->
                     <form method="post" action="{{ url_for('main.whitelist_song', song_id=item.song.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                         <button type="submit" class="btn btn-sm btn-success fw-bold"
                                 title="Add to Whitelist">
                             Whitelist
@@ -123,6 +126,7 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="post" action="{{ url_for('main.whitelist_song', song_id=item.song.id) }}" class="d-inline w-100">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                 <button type="submit" class="dropdown-item text-warning">
                                     Whitelist Anyway
                                 </button>
@@ -132,6 +136,7 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                 <button type="submit" class="dropdown-item text-danger fas fa-trash"
                                         onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">Remove from Playlist</button>
                             </form>

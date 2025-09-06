@@ -273,7 +273,7 @@ class TestPlaylistWhitelistUI:
 
         # Add analysis result (low concern)
         analysis = AnalysisResult(
-            song_id=sample_song.id, score=85.0, concern_level="low", status="completed"
+            song_id=sample_song.id, score=85.0, concern_level="low"
         )
         db.session.add(analysis)
         db.session.commit()
@@ -353,7 +353,7 @@ class TestPlaylistWhitelistUI:
 
         # Add analysis result (needed for template to show whitelist state properly)
         analysis = AnalysisResult(
-            song_id=sample_song.id, score=85.0, concern_level="low", status="completed"
+            song_id=sample_song.id, score=85.0, concern_level="low"
         )
         db.session.add(analysis)
 

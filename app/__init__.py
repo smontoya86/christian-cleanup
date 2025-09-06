@@ -19,6 +19,16 @@ def create_app(config_name="development", skip_db_init=False):
     # Set environment-specific configuration
     if config_name == "testing":
         app.config["TESTING"] = True
+        # Improve SQLite-in-memory behavior for threaded tests
+        try:
+            from sqlalchemy.pool import StaticPool
+
+            app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+                "connect_args": {"check_same_thread": False},
+                "poolclass": StaticPool,
+            }
+        except Exception:
+            pass
 
     # Set debug mode for development
     if config_name == "development":
@@ -109,17 +119,18 @@ def create_app(config_name="development", skip_db_init=False):
         except Exception as e:
             app.logger.error(f"Failed to apply production security: {e}")
 
-    # Auto-start background analysis for users on first authenticated page load
+    # Auto-start background analysis for users on dashboard only (not homepage)
     @app.before_request
     def _auto_background_analysis():
         try:
             from flask import request
             from flask_login import current_user
 
-            # Only trigger on dashboard/index and when authenticated
+            # Only trigger on dashboard page and when authenticated
+            # Skip index to avoid performance issues on homepage
             if not current_user.is_authenticated:
                 return
-            if request.endpoint not in ("main.dashboard", "main.index"):
+            if request.endpoint not in ("main.dashboard",):  # Removed main.index
                 return
             # If a job is already active for this user, skip
             state = app.config.get("USER_ANALYSIS_PROGRESS", {})
@@ -195,9 +206,11 @@ def create_app(config_name="development", skip_db_init=False):
             db.create_all()
 
             # Pre-load AI models for fast analysis (PERFORMANCE FIX)
-            if config_name != "testing":  # Skip model loading in tests
+            disable_pref = os.environ.get("DISABLE_ANALYZER_PREFLIGHT", "0") in ("1", "true", "True")
+            is_ci = os.environ.get("CI", "0") in ("1", "true", "True")
+            if config_name != "testing" and not disable_pref and not is_ci:  # Skip model loading in tests/CI/offline
                 try:
-                    # Only warm LLM analyzer; do not pre-load HF pipelines unless explicitly enabled
+                    # Only warm Router/LLM analyzer (OpenAI-compatible)
                     from .services.analyzer_cache import (
                         AnalyzerCache,
                         get_analyzer_info,
@@ -206,7 +219,7 @@ def create_app(config_name="development", skip_db_init=False):
                     )
 
                     preflight_ok, msg = AnalyzerCache().preflight()
-                    if preflight_ok and "LLM endpoint" in msg:
+                    if preflight_ok and "endpoint" in msg:
                         app.logger.info("🚀 Pre-loading LLM analyzer for fast analysis...")
                         _ = initialize_analyzer()
                         if is_analyzer_ready():
@@ -216,9 +229,7 @@ def create_app(config_name="development", skip_db_init=False):
                         else:
                             app.logger.warning("⚠️ Analyzer not ready after initialization")
                     else:
-                        app.logger.info(
-                            "⏭️ Skipping HuggingFace model pre-load (acts as backup only)"
-                        )
+                        app.logger.info("⏭️ Skipping analyzer pre-load (endpoint not ready)")
                 except Exception as e:
                     app.logger.error(f"❌ Failed to pre-load analyzer: {e}")
                     app.logger.warning("⚠️ Analysis may be slower on first request")

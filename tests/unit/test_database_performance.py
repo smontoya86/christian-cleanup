@@ -131,7 +131,7 @@ class TestDatabaseIndexes:
         db.session.add(song)
         db.session.commit()
 
-        analysis = AnalysisResult(song_id=song.id, status="completed", score=85.0)
+        analysis = AnalysisResult(song_id=song.id, score=85.0, concern_level="Low", explanation="Test analysis")
         db.session.add(analysis)
         db.session.commit()
 
@@ -139,7 +139,7 @@ class TestDatabaseIndexes:
         start_time = time.time()
         result = (
             db.session.query(Song, AnalysisResult)
-            .join(AnalysisResult)
+            .join(AnalysisResult, Song.id == AnalysisResult.song_id)
             .filter(Song.spotify_id == "test_song_123")
             .first()
         )
@@ -233,15 +233,16 @@ class TestQueryOptimization:
         for song in songs:
             analysis = AnalysisResult(
                 song_id=song.id,
-                status="completed",
                 score=85.0 + song.id,  # Vary scores
+                concern_level="Low",
+                explanation="Test analysis",
             )
             db.session.add(analysis)
         db.session.commit()
 
         # Test optimized query using direct join instead of eager loading
         start_time = time.time()
-        songs_with_analysis = db.session.query(Song, AnalysisResult).join(AnalysisResult).all()
+        songs_with_analysis = db.session.query(Song, AnalysisResult).join(AnalysisResult, Song.id == AnalysisResult.song_id).all()
         query_time = (time.time() - start_time) * 1000  # Convert to ms
 
         assert len(songs_with_analysis) == 5
@@ -311,14 +312,19 @@ class TestBatchOperations:
         # Create analysis results
         analyses = []
         for song in songs:
-            analysis = AnalysisResult(song_id=song.id, status="pending")
+            analysis = AnalysisResult(
+                song_id=song.id,
+                score=75.0,
+                concern_level='Medium', 
+                explanation='Test analysis for bulk operations'
+            )
             analyses.append(analysis)
             db.session.add(analysis)
         db.session.commit()
 
-        # Test bulk update
+        # Test bulk update (no status field in simplified model)
         update_data = [
-            {"id": analysis.id, "status": "completed", "score": 85.0 + analysis.id}
+            {"id": analysis.id, "score": 85.0 + analysis.id}
             for analysis in analyses
         ]
 
@@ -328,7 +334,7 @@ class TestBatchOperations:
         bulk_update_time = (time.time() - start_time) * 1000
 
         # Verify updates
-        completed_count = AnalysisResult.query.filter_by(status="completed").count()
+        completed_count = AnalysisResult.query.count()
         assert completed_count == 5
         assert (
             bulk_update_time < 200

@@ -172,8 +172,9 @@ describe('LazyLoader', () => {
       jest.useFakeTimers();
 
       lazyLoader.loadContent(mockElement, '/api/test', null, null);
-
-      await new Promise(resolve => setTimeout(resolve, 0));
+      // Process any pending timers and microtasks
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
 
       // Should show error state
       expect(mockElement.innerHTML).toContain('Failed to load content');
@@ -194,8 +195,17 @@ describe('LazyLoader', () => {
 
       const promise = lazyLoader.loadContent(mockElement, '/api/test');
 
-      // Fast-forward past retry delay
+      // Fast-forward past retry delay and flush timers/microtasks
       jest.advanceTimersByTime(2000);
+      jest.runOnlyPendingTimers();
+      // Flush microtasks thoroughly
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Ensure final resolution path finishes
+      jest.runAllTimers();
+      await Promise.resolve();
 
       await promise;
 
@@ -214,8 +224,13 @@ describe('LazyLoader', () => {
       // Fast-forward past all retry attempts
       for (let i = 0; i < 3; i++) {
         jest.advanceTimersByTime(2000);
-        await new Promise(resolve => setTimeout(resolve, 0));
+        jest.runOnlyPendingTimers();
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
       }
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(global.fetch).toHaveBeenCalledTimes(4); // Initial + 3 retries
       expect(mockElement.innerHTML).toContain('Failed to load content');
@@ -255,8 +270,13 @@ describe('LazyLoader', () => {
       // Fast-forward past all retry attempts
       for (let i = 0; i < 3; i++) {
         jest.advanceTimersByTime(2000);
-        await new Promise(resolve => setTimeout(resolve, 0));
+        jest.runOnlyPendingTimers();
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
       }
+      jest.runAllTimers();
+      await Promise.resolve();
 
       expect(mockElement.innerHTML).toContain('Custom error message');
 

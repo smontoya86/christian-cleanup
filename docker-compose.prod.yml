@@ -39,15 +39,10 @@ services:
     volumes:
       - app_logs:/app/logs
       - ./uploads:/app/uploads:rw
-      # Add model cache volume for persistent storage
-      - model_cache:/root/.cache/huggingface
     environment:
-      # Analyzer configuration (LLM-first with internal vLLM service; auto-falls back to HF if unavailable)
-      - USE_LLM_ANALYZER=1
+      # Analyzer configuration (Router-only)
       - LLM_API_BASE_URL=http://llm:8000/v1
       - LLM_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct
-      - ENABLE_EMBEDDINGS=1
-      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
       - FLASK_ENV=production
       - FLASK_DEBUG=false
       - SECRET_KEY=${SECRET_KEY}
@@ -62,9 +57,7 @@ services:
       - GA4_API_SECRET=${GA4_API_SECRET}
       - GA4_DEBUG_MODE=${GA4_DEBUG_MODE}
       - LOG_LEVEL=INFO
-      # ML optimization settings
-      - TRANSFORMERS_CACHE=/root/.cache/huggingface
-      - PYTORCH_ENABLE_MPS_FALLBACK=1
+      # ML optimization settings (legacy HF removed)
       - OMP_NUM_THREADS=8
       - MKL_NUM_THREADS=8
     depends_on:
@@ -100,7 +93,7 @@ services:
 
   # Queue workers removed: analysis runs synchronously within web container
 
-  # Single-model LLM inference service (vLLM OpenAI-compatible)
+  # LLM inference service (vLLM OpenAI-compatible)
   llm:
     image: vllm/vllm-openai:latest
     command: --model meta-llama/Meta-Llama-3.1-8B-Instruct --host 0.0.0.0 --port 8000 --download-dir /data/models --gpu-memory-utilization 0.9
@@ -111,6 +104,17 @@ services:
     expose:
       - "8000"
     restart: unless-stopped
+    networks:
+      - backend
+  # Optional in-docker Ollama for local GPU/CPU routing (OpenAI-compatible via /v1 when proxied)
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - model_cache:/root/.ollama
+    command: ["serve"]
     networks:
       - backend
     healthcheck:

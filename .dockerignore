@@ -3,8 +3,6 @@
 .gitignore
 
 # Docker files
-Dockerfile
-docker-compose.yml
 .dockerignore
 
 # Python virtual environment
@@ -85,8 +83,6 @@ lerna-debug.log*
 app/static/dist/
 
 # Development files
-README.md
-*.md
 
 # Virtual environments
 .env

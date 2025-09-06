@@ -127,8 +127,7 @@ class TestDatabaseIndexPerformance:
             start_time = time.time()
             recent_results = (
                 db.session.query(AnalysisResult, Song)
-                .join(Song)
-                .filter(AnalysisResult.status == "completed")
+                .join(Song, AnalysisResult.song_id == Song.id)
                 .order_by(AnalysisResult.analyzed_at.desc())
                 .limit(5)
                 .all()
@@ -201,18 +200,12 @@ class TestDatabaseIndexPerformance:
         if db.session.query(Song).count() < 10:
             self._create_test_songs(count=20)
 
-        if (
-            db.session.query(AnalysisResult).filter(AnalysisResult.status == "completed").count()
-            < 5
-        ):
+        if db.session.query(AnalysisResult).count() < 5:
             self._create_test_analysis_results(count=10)
 
     def _ensure_analysis_results_exist(self):
         """Ensure analysis results exist for testing"""
-        if (
-            db.session.query(AnalysisResult).filter(AnalysisResult.status == "completed").count()
-            < 10
-        ):
+        if db.session.query(AnalysisResult).count() < 10:
             self._create_test_analysis_results(count=20)
 
     def _create_test_songs(self, count=10):
@@ -237,8 +230,7 @@ class TestDatabaseIndexPerformance:
             if not song.analysis_results:
                 analysis = AnalysisResult(
                     song_id=song.id,
-                    status="completed",
-                    overall_score=85 - (i % 20),  # Vary scores
+                    score=85 - (i % 20),  # Vary scores
                     concern_level="low" if i % 3 == 0 else "medium",
                     explanation=f"Test analysis for song {i}",
                     analyzed_at=db.func.now(),

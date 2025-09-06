@@ -1,7 +1,7 @@
 # 🎯 GPT-OSS Fine-Tuning Guide (Legacy Documentation)
 
 **Version**: 2.0 (Updated January 2025)
-**Status**: SUPERSEDED - See `docs/unified_implementation_plan.md` for current plan
+**Status**: DEPRECATED - Router-only analysis is the current architecture. This doc is retained for archival context and should not be followed for implementation.
 **Strategy**: Knowledge Distillation (Teacher-Student)
 **Teacher Model**: Qwen3-8B-Instruct (local fine-tuning)
 **Student Model**: OpenAI gpt-oss-20b (knowledge distillation)

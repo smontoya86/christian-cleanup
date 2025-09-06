@@ -55,7 +55,6 @@ class TestDatabaseQueryPerformance:
                 if i % 2 == 0:  # 50% of songs have analysis
                     analysis = AnalysisResult(
                         song_id=song.id,
-                        status="completed",
                         score=85 - (i % 30),
                         concern_level="low" if i % 3 == 0 else "medium",
                         explanation=f"Test analysis for song {i}",
@@ -112,8 +111,8 @@ class TestDatabaseQueryPerformance:
             # This is the actual slow query from the Progress API
             recent_results = (
                 db.session.query(AnalysisResult, Song)
-                .join(Song)
-                .filter(AnalysisResult.status == "completed")
+                .join(Song, AnalysisResult.song_id == Song.id)
+                # No status filter needed - all stored analyses are completed
                 .order_by(AnalysisResult.analyzed_at.desc())
                 .limit(5)
                 .all()
@@ -187,7 +186,7 @@ class TestDatabaseQueryPerformance:
             total_songs = db.session.query(Song).count()
             completed_analyses = (
                 db.session.query(AnalysisResult)
-                .filter(AnalysisResult.status == "completed")
+                # No status filter needed - all stored analyses are completed
                 .count()
             )
             pending_analyses = total_songs - completed_analyses
@@ -228,10 +227,10 @@ class TestDatabaseQueryPerformance:
                 # Count completed analyses for songs in this playlist
                 analyzed_count = (
                     db.session.query(AnalysisResult)
-                    .join(Song)
+                    .join(Song, AnalysisResult.song_id == Song.id)
                     .join(PlaylistSong)
                     .filter(PlaylistSong.playlist_id == playlist_id)
-                    .filter(AnalysisResult.status == "completed")
+                    # No status filter needed - all stored analyses are completed
                     .count()
                 )
 
@@ -295,10 +294,10 @@ class TestDatabaseIndexAnalysis:
 
             # Test 1: Analysis results by status (common filter)
             start_time = time.time()
-            db.session.query(AnalysisResult).filter(AnalysisResult.status == "completed").count()
+            db.session.query(AnalysisResult).count()  # All stored analyses are completed
             query_time = (time.time() - start_time) * 1000
             if query_time > 20:
-                slow_queries.append(("AnalysisResult.status filter", query_time))
+                slow_queries.append(("AnalysisResult count query", query_time))
 
             # Test 2: Analysis results ordered by analyzed_at (common sort)
             start_time = time.time()

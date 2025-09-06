@@ -259,7 +259,9 @@ class TestWhitelistAPI:
         assert data["message"] == "Item removed from whitelist"
 
         # Verify item is removed
-        check_entry = Whitelist.query.get(entry_id)
+        # SQLAlchemy 2.x compatible get
+        from app import db as _db
+        check_entry = _db.session.get(Whitelist, entry_id)
         assert check_entry is None
 
     def test_remove_whitelist_item_not_found(self, client, authenticated_user):

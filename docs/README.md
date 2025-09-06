@@ -37,8 +37,8 @@ The application follows a simplified, maintainable architecture focused on educa
 │   └── PostgreSQL with Educational Schema
 └── Infrastructure Layer
     ├── Database (PostgreSQL)
-    ├── Cache & Queue (Redis)
-    └── Background Workers (6 Containers)
+    ├── Cache (Redis)
+    └── Background processing (in web)
 ```
 
 ### Key Architectural Principles
@@ -46,7 +46,7 @@ The application follows a simplified, maintainable architecture focused on educa
 - **Simplicity Over Complexity**: Eliminated 52,010+ lines of over-engineered code
 - **Educational Focus**: All analysis designed for discernment training
 - **Production Ready**: Horizontal scaling with Docker containers
-- **AI-Powered**: HuggingFace transformers for nuanced analysis
+- **AI-Powered**: Router-based LLM analysis (Runpod/Ollama) for nuanced analysis
 - **Biblical Foundation**: All analysis rooted in scriptural principles
 
 ### Major Simplification Achievement
@@ -63,7 +63,7 @@ The application follows a simplified, maintainable architecture focused on educa
 - Spotify Developer Account
 - Node.js 18+ (for frontend build)
 
-### Quick Start
+### Quick Start (Container-only)
 
 1. **Clone and Setup**:
    ```bash
@@ -75,17 +75,16 @@ The application follows a simplified, maintainable architecture focused on educa
 
 2. **Build and Start**:
    ```bash
-   npm install && npm run build
-   docker-compose up --build
+   docker compose up -d --build
    ```
 
 3. **Access Application**:
    - Web Interface: http://localhost:5001
    - Use Mock Authentication for testing
 
-4. **Create Test Data**:
+4. **Create Test Data (inside container)**:
    ```bash
-   python scripts/create_minimal_mock_data.py
+   docker compose exec web python scripts/create_minimal_mock_data.py
    ```
 
 ## Enhanced Analysis System
@@ -100,7 +99,7 @@ The application has evolved into a comprehensive Christian discernment training 
 ### Core Analysis Services
 
 #### **SimplifiedChristianAnalysisService**
-- **AI-Powered Analysis**: HuggingFace transformers for nuanced understanding
+- **AI-Powered Analysis**: Router-based LLM integration for nuanced understanding
 - **Biblical Theme Detection**: 10+ core themes (Faith, Worship, Savior, Jesus, God, etc.)
 - **Educational Explanations**: 100+ character explanations with Christian perspectives
 - **Performance**: <1 second analysis time
@@ -211,7 +210,7 @@ supporting_scripture (JSON)         -- Scripture references with context
 ]
 ```
 
-For detailed schema, see [Technical Architecture](simplified_structure_rebuild.md).
+For detailed schema, see [System Architecture](system_architecture.md).
 
 ## Configuration
 
@@ -241,12 +240,12 @@ GENIUS_ACCESS_TOKEN=your_genius_token  # Optional
 
 ### Docker Configuration
 
-Production deployment via Docker Compose:
+Deployment via Docker Compose (dev/prod):
 
 ```yaml
 services:
   web:          # Flask application (port 5001)
-  worker:       # Enhanced analysis processing (6 containers)
+  # background processing now runs in web
   postgres:     # PostgreSQL with enhanced schema
   redis:        # Cache and job queue
   nginx:        # Reverse proxy (production)
@@ -255,27 +254,7 @@ services:
 ## Development Workflow
 
 ### Local Development
-
-```bash
-# Start services
-docker-compose up -d postgres redis
-
-# Install dependencies
-pip install -r requirements.txt
-npm install
-
-# Build frontend assets
-npm run build
-
-# Run migrations
-flask db upgrade
-
-# Start application
-python run.py
-
-# Start workers (separate terminal)
-python worker.py
-```
+All development tasks should be executed inside containers using `docker compose exec`.
 
 ### Testing
 
@@ -354,7 +333,7 @@ curl http://localhost:5001/api/health
 - **Analysis Time**: <1 second per song with enhanced features
 - **Educational Content**: 100+ character explanations with biblical insights
 - **Database Performance**: Optimized with indexes and connection pooling
-- **Scalability**: Horizontal scaling with 6 worker containers
+- **Scalability**: Scale web replicas as needed
 
 ### Security Features
 
@@ -387,8 +366,8 @@ The application successfully transforms from a basic scoring tool into a compreh
 ## Documentation Index
 
 ### Core Documentation
-- **[Technical Architecture](simplified_structure_rebuild.md)** - Comprehensive system architecture
-- **[Educational Roadmap](educational_enhancement_roadmap.md)** - Educational feature development
+- **[System Architecture](system_architecture.md)** - Comprehensive system architecture
+- **[Unified Implementation Plan](unified_implementation_plan.md)** - Implementation plan
 - **[API Reference](api_docs.md)** - Complete API documentation
 
 ### Setup & Configuration
@@ -404,8 +383,14 @@ The application successfully transforms from a basic scoring tool into a compreh
 ### Development
 - **[Frontend Style Guide](frontend-style-guide.md)** - UI development standards
 - **[macOS Development](MACOS_FORK_SAFETY.md)** - Platform considerations
-- **[Threading Configuration](THREADING_WORKER_CONFIG.md)** - Worker setup
+  
 
 ---
 
 **Current Status**: Production-ready with fully operational enhanced analysis system that transforms Christian music curation into comprehensive discernment training.
+
+## Analysis Architecture (Simplified)
+- Router-only analyzer (OpenAI-compatible HTTP)
+- Local profile: Ollama (`LLM_API_BASE_URL=http://host.docker.internal:11434/v1`, `LLM_MODEL=llama3.1:8b`)
+- Runpod profile: vLLM (`LLM_API_BASE_URL=http(s)://<runpod-host>:<port>/v1`, `LLM_MODEL=<llama-3.1-70b-instruct-awq>`)
+- No HuggingFace transformers/torch runtime in app path

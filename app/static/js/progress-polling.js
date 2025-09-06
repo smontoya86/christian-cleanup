@@ -198,21 +198,20 @@ class ProgressPoller {
      * @param {Object} progress - Current progress data
      */
     _adaptPollingInterval(pollState, progress) {
-        const elapsedSeconds = (Date.now() - pollState.startTime) / 1000;
         const progressPercent = progress.progress || 0;
 
-        // Fast polling for first 10 seconds or if progress is moving quickly
-        if (elapsedSeconds < 10 || progressPercent < 0.1) {
+        // Fast for early progress
+        if (progressPercent < 0.1) {
             pollState.interval = this.initialInterval;
+            return;
         }
-        // Medium polling for active progress
-        else if (progressPercent < 0.9) {
-            pollState.interval = Math.min(this.initialInterval * 2, 3000);
+        // Medium for mid progress
+        if (progressPercent < 0.9) {
+            pollState.interval = this.initialInterval * 2;
+            return;
         }
-        // Slower polling when nearly complete
-        else {
-            pollState.interval = Math.min(this.initialInterval * 3, this.maxInterval);
-        }
+        // Slow for near-complete
+        pollState.interval = Math.min(this.initialInterval * 3, this.maxInterval);
     }
 }
 
@@ -226,7 +225,19 @@ function pollJobProgress(jobId, options = {}) {
 
     return new Promise((resolve, reject) => {
         poller.startPolling(jobId, {
-            onProgress: options.onProgress || (() => {}),
+            onProgress: (progress) => {
+                if (options.onProgress) options.onProgress(progress);
+                // If no explicit onComplete provided, resolve on first completion state
+                if (!options.onComplete && (progress.progress >= 1 || progress.current_step === 'complete' || ['completed', 'failed', 'cancelled'].includes(progress.status))) {
+                    resolve(progress);
+                    poller.stopPolling(jobId);
+                }
+                // Also resolve when metadata is present (integration convenience)
+                else if (!options.onComplete && progress && progress.metadata) {
+                    resolve(progress);
+                    poller.stopPolling(jobId);
+                }
+            },
             onComplete: (progress) => {
                 if (options.onComplete) options.onComplete(progress);
                 resolve(progress);

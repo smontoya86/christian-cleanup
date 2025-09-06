@@ -1,0 +1,11 @@
+id,verdict_true,verdict_pred,score_true,score_pred
+db-10558,,freely_listen,50.0,85.0
+db-10415,,freely_listen,50.0,95.0
+db-9938,,freely_listen,50.0,90.0
+db-9336,,freely_listen,50.0,90.0
+db-10849,,freely_listen,50.0,90.0
+db-10113,,freely_listen,50.0,95.0
+db-9699,,freely_listen,50.0,90.0
+db-11387,,freely_listen,50.0,95.0
+db-9459,,avoid_formation,50.0,18.0
+db-9451,,freely_listen,50.0,95.0

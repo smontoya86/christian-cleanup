@@ -125,7 +125,8 @@ export class PlaylistAnalysis {
       this.disableAnalysisButtons();
 
       // Show processing indicator
-      UIHelpers.showProgress('Processing songs directly (queue-free)...', 0);
+      UIHelpers.showProgress();
+      UIHelpers.updateProgress(0, 'Starting analysis...', 'Preparing...');
 
       console.log('Calling apiService.startPlaylistAnalysis...');
       const response = await apiService.startPlaylistAnalysis(this.playlistId, analysisType);
@@ -133,24 +134,8 @@ export class PlaylistAnalysis {
       console.log('API response:', response);
 
       if (response.success) {
-        // Direct processing completed immediately!
-        const successRate = Math.round((response.songs_analyzed / response.total_songs) * 100);
-        const message = `✅ Analysis completed immediately! ${response.songs_analyzed}/${response.total_songs} songs analyzed (${successRate}%)`;
-        const details = response.direct_processing && response.queue_bypassed
-          ? `🚀 Direct processing bypassed queue system - no more clogging issues!`
-          : `Analysis processed efficiently`;
-
-        UIHelpers.showSuccess(`${message}\n${details}`);
-
-        // Hide progress and refresh page to show results
-        UIHelpers.hideProgress();
-
-        // Refresh the page after a brief delay to show the updated analysis results
-        setTimeout(() => {
-          console.log('Refreshing page to show analysis results...');
-          window.location.reload();
-        }, 1500);
-
+        // Begin progress polling against API endpoint to update in-page progress bar
+        await this.pollPlaylistProgress();
       } else {
         throw new Error(response.message || 'Analysis failed');
       }
@@ -164,6 +149,62 @@ export class PlaylistAnalysis {
       }
       this.resetAnalysisState();
     }
+  }
+  /**
+   * Poll playlist progress and update in-page progress UI
+   */
+  async pollPlaylistProgress () {
+    const maxMinutes = 15;
+    const endTime = Date.now() + maxMinutes * 60 * 1000;
+
+    const tick = async () => {
+      try {
+        const status = await apiService.getPlaylistAnalysisStatus(this.playlistId);
+        if (!status || status.success !== true) {
+          UIHelpers.showError('Unable to track analysis progress');
+          this.resetAnalysisState();
+          return;
+        }
+
+        const progress = Math.round(status.progress || 0);
+        const analyzed = status.analyzed_count || 0;
+        const total = status.total_count || 0;
+        const message = status.message || `${analyzed}/${total} songs analyzed`;
+
+        UIHelpers.updateProgress(progress, message, `${analyzed}/${total} analyzed`);
+
+        if (status.completed || progress >= 100) {
+          UIHelpers.hideProgress();
+          this.resetAnalysisState();
+          setTimeout(() => window.location.reload(), 1000);
+          return;
+        }
+
+        if (Date.now() < endTime) {
+          setTimeout(tick, 5000);
+        } else {
+          UIHelpers.showError('Analysis is taking longer than expected. Please refresh to check status.');
+          this.resetAnalysisState();
+        }
+      } catch (err) {
+        UIHelpers.showError('Lost connection while tracking progress');
+        this.resetAnalysisState();
+      }
+    };
+
+    // kick off
+    setTimeout(tick, 3000);
+  }
+
+  /**
+   * Back-compat handler bound in some listeners
+   */
+  analyzePlaylist () {
+    if (this.isAnalysisInProgress) {
+      UIHelpers.showError('Analysis is already in progress');
+      return;
+    }
+    this.startAnalysis('all');
   }
 
 
@@ -319,31 +360,41 @@ export class PlaylistAnalysis {
   updateSongScoreDisplay(songId, result) {
     console.log('🎯 Updating score display for song:', songId, result);
 
+    // Prefer card UI; fall back to table if present
+    const songCard = document.querySelector(`.song-card[data-song-id="${songId}"]`);
+    if (songCard) {
+      // Update score circle text
+      const circle = songCard.querySelector('.score-circle');
+      if (circle && typeof result.score !== 'undefined') {
+        const s = Math.round(result.score);
+        circle.textContent = `${s}%`;
+        // Update color classes based on standardized thresholds
+        circle.classList.remove('score-green','score-yellow','score-red','bg-extreme','bg-high','bg-medium','bg-low');
+        if (s >= 75) circle.classList.add('score-green');
+        else if (s >= 50) circle.classList.add('score-yellow');
+        else circle.classList.add('score-red');
+      }
+
+      // Update reason snippet if available
+      const reasonElem = songCard.querySelector('.reason-snippet');
+      if (reasonElem && (result.explanation || (result.concerns && result.concerns.length))) {
+        const reason = result.explanation || result.concerns[0];
+        reasonElem.textContent = `Reason: ${reason}`;
+        reasonElem.setAttribute('title', reason);
+      }
+      return;
+    }
+
+    // Legacy table fallback
     const songRow = document.querySelector(`tr[data-song-id="${songId}"]`);
-    if (!songRow) {
-      console.log('⚠️ Song row not found for ID:', songId);
-      return;
-    }
-
+    if (!songRow) return;
     const scoreCell = songRow.querySelector('.score-cell');
-    if (!scoreCell) {
-      console.log('⚠️ Score cell not found in song row');
-      return;
-    }
-
+    if (!scoreCell) return;
     if (result.score !== undefined) {
       const score = Math.round(result.score);
       const concernLevel = result.concern_level || 'unknown';
-
-      const badgeClass = score >= 80 ? 'bg-success' :
-                        score >= 60 ? 'bg-warning' : 'bg-danger';
-
-      scoreCell.innerHTML = `
-        <span class="badge ${badgeClass} fs-6">${score}%</span>
-        <div class="small text-muted">${concernLevel}</div>
-      `;
-
-      console.log('✅ Score display updated:', { score, concernLevel });
+      const badgeClass = score >= 80 ? 'bg-success' : score >= 60 ? 'bg-warning' : 'bg-danger';
+      scoreCell.innerHTML = `<span class="badge ${badgeClass} fs-6">${score}%</span><div class="small text-muted">${concernLevel}</div>`;
     }
   }
 

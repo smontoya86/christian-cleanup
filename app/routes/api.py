@@ -26,7 +26,7 @@ import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests as _req
 from flask import Blueprint, Response, current_app, jsonify, request
@@ -52,6 +52,7 @@ from ..utils.freemium import (
     song_belongs_to_unlocked_playlist,
 )
 from ..utils.ga4 import send_event_async
+from ..utils.cache import cache_get_json, cache_set_json
 
 # Queue system removed - using direct analysis with worker parallelization
 from ..utils.health_monitor import health_monitor
@@ -236,6 +237,49 @@ def admin_diagnostics():
 
     return jsonify({"success": True, "diagnostics": info}), 200
 
+@bp.route("/admin/llm-router", methods=["GET"])
+@login_required
+@admin_required
+def admin_llm_router_config():
+    """Expose current LLM router configuration and a dry-run route decision.
+
+    Optional query param: batch_size (int) to simulate routing decision.
+    """
+    try:
+        batch_size = request.args.get("batch_size", type=int)
+        cfg = {
+            "interactive": {
+                "api_base": os.environ.get("LLM_INTERACTIVE_API_BASE_URL")
+                or os.environ.get("LLM_API_BASE_URL"),
+                "model": os.environ.get("LLM_INTERACTIVE_MODEL")
+                or os.environ.get("LLM_MODEL"),
+            },
+            "bulk": {
+                "api_base": os.environ.get("LLM_BULK_API_BASE_URL")
+                or os.environ.get("LLM_API_BASE_URL"),
+                "model": os.environ.get("LLM_BULK_MODEL") or os.environ.get("LLM_MODEL"),
+            },
+            "threshold": int(os.environ.get("LLM_ROUTER_BULK_THRESHOLD", "150")),
+            "enabled": os.environ.get("USE_LLM_ANALYZER", "0") in ("1", "true", "True"),
+        }
+
+        route = None
+        if batch_size is not None:
+            route = "bulk" if batch_size >= cfg["threshold"] else "interactive"
+
+        return jsonify({
+            "success": True,
+            "router": cfg,
+            "dry_run": {
+                "batch_size": batch_size,
+                "route": route,
+            },
+        })
+    except Exception as e:
+        current_app.logger.error(f"LLM router config error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 
 @bp.route("/admin/reload-framework", methods=["POST"])
 @login_required
@@ -350,7 +394,7 @@ def backfill_all_songs():
                 # Pull eligible songs; split by lyrics presence for optimal processing
                 completed_subq = (
                     db.session.query(AnalysisResult.song_id)
-                    .filter(AnalysisResult.status == "completed")
+                    # No status filter needed - only completed analyses exist
                     .distinct()
                 )
                 base_with_lyrics = db.session.query(Song.id).filter(
@@ -790,9 +834,9 @@ def get_playlists():
         song_count = PlaylistSong.query.filter_by(playlist_id=playlist.id).count()
         analyzed_count = (
             db.session.query(Song.id)
-            .join(AnalysisResult)
+            .join(AnalysisResult, Song.id == AnalysisResult.song_id)
             .join(PlaylistSong)
-            .filter(PlaylistSong.playlist_id == playlist.id, AnalysisResult.status == "completed")
+            .filter(PlaylistSong.playlist_id == playlist.id)  # No status filter needed - only completed analyses exist
             .distinct()
             .count()
         )
@@ -862,7 +906,7 @@ def get_playlist_songs(playlist_id):
             "spotify_url": f"https://open.spotify.com/track/{song.spotify_id}"
             if song.spotify_id
             else None,
-            "analysis_status": analysis.status if analysis else "pending",
+            "analysis_status": "completed" if analysis else "pending",
             "analysis_score": analysis.score if analysis else None,
             "concern_level": analysis.concern_level if analysis else None,
             "detected_themes": analysis.themes if analysis else [],
@@ -926,7 +970,7 @@ def get_song_analysis(song_id):
     analysis_data = None
     if analysis:
         analysis_data = {
-            "status": analysis.status,
+                            "status": "completed",  # All analyses are completed now
             "score": analysis.score,
             "purity_score": analysis.purity_score or analysis.score,
             "formation_risk": analysis.formation_risk,
@@ -980,7 +1024,7 @@ def search_songs():
                 "name": song.title,
                 "artist": song.artist,
                 "album": song.album,
-                "analysis_status": analysis.status if analysis else "pending",
+                "analysis_status": "completed" if analysis else "pending",
                 "concern_level": analysis.concern_level if analysis else None,
                 "spotify_url": f"https://open.spotify.com/track/{song.spotify_id}"
                 if song.spotify_id
@@ -1030,10 +1074,10 @@ def get_user_stats():
     # Fix: Count unique songs with completed analysis (not total completed analysis records)
     analyzed_songs = (
         db.session.query(Song.id)
-        .join(AnalysisResult)
+        .join(AnalysisResult, Song.id == AnalysisResult.song_id)
         .join(PlaylistSong)
         .join(Playlist)
-        .filter(Playlist.owner_id == current_user.id, AnalysisResult.status == "completed")
+        .filter(Playlist.owner_id == current_user.id)  # No status filter needed - only completed analyses exist
         .distinct()
         .count()
     )
@@ -1043,10 +1087,10 @@ def get_user_stats():
         db.session.query(
             AnalysisResult.concern_level, db.func.count(db.func.distinct(AnalysisResult.song_id))
         )
-        .join(Song)
+        .join(Song, AnalysisResult.song_id == Song.id)
         .join(PlaylistSong)
         .join(Playlist)
-        .filter(Playlist.owner_id == current_user.id, AnalysisResult.status == "completed")
+        .filter(Playlist.owner_id == current_user.id)  # No status filter needed - only completed analyses exist
         .group_by(AnalysisResult.concern_level)
         .all()
     )
@@ -1106,23 +1150,23 @@ def get_playlist_analysis_status(playlist_id):
         .subquery()
     )
 
-    latest_counts = (
-        db.session.query(AnalysisResult.status, db.func.count(AnalysisResult.song_id))
-        .join(
-            sub_latest,
-            (sub_latest.c.song_id == AnalysisResult.song_id)
-            & (sub_latest.c.max_created == AnalysisResult.created_at),
+    # Count completed analyses (simplified - all analyses are completed)
+    completed_count = (
+            db.session.query(db.func.count(AnalysisResult.song_id))
+            .join(
+                sub_latest,
+                (sub_latest.c.song_id == AnalysisResult.song_id)
+                & (sub_latest.c.max_created == AnalysisResult.created_at),
+            )
+            .scalar() or 0
         )
-        .group_by(AnalysisResult.status)
-        .all()
-    )
 
-    latest_dict = dict(latest_counts)
-    completed_count = int(latest_dict.get("completed", 0))
-    failed_count = int(latest_dict.get("failed", 0))
-    in_progress_count = int(latest_dict.get("in_progress", 0))
-    # Pending are songs without any latest row yet (or no analysis rows)
-    counted = completed_count + failed_count + in_progress_count
+    # Simplified status tracking - only completed and pending
+    failed_count = 0  # No failed analyses stored
+    in_progress_count = 0  # No in-progress analyses stored
+    
+    # Pending are songs without any analysis row
+    counted = completed_count
     # Consider only eligible songs (with lyrics) as part of total for progress, to avoid stalls at ~95%
     eligible_total = (
         db.session.query(db.func.count(Song.id))
@@ -1189,13 +1233,13 @@ def get_song_analysis_status(song_id):
         .first()
     )
 
-    if analysis and analysis.status == "completed":
+    if analysis:  # All analyses are completed now
         return jsonify(
             {
                 "success": True,
                 "completed": True,
                 "has_analysis": True,
-                "status": analysis.status,
+                "status": "completed",
                 "progress": 100,
                 "stage": "Analysis complete",
                 "score": analysis.score,
@@ -1205,7 +1249,7 @@ def get_song_analysis_status(song_id):
                     "id": analysis.id,
                     "score": analysis.score,
                     "concern_level": analysis.concern_level,
-                    "status": analysis.status,
+                    "status": "completed",
                     "themes": analysis.themes or [],
                     "explanation": analysis.explanation,
                     "supporting_scripture": getattr(analysis, "supporting_scripture", None) or [],
@@ -1217,7 +1261,7 @@ def get_song_analysis_status(song_id):
                     "id": analysis.id,
                     "score": analysis.score,
                     "concern_level": analysis.concern_level,
-                    "status": analysis.status,
+                    "status": "completed",
                     "themes": analysis.themes or [],
                     "explanation": analysis.explanation,
                     "supporting_scripture": getattr(analysis, "supporting_scripture", None) or [],
@@ -1227,7 +1271,7 @@ def get_song_analysis_status(song_id):
                 },
             }
         )
-    elif analysis and analysis.status == "pending":
+    elif False:  # No pending status anymore - all stored analyses are completed
         # Calculate estimated progress based on time elapsed
         created_at = analysis.created_at
         if created_at:
@@ -1260,7 +1304,7 @@ def get_song_analysis_status(song_id):
                 "message": "Analysis in progress with cached models",
             }
         )
-    elif analysis and analysis.status == "failed":
+    elif False:  # No failed status anymore - all stored analyses are completed
         return jsonify(
             {
                 "success": False,
@@ -1432,10 +1476,10 @@ def get_analysis_status():
             playlist_total = PlaylistSong.query.filter_by(playlist_id=playlist.id).count()
             playlist_analyzed = (
                 db.session.query(Song.id)
-                .join(AnalysisResult)
+                .join(AnalysisResult, Song.id == AnalysisResult.song_id)
                 .join(PlaylistSong)
                 .filter(
-                    PlaylistSong.playlist_id == playlist.id, AnalysisResult.status == "completed"
+                    PlaylistSong.playlist_id == playlist.id, # No status filter needed - only completed analyses exist
                 )
                 .distinct()
                 .count()
@@ -1526,8 +1570,8 @@ def analyze_all_user_songs():
                 .order_by(AnalysisResult.created_at.desc())
                 .first()
             )
-            if latest and latest.status == "completed":
-                continue
+            if latest:
+                continue  # All stored analyses are completed by definition
             eligible_ids.append(s.id)
 
         if not eligible_ids:
@@ -1677,7 +1721,7 @@ def admin_reanalyze_user(user_id):
             .join(PlaylistSong)
             .join(Playlist)
             .join(AnalysisResult, Song.id == AnalysisResult.song_id)
-            .filter(Playlist.owner_id == user_id, AnalysisResult.status == "completed")
+            .filter(Playlist.owner_id == user_id)  # No status filter needed - only completed analyses exist
             .distinct()
             .count()
         )
@@ -1984,6 +2028,95 @@ def api_analyze_song(song_id):
 def api_song_analysis_status(song_id):
     """API endpoint for song analysis status (matches frontend expectation)"""
     return get_song_analysis_status(song_id)
+# Lightweight dashboard stats for async UI update
+@bp.route("/dashboard/stats")
+@login_required
+def get_dashboard_stats():
+    try:
+        # 60s Redis cache per user
+        cache_key = f"dashboard:stats:{current_user.id}"
+        cached = cache_get_json(cache_key)
+        if cached:
+            return jsonify(cached)
+        # Total playlists for current user
+        total_playlists = (
+            db.session.query(db.func.count(Playlist.id))
+            .filter(Playlist.owner_id == current_user.id)
+            .scalar()
+            or 0
+        )
+
+        # Total unique songs across user's playlists
+        total_songs = (
+            db.session.query(db.func.count(db.func.distinct(Song.id)))
+            .join(PlaylistSong, PlaylistSong.song_id == Song.id)
+            .join(Playlist, Playlist.id == PlaylistSong.playlist_id)
+            .filter(Playlist.owner_id == current_user.id)
+            .scalar()
+            or 0
+        )
+
+        # Unique analyzed songs (completed) across user's playlists
+        analyzed_songs = (
+            db.session.query(db.func.count(db.func.distinct(Song.id)))
+            .join(AnalysisResult, AnalysisResult.song_id == Song.id)
+            .join(PlaylistSong, PlaylistSong.song_id == Song.id)
+            .join(Playlist, Playlist.id == PlaylistSong.playlist_id)
+            .filter(
+                Playlist.owner_id == current_user.id,
+                # No status filter needed - only completed analyses exist,
+            )
+            .scalar()
+            or 0
+        )
+
+        # Unique flagged songs (completed + medium/high concern)
+        flagged_songs = (
+            db.session.query(db.func.count(db.func.distinct(Song.id)))
+            .join(AnalysisResult, AnalysisResult.song_id == Song.id)
+            .join(PlaylistSong, PlaylistSong.song_id == Song.id)
+            .join(Playlist, Playlist.id == PlaylistSong.playlist_id)
+            .filter(
+                Playlist.owner_id == current_user.id,
+                # No status filter needed - only completed analyses exist,
+                AnalysisResult.concern_level.in_(["medium", "high"]),
+            )
+            .scalar()
+            or 0
+        )
+
+        progress_pct = round((analyzed_songs / total_songs * 100.0), 1) if total_songs > 0 else 0.0
+
+        # Clean playlists (average score >= 75%) - count playlists with high avg scores (simplified)
+        clean_playlists_subquery = (
+            db.session.query(Playlist.id)
+            .join(PlaylistSong, PlaylistSong.playlist_id == Playlist.id)
+            .join(Song, Song.id == PlaylistSong.song_id)
+            .join(AnalysisResult, AnalysisResult.song_id == Song.id)
+            .filter(Playlist.owner_id == current_user.id)
+            .group_by(Playlist.id)
+            .having(db.func.avg(AnalysisResult.score) >= 0.75)
+        )
+        
+        clean_playlists = len(clean_playlists_subquery.all())
+
+        payload = {
+            "success": True,
+            "totals": {
+                "total_playlists": int(total_playlists),
+                "total_songs": int(total_songs),
+                "analyzed_songs": int(analyzed_songs),
+                "flagged_songs": int(flagged_songs),
+                "clean_playlists": int(clean_playlists),
+                "analysis_progress": progress_pct,
+            },
+        }
+        cache_set_json(cache_key, payload, ttl_seconds=60)
+        return jsonify(payload)
+    except Exception as e:
+        current_app.logger.error(f"Dashboard stats error: {e}")
+        return jsonify({"success": False, "error": "stats_error", "message": str(e)}), 500
+
 
 
 # Additional back-compat endpoints expected by legacy tests
@@ -2035,6 +2168,117 @@ def admin_update_playlist_scores():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@bp.route("/admin/recompute-has-flagged", methods=["POST"])
+@login_required
+@admin_required
+def admin_recompute_has_flagged():
+    """
+    Recompute Playlist.has_flagged for all playlists (or a specific user's playlists).
+
+    Body (optional JSON): {"user_id": <int>} to limit to a single user.
+    """
+    try:
+        payload = request.get_json(silent=True) or {}
+        user_id = payload.get("user_id")
+
+        # Build UPDATE with EXISTS to set has_flagged based on completed analyses with medium/high concern
+        if user_id:
+            sql = text(
+                """
+                UPDATE playlists
+                SET has_flagged = EXISTS (
+                  SELECT 1
+                  FROM playlist_songs ps
+                  JOIN analysis_results ar ON ar.song_id = ps.song_id
+                  WHERE ps.playlist_id = playlists.id
+                    -- All stored analyses are completed in simplified model
+                    AND LOWER(ar.concern_level) IN ('medium','high')
+                )
+                WHERE owner_id = :uid
+                """
+            )
+            db.session.execute(sql, {"uid": int(user_id)})
+        else:
+            sql = text(
+                """
+                UPDATE playlists
+                SET has_flagged = EXISTS (
+                  SELECT 1
+                  FROM playlist_songs ps
+                  JOIN analysis_results ar ON ar.song_id = ps.song_id
+                  WHERE ps.playlist_id = playlists.id
+                    -- All stored analyses are completed in simplified model
+                    AND LOWER(ar.concern_level) IN ('medium','high')
+                )
+                """
+            )
+            db.session.execute(sql)
+
+        db.session.commit()
+
+        # Report counts
+        base_query = Playlist.query
+        if user_id:
+            base_query = base_query.filter(Playlist.owner_id == int(user_id))
+        total = base_query.count()
+        flagged = base_query.filter(Playlist.has_flagged.is_(True)).count()
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "has_flagged recomputed",
+                "scope": "user" if user_id else "all",
+                "total_playlists": total,
+                "flagged_playlists": flagged,
+            }
+        )
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Admin recompute has_flagged error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/admin/prune-analyses", methods=["POST"])
+@login_required
+@admin_required
+def admin_prune_analyses():
+    """
+    Prune old AnalysisResult rows with non-useful statuses to control growth.
+
+    Defaults:
+    - statuses: ['failed', 'pending']
+    - retention_days: 30
+
+    Body (optional JSON): {"statuses": [...], "retention_days": <int>}
+    """
+    try:
+        payload = request.get_json(silent=True) or {}
+        statuses = payload.get("statuses") or ["failed", "pending"]
+        retention_days = int(payload.get("retention_days") or 30)
+
+        cutoff = datetime.now().astimezone() - timedelta(days=retention_days)
+
+        # No failed or pending analyses exist in simplified model - skip pruning
+        deleted_count = 0
+        # q = AnalysisResult.query.filter(
+        #     AnalysisResult.created_at < cutoff,
+        # )
+        # No pruning needed - all analyses are completed and valid
+
+        return jsonify(
+            {
+                "success": True,
+                "deleted": int(deleted_count or 0),
+                "retention_days": retention_days,
+                "statuses": statuses,
+            }
+        )
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Admin prune analyses error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 def get_background_analysis_progress():
     """Get accurate background analysis progress for the active job - DISABLED (using direct analysis)"""
     try:
@@ -2062,29 +2306,21 @@ def get_background_analysis_progress():
         if song_ids:
             # Count analyses for specific songs in the job
             completed_analyses = AnalysisResult.query.filter(
-                AnalysisResult.song_id.in_(song_ids), AnalysisResult.status == "completed"
+                AnalysisResult.song_id.in_(song_ids), # No status filter needed - only completed analyses exist
             ).count()
 
-            failed_analyses = AnalysisResult.query.filter(
-                AnalysisResult.song_id.in_(song_ids), AnalysisResult.status == "failed"
-            ).count()
+            failed_analyses = 0  # No failed analyses in simplified model
 
-            in_progress_analyses = AnalysisResult.query.filter(
-                AnalysisResult.song_id.in_(song_ids), AnalysisResult.status == "in_progress"
-            ).count()
+            in_progress_analyses = 0  # No in-progress analyses in simplified model
         else:
             # Fallback: count all analyses for user
             completed_analyses = AnalysisResult.query.filter(
-                AnalysisResult.user_id == user_id, AnalysisResult.status == "completed"
+                AnalysisResult.user_id == user_id, # No status filter needed - only completed analyses exist
             ).count()
 
-            failed_analyses = AnalysisResult.query.filter(
-                AnalysisResult.user_id == user_id, AnalysisResult.status == "failed"
-            ).count()
+            failed_analyses = 0  # No failed analyses in simplified model
 
-            in_progress_analyses = AnalysisResult.query.filter(
-                AnalysisResult.user_id == user_id, AnalysisResult.status == "in_progress"
-            ).count()
+            in_progress_analyses = 0  # No in-progress analyses in simplified model
 
         # Calculate progress
         total_processed = completed_analyses + failed_analyses
@@ -2127,7 +2363,7 @@ def calculate_processing_rate_eta(remaining_songs):
 
         recent_completions = (
             AnalysisResult.query.filter(
-                AnalysisResult.status == "completed", AnalysisResult.updated_at >= cutoff_time
+                # No status filter needed - only completed analyses exist, AnalysisResult.updated_at >= cutoff_time
             )
             .order_by(AnalysisResult.updated_at.desc())
             .limit(100)

@@ -1,3 +1,61 @@
+import responses
+import json
+
+import os
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def set_ci_offline_env(monkeypatch):
+    """Ensure tests run offline and skip analyzer preflight in CI-like environments.
+
+    - Disables analyzer preflight/preload to avoid network during app init
+    - Points LLM env to a local stub by default (no calls made in unit tests)
+    - Marks CI to trigger any CI-specific branches
+    """
+    monkeypatch.setenv("DISABLE_ANALYZER_PREFLIGHT", "1")
+    monkeypatch.setenv("CI", os.environ.get("CI", "1"))
+    monkeypatch.setenv("LLM_API_BASE_URL", os.environ.get("LLM_API_BASE_URL", "http://127.0.0.1:18181/v1"))
+    monkeypatch.setenv("LLM_MODEL", os.environ.get("LLM_MODEL", "stub-model"))
+    monkeypatch.setenv("LLM_TIMEOUT", os.environ.get("LLM_TIMEOUT", "5"))
+
+
+@pytest.fixture(autouse=True)
+def mock_router_http():
+    """Mock OpenAI-compatible router endpoints to ensure no network in CI."""
+    base = os.environ.get("LLM_API_BASE_URL", "http://127.0.0.1:18181/v1").rstrip("/")
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(
+            method=responses.GET,
+            url=f"{base}/models",
+            json={"data": [{"id": os.environ.get("LLM_MODEL", "stub-model")} ]},
+            status=200,
+        )
+        rsps.add(
+            method=responses.POST,
+            url=f"{base}/chat/completions",
+            json={
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "score": 50,
+                                    "concern_level": "Low",
+                                    "biblical_themes": [],
+                                    "supporting_scripture": [],
+                                    "concerns": [],
+                                    "verdict": {"summary": "context_required"},
+                                }
+                            )
+                        }
+                    }
+                ]
+            },
+            status=200,
+        )
+        yield
+
 """
 Pytest configuration and shared fixtures for all test suites.
 Provides common setup, teardown, and utilities for testing.
@@ -656,7 +714,7 @@ def test_analysis_result(db_session, test_song):
     """Create a test analysis result."""
     analysis = AnalysisResult(
         song_id=test_song.id,
-        status=AnalysisResult.STATUS_COMPLETED,
+        # No status field needed - all stored analyses are completed
         score=85.5,
         concern_level="Low",
         explanation="Test analysis result",

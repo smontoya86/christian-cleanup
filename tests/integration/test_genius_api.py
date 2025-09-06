@@ -394,7 +394,8 @@ Was blind but now I see"""
                             "fetch_lyrics",
                             return_value="Amazing grace, how sweet the sound",
                         ):  # Genius succeeds
-                            return lyrics_fetcher.fetch_lyrics("Chris Tomlin", "Amazing Grace")
+                            # fetch_lyrics expects (title, artist)
+                            return lyrics_fetcher.fetch_lyrics("Amazing Grace", "Chris Tomlin")
 
         # Execute concurrent requests using ThreadPoolExecutor
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:

@@ -1,4 +1,4 @@
-# Christian Music Curator
+# Music Disciple
 
 [![CI](https://github.com/smontoya86/christian-cleanup/actions/workflows/ci.yml/badge.svg)](https://github.com/smontoya86/christian-cleanup/actions/workflows/ci.yml)
 [![Weekly Full Suite](https://github.com/smontoya86/christian-cleanup/actions/workflows/ci-nightly.yml/badge.svg)](https://github.com/smontoya86/christian-cleanup/actions/workflows/ci-nightly.yml)
@@ -10,10 +10,10 @@
 
 **⚠️ IMPORTANT: This is a Docker-first application. All commands should be run through Docker containers, not locally.**
 
-- **Web App**: `docker exec christiancleanupwindsurf-web-1 <command>`
-- **Database**: `docker exec christiancleanupwindsurf-db-1 <command>`
-- **Workers**: `docker exec christiancleanupwindsurf-worker-1 <command>`
-- **Redis**: `docker exec christiancleanupwindsurf-redis-1 redis-cli`
+- **Web App**: `docker compose exec web <command>`
+- **Database**: `docker compose exec db <command>`
+- Workers have been removed; analysis runs in the web service.
+- **Redis**: `docker compose exec redis redis-cli`
 
 ## Overview
 
@@ -31,9 +31,9 @@ A production-ready Flask application that transforms Christian music curation fr
 
 ### **Core Application Features**
 - **Spotify Integration**: OAuth login and bi-directional playlist synchronization
-- **AI-Powered Analysis**: HuggingFace transformers with educational focus
+- **AI-Powered Analysis**: Router-based OpenAI-compatible endpoint (Ollama local or vLLM on Runpod)
 - **Multi-Provider Lyrics**: LRCLib → Lyrics.ovh → Genius fallback system
-- **Background Processing**: Redis Queue with 6 worker containers
+- **Background Processing**: In-process batch analysis in web
 - **Progressive Web App**: Modern UI with offline capabilities
 - **Docker Deployment**: Production-ready containerized environment
 
@@ -52,7 +52,7 @@ A production-ready Flask application that transforms Christian music curation fr
 - **Python 3.9+** with type hints and modern practices
 
 ### **AI & Analysis**
-- **HuggingFace Transformers** for content analysis
+- **Router Analyzer (OpenAI-compatible)** for content analysis
 - **Enhanced Scripture Mapper** with 30+ biblical references
 - **Enhanced Concern Detector** with Christian perspectives
 - **Multi-provider lyrics system** for comprehensive coverage
@@ -74,7 +74,6 @@ A production-ready Flask application that transforms Christian music curation fr
 ### Prerequisites
 - Docker and Docker Compose
 - Spotify Developer Account (for API keys)
-- Node.js 18+ (for frontend build process)
 
 ### Setup
 1. **Clone and Setup Environment**
@@ -85,30 +84,30 @@ A production-ready Flask application that transforms Christian music curation fr
    # Edit .env with your Spotify API credentials
    ```
 
-2. **Install Frontend Dependencies & Build Assets**
+2. **Start Application (container-only)**
    ```bash
-   npm install
-   npm run build
-   ```
-
-3. **Start Application**
-   ```bash
-   docker-compose up --build
+   docker compose up -d --build
    ```
 
 4. **Access Application**
    - Web Interface: http://localhost:5001
    - Login with Spotify or use Mock Authentication for testing
 
-### Testing with Mock Data
+### Testing with Mock Data (inside container)
 ```bash
-# Create sample data for testing
-python scripts/create_minimal_mock_data.py
+# Create sample data inside the web container
+docker compose exec web python scripts/create_minimal_mock_data.py
 
 # Access mock authentication
 # Visit: http://localhost:5001
 # Click: "Use Mock Users for Testing"
 # Login as: John Christian or Mary Worship
+```
+
+### Running Evals (inside container)
+```bash
+# Standardized eval entrypoint
+docker compose exec web bash scripts/eval/run_in_container.sh
 ```
 
 ## Enhanced Analysis System
@@ -151,11 +150,9 @@ Lyrics Input → AI Analysis → Theme Detection → Scripture Mapping → Conce
 - **Features**: Spotify OAuth, playlist management, enhanced analysis UI
 - **Health Check**: `/api/health` endpoint
 
-#### **Background Workers**
-- **Service**: Redis Queue (RQ) workers for asynchronous processing
-- **Workers**: 6 parallel workers for optimal performance
-- **Tasks**: Enhanced song analysis, playlist synchronization, batch operations
-- **Monitoring**: Worker health checks and performance metrics
+#### **Background Processing**
+- **Mode**: In-process batch analysis in the web service
+- **Redis**: Used for cache/session only
 
 #### **Database**
 - **Service**: PostgreSQL 14 with optimized schema
@@ -170,7 +167,7 @@ Lyrics Input → AI Analysis → Theme Detection → Scripture Mapping → Conce
 ### **Enhanced Analysis Services**
 
 #### **SimplifiedChristianAnalysisService**
-- AI-powered analysis with HuggingFace models
+- AI-powered analysis via Router (OpenAI-compatible)
 - Biblical theme detection (10+ core themes)
 - Educational explanations with Christian perspectives
 - Performance optimized (<1 second analysis time)
@@ -223,32 +220,15 @@ Lyrics Input → AI Analysis → Theme Detection → Scripture Mapping → Conce
 
 #### Development Commands
 ```bash
-# Install dependencies
-npm install
-
-# Development build with watch mode
-npm run dev
-
-# Individual component watching
-npm run build:css:watch
-npm run build:js:watch
+# Frontend assets are built during Docker image build.
+# For local changes, rebuild the image:
+docker compose build web && docker compose up -d web
 ```
 
 #### Production Commands
 ```bash
-# Clean previous builds
-npm run clean
-
-# Production build with optimization
-npm run build
-
-# Lint code quality
-npm run lint
-npm run lint:css
-npm run lint:js
-
-# Fix linting issues
-npm run lint:fix
+# All production assets are built in the container image via Dockerfile
+# Use Docker commands to (re)build and run in production
 ```
 
 ## Database Schema
@@ -351,10 +331,10 @@ services:
 ## Documentation
 
 ### **Available Documentation**
-- **[Technical Architecture](docs/simplified_structure_rebuild.md)** - Comprehensive technical documentation
-- **[Educational Roadmap](docs/educational_enhancement_roadmap.md)** - Educational feature development
-- **[API Documentation](docs/api_docs.md)** - Complete API reference
-- **[Security Practices](docs/SECURE_CODING_PRACTICES.md)** - Security implementation
+- **[System Architecture](docs/system_architecture.md)** - Current technical architecture and data flow
+- **[Unified Implementation Plan](docs/unified_implementation_plan.md)** - Consolidated implementation plan
+- **[API Documentation](docs/api_docs.md)** - API endpoints and usage
+- **[Security Practices](docs/SECURE_CODING_PRACTICES.md)** - Security implementation guidance
 - **[Production Deployment](docs/PRODUCTION_DEPLOYMENT.md)** - Deployment guide
 
 ---

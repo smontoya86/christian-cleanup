@@ -288,7 +288,7 @@ class SpotifyService:
     def remove_song_from_playlist(self, spotify_playlist_id: str, song_id: int) -> bool:
         """Remove a song from a Spotify playlist"""
         try:
-            song = Song.query.get(song_id)
+            song = db.session.get(Song, song_id)
             if not song or not song.spotify_id:
                 return False
 

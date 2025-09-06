@@ -13,10 +13,10 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Container names
-WEB_CONTAINER="christiancleanupwindsurf-web-1"
-DB_CONTAINER="christiancleanupwindsurf-db-1"
-REDIS_CONTAINER="christiancleanupwindsurf-redis-1"
-WORKER_CONTAINER="christiancleanupwindsurf-worker-1"
+WEB_CONTAINER="web"
+DB_CONTAINER="db"
+REDIS_CONTAINER="redis"
+WORKER_CONTAINER="worker"
 
 echo -e "${BLUE}🐳 Christian Music Curator - Docker Helper${NC}"
 echo -e "${YELLOW}⚠️  This is a DOCKER-FIRST project. All commands run in containers.${NC}"
@@ -25,20 +25,20 @@ echo ""
 # Function to check if containers are running
 check_containers() {
     echo -e "${BLUE}📋 Checking container status...${NC}"
-    docker-compose ps
+    docker compose ps
     echo ""
 }
 
 # Function to show logs
 show_logs() {
     echo -e "${BLUE}📜 Container logs (Ctrl+C to exit):${NC}"
-    docker-compose logs -f "$1"
+    docker compose logs -f "$1"
 }
 
 # Function to restart services
 restart_service() {
     echo -e "${BLUE}🔄 Restarting $1...${NC}"
-    docker-compose restart "$1"
+    docker compose restart "$1"
     echo -e "${GREEN}✅ $1 restarted${NC}"
 }
 
@@ -57,11 +57,8 @@ check_analysis() {
     ' 2>/dev/null || echo "❌ Failed to get analysis status"
 
     echo ""
-    echo -e "${BLUE}📊 Queue status:${NC}"
-    echo "Medium priority queue: $(docker exec $REDIS_CONTAINER redis-cli llen "priority_queue:medium") jobs"
-    echo ""
-    echo -e "${BLUE}👷 Active workers:${NC}"
-    docker exec $REDIS_CONTAINER redis-cli smembers "active_workers"
+    echo -e "${BLUE}📊 Redis status:${NC}"
+    docker compose exec -T $REDIS_CONTAINER redis-cli info server | head -5 || true
 }
 
 # Function to check basic job health
@@ -84,21 +81,14 @@ check_job_health() {
             echo -e "${GREEN}✅ Job properly registered in queue${NC}"
         else
             echo -e "${YELLOW}⚠️  Active job not found in jobs list - potential orphan${NC}"
-            echo -e "${BLUE}💡 Restart web service to reconnect: docker-compose restart web${NC}"
+            echo -e "${BLUE}💡 Restart web service to reconnect: docker compose restart web${NC}"
         fi
     fi
 
     # Check worker health
     echo ""
-    echo -e "${BLUE}Worker Status:${NC}"
-    active_workers=$(docker exec ${REDIS_CONTAINER} redis-cli smembers "active_workers")
-
-    if [ -z "$active_workers" ]; then
-        echo -e "${RED}❌ No active workers found${NC}"
-    else
-        worker_count=$(echo "$active_workers" | wc -l)
-        echo -e "${GREEN}✅ $worker_count workers active${NC}"
-    fi
+    echo -e "${BLUE}Worker Status:${NC} (workers removed; analysis runs in web)"
+    echo -e "${GREEN}✅ OK${NC}"
 }
 
 # Function to show simple recovery instructions
@@ -108,13 +98,13 @@ show_recovery_help() {
     echo "If you find orphaned jobs (analysis stuck):"
     echo ""
     echo -e "${GREEN}1. Restart web service:${NC}"
-    echo "   docker-compose restart web"
+    echo "   docker compose restart web"
     echo ""
     echo -e "${GREEN}2. Check if it worked:${NC}"
     echo "   ./docker-helper.sh analysis"
     echo ""
-    echo -e "${GREEN}3. If still stuck, restart workers:${NC}"
-    echo "   docker restart \$(docker ps -q --filter \"name=worker\")"
+    echo -e "${GREEN}3. If still stuck, restart web:${NC}" 
+    echo "   docker compose restart web"
     echo ""
 
     # Show recent app logs for recovery information
@@ -127,19 +117,18 @@ access_shell() {
     case $1 in
         "web")
             echo -e "${BLUE}🌐 Accessing web container shell...${NC}"
-            docker exec -it $WEB_CONTAINER bash
+            docker compose exec -it $WEB_CONTAINER bash
             ;;
         "db")
             echo -e "${BLUE}🗄️  Accessing database shell...${NC}"
-            docker exec -it $DB_CONTAINER psql -U curator -d christian_curator
+            docker compose exec -it $DB_CONTAINER psql -U postgres -d spotify_cleanup
             ;;
         "redis")
             echo -e "${BLUE}🔧 Accessing Redis CLI...${NC}"
-            docker exec -it $REDIS_CONTAINER redis-cli
+            docker compose exec -it $REDIS_CONTAINER redis-cli
             ;;
         "worker")
-            echo -e "${BLUE}👷 Accessing worker container shell...${NC}"
-            docker exec -it $WORKER_CONTAINER bash
+            echo -e "${RED}❌ Worker service has been removed. Use 'web' instead.${NC}"
             ;;
         *)
             echo -e "${RED}❌ Invalid shell option. Use: web, db, redis, or worker${NC}"
@@ -172,17 +161,17 @@ case ${1:-menu} in
         ;;
     "up")
         echo -e "${BLUE}🚀 Starting all services...${NC}"
-        docker-compose up -d
+        docker compose up -d
         echo -e "${GREEN}✅ All services started${NC}"
         ;;
     "down")
         echo -e "${BLUE}🛑 Stopping all services...${NC}"
-        docker-compose down
+        docker compose down
         echo -e "${GREEN}✅ All services stopped${NC}"
         ;;
     "build")
         echo -e "${BLUE}🔨 Building and starting services...${NC}"
-        docker-compose up -d --build
+        docker compose up -d --build
         echo -e "${GREEN}✅ Services built and started${NC}"
         ;;
     "clean")
@@ -210,7 +199,7 @@ case ${1:-menu} in
         echo "  $0 shell web   - Access web container shell"
         echo "  $0 shell db    - Access database shell"
         echo "  $0 shell redis - Access Redis CLI"
-        echo "  $0 shell worker- Access worker shell"
+        echo "  $0 shell worker- (removed)"
         echo ""
         echo -e "${YELLOW}Maintenance:${NC}"
         echo "  $0 clean       - Clean unused Docker resources"

@@ -93,7 +93,7 @@ class TestQueryOptimization:
 
         # Create analysis results
         for song in songs:
-            analysis = AnalysisResult(song_id=song.id, status="completed", score=85.0 + song.id)
+            analysis = AnalysisResult(song_id=song.id, score=85.0 + song.id, concern_level="Low", explanation="Test analysis")
             db.session.add(analysis)
         db.session.commit()
 
@@ -223,7 +223,7 @@ class TestQueryOptimization:
             .join(PlaylistSong, Song.id == PlaylistSong.song_id)
             .join(Playlist, PlaylistSong.playlist_id == Playlist.id)
             .join(AnalysisResult, Song.id == AnalysisResult.song_id)
-            .filter(Playlist.owner_id == user.id, AnalysisResult.status == "completed")
+            .filter(Playlist.owner_id == user.id)
             .count()
         )
 
@@ -296,7 +296,7 @@ class TestQueryOptimization:
         analysis_results = AnalysisResult.query.filter(AnalysisResult.song_id.in_(song_ids)).all()
 
         # Create status mapping
-        status_map = {result.song_id: result.status for result in analysis_results}
+        status_map = {result.song_id: "completed" for result in analysis_results}
 
         bulk_query_count = self.query_counter.query_count
 

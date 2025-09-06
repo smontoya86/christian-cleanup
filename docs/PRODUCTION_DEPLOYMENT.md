@@ -59,8 +59,7 @@ sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 
 # Install Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+sudo apt-get install -y docker-compose-plugin
 
 # Logout and login to apply Docker group membership
 ```
@@ -146,12 +145,12 @@ GRAFANA_ADMIN_PASSWORD=secure_grafana_password
 
 ```bash
 # Option A: Build from source
-docker-compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml up -d --build
 
 # Option B: Pull prebuilt image from GHCR (after tag release)
 export IMAGE=ghcr.io/smontoya86/christian-cleanup:latest
 docker pull $IMAGE
-IMAGE=$IMAGE docker-compose -f docker-compose.prod.yml up -d
+IMAGE=$IMAGE docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### 4. Verify Deployment
@@ -164,7 +163,7 @@ IMAGE=$IMAGE docker-compose -f docker-compose.prod.yml up -d
 ./scripts/deploy.sh health
 
 # Check individual services
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 ```
 
 ## Configuration
@@ -192,9 +191,13 @@ docker-compose -f docker-compose.prod.yml ps
 |----------|---------|-------------|
 | `ANALYSIS_BATCH_SIZE` | 50 | Songs per analysis batch |
 | `CACHE_LYRICS_TTL` | 604800 | Lyrics cache TTL (seconds) |
-| `USE_LLM_ANALYZER` | 1 | Use local OpenAI-compatible LLM analyzer |
-| `LLM_API_BASE_URL` | http://host.docker.internal:8080/v1 | Local MLX/llama.cpp endpoint |
-| `LLM_MODEL` | mlx-community/Meta-Llama-3.1-8B-Instruct-4bit | Default local model |
+| `LLM_API_BASE_URL` | http://host.docker.internal:11434/v1 | OpenAI-compatible endpoint (Ollama/vLLM) |
+| `LLM_MODEL` | llama3.1:8b | Model identifier on router |
+| `LLM_TEMPERATURE` | 0.2 | Sampling temperature |
+| `LLM_TOP_P` | 0.9 | Nucleus sampling |
+| `LLM_MAX_TOKENS` | 512 | Max tokens per response |
+| `LLM_TIMEOUT` | 120 | Request timeout seconds |
+| `LLM_CONCURRENCY` | 1 | Max concurrent eval calls |
 
 ### Resource Limits
 
@@ -287,7 +290,7 @@ The system includes automated daily backups:
 
 ```bash
 # Database backup (daily at 2 AM)
-docker-compose -f docker-compose.prod.yml exec -T db pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup.sql
+docker compose -f docker-compose.prod.yml exec -T db pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup.sql
 
 # Volume backup
 tar -czf volumes-backup.tar.gz data/
@@ -337,10 +340,10 @@ Scale individual services:
 
 ```bash
 # Scale web servers
-docker-compose -f docker-compose.prod.yml up -d --scale web=3
+docker compose -f docker-compose.prod.yml up -d --scale web=3
 
 # Scale workers
-docker-compose -f docker-compose.prod.yml up -d --scale worker=5
+docker compose -f docker-compose.prod.yml up -d --scale worker=5
 ```
 
 ### Load Balancing
@@ -403,8 +406,8 @@ git pull origin main
 sudo apt update && sudo apt upgrade -y
 
 # Update Docker images
-docker-compose -f docker-compose.prod.yml pull
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### Log Management
@@ -437,25 +440,25 @@ sudo nano /etc/logrotate.d/christian-cleanup
 #### Service Won't Start
 ```bash
 # Check service logs
-docker-compose -f docker-compose.prod.yml logs service_name
+docker compose -f docker-compose.prod.yml logs service_name
 
 # Check resource usage
 docker stats
 
 # Verify configuration
-docker-compose -f docker-compose.prod.yml config
+docker compose -f docker-compose.prod.yml config
 ```
 
 #### Database Connection Issues
 ```bash
 # Check database status
-docker-compose -f docker-compose.prod.yml exec db pg_isready
+docker compose -f docker-compose.prod.yml exec db pg_isready
 
 # Check connection string
 echo $DATABASE_URL
 
 # Test connection
-docker-compose -f docker-compose.prod.yml exec db psql -U $POSTGRES_USER -d $POSTGRES_DB
+docker compose -f docker-compose.prod.yml exec db psql -U $POSTGRES_USER -d $POSTGRES_DB
 ```
 
 #### High Memory Usage
@@ -464,7 +467,7 @@ docker-compose -f docker-compose.prod.yml exec db psql -U $POSTGRES_USER -d $POS
 docker stats --format "table {{.Container}}\t{{.MemUsage}}\t{{.MemPerc}}"
 
 # Restart high-usage services
-docker-compose -f docker-compose.prod.yml restart service_name
+docker compose -f docker-compose.prod.yml restart service_name
 ```
 
 ### Performance Issues
@@ -476,9 +479,9 @@ docker-compose -f docker-compose.prod.yml restart service_name
 4. Check system resource usage
 
 #### Analysis Performance
-1. Verify MLX/llama.cpp server health (`LLM_API_BASE_URL`)
-2. Adjust concurrency (`ANALYSIS_MAX_CONCURRENCY` if applicable)
-3. Review prompt and chunking settings
+1. Verify OpenAI-compatible router health (`LLM_API_BASE_URL`)
+2. Adjust concurrency (`LLM_CONCURRENCY`)
+3. Use appropriate models for environment (e.g., `llama3.1:8b` locally; 70B AWQ on Runpod)
 
 ### Emergency Procedures
 
@@ -519,10 +522,10 @@ docker-compose -f docker-compose.prod.yml restart service_name
 curl -s https://yourdomain.com/health | jq
 
 # View logs
-docker-compose -f docker-compose.prod.yml logs -f --tail=100
+docker compose -f docker-compose.prod.yml logs -f --tail=100
 
 # Database shell
-docker-compose -f docker-compose.prod.yml exec db psql -U $POSTGRES_USER -d $POSTGRES_DB
+docker compose -f docker-compose.prod.yml exec db psql -U $POSTGRES_USER -d $POSTGRES_DB
 
 # Redis CLI
 docker-compose -f docker-compose.prod.yml exec redis redis-cli

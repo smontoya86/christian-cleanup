@@ -1,0 +1,12 @@
+{
+  "n": 10,
+  "elapsed_sec": 299.06,
+  "verdict_acc": 0.1,
+  "verdict_f1": 0.061,
+  "score_mae": 28.3,
+  "score_pearson": NaN,
+  "flags_precision": 0.0,
+  "flags_recall": 0.0,
+  "flags_f1": 0.0,
+  "scripture_jaccard": 0.1
+}

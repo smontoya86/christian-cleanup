@@ -12,7 +12,7 @@ Following TDD methodology: Write tests first, then implement functionality.
 
 from unittest.mock import Mock, patch
 
-from app.utils.analysis.huggingface_analyzer import HuggingFaceAnalyzer
+from app.services.analyzers.router_analyzer import RouterAnalyzer
 
 
 class TestCalibrationSystem:
@@ -20,13 +20,7 @@ class TestCalibrationSystem:
 
     def setup_method(self):
         """Set up test fixtures"""
-        self.analyzer = HuggingFaceAnalyzer()
-
-        # Mock the AI models to avoid loading them during tests
-        self.analyzer._sentiment_analyzer = Mock()
-        self.analyzer._safety_analyzer = Mock()
-        self.analyzer._emotion_analyzer = Mock()
-        self.analyzer._theme_analyzer = Mock()
+        self.analyzer = RouterAnalyzer()
 
     def test_batch_reanalysis_performance(self):
         """Test that batch reanalysis completes efficiently with good performance"""
