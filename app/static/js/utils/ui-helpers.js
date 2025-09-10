@@ -34,6 +34,13 @@ export class UIHelpers {
      */
   static showError (message, container = null) {
     const errorElement = container || document.getElementById('errorMessage');
+    // Ensure the progress container is visible so the error can be seen
+    try {
+      const progressContainer = document.getElementById('analysisProgress');
+      if (progressContainer) {
+        progressContainer.style.display = 'block';
+      }
+    } catch (_) {}
     if (errorElement) {
       errorElement.className = 'alert alert-danger';
       errorElement.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>${message}`;

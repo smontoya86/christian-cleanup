@@ -17,7 +17,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, and_
 
 from .. import db
 from ..models import AnalysisResult, Playlist, PlaylistSong, Song, Whitelist
@@ -240,46 +240,58 @@ def playlist_detail(playlist_id):
         )
         return redirect(url_for("main.dashboard"))
 
-    # Get songs with playlist position (simple query)
-    songs_with_position = (
-        db.session.query(Song, PlaylistSong)
+    # Optimized query: fetch songs, positions, and latest analysis per song in a single query
+    ts_col = func.coalesce(AnalysisResult.analyzed_at, AnalysisResult.created_at)
+    sub_latest = (
+        db.session.query(AnalysisResult.song_id, func.max(ts_col).label("max_ts"))
+        .group_by(AnalysisResult.song_id)
+        .subquery()
+    )
+
+    rows = (
+        db.session.query(Song, PlaylistSong, AnalysisResult)
         .join(PlaylistSong, Song.id == PlaylistSong.song_id)
+        .outerjoin(sub_latest, sub_latest.c.song_id == Song.id)
+        .outerjoin(
+            AnalysisResult,
+            and_(
+                AnalysisResult.song_id == Song.id,
+                func.coalesce(AnalysisResult.analyzed_at, AnalysisResult.created_at)
+                == sub_latest.c.max_ts,
+            ),
+        )
         .filter(PlaylistSong.playlist_id == playlist_id)
         .order_by(PlaylistSong.track_position)
         .all()
     )
 
-    # Build data structure for template and calculate analysis statistics
+    total_songs = len(rows)
+    analyzed_songs = sum(1 for _, _, ar in rows if ar is not None)
+
+    # Prefetch whitelist membership for all songs on page
+    spotify_ids = [s.spotify_id for s, _, _ in rows if getattr(s, "spotify_id", None)]
+    wl_set = set()
+    if spotify_ids:
+        wl_set = set(
+            sid
+            for (sid,) in db.session.query(Whitelist.spotify_id)
+            .filter(
+                Whitelist.user_id == current_user.id,
+                Whitelist.item_type == "song",
+                Whitelist.spotify_id.in_(spotify_ids),
+            )
+            .all()
+        )
+
+    # Build data for template
     songs_data = []
-    total_songs = len(songs_with_position)
-    analyzed_songs = 0
-
-    for song, playlist_song in songs_with_position:
-        # Get the most recent analysis for this song (fix ordering to use analyzed_at)
-        analysis = (
-            AnalysisResult.query.filter_by(song_id=song.id)
-            .order_by(desc(AnalysisResult.analyzed_at))
-            .first()
-        )
-
-        # Count completed analyses (all stored analyses are completed by definition)
-        if analysis:
-            analyzed_songs += 1
-
-        # Check if song is whitelisted
-        is_whitelisted = (
-            Whitelist.query.filter_by(
-                user_id=current_user.id, spotify_id=song.spotify_id, item_type="song"
-            ).first()
-            is not None
-        )
-
+    for song, playlist_song, analysis in rows:
         songs_data.append(
             {
                 "song": song,
-                "analysis": analysis,  # Can be None
+                "analysis": analysis,
                 "position": playlist_song.track_position,
-                "is_whitelisted": is_whitelisted,
+                "is_whitelisted": bool(song.spotify_id and song.spotify_id in wl_set),
             }
         )
 
@@ -425,6 +437,12 @@ def analyze_playlist(playlist_id):
     In testing, maintain backward-compat by calling mocked enqueue method and returning success.
     """
     is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    try:
+        current_app.logger.warning(
+            f"[diag] analyze_playlist entry: pid={playlist_id} is_ajax={is_ajax} user_id={getattr(current_user, 'id', None)} admin={getattr(current_user, 'is_admin', None)}"
+        )
+    except Exception:
+        pass
     playlist = Playlist.query.filter_by(id=playlist_id, owner_id=current_user.id).first_or_404()
 
     # Compatibility path for tests: always call mocked service and return success before admin check
@@ -498,7 +516,7 @@ def analyze_playlist(playlist_id):
             flash("Access denied. Analysis is restricted to administrators.", "error")
             return redirect(url_for("main.playlist_detail", playlist_id=playlist_id))
 
-    current_app.logger.info(
+    current_app.logger.warning(
         f"Admin user {current_user.email} starting batch ML analysis for playlist {playlist_id}"
     )
 
@@ -537,6 +555,43 @@ def analyze_playlist(playlist_id):
             current_app.logger.warning(f"Failed to pre-mark songs as in_progress: {mark_err}")
             db.session.rollback()
 
+        # Record active batch state for admin UI/status
+        try:
+            # Prefer Redis via REDIS_URL for cross-worker visibility; fall back to in-memory
+            import json, time, os
+            try:
+                import redis  # type: ignore
+            except Exception:
+                redis = None
+
+            eligible = len(
+                [
+                    s
+                    for s in songs
+                    if (s.lyrics and s.lyrics.strip() and s.lyrics != "Lyrics not available")
+                ]
+            )
+            batch_state = {
+                "start_ts": time.time(),
+                "eligible": int(eligible),
+                "user": getattr(current_user, "email", None),
+            }
+            wrote_redis = False
+            if redis is not None:
+                try:
+                    url = current_app.config.get("RQ_REDIS_URL") or os.environ.get("REDIS_URL")
+                    if url:
+                        rc = redis.from_url(url)  # type: ignore
+                        rc.set(f"progress:playlist:{playlist_id}", json.dumps(batch_state), ex=6 * 3600)
+                        wrote_redis = True
+                except Exception:
+                    wrote_redis = False
+            if not wrote_redis:
+                state = current_app.config.setdefault("ACTIVE_PLAYLIST_BATCH", {})
+                state[playlist_id] = batch_state
+        except Exception:
+            pass
+
         # Kick off background processing and return immediately
         from app.services.analyzer_cache import get_shared_analyzer, is_analyzer_ready
 
@@ -550,6 +605,9 @@ def analyze_playlist(playlist_id):
         def _run_batch(app_obj, playlist_id_inner, user_email_inner, ids):
             with app_obj.app_context():
                 try:
+                    app_obj.logger.warning(
+                        f"[diag] batch thread started: pid={playlist_id_inner} count={len(ids)} user={user_email_inner}"
+                    )
                     if not is_analyzer_ready():
                         app_obj.logger.info("Analyzer not ready, initializing...")
                         _ = get_shared_analyzer()
@@ -560,6 +618,7 @@ def analyze_playlist(playlist_id):
 
                     for sid in ids:
                         try:
+                            app_obj.logger.debug(f"[diag] analyzing song {sid} in playlist {playlist_id_inner}")
                             song_obj = db.session.get(Song, sid)
                             if not song_obj:
                                 failed += 1
@@ -607,8 +666,52 @@ def analyze_playlist(playlist_id):
                     app_obj.logger.info(
                         f"Batch ML analysis finished for playlist {playlist_id_inner}: {analyzed} analyzed, {failed} failed"
                     )
+                    try:
+                        import os
+                        try:
+                            import redis  # type: ignore
+                        except Exception:
+                            redis = None
+                        deleted = False
+                        if redis is not None:
+                            try:
+                                url = app_obj.config.get("RQ_REDIS_URL") or os.environ.get("REDIS_URL")
+                                if url:
+                                    rc = redis.from_url(url)  # type: ignore
+                                    rc.delete(f"progress:playlist:{playlist_id_inner}")
+                                    deleted = True
+                            except Exception:
+                                deleted = False
+                        if not deleted:
+                            st = app_obj.config.get("ACTIVE_PLAYLIST_BATCH", {})
+                            if playlist_id_inner in st:
+                                st.pop(playlist_id_inner, None)
+                    except Exception:
+                        pass
                 except Exception as batch_err:
                     app_obj.logger.error(f"Batch analysis thread error: {batch_err}")
+                    try:
+                        import os
+                        try:
+                            import redis  # type: ignore
+                        except Exception:
+                            redis = None
+                        deleted = False
+                        if redis is not None:
+                            try:
+                                url = app_obj.config.get("RQ_REDIS_URL") or os.environ.get("REDIS_URL")
+                                if url:
+                                    rc = redis.from_url(url)  # type: ignore
+                                    rc.delete(f"progress:playlist:{playlist_id_inner}")
+                                    deleted = True
+                            except Exception:
+                                deleted = False
+                        if not deleted:
+                            st = app_obj.config.get("ACTIVE_PLAYLIST_BATCH", {})
+                            if playlist_id_inner in st:
+                                st.pop(playlist_id_inner, None)
+                    except Exception:
+                        pass
 
         threading.Thread(
             target=_run_batch,
@@ -719,10 +822,13 @@ def analyze_all_songs():
                 )
 
                 # Create comprehensive analysis result
+                # Normalize concern level into DB-allowed set
+                concern = analysis_result.get_quality_level()
+                mapped_concern = UnifiedAnalysisService()._map_concern_level(concern)
                 result_obj = AnalysisResult(
                     song_id=song.id,
                     score=analysis_result.get_final_score(),
-                    concern_level=analysis_result.get_quality_level(),
+                    concern_level=mapped_concern,
                     biblical_themes=analysis_result.get_biblical_themes(),
                     supporting_scripture=analysis_result.biblical_analysis.get(
                         "supporting_scripture", []

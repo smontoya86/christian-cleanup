@@ -153,12 +153,13 @@ export class ApiService {
      * @param {string} playlistId - Playlist ID
      * @returns {Promise<Object>} Analysis status response
      */
-  async getPlaylistAnalysisStatus (playlistId) {
+  async getPlaylistAnalysisStatus (playlistId, sinceEpochSeconds = null) {
     if (!playlistId) {
       throw new Error('Playlist ID is required');
     }
 
-    return this.get(`/api/playlists/${playlistId}/analysis-status`);
+    const qs = sinceEpochSeconds ? `?since=${encodeURIComponent(sinceEpochSeconds)}` : '';
+    return this.get(`/api/playlists/${playlistId}/analysis-status${qs}`);
   }
 
   /**

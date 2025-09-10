@@ -16,7 +16,8 @@ export class PlaylistAnalysis {
     this.pollInterval = null;
 
     this.initializeElements();
-    this.bindEvents();
+    // Defer binding to init() to avoid double-binding from constructor + init
+    this._eventsBound = false;
   }
 
   /**
@@ -124,8 +125,13 @@ export class PlaylistAnalysis {
       this.isAnalysisInProgress = true;
       this.disableAnalysisButtons();
 
-      // Show processing indicator
+      // Show processing indicator and admin badge
       UIHelpers.showProgress();
+      const adminBadge = document.getElementById('adminAnalysisBadge');
+      if (adminBadge) {
+        adminBadge.classList.remove('d-none');
+        adminBadge.textContent = 'Starting…';
+      }
       UIHelpers.updateProgress(0, 'Starting analysis...', 'Preparing...');
 
       console.log('Calling apiService.startPlaylistAnalysis...');
@@ -134,14 +140,20 @@ export class PlaylistAnalysis {
       console.log('API response:', response);
 
       if (response.success) {
+        const adminBadge = document.getElementById('adminAnalysisBadge');
+        if (adminBadge) adminBadge.textContent = `Queued ${response.eligible_songs || ''} songs…`;
         // Begin progress polling against API endpoint to update in-page progress bar
-        await this.pollPlaylistProgress();
+        // Pass start time (seconds) so backend can count only fresh rows
+        const startedAtSec = Math.floor(Date.now() / 1000);
+        await this.pollPlaylistProgress(startedAtSec);
       } else {
         throw new Error(response.message || 'Analysis failed');
       }
     } catch (error) {
       console.error('Error in startAnalysis:', error);
       UIHelpers.hideProgress();
+      const adminBadge = document.getElementById('adminAnalysisBadge');
+      if (adminBadge) adminBadge.classList.add('d-none');
       if (error.message.includes('Access denied')) {
         UIHelpers.showError('Access denied. Analysis is restricted to administrators.');
       } else {
@@ -153,13 +165,13 @@ export class PlaylistAnalysis {
   /**
    * Poll playlist progress and update in-page progress UI
    */
-  async pollPlaylistProgress () {
+  async pollPlaylistProgress (startedAtSec = null) {
     const maxMinutes = 15;
     const endTime = Date.now() + maxMinutes * 60 * 1000;
 
     const tick = async () => {
       try {
-        const status = await apiService.getPlaylistAnalysisStatus(this.playlistId);
+        const status = await apiService.getPlaylistAnalysisStatus(this.playlistId, startedAtSec);
         if (!status || status.success !== true) {
           UIHelpers.showError('Unable to track analysis progress');
           this.resetAnalysisState();
@@ -173,8 +185,25 @@ export class PlaylistAnalysis {
 
         UIHelpers.updateProgress(progress, message, `${analyzed}/${total} analyzed`);
 
+        // Update admin badge persistently
+        const adminBadge = document.getElementById('adminAnalysisBadge');
+        if (adminBadge) {
+          if (progress >= 100 || status.completed) {
+            adminBadge.textContent = 'Completed';
+            setTimeout(() => adminBadge.classList.add('d-none'), 3000);
+          } else {
+            adminBadge.classList.remove('d-none');
+            adminBadge.textContent = `Analyzing… ${analyzed}/${total}`;
+          }
+        }
+
         if (status.completed || progress >= 100) {
           UIHelpers.hideProgress();
+          const adminBadge = document.getElementById('adminAnalysisBadge');
+          if (adminBadge) {
+            adminBadge.textContent = 'Completed';
+            setTimeout(() => adminBadge.classList.add('d-none'), 3000);
+          }
           this.resetAnalysisState();
           setTimeout(() => window.location.reload(), 1000);
           return;
@@ -184,10 +213,14 @@ export class PlaylistAnalysis {
           setTimeout(tick, 5000);
         } else {
           UIHelpers.showError('Analysis is taking longer than expected. Please refresh to check status.');
+          const adminBadge = document.getElementById('adminAnalysisBadge');
+          if (adminBadge) adminBadge.textContent = 'Still running…';
           this.resetAnalysisState();
         }
       } catch (err) {
         UIHelpers.showError('Lost connection while tracking progress');
+        const adminBadge = document.getElementById('adminAnalysisBadge');
+        if (adminBadge) adminBadge.textContent = 'Connection lost';
         this.resetAnalysisState();
       }
     };
@@ -364,15 +397,15 @@ export class PlaylistAnalysis {
     const songCard = document.querySelector(`.song-card[data-song-id="${songId}"]`);
     if (songCard) {
       // Update score circle text
-      const circle = songCard.querySelector('.score-circle');
+      const circle = songCard.querySelector('.score-circle-small');
       if (circle && typeof result.score !== 'undefined') {
         const s = Math.round(result.score);
         circle.textContent = `${s}%`;
         // Update color classes based on standardized thresholds
-        circle.classList.remove('score-green','score-yellow','score-red','bg-extreme','bg-high','bg-medium','bg-low');
-        if (s >= 75) circle.classList.add('score-green');
-        else if (s >= 50) circle.classList.add('score-yellow');
-        else circle.classList.add('score-red');
+        circle.classList.remove('bg-success','bg-warning','bg-danger','score-green','score-yellow','score-red');
+        if (s >= 75) circle.classList.add('bg-success');
+        else if (s >= 50) circle.classList.add('bg-warning');
+        else circle.classList.add('bg-danger');
       }
 
       // Update reason snippet if available
@@ -533,7 +566,10 @@ export class PlaylistAnalysis {
       options: this.options
     });
 
-    this.bindEventListeners();
+    if (!this._eventsBound) {
+      this.bindEventListeners();
+      this._eventsBound = true;
+    }
     this.initializeElements();
     console.log('✅ PlaylistAnalysis module fully initialized');
   }

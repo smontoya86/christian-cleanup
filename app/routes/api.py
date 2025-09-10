@@ -1134,31 +1134,90 @@ def get_playlist_analysis_status(playlist_id):
     playlist = Playlist.query.filter_by(id=playlist_id, owner_id=current_user.id).first_or_404()
 
     total_songs = PlaylistSong.query.filter_by(playlist_id=playlist_id).count()
+    # Optional client-provided start time (epoch seconds) for fresh-progress calc
+    since_ts = request.args.get("since", type=float)
 
-    # Accurate progress: count ONLY the latest AnalysisResult per song in this playlist
-    # This avoids double-counting songs that have historical rows (e.g., old 'completed' + new 'in_progress')
-    sub_latest = (
-        db.session.query(
-            AnalysisResult.song_id, db.func.max(AnalysisResult.created_at).label("max_created")
+    # If a re-analysis batch is active, compute progress using updated_at since the batch start
+    # Discover active batch from Redis first, then in-memory fallback
+    active = None
+    try:
+        import os
+        try:
+            import redis  # type: ignore
+        except Exception:
+            redis = None
+        if redis is not None:
+            try:
+                url = current_app.config.get("RQ_REDIS_URL") or os.environ.get("REDIS_URL")
+                if url:
+                    rc = redis.from_url(url)  # type: ignore
+                    raw = rc.get(f"progress:playlist:{playlist_id}")
+                    if raw:
+                        import json
+                        active = json.loads(raw)
+            except Exception:
+                active = None
+    except Exception:
+        active = None
+    if active is None:
+        active = current_app.config.get("ACTIVE_PLAYLIST_BATCH", {}).get(playlist_id)
+    completed_count = 0
+    if since_ts:
+        try:
+            from datetime import datetime, timezone
+
+            start_dt = datetime.fromtimestamp(float(since_ts), tz=timezone.utc)
+            completed_count = (
+                db.session.query(db.func.count(AnalysisResult.song_id))
+                .join(Song, Song.id == AnalysisResult.song_id)
+                .join(PlaylistSong, PlaylistSong.song_id == Song.id)
+                .filter(PlaylistSong.playlist_id == playlist_id)
+                .filter(AnalysisResult.updated_at >= start_dt)
+                .scalar()
+                or 0
+            )
+        except Exception:
+            completed_count = 0
+    elif active and active.get("start_ts"):
+        try:
+            from datetime import datetime, timezone
+
+            start_dt = datetime.fromtimestamp(float(active["start_ts"]), tz=timezone.utc)
+            completed_count = (
+                db.session.query(db.func.count(AnalysisResult.song_id))
+                .join(Song, Song.id == AnalysisResult.song_id)
+                .join(PlaylistSong, PlaylistSong.song_id == Song.id)
+                .filter(PlaylistSong.playlist_id == playlist_id)
+                .filter(AnalysisResult.updated_at >= start_dt)
+                .scalar()
+                or 0
+            )
+        except Exception:
+            completed_count = 0
+    else:
+        # Accurate progress (no active batch): count ONLY the latest AnalysisResult per song
+        sub_latest = (
+            db.session.query(
+                AnalysisResult.song_id, db.func.max(AnalysisResult.created_at).label("max_created")
+            )
+            .join(Song, Song.id == AnalysisResult.song_id)
+            .join(PlaylistSong, PlaylistSong.song_id == Song.id)
         )
-        .join(Song, Song.id == AnalysisResult.song_id)
-        .join(PlaylistSong, PlaylistSong.song_id == Song.id)
-    )
-    sub_latest = (
-        sub_latest.filter(PlaylistSong.playlist_id == playlist_id)
-        .group_by(AnalysisResult.song_id)
-        .subquery()
-    )
+        sub_latest = (
+            sub_latest.filter(PlaylistSong.playlist_id == playlist_id)
+            .group_by(AnalysisResult.song_id)
+            .subquery()
+        )
 
-    # Count completed analyses (simplified - all analyses are completed)
-    completed_count = (
+        completed_count = (
             db.session.query(db.func.count(AnalysisResult.song_id))
             .join(
                 sub_latest,
                 (sub_latest.c.song_id == AnalysisResult.song_id)
                 & (sub_latest.c.max_created == AnalysisResult.created_at),
             )
-            .scalar() or 0
+            .scalar()
+            or 0
         )
 
     # Simplified status tracking - only completed and pending
@@ -1180,11 +1239,29 @@ def get_playlist_analysis_status(playlist_id):
         .scalar()
         or 0
     )
-    # Use eligible_total if it is > 0 and <= total_songs; otherwise fall back to total_songs
-    denom = eligible_total if 0 < eligible_total <= total_songs else total_songs
+    # Use eligible_total if it is > 0 and <= total_songs; otherwise fall back to total_songs.
+    # If an active batch exists and recorded an eligible count, use that for the denominator.
+    if active and isinstance(active.get("eligible"), int) and active.get("eligible") > 0:
+        denom = int(active.get("eligible"))
+    else:
+        denom = eligible_total if 0 < eligible_total <= total_songs else total_songs
     pending_count = max(0, denom - (completed_count + failed_count + in_progress_count))
 
     progress_percentage = round((completed_count / denom * 100) if denom > 0 else 0, 1)
+
+    # Include active batch diagnostics for admin UI if available
+    diag = {}
+    if active:
+        try:
+            import time
+            diag = {
+                "active_batch": True,
+                "eligible": active.get("eligible"),
+                "seconds_since_start": int(time.time() - active.get("start_ts", time.time())),
+                "started_by": active.get("user"),
+            }
+        except Exception:
+            diag = {"active_batch": True}
 
     return jsonify(
         {
@@ -1203,6 +1280,7 @@ def get_playlist_analysis_status(playlist_id):
                 "pending": pending_count,
                 "in_progress": in_progress_count,
             },
+            **({"diag": diag} if diag else {}),
         }
     )
 

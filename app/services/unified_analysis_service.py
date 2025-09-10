@@ -15,6 +15,7 @@ from .. import db
 # Move imports to top level to avoid circular import issues in methods
 from ..models import AnalysisResult, Blacklist, Playlist, PlaylistSong, Song, User, Whitelist
 from .simplified_christian_analysis_service import SimplifiedChristianAnalysisService
+from .analyzer_cache import get_shared_analyzer, is_analyzer_ready
 
 logger = logging.getLogger(__name__)
 
@@ -203,7 +204,7 @@ class UnifiedAnalysisService:
             else:
                 lyrics = str(lyrics)
 
-            # If lyrics are missing or empty, try to fetch them
+            # If lyrics are missing or empty, try to fetch them via providers
             if not lyrics or len(lyrics.strip()) <= 10:
                 try:
                     fetched_lyrics = self.lyrics_fetcher.fetch_lyrics(
@@ -221,13 +222,51 @@ class UnifiedAnalysisService:
 
                     logger = logging.getLogger(__name__)
                     logger.warning(
-                        f"Failed to fetch lyrics for '{song.title}' by {song.artist}: {e}"
+                        f"Failed to fetch lyrics for '{song.title}' by {song.artist} (providers fallback): {e}"
                     )
 
-            # Use the SimplifiedChristianAnalysisService for analysis
-            analysis_result = self.analysis_service.analyze_song(
-                song.title or song.name, song.artist, lyrics
-            )
+            title = song.title or song.name
+            artist = song.artist
+
+            # Prefer RouterAnalyzer (Runpod → Ollama) when available; fallback to simplified local
+            use_router = False
+            router_payload = None
+            try:
+                if is_analyzer_ready():
+                    use_router = True
+                else:
+                    # Lazy init on demand
+                    _ = get_shared_analyzer()
+                    use_router = True
+                if use_router:
+                    router = get_shared_analyzer()
+                    router_payload = router.analyze_song(title, artist, lyrics)
+            except Exception:
+                use_router = False
+                router_payload = None
+
+            if use_router and isinstance(router_payload, dict):
+                # Normalize RouterAnalyzer output into expected dict
+                detailed_concerns = router_payload.get("concerns") or []
+                biblical_themes = router_payload.get("biblical_themes") or []
+                # Keep themes as names when possible
+                theme_names = [
+                    (t.get("theme") if isinstance(t, dict) else str(t)) for t in biblical_themes
+                ]
+                return {
+                    "score": router_payload.get("score", 50),
+                    "concern_level": self._map_concern_level(router_payload.get("concern_level", "Unknown")),
+                    "themes": [t for t in theme_names if t],
+                    "status": "completed",
+                    "explanation": "Router analysis completed",
+                    "detailed_concerns": detailed_concerns,
+                    "positive_themes": [],
+                    "biblical_themes": biblical_themes,
+                    "supporting_scripture": router_payload.get("supporting_scripture") or [],
+                }
+
+            # Fallback: Use the SimplifiedChristianAnalysisService for analysis
+            analysis_result = self.analysis_service.analyze_song(title, artist, lyrics)
 
             # Extract detailed information from the analysis result
             biblical_themes = []
@@ -371,22 +410,23 @@ class UnifiedAnalysisService:
 
     def _map_concern_level(self, quality_level: str) -> str:
         """
-        Map analysis quality_level to database concern_level format.
+        Normalize quality level into the only DB-allowed set: {'Low','Medium','High'}.
 
-        Args:
-            quality_level: The quality level from analysis ('High', 'Medium', 'Low', 'Very Low')
-
-        Returns:
-            Mapped concern level in lowercase format for database
+        - "Very Low" and any unknown/empty values are mapped to "Low" (conservative default)
+        - Input may be any casing; we match on Title-case keys
         """
-        mapping = {
-            "High": "high",
-            "Medium": "medium",
-            "Low": "low",
-            "Very Low": "very_low",
-            "Unknown": "unknown",
-        }
-        return mapping.get(quality_level, "unknown")
+        if not quality_level:
+            return "Low"
+        normalized = str(quality_level).strip()
+        # Accept common variants/casing
+        if normalized.lower() in ("high",):
+            return "High"
+        if normalized.lower() in ("medium",):
+            return "Medium"
+        if normalized.lower() in ("low", "very low", "very_low", "verylow"):
+            return "Low"
+        # Unknown -> Low
+        return "Low"
 
     def _extract_theme_names(self, themes_data) -> list:
         """
