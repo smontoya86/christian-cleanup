@@ -152,87 +152,119 @@ def callback():
         login_user(user, remember=True)
         current_app.logger.info(f"User {user.id} logged in successfully")
 
-        # Handle sync/analysis differently for new vs returning users
-        if is_new_user:
-            # New user: Full playlist sync (will trigger auto-analysis)
-            try:
-                from ..services.playlist_sync_service import enqueue_user_playlist_sync
+        # Handle sync/analysis for all users (new and returning)
+        try:
+            from ..services.playlist_sync_service import PlaylistSyncService
+            from ..services.unified_analysis_service import UnifiedAnalysisService
 
-                job_info = enqueue_user_playlist_sync(user.id, priority="high")
+            sync_service = PlaylistSyncService()
+            analysis_service = UnifiedAnalysisService()
 
-                if job_info["status"] == "queued":
+            if is_new_user:
+                # New user: Full playlist sync with auto-analysis
+                current_app.logger.info(f"Starting automatic sync for new user {user.id}")
+                
+                sync_result = sync_service.sync_user_playlists(user)
+                
+                if sync_result["status"] == "completed":
+                    playlists_count = sync_result.get("playlists_synced", 0)
+                    tracks_count = sync_result.get("total_tracks", 0)
+                    
                     current_app.logger.info(
-                        f'Queued playlist sync job {job_info["job_id"]} for new user {user.id}'
+                        f'Synced {playlists_count} playlists with {tracks_count} tracks for new user {user.id}'
                     )
-                    flash(
-                        f"Welcome, {user.display_name}! Your playlists are being synced in the background. This may take a few minutes.",
-                        "success",
-                    )
+                    
+                    # Start automatic analysis of all songs
+                    try:
+                        analysis_result = analysis_service.auto_analyze_user_after_sync(user.id)
+                        if analysis_result.get("success"):
+                            flash(
+                                f"Welcome, {user.display_name}! Synced {playlists_count} playlists with {tracks_count} songs. Analysis starting in background.",
+                                "success",
+                            )
+                        else:
+                            flash(
+                                f"Welcome, {user.display_name}! Synced {playlists_count} playlists. You can analyze songs from the dashboard.",
+                                "success",
+                            )
+                    except Exception as e:
+                        current_app.logger.warning(f"Auto-analysis failed for user {user.id}: {e}")
+                        flash(
+                            f"Welcome, {user.display_name}! Synced {playlists_count} playlists. You can analyze songs from the dashboard.",
+                            "success",
+                        )
                 else:
-                    current_app.logger.error(
-                        f'Failed to queue playlist sync for user {user.id}: {job_info.get("error")}'
-                    )
+                    current_app.logger.error(f'Sync failed for new user {user.id}: {sync_result.get("error")}')
                     flash(
-                        f"Welcome, {user.display_name}! Login successful. You can manually sync playlists from the dashboard.",
+                        f"Welcome, {user.display_name}! There was an issue syncing your playlists. You can try again from the dashboard.",
                         "warning",
                     )
-
-            except Exception as e:
-                current_app.logger.error(f"Error queueing playlist sync for user {user.id}: {e}")
-                flash(
-                    f"Welcome, {user.display_name}! Login successful. You can manually sync playlists from the dashboard.",
-                    "warning",
-                )
-        else:
-            # Returning user: Check for changes and analyze only changed playlists
-            try:
-                from ..services.unified_analysis_service import UnifiedAnalysisService
-
-                analysis_service = UnifiedAnalysisService()
-
-                # Detect changes
+            else:
+                # Returning user: Check for changes and sync incrementally
+                current_app.logger.info(f"Checking for playlist changes for returning user {user.id}")
+                
+                # Detect changes first
                 change_result = analysis_service.detect_playlist_changes(user.id)
-
+                
                 if change_result["success"] and change_result["total_changed"] > 0:
-                    # Changes detected - sync changed playlists and analyze new songs
+                    # Changes detected - sync changed playlists
                     current_app.logger.info(
                         f'Detected {change_result["total_changed"]} changed playlists for user {user.id}'
                     )
-
-                    # Queue analysis for changed playlists
-                    analysis_result = analysis_service.analyze_changed_playlists(
-                        change_result["changed_playlists"]
-                    )
-
-                    if analysis_result["success"]:
-                        flash(
-                            f'Welcome back, {user.display_name}! Found {change_result["total_changed"]} updated playlists. Analyzing {analysis_result["analyzed_songs"]} new songs.',
-                            "success",
+                    
+                    # Sync the changed playlists
+                    sync_result = sync_service.sync_user_playlists(user)
+                    
+                    if sync_result["status"] == "completed":
+                        # Start analysis for new songs
+                        analysis_result = analysis_service.analyze_changed_playlists(
+                            change_result["changed_playlists"]
                         )
+                        
+                        if analysis_result["success"]:
+                            flash(
+                                f'Welcome back, {user.display_name}! Updated {change_result["total_changed"]} playlists. Analyzing {analysis_result.get("analyzed_songs", 0)} new songs.',
+                                "success",
+                            )
+                        else:
+                            flash(
+                                f"Welcome back, {user.display_name}! Updated {change_result['total_changed']} playlists.",
+                                "success",
+                            )
                     else:
                         flash(
-                            f"Welcome back, {user.display_name}! Detected playlist changes but analysis failed.",
+                            f"Welcome back, {user.display_name}! Detected playlist changes but sync failed.",
                             "warning",
                         )
-                        current_app.logger.error(
-                            f'Change analysis failed for user {user.id}: {analysis_result.get("error")}'
-                        )
                 else:
-                    # No changes or detection failed
+                    # No changes detected or detection failed
                     if change_result["success"]:
-                        flash(
-                            f"Welcome back, {user.display_name}! No playlist changes detected.",
-                            "success",
-                        )
+                        # Check if user has any unanalyzed songs and start background analysis
+                        try:
+                            unanalyzed_count = analysis_service.get_unanalyzed_songs_count(user.id)
+                            if unanalyzed_count > 0:
+                                analysis_service.auto_analyze_user_after_sync(user.id)
+                                flash(
+                                    f"Welcome back, {user.display_name}! No playlist changes detected. Analyzing {unanalyzed_count} unanalyzed songs in background.",
+                                    "success",
+                                )
+                            else:
+                                flash(
+                                    f"Welcome back, {user.display_name}! All playlists are up to date.",
+                                    "success",
+                                )
+                        except Exception as e:
+                            current_app.logger.warning(f"Failed to check unanalyzed songs for user {user.id}: {e}")
+                            flash(f"Welcome back, {user.display_name}!", "success")
                     else:
                         current_app.logger.error(
                             f'Change detection failed for user {user.id}: {change_result.get("error")}'
                         )
                         flash(f"Welcome back, {user.display_name}!", "success")
 
-            except Exception as e:
-                current_app.logger.error(f"Error during change detection for user {user.id}: {e}")
-                flash(f"Welcome back, {user.display_name}!", "success")
+        except Exception as e:
+            current_app.logger.error(f"Error during automatic sync/analysis for user {user.id}: {e}")
+            flash(f"Welcome, {user.display_name}! Login successful. You can sync playlists from the dashboard.", "warning")
 
         # Fire GA4 server-side conversion (best-effort, async)
         try:

@@ -476,29 +476,140 @@ class UnifiedAnalysisService:
 
     def auto_analyze_user_after_sync(self, user_id):
         """
-        DEPRECATED: Automatic analysis after sync removed.
-
-        Queue system removed. Analysis is now admin-only and performed via direct batch processing.
-        Auto-analysis functionality has been removed as part of the queue system removal.
+        Start automatic analysis for unanalyzed songs after sync.
+        
+        This method analyzes songs in batches to avoid overwhelming the system.
+        For large libraries, it processes songs incrementally.
 
         Args:
-            user_id (int): ID of the user (parameter kept for compatibility)
+            user_id (int): ID of the user whose songs to analyze
 
         Returns:
-            dict: Deprecation notice
+            dict: Analysis results with success status and counts
         """
         from flask import current_app
+        
+        try:
+            current_app.logger.info(f"Starting automatic analysis for user {user_id}")
+            
+            # Get unanalyzed songs for this user
+            unanalyzed_songs = self.get_unanalyzed_songs(user_id, limit=50)  # Process in batches
+            
+            if not unanalyzed_songs:
+                return {
+                    "success": True,
+                    "analyzed_count": 0,
+                    "message": "No unanalyzed songs found",
+                }
+            
+            analyzed_count = 0
+            errors = []
+            
+            for song in unanalyzed_songs:
+                try:
+                    # Analyze the song
+                    result = self.analyze_song(song.id, user_id)
+                    if result.get("success"):
+                        analyzed_count += 1
+                        current_app.logger.debug(f"Analyzed song {song.id}: {song.title}")
+                    else:
+                        errors.append(f"Failed to analyze {song.title}: {result.get('error', 'Unknown error')}")
+                        
+                except Exception as e:
+                    error_msg = f"Error analyzing song {song.title}: {str(e)}"
+                    current_app.logger.error(error_msg)
+                    errors.append(error_msg)
+            
+            current_app.logger.info(f"Auto-analysis completed for user {user_id}: {analyzed_count} songs analyzed")
+            
+            return {
+                "success": True,
+                "analyzed_count": analyzed_count,
+                "total_unanalyzed": len(unanalyzed_songs),
+                "errors": errors,
+                "message": f"Analyzed {analyzed_count} songs automatically",
+            }
+            
+        except Exception as e:
+            current_app.logger.error(f"Error in auto_analyze_user_after_sync for user {user_id}: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "analyzed_count": 0,
+            }
 
-        current_app.logger.warning(
-            f"auto_analyze_user_after_sync called for user {user_id} - DEPRECATED: Queue system removed"
-        )
+    def get_unanalyzed_songs_count(self, user_id):
+        """
+        Get the count of unanalyzed songs for a user.
 
-        return {
-            "success": True,
-            "queued_count": 0,
-            "message": "Auto-analysis removed; nothing to queue. Use admin batch analysis. (Deprecated behavior returns success for compatibility).",
-            "deprecated": True,
-        }
+        Args:
+            user_id (int): ID of the user
+
+        Returns:
+            int: Number of unanalyzed songs
+        """
+        try:
+            # Query for songs that belong to user's playlists but have no analysis results
+            from sqlalchemy import and_, func
+            
+            unanalyzed_count = (
+                db.session.query(func.count(Song.id.distinct()))
+                .join(PlaylistSong, Song.id == PlaylistSong.song_id)
+                .join(Playlist, PlaylistSong.playlist_id == Playlist.id)
+                .outerjoin(AnalysisResult, and_(
+                    AnalysisResult.song_id == Song.id,
+                    AnalysisResult.user_id == user_id
+                ))
+                .filter(
+                    Playlist.owner_id == user_id,
+                    AnalysisResult.id.is_(None)  # No analysis result exists
+                )
+                .scalar()
+            )
+            
+            return unanalyzed_count or 0
+            
+        except Exception as e:
+            logger.error(f"Error getting unanalyzed songs count for user {user_id}: {e}")
+            return 0
+
+    def get_unanalyzed_songs(self, user_id, limit=None):
+        """
+        Get unanalyzed songs for a user.
+
+        Args:
+            user_id (int): ID of the user
+            limit (int, optional): Maximum number of songs to return
+
+        Returns:
+            list: List of Song objects that haven't been analyzed
+        """
+        try:
+            from sqlalchemy import and_
+            
+            query = (
+                db.session.query(Song)
+                .join(PlaylistSong, Song.id == PlaylistSong.song_id)
+                .join(Playlist, PlaylistSong.playlist_id == Playlist.id)
+                .outerjoin(AnalysisResult, and_(
+                    AnalysisResult.song_id == Song.id,
+                    AnalysisResult.user_id == user_id
+                ))
+                .filter(
+                    Playlist.owner_id == user_id,
+                    AnalysisResult.id.is_(None)  # No analysis result exists
+                )
+                .distinct()
+            )
+            
+            if limit:
+                query = query.limit(limit)
+                
+            return query.all()
+            
+        except Exception as e:
+            logger.error(f"Error getting unanalyzed songs for user {user_id}: {e}")
+            return []
 
     # Removed enqueue_* methods (queue system deleted)
 

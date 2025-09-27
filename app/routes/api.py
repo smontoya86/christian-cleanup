@@ -2632,3 +2632,113 @@ def test_semantic_detection():
     except Exception as e:
         current_app.logger.error(f"Error in semantic detection test: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+
+@bp.route("/llm/status", methods=["GET"])
+@login_required
+def llm_provider_status():
+    """
+    Get the current LLM provider status and configuration.
+    
+    Returns information about which LLM provider is currently being used,
+    health status of all providers, and routing configuration.
+    """
+    try:
+        from ..services.intelligent_llm_router import get_intelligent_router
+        
+        router = get_intelligent_router()
+        provider_info = router.get_provider_info()
+        
+        return jsonify({
+            "success": True,
+            "current_provider": provider_info.get("current_provider"),
+            "current_endpoint": provider_info.get("current_endpoint"),
+            "current_model": provider_info.get("current_model"),
+            "providers": provider_info.get("providers", []),
+            "total_providers": provider_info.get("total_providers", 0),
+            "healthy_providers": provider_info.get("healthy_providers", 0),
+            "router_status": "active" if provider_info.get("current_provider") else "no_providers_available",
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting LLM provider status: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "router_status": "error"
+        }), 500
+
+
+@bp.route("/llm/force-provider", methods=["POST"])
+@login_required
+@admin_required
+def force_llm_provider():
+    """
+    Force the LLM router to use a specific provider (admin only).
+    
+    Request body should contain:
+    {
+        "provider": "runpod|ollama|openai"
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data or "provider" not in data:
+            return jsonify({
+                "success": False,
+                "error": "Provider name required in request body"
+            }), 400
+        
+        provider_name = data["provider"]
+        
+        from ..services.intelligent_llm_router import get_intelligent_router
+        
+        router = get_intelligent_router()
+        success = router.force_provider(provider_name)
+        
+        if success:
+            return jsonify({
+                "success": True,
+                "message": f"Forced LLM provider to: {provider_name}",
+                "current_provider": provider_name
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": f"Failed to force provider: {provider_name} (not available or unhealthy)"
+            }), 400
+            
+    except Exception as e:
+        current_app.logger.error(f"Error forcing LLM provider: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@bp.route("/llm/reset-cache", methods=["POST"])
+@login_required
+@admin_required
+def reset_llm_cache():
+    """
+    Reset the LLM provider cache to force re-detection (admin only).
+    """
+    try:
+        from ..services.intelligent_llm_router import get_intelligent_router
+        
+        router = get_intelligent_router()
+        router.reset_provider_cache()
+        
+        return jsonify({
+            "success": True,
+            "message": "LLM provider cache reset successfully"
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error resetting LLM cache: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
