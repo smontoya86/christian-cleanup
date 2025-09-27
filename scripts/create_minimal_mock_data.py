@@ -179,16 +179,16 @@ def create_mock_data():
                 if not existing_analysis:
                     conn.execute(
                         text("""
-                        INSERT INTO analysis_results (song_id, status, score, concern_level, themes, problematic_content, analyzed_at, created_at, updated_at)
-                        VALUES (:song_id, :status, :score, :concern_level, :themes, :problematic_content, :analyzed_at, :now, :now)
+                        INSERT INTO analysis_results (song_id, score, concern_level, themes, problematic_content, explanation, analyzed_at, created_at, updated_at)
+                        VALUES (:song_id, :score, :concern_level, :themes, :problematic_content, :explanation, :analyzed_at, :now, :now)
                     """),
                         {
                             "song_id": song_id,
-                            "status": status,
                             "score": score,
                             "concern_level": concern_level,
                             "themes": themes,
                             "problematic_content": problematic_content,
+                            "explanation": "Mock analysis completed",
                             "analyzed_at": datetime.utcnow()
                             - timedelta(days=random.randint(1, 30)),
                             "now": datetime.utcnow(),
@@ -260,8 +260,8 @@ def create_mock_data():
                 if not existing_playlist:
                     result = conn.execute(
                         text("""
-                        INSERT INTO playlists (owner_id, spotify_id, name, description, image_url, track_count, created_at, updated_at)
-                        VALUES (:owner_id, :spotify_id, :name, :description, :image_url, :track_count, :now, :now)
+                        INSERT INTO playlists (owner_id, spotify_id, name, description, image_url, track_count, has_flagged, created_at, updated_at)
+                        VALUES (:owner_id, :spotify_id, :name, :description, :image_url, :track_count, :has_flagged, :now, :now)
                         RETURNING id
                     """),
                         {
@@ -271,6 +271,7 @@ def create_mock_data():
                             "description": description,
                             "image_url": image_url,
                             "track_count": track_count,
+                            "has_flagged": False,
                             "now": datetime.utcnow(),
                         },
                     )
