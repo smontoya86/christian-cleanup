@@ -125,7 +125,7 @@
     {% elif request.endpoint == 'auth.login' %}
         <link rel="prefetch" href="{{ url_for('main.dashboard') }}">
     {% elif request.endpoint == 'main.dashboard' %}
-        <link rel="prefetch" href="{{ url_for('main.settings') }}">
+        
     {% endif %}
 </head>
 <body>
@@ -145,7 +145,7 @@
                 {% if current_user.is_authenticated %}
                     <!-- Authenticated User Navigation -->
                     <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.dashboard') }}">Dashboard</a>
-                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.settings') }}">Settings</a>
+                    
                     <!-- Logout Button -->
                     <a class="btn btn-outline-danger btn-sm ms-2" href="{{ url_for('auth.logout') }}">
                         🚪 Logout

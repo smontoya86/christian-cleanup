@@ -389,7 +389,7 @@
                         <!-- Remove from Playlist button (only when accessed from playlist context) -->
                         {% if playlist %}
                             <div class="d-grid mb-3">
-                                <form action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist.id, song_id=song.id) }}" method="POST">
+                                <form action="{{ url_for('main.remove_from_playlist', playlist_id=playlist.id, song_id=song.id) }}" method="POST">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                     <button type="submit" class="btn btn-outline-danger w-100 fas fa-trash" data-analytics="remove_song_click"
                                             onclick="return confirm('Remove this song from {{ playlist.name }}? This action cannot be undone.')">Remove from Playlist</button>
@@ -405,7 +405,7 @@
                                     <small><strong>⚠️ High Concern:</strong> Review carefully before whitelisting</small>
                                 </div>
                                 <div class="d-grid">
-                                    <form action="{{ url_for('main.whitelist_song', song_id=song.id) }}" method="POST">
+                                    <form action="{{ url_for('main.add_to_whitelist', item_type='song', spotify_id=song.spotify_id, item_name=song.title, artist_name=song.artist, artist_spotify_id=song.artist_spotify_id, album_name=song.album, album_spotify_id=song.album_spotify_id, album_art_url=song.album_art_url, release_date=song.release_date, track_number=song.track_number, duration_ms=song.duration_ms, popularity=song.popularity, explicit=song.explicit, disc_number=song.disc_number, is_local=song.is_local, is_playable=song.is_playable, preview_url=song.preview_url, track_uri=song.track_uri, song_id=song.id, user_id=current_user.id, playlist_id=playlist.id if playlist else None, context='song_detail') }}" method="POST">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                         <button type="submit" class="btn btn-warning w-100" data-analytics="whitelist_song_click"
                                                 onclick="return confirm('This song has high concern level. Are you sure?')">
@@ -415,7 +415,7 @@
                                 </div>
                             {% elif calculated_concern in ['very_low', 'low', 'medium'] %}
                                 <div class="d-grid">
-                                    <form action="{{ url_for('main.whitelist_song', song_id=song.id) }}" method="POST">
+                                    <form action="{{ url_for('main.add_to_whitelist', item_type='song', spotify_id=song.spotify_id, item_name=song.title, artist_name=song.artist, artist_spotify_id=song.artist_spotify_id, album_name=song.album, album_spotify_id=song.album_spotify_id, album_art_url=song.album_art_url, release_date=song.release_date, track_number=song.track_number, duration_ms=song.duration_ms, popularity=song.popularity, explicit=song.explicit, disc_number=song.disc_number, is_local=song.is_local, is_playable=song.is_playable, preview_url=song.preview_url, track_uri=song.track_uri, song_id=song.id, user_id=current_user.id, playlist_id=playlist.id if playlist else None, context='song_detail') }}" method="POST">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                         <button type="submit" class="btn btn-success w-100" data-analytics="whitelist_song_click">
                                             <i class="fas fa-check me-2"></i>Add to Whitelist

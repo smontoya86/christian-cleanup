@@ -99,7 +99,7 @@
                                                 <a class="dropdown-item" href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist.id) }}">View Details</a>
                                             </li>
                                             <li>
-                                                <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist.id, song_id=item.song.id) }}" class="px-3 py-1">
+                                                <form method="post" action="{{ url_for('main.remove_from_playlist', playlist_id=playlist.id, song_id=item.song.id) }}" class="px-3 py-1">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                                                     <button type="submit" class="dropdown-item text-danger">Remove from Playlist</button>
                                                 </form>

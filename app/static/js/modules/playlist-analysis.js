@@ -285,6 +285,7 @@ export class PlaylistAnalysis {
      * @param {HTMLElement} button - Button element that triggered the analysis
      */
   async analyzeSingleSong (songId, songTitle, songArtist, button) {
+    console.log('analyzeSingleSong called with songId:', songId);
     console.log('🎵 Starting single song analysis:', {
       songId, songTitle, songArtist
     });
@@ -300,7 +301,7 @@ export class PlaylistAnalysis {
       console.log('🔄 Button set to loading state');
 
       // Show initial notification
-      UIHelpers.showAlert(`Analysis started for "${songTitle}". Progress tracking enabled.`, 'info');
+    UIHelpers.showSuccess(`Analysis started for \"${songTitle}\". Progress tracking enabled.`);
       console.log('✅ Initial notification shown');
 
       console.log('📡 Making API call to analyze song...');
@@ -317,7 +318,7 @@ export class PlaylistAnalysis {
       }
     } catch (error) {
       console.error('❌ Error analyzing song:', error);
-      UIHelpers.showAlert(`Failed to analyze "${songTitle}": ${error.message}`, 'error');
+    UIHelpers.showError(`Failed to analyze \"${songTitle}\": ${error.message}`);
       UIHelpers.toggleButtonLoading(button, false);
     }
   }
@@ -354,15 +355,14 @@ export class PlaylistAnalysis {
           }
 
           // Show completion notification
-          UIHelpers.showAlert(`Analysis completed for "${songTitle}"!`, 'success');
-
+         UIHelpers.showSuccess(`Analysis completed for \"${songTitle}\"!`);
           return; // Stop polling
         }
 
         if (status.failed) {
           console.log('❌ Analysis failed');
           UIHelpers.toggleButtonLoading(button, false);
-          UIHelpers.showAlert(`Analysis failed for "${songTitle}": ${status.error || 'Unknown error'}`, 'error');
+        UIHelpers.showError(`Analysis failed for \"${songTitle}\": ${status.error || 'Unknown error'}`);
           return; // Stop polling
         }
 
@@ -373,14 +373,12 @@ export class PlaylistAnalysis {
         } else {
           console.log('⏰ Max attempts reached, stopping progress tracking');
           UIHelpers.toggleButtonLoading(button, false);
-          UIHelpers.showAlert(`Analysis for "${songTitle}" is taking longer than expected. Please refresh the page to check results.`, 'warning');
-        }
+          UIHelpers.showError(`Analysis for \"${songTitle}\" is taking longer than expected. Please refresh the page to check results.`);       }
 
       } catch (error) {
         console.error('❌ Error checking progress:', error);
         UIHelpers.toggleButtonLoading(button, false);
-        UIHelpers.showAlert(`Error tracking progress for "${songTitle}": ${error.message}`, 'error');
-      }
+       UIHelpers.showError(`Error tracking progress for \"${songTitle}\": ${error.message}`);      }
     };
 
     // Start checking progress after 3 seconds (give analysis time to start)
