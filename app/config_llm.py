@@ -3,7 +3,7 @@ llm_config = {
     "providers": {
         "ollama": {
             "api_base": "http://localhost:11434/v1",
-            "model": "qwen2.5:0.5b"
+            "model": "qwen2.5:3b"
         }
     }
 }
