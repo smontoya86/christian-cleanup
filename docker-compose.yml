@@ -23,6 +23,12 @@ services:
       - redis
     restart: unless-stopped
     network_mode: "host"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   db:
     image: postgres:14-alpine
@@ -34,6 +40,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     restart: unless-stopped
     network_mode: "host"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -42,8 +53,12 @@ services:
     command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save 60 1000
     restart: unless-stopped
     network_mode: "host"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
 volumes:
   postgres_data:
   redis_data:
-
