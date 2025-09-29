@@ -1,32 +1,6 @@
-Flask
-Flask-SQLAlchemy
-Flask-Migrate
-Flask-Login
-Flask-Session
-python-dotenv
-pytest
-pytest-asyncio
-pytest-mock
-pytest-flask
-responses
-httpx
-scikit-learn
-lyricsgenius==3.3.1
-requests
-pydantic>=2.6.0
-faiss-cpu>=1.7.4
-spotipy
+flask
+flask_sqlalchemy
 psycopg2-binary
-bootstrap-flask
-redis
-tqdm>=4.65.0
-psutil
-marshmallow>=3.19.0
-cryptography>=40.0.0
-prometheus-client>=0.17.0
+requests
+gunicorn
 
-# Production dependencies
-gunicorn[gevent]>=21.2.0
-flask-limiter>=3.5.0
-prometheus-flask-exporter>=0.23.0
-gevent>=23.7.0

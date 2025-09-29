@@ -1,0 +1,15 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-test
+    restart: unless-stopped
+    environment:
+      - OLLAMA_NUM_PARALLEL=1
+    volumes:
+      - ollama_models_test:/root/.ollama
+    command: ["serve"]
+    mem_limit: 10g
+
+volumes:
+  ollama_models_test:
+

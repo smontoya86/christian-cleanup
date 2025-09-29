@@ -1,67 +1,28 @@
 services:
   web:
-    build: .
-    # Optimized for ML models: reduced workers, increased timeout and memory
-    # Disable max-requests jitter to avoid mid-batch restarts during analysis in dev
-    command: gunicorn --bind 0.0.0.0:5000 --workers 1 --timeout 1800 --worker-connections 100 run:app
-    ports:
-      - "5001:5000"  # Changed external port to 5001 to avoid conflict with macOS Control Center
+    build:
+      context: .
+      network: host
+    command: gunicorn --bind 0.0.0.0:5001 --workers 1 --timeout 1800 --worker-connections 100 run:app
     volumes:
       - .:/app
     env_file:
       - .env
     environment:
-      - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES  # Required for macOS compatibility
-      - DEBUG=false  # Production mode
-      # Analyzer env (router-only) inherited via .env
-      - LLM_API_BASE_URL
-      - LLM_MODEL
-      - LYRICSGENIUS_API_KEY
-      # Google Analytics (optional)
-      - GA4_MEASUREMENT_ID
-      - GA4_API_SECRET
-      - GA4_DEBUG_MODE
-      # ML optimization settings (legacy HF removed)
+      - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+      - DEBUG=false
+      - LLM_API_BASE_URL=http://localhost:11434/v1
       - OMP_NUM_THREADS=4
       - MKL_NUM_THREADS=4
       - TOKENIZERS_PARALLELISM=false
-      # Parallel backfill configuration
       - BACKFILL_WORKERS=3
       - BACKFILL_BATCH_SIZE=25
+      - LLM_TIMEOUT=120
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      ollama:
-        condition: service_started
+      - db
+      - redis
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
-      interval: 60s    # Increased interval due to model load time
-      timeout: 30s     # Increased timeout
-      retries: 3
-      start_period: 120s  # Longer startup for model loading
-    deploy:
-      resources:
-        limits:
-          memory: 8G      # INCREASED: 4x previous for ML models (was 2G)
-          cpus: '2.0'     # INCREASED: 2x previous for ML processing (was 1.0)
-        reservations:
-          memory: 4G      # INCREASED: 4x previous for ML models (was 1G)
-          cpus: '1.0'     # INCREASED: 2x previous for ML processing (was 0.5)
-    networks:
-      - app-network
-
-  # REMOVED: Worker containers no longer needed
-  # Queue system removed - all analysis performed directly in web container using batch processing
-  # worker:
-  #   build: .
-  #   command: bash /app/scripts/docker-entrypoint-worker.sh
-  #   depends_on:
-  #     - db
-  #     - redis
-  #   [... configuration removed ...]
+    network_mode: "host"
 
   db:
     image: postgres:14-alpine
@@ -71,67 +32,18 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '0.5'
-        reservations:
-          memory: 512M
-          cpus: '0.25'
-    networks:
-      - app-network
+    network_mode: "host"
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "127.0.0.1:6380:6379"  # Use port 6380 to avoid conflict with local Redis
     volumes:
       - redis_data:/data
     command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save 60 1000
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1G  # Increased for 6 workers
-          cpus: '0.5'  # Increased for higher load
-        reservations:
-          memory: 512M
-          cpus: '0.25'
-    networks:
-      - app-network
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    restart: unless-stopped
-    environment:
-      - OLLAMA_NUM_PARALLEL=1
-    volumes:
-      - ollama_models:/root/.ollama
-    command: ["serve"]
-    networks:
-      - app-network
-
+    network_mode: "host"
 
 volumes:
   postgres_data:
   redis_data:
-  ollama_models:
 
-networks:
-  app-network:
-    driver: bridge
