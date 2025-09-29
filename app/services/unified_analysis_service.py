@@ -1,4 +1,4 @@
-
+ 
 import logging
 import time
 from datetime import datetime, timedelta
@@ -28,7 +28,7 @@ class UnifiedAnalysisService:
         if not song:
             raise ValueError(f"Song with ID {song_id} not found")
 
-        analysis_data = self.analyze_song_complete(song, force=False, user_id=user_id)
+        analysis_data = self.analyze_song_complete(song, force=True, user_id=user_id)
 
         analysis = AnalysisResult.query.filter_by(song_id=song_id).first()
         if not analysis:
@@ -53,12 +53,14 @@ class UnifiedAnalysisService:
     def analyze_song_complete(self, song, force=False, user_id=None):
         self.logger.info(f"Starting complete analysis for song: {song.title}")
         if not force:
+            self.logger.info("Checking for existing analysis...")
             existing = (
                 AnalysisResult.query.filter_by(song_id=song.id)
                 .order_by(AnalysisResult.created_at.desc())
                 .first()
             )
             if existing:
+                self.logger.info("Found existing analysis.")
                 return {
                     "score": existing.score,
                     "concern_level": existing.concern_level,
@@ -69,12 +71,17 @@ class UnifiedAnalysisService:
                     "biblical_themes": existing.biblical_themes or [],
                     "supporting_scripture": existing.supporting_scripture or [],
                 }
-        if user_id and self._is_blacklisted(song, user_id):
-            return self._create_blacklisted_result(song, user_id)
+        if user_id:
+            self.logger.info("Checking blacklist...")
+            if self._is_blacklisted(song, user_id):
+                self.logger.info("Song is blacklisted.")
+                return self._create_blacklisted_result(song, user_id)
+            self.logger.info("Checking whitelist...")
+            if self._is_whitelisted(song, user_id):
+                self.logger.info("Song is whitelisted.")
+                return self._create_whitelisted_result(song, user_id)
 
-        if user_id and self._is_whitelisted(song, user_id):
-            return self._create_whitelisted_result(song, user_id)
-
+        self.logger.info("Fetching lyrics...")
         lyrics = song.lyrics
         if hasattr(lyrics, "_mock_name"):
             lyrics = ""
@@ -84,22 +91,25 @@ class UnifiedAnalysisService:
             lyrics = str(lyrics)
 
         if not lyrics or len(lyrics.strip()) <= 10:
+            self.logger.info("Lyrics not found or too short, fetching...")
             try:
                 fetched_lyrics = self.lyrics_fetcher.fetch_lyrics(
                     song.title or song.name, song.artist
                 )
                 if fetched_lyrics and len(fetched_lyrics.strip()) > 10:
+                    self.logger.info("Fetched lyrics successfully.")
                     lyrics = fetched_lyrics
                     song.lyrics = lyrics
                     db.session.commit()
             except Exception as e:
                 self.logger.warning(
-                    f"Failed to fetch lyrics for ‘{song.title}’ by {song.artist} (providers fallback): {e}"
+                    f"Failed to fetch lyrics for '{song.title}' by {song.artist} (providers fallback): {e}"
                 )
 
         title = song.title or song.name
         artist = song.artist
 
+        self.logger.info("Checking for router analysis...")
         use_router = False
         router_payload = None
         try:
@@ -109,13 +119,16 @@ class UnifiedAnalysisService:
                 _ = get_shared_analyzer()
                 use_router = True
             if use_router:
+                self.logger.info("Using router for analysis.")
                 router = get_shared_analyzer()
                 router_payload = router.analyze_song(title, artist, lyrics)
-        except Exception:
+        except Exception as e:
+            self.logger.error(f"Router analysis failed: {e}")
             use_router = False
             router_payload = None
 
         if use_router and isinstance(router_payload, dict):
+            self.logger.info("Router analysis successful.")
             detailed_concerns = router_payload.get("concerns") or []
             biblical_themes = router_payload.get("biblical_themes") or []
             theme_names = [
@@ -133,6 +146,7 @@ class UnifiedAnalysisService:
                 "supporting_scripture": router_payload.get("supporting_scripture") or [],
             }
 
+        self.logger.info("Performing simplified analysis...")
         analysis_result = self.analysis_service.analyze_song(title, artist, lyrics)
 
         biblical_themes = []
@@ -183,6 +197,7 @@ class UnifiedAnalysisService:
                         {"reference": str(ref), "relevance": "Related to identified themes"}
                     )
 
+        self.logger.info("Simplified analysis successful.")
         return {
             "score": analysis_result.scoring_results["final_score"],
             "concern_level": self._map_concern_level(
@@ -220,7 +235,7 @@ class UnifiedAnalysisService:
             is not None
         )
 
-        if song_whitelisted:
+        if song_whlisted:
             return True
 
         return False
@@ -231,7 +246,7 @@ class UnifiedAnalysisService:
             "concern_level": "high",
             "themes": ["Blacklisted"],
             "status": "completed",
-            "explanation": f"Song ‘{song.title}’ is blacklisted by the user.",
+            "explanation": f"Song '{song.title}' is blacklisted by the user.",
             "detailed_concerns": [{"concern": "Blacklisted", "details": "This song is on your blacklist."}],
             "positive_themes": [],
             "biblical_themes": [],
@@ -244,7 +259,7 @@ class UnifiedAnalysisService:
             "concern_level": "none",
             "themes": ["Whitelisted"],
             "status": "completed",
-            "explanation": f"Song ‘{song.title}’ is whitelisted by the user.",
+            "explanation": f"Song '{song.title}' is whitelisted by the user.",
             "detailed_concerns": [],
             "positive_themes": [{"theme": "Whitelisted", "description": "This song is on your whitelist."}],
             "biblical_themes": [],

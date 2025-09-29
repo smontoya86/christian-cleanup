@@ -277,4 +277,5 @@ Return ONLY JSON with fields: score, concern_level, biblical_themes[], supportin
             "verdict": {"summary": "context_required", "guidance": ""},
         }
 
+# Hot-reloading test
 

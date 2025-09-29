@@ -209,6 +209,8 @@ def create_app(config_name="development", skip_db_init=False):
             disable_pref = os.environ.get("DISABLE_ANALYZER_PREFLIGHT", "0") in ("1", "true", "True")
             is_ci = os.environ.get("CI", "0") in ("1", "true", "True")
             if config_name != "testing" and not disable_pref and not is_ci:  # Skip model loading in tests/CI/offline
+                from .reloader import Reloader
+                app.config["ANALYZER_RELOADER"] = Reloader(app, watch_files=["/home/ubuntu/christian-cleanup/app/services/analyzers/router_analyzer.py"])
                 try:
                     # Only warm Router/LLM analyzer (OpenAI-compatible)
                     from .services.analyzer_cache import (

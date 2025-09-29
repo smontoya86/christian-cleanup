@@ -482,7 +482,7 @@ def analyze_playlist(playlist_id):
                 flash(message, "info")
                 return redirect(url_for("main.playlist_detail", playlist_id=playlist_id))
 
-        eligible_songs = [s for s in songs if s.lyrics and s.lyrics.strip() != "Lyrics not available"]
+        eligible_songs = songs
         eligible_count = len(eligible_songs)
         current_app.logger.info(f"{eligible_count}/{total_songs} songs are eligible for analysis")
 
@@ -523,7 +523,6 @@ def analyze_playlist(playlist_id):
         else:
             flash("An unexpected error occurred while starting analysis.", "error")
             return redirect(url_for("main.playlist_detail", playlist_id=playlist_id))
-
 
 def run_batch_analysis(app, playlist_id, song_ids):
     """Function to run in a background thread for batch analysis."""

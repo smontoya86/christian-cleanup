@@ -115,3 +115,18 @@ def get_song_analysis_status(id):
     else:
         return jsonify({"success": False, "completed": False, "failed": False, "error": "No analysis found"})
 
+
+
+@bp.route("/dashboard/stats")
+@login_required
+def get_dashboard_stats():
+    """Get dashboard stats"""
+    # Implement logic to get dashboard stats
+    return jsonify({"success": True, "stats": {}})
+
+@bp.route("/background-analysis/public-status")
+def get_background_analysis_public_status():
+    """Get background analysis public status"""
+    # Implement logic to get background analysis public status
+    return jsonify({"success": True, "status": {}})
+

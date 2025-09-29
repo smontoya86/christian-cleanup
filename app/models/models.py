@@ -400,12 +400,12 @@ class AnalysisResult(db.Model):
         db.Index("idx_analysis_concern_level", "concern_level"),
         db.Index("idx_analysis_song_created", "song_id", "created_at"),
     )
-    status = db.column_property(literal("completed"))
-    error = db.column_property(literal(None))
+    status = db.Column(db.String(50), default='pending', nullable=False)
+    error = db.Column(db.Text, nullable=True)
 
     @property
     def is_complete(self):
-        return self.status == 'completed'
+      return self.status in ['completed', 'failed', 'error', 'skipped']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -483,6 +483,7 @@ class Blacklist(db.Model):
     )
 
 class LyricsCache(db.Model):
+    __table_args__ = {'extend_existing': True}
     __tablename__ = "lyrics_cache"
     id = db.Column(db.Integer, primary_key=True)
     song_id = db.Column(db.Integer, db.ForeignKey("songs.id"), nullable=False)
@@ -508,4 +509,35 @@ class BibleVerse(db.Model):
     verse = db.Column(db.Integer, nullable=False)
     text = db.Column(db.Text, nullable=False)
     __table_args__ = (db.UniqueConstraint("book", "chapter", "verse", name="uq_bible_verse"),)
+
+
+
+
+class LyricsCache(db.Model):
+    __table_args__ = {'extend_existing': True}
+    __tablename__ = "lyrics_cache"
+    id = db.Column(db.Integer, primary_key=True)
+    song_id = db.Column(db.Integer, db.ForeignKey("songs.id"), nullable=False, unique=True)
+    lyrics = db.Column(db.Text, nullable=False)
+    source = db.Column(db.String(100), nullable=False)
+    retrieved_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    song = db.relationship("Song", backref=db.backref("lyrics_cache", uselist=False))
+
+    @classmethod
+    def find_cached_lyrics(cls, song_id):
+        return cls.query.filter_by(song_id=song_id).first()
+
+    @classmethod
+    def cache_lyrics(cls, song_id, lyrics, source):
+        from . import db
+        from datetime import datetime, timezone
+
+        cached = cls.find_cached_lyrics(song_id)
+        if not cached:
+            cached = cls(song_id=song_id)
+        cached.lyrics = lyrics
+        cached.source = source
+        cached.retrieved_at = datetime.now(timezone.utc)
+        db.session.add(cached)
+        db.session.commit()
 

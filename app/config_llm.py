@@ -19,7 +19,7 @@ LLM_PROVIDERS = [
     },
     {
         "name": "ollama",
-        "endpoint": os.environ.get("OLLAMA_ENDPOINT", "http://ollama:11434"),
+        "endpoint": os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434"),
         "model": os.environ.get("OLLAMA_MODEL", "llama3.1:8b"),
         "priority": 2,
         "timeout": 8.0,
