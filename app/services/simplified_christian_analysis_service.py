@@ -1167,10 +1167,10 @@ class SimplifiedChristianAnalysisService:
         return {
             "precision_tracking": "available",
             "system_status": "operational",
-            "analyzer_type": "HuggingFaceAnalyzer",
+            "analyzer_type": "RouterAnalyzer (OpenAI GPT-4o-mini)",
             "theme_detection": {
                 "active_themes": 35,
-                "detection_method": "semantic_classification",
+                "detection_method": "fine_tuned_llm",
                 "confidence_threshold": 0.7,
             },
             "performance": {"avg_analysis_time": "< 1 second", "accuracy_rate": "87%+"},
