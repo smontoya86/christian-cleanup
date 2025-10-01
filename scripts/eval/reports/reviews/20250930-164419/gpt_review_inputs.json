@@ -1,0 +1,280 @@
+[
+  {
+    "id": "baseline-01",
+    "title": "Amazing Grace",
+    "artist": "John Newton",
+    "lyrics": "Amazing grace, how sweet the sound\n That saved a wretch like me\n I once was lost but now am found\n Was blind but now I see\n 'Twas grace that taught my heart to fear\n And grace, my fears relieved\n How precious did that grace appear\n The hour I first believed\n\n Yeah, when this flesh and heart shall fail\n And mortal life shall cease\n I shall possess within the veil\n A life of joy and peace\n Amazing grace, how sweet the sound\n That saved a wretch like me\n I once was lost but now am found\n Was blind but now I see\n Was blind but now I see",
+    "expected_verdict": "freely_listen",
+    "expected_score": 100,
+    "expected_flags": [],
+    "expected_scripture_refs": [
+      "Ephesians 2:8-9"
+    ],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 98,
+      "concern_level": "Very Low",
+      "biblical_themes": [
+        {
+          "name": "Salvation"
+        },
+        {
+          "name": "Grace"
+        },
+        {
+          "name": "Redemption"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Ephesians 2:8-9"
+        },
+        {
+          "reference": "John 9:25"
+        },
+        {
+          "reference": "Romans 5:20-21"
+        }
+      ],
+      "concerns": [],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "sound",
+      "confidence": "high",
+      "needs_review": false,
+      "verdict": "freely_listen"
+    }
+  },
+  {
+    "id": "baseline-03",
+    "title": "Reckless Love",
+    "artist": "Cory Asbury",
+    "lyrics": "Before I spoke a word, you were singing over me\n\n You have been so, so good to me\n Before I took a breath, you breathe your life in me\n You have been so, so good to me\n Oh, the overwhelming, never-ending, reckless love of God\n Oh, it chases me down, fights 'til I'm found, leaves the ninety-nine\n I couldn't earn it, and I don't deserve it, still, you give yourself away\n Oh, the overwhelming, never-ending, reckless love of God, yeah\n\n When I was your foe, still your love fought for me\n You have been so, so good to me\n\n When I felt no worth, you paid it all for me\n You have been so, so kind to me\n And oh, the overwhelming, never-ending, reckless love of God\n Oh, it chases me down, fights 'til I'm found, leaves the ninety-nine\n I couldn't earn it, and I don't deserve it, still, you give yourself away\n Oh, the overwhelming, never-ending, reckless love of God, yeah\n\n There's no shadow you won't light up\n Mountain you won't climb up\n Coming after me\n There's no wall you won't kick down\n Lie you won't tear down\n Coming after me\n There's no shadow you won't light up\n Mountain you won't climb up\n Coming after me\n There's no wall you won't kick down\n Lie you won't tear down\n Coming after me\n There's no shadow you won't light up\n Mountain you won't climb up\n Coming after me\n There's no wall you won't kick down\n Lie you won't tear down\n Coming after me\n There's no shadow you won't light up\n Mountain you won't climb up\n Coming after me\n There's no wall you won't kick down\n Lie you won't tear down\n Coming after me\n Oh, the overwhelming, never-ending, reckless love of God\n Oh, it chases me down, fights 'til I'm found, leaves the ninety-nine\n I couldn't earn it, and I don't deserve it, still, you give Yourself away\n Oh, the overwhelming, never-ending, reckless love of God, yeah",
+    "expected_verdict": "context_required",
+    "expected_score": 82,
+    "expected_flags": [
+      "Theological Imprecision"
+    ],
+    "expected_scripture_refs": [
+      "Luke 15:4-7"
+    ],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 95,
+      "concern_level": "Very Low",
+      "biblical_themes": [
+        {
+          "name": "Worship of God"
+        },
+        {
+          "name": "Hope"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Romans 15:13"
+        },
+        {
+          "reference": "Ephesians 2:8-9"
+        }
+      ],
+      "concerns": [],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "sound",
+      "confidence": "high",
+      "needs_review": false,
+      "verdict": "freely_listen"
+    }
+  },
+  {
+    "id": "baseline-05",
+    "title": "Believer",
+    "artist": "Imagine Dragons",
+    "lyrics": "First things first, I'ma say all the words inside my head\n I'm fired up, and tired of the way that things have been, oh-ooh\n The way that things have been, oh-ooh\n Second thing second, don't you tell me what you think that I can be\n I'm the one at the sail, I'm the master of my sea, oh-ooh\n\n The master of my sea, oh-ooh\n I was broken from a young age\n Taking my sulking to the masses\n Writing my poems for the few\n That look at me, took to me, shook to me, feelin' me\n Singing from heartache from the pain\n Taking my message from the veins\n Speaking my lesson from the brain\n Seeing the beauty through the\n Pain!\n You made me a, you made me a believer, believer\n Pain!\n You break me down, and build me up, believer, believer\n Pain!\n Oh, let the bullets fly, oh, let them rain\n My life, my love, my drive it came from\n Pain!\n You made me a, you made me a believer, believer\n Third things third, send a prayer to the ones up above\n All the hate that you've heard has turned your spirit to a dove, oh-ooh\n Your spirit up above, oh-ooh\n I was choking in the crowd\n Building my rain up in the cloud\n Falling like ashes to the ground\n Hoping my feelings, they would drown\n But they never did, ever lived, ebbin' and flowin'\n Inhibited, limited, 'til it broke open, and it rained down\n It rained down like\n Pain!\n You made me a, you made me a believer, believer\n Pain!\n You break me down, and build me up, believer, believer\n Pain!\n Oh, let the bullets fly, oh, let them rain\n My life, my love, my drive it came from\n Pain!\n You made me a, you made me a believer, believer\n Last things last, by the grace of the fire and the flames\n You're the face of the future, the blood in my veins, oh-ooh\n The blood in my veins, oh-ooh\n But they never did, ever lived, ebbin' and flowin'\n Inhibited, limited, 'til it broke open, and it rained down\n It rained down like\n\n Pain!\n You made me a, you made me a believer, believer\n Pain!\n You break me down, and build me up, believer, believer\n Pain!\n Oh, let the bullets fly, oh, let them rain\n My life, my love, my drive it came from\n Pain!\n You made me a, you made me a believer, believer",
+    "expected_verdict": "caution_limit",
+    "expected_score": 58,
+    "expected_flags": [
+      "Self-Focus"
+    ],
+    "expected_scripture_refs": [],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 85,
+      "concern_level": "Medium",
+      "biblical_themes": [
+        {
+          "name": "Hope"
+        },
+        {
+          "name": "Worship of God"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Romans 15:13"
+        },
+        {
+          "reference": "Psalm 29:2"
+        }
+      ],
+      "concerns": [
+        {
+          "category": "Pride and Self-Focus",
+          "severity": "medium",
+          "explanation": "Emphasis on self-determination ('master of my sea') risks minimizing divine sovereignty"
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "sound",
+      "confidence": "high",
+      "needs_review": false,
+      "verdict": "context_required"
+    }
+  },
+  {
+    "id": "baseline-07",
+    "title": "Imagine",
+    "artist": "John Lennon",
+    "lyrics": "Imagine there's no Heaven\n It's easy if you try\n No Hell below us\n\n Above us only sky\n Imagine all the people\n Living for today\n Ah, ah, ah-ah\n Imagine there's no countries\n It isn't hard to do\n Nothing to kill or die for\n And no religion, too\n Imagine all the people\n Living life in peace\n Yoo-hoo, ooh-ooh\n You may say I'm a dreamer\n But I'm not the only one\n I hope someday you'll join us\n And the world will be as one\n Imagine no possessions\n\n I wonder if you can\n\n No need for greed or hunger\n A brotherhood of man\n Imagine all the people\n Sharing all the world\n Yoo-hoo, ooh-ooh\n You may say I'm a dreamer\n But I'm not the only one\n I hope someday you'll join us\n\n And the world will live as one",
+    "expected_verdict": "avoid_formation",
+    "expected_score": 35,
+    "expected_flags": [
+      "Anti-Christian Themes"
+    ],
+    "expected_scripture_refs": [],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 88,
+      "concern_level": "Low",
+      "biblical_themes": [
+        {
+          "name": "Hope"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Romans 15:13"
+        }
+      ],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "low",
+          "explanation": "lack of explicit Christian doctrinal framework"
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "thin",
+      "confidence": "medium",
+      "needs_review": false,
+      "verdict": "freely_listen"
+    }
+  },
+  {
+    "id": "baseline-09",
+    "title": "Held",
+    "artist": "Natalie Grant",
+    "lyrics": "Two months is too little\nThey let him go, they had no sudden healing\nTo think that providence would\nTake a child from his mother while she prays is appalling\n\nWho told us we'd be rescued?\nWhat has changed and why should we be saved from nightmares?\nWe're asking why this happens to us who have died to live\nIt's unfair\n\nThis is what it means to be held\nHow it feels when the sacred is torn from your life\nAnd you survive\nThis is what it is to be loved\nAnd to know that the promise was when everything fell\nWe'd be held\n\nThis hand is bitterness\nWe wanna taste it, let the hatred numb our sorrow\nThe wise hand opens slowly\nTo lilies of the valley and tomorrow\n\nThis is what it means to be held\nHow it feels when the sacred is torn from your life\nAnd you survive\nThis is what it is to be loved\nAnd to know that the promise was when everything fell\nWe'd be held\n\nIf hope is born of suffering\nIf this is only the beginning\nCan we not wait for one hour\nWatching for our Savior?\n\nThis is what it means to be held\nHow it feels when the sacred is torn from your life\nAnd you survive\nThis is what it is to be loved\nAnd to know that the promise was when everything fell\nWe'd be held\nYeah, ooh, be held, oh\n\nThis is what it is to be loved\nAnd to know that the promise was when everything fell\nWe'd be held\nThis is what it means to be held",
+    "expected_verdict": "context_required",
+    "expected_score": 79,
+    "expected_flags": [
+      "Lament"
+    ],
+    "expected_scripture_refs": [
+      "Psalm 34:18"
+    ],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 85,
+      "concern_level": "Medium",
+      "biblical_themes": [
+        {
+          "name": "Lament"
+        },
+        {
+          "name": "Hope"
+        },
+        {
+          "name": "Divine Sovereignty"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Psalm 22:1"
+        },
+        {
+          "reference": "Romans 5:3-5"
+        },
+        {
+          "reference": "Isaiah 40:31"
+        }
+      ],
+      "concerns": [
+        {
+          "category": "Self-Salvation",
+          "severity": "medium",
+          "explanation": "References to 'taste bitterness' and 'let hatred numb sorrow' suggest potential reliance on emotional coping mechanisms rather than divine healing"
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": true,
+      "doctrinal_clarity": "sound",
+      "confidence": "medium",
+      "needs_review": false,
+      "verdict": "context_required"
+    }
+  }
+]

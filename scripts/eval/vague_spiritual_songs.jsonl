@@ -1,0 +1,8 @@
+{"title": "Spirit in the Sky", "artist": "Norman Greenbaum", "expected_score": 40, "category": "caution_limit", "test_reason": "Vague salvation theology - generic heaven reference"}
+{"title": "Hallelujah", "artist": "Leonard Cohen", "expected_score": 35, "category": "avoid_formation", "test_reason": "Sexualizes sacred language, biblical misuse"}
+{"title": "Let It Be", "artist": "The Beatles", "expected_score": 40, "category": "caution_limit", "test_reason": "Vague comfort, possible Marian devotion"}
+{"title": "One of Us", "artist": "Joan Osborne", "expected_score": 35, "category": "avoid_formation", "test_reason": "Flippant about God's nature, theological confusion"}
+{"title": "Imagine", "artist": "John Lennon", "expected_score": 25, "category": "avoid_formation", "test_reason": "Explicitly anti-heaven, anti-religion"}
+{"title": "Ave Maria", "artist": "Franz Schubert", "expected_score": 40, "category": "caution_limit", "test_reason": "Marian devotion, Catholic tradition"}
+{"title": "The Prayer", "artist": "Celine Dion", "expected_score": 45, "category": "caution_limit", "test_reason": "Generic prayer, lacks clarity on God's nature"}
+{"title": "40", "artist": "U2", "expected_score": 45, "category": "caution_limit", "test_reason": "Psalm-based but vague spiritual context in U2's catalog"}

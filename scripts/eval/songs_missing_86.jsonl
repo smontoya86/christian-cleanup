@@ -1,0 +1,86 @@
+{"title": "Three Little Birds", "artist": "Bob Marley", "expected_score": 74, "category": "context_required"}
+{"title": "One Love", "artist": "Bob Marley", "expected_score": 73, "category": "context_required"}
+{"title": "I Will Wait", "artist": "Mumford & Sons", "expected_score": 71, "category": "context_required"}
+{"title": "Demons", "artist": "Imagine Dragons", "expected_score": 58, "category": "caution_limit"}
+{"title": "Awake My Soul", "artist": "Mumford & Sons", "expected_score": 70, "category": "context_required"}
+{"title": "The Scientist", "artist": "Coldplay", "expected_score": 67, "category": "context_required"}
+{"title": "Chasing Cars", "artist": "Snow Patrol", "expected_score": 68, "category": "context_required"}
+{"title": "Yellow", "artist": "Coldplay", "expected_score": 69, "category": "context_required"}
+{"title": "Photograph", "artist": "Ed Sheeran", "expected_score": 71, "category": "context_required"}
+{"title": "Clocks", "artist": "Coldplay", "expected_score": 68, "category": "context_required"}
+{"title": "Thinking Out Loud", "artist": "Ed Sheeran", "expected_score": 72, "category": "context_required"}
+{"title": "Viva La Vida", "artist": "Coldplay", "expected_score": 70, "category": "context_required"}
+{"title": "Say Something", "artist": "A Great Big World", "expected_score": 66, "category": "context_required"}
+{"title": "Chandelier", "artist": "Sia", "expected_score": 61, "category": "context_required"}
+{"title": "Perfect", "artist": "Ed Sheeran", "expected_score": 74, "category": "context_required"}
+{"title": "All of Me", "artist": "John Legend", "expected_score": 72, "category": "context_required"}
+{"title": "Ordinary People", "artist": "John Legend", "expected_score": 71, "category": "context_required"}
+{"title": "Green Light", "artist": "Lorde", "expected_score": 62, "category": "context_required"}
+{"title": "When We Were Young", "artist": "Adele", "expected_score": 70, "category": "context_required"}
+{"title": "Hello", "artist": "Adele", "expected_score": 68, "category": "context_required"}
+{"title": "Castle on the Hill", "artist": "Ed Sheeran", "expected_score": 72, "category": "context_required"}
+{"title": "Glory", "artist": "John Legend", "expected_score": 73, "category": "context_required"}
+{"title": "Take Me to Church", "artist": "Hozier", "expected_score": 45, "category": "caution_limit"}
+{"title": "Happier", "artist": "Ed Sheeran", "expected_score": 69, "category": "context_required"}
+{"title": "Stressed Out", "artist": "Twenty One Pilots", "expected_score": 55, "category": "caution_limit"}
+{"title": "We Are Young", "artist": "Fun.", "expected_score": 51, "category": "caution_limit"}
+{"title": "Pumped Up Kicks", "artist": "Foster the People", "expected_score": 42, "category": "caution_limit"}
+{"title": "Secrets", "artist": "OneRepublic", "expected_score": 52, "category": "caution_limit"}
+{"title": "Faded", "artist": "Alan Walker", "expected_score": 50, "category": "caution_limit"}
+{"title": "Love Runs Out", "artist": "OneRepublic", "expected_score": 53, "category": "caution_limit"}
+{"title": "The Middle", "artist": "Zedd", "expected_score": 54, "category": "caution_limit"}
+{"title": "Meant to Be", "artist": "Bebe Rexha", "expected_score": 56, "category": "caution_limit"}
+{"title": "In My Blood", "artist": "Shawn Mendes", "expected_score": 55, "category": "caution_limit"}
+{"title": "Lost Boy", "artist": "Ruth B", "expected_score": 53, "category": "caution_limit"}
+{"title": "Say Amen (Saturday Night)", "artist": "Panic! at the Disco", "expected_score": 49, "category": "caution_limit"}
+{"title": "Stay", "artist": "Rihanna", "expected_score": 48, "category": "caution_limit"}
+{"title": "Natural", "artist": "Imagine Dragons", "expected_score": 50, "category": "caution_limit"}
+{"title": "Love the Way You Lie", "artist": "Eminem", "expected_score": 44, "category": "caution_limit"}
+{"title": "Stan", "artist": "Eminem", "expected_score": 47, "category": "caution_limit"}
+{"title": "Lose Yourself", "artist": "Eminem", "expected_score": 55, "category": "caution_limit"}
+{"title": "When I'm Gone", "artist": "Eminem", "expected_score": 52, "category": "caution_limit"}
+{"title": "Till I Collapse", "artist": "Eminem", "expected_score": 53, "category": "caution_limit"}
+{"title": "Mockingbird", "artist": "Eminem", "expected_score": 54, "category": "caution_limit"}
+{"title": "Cleanin' Out My Closet", "artist": "Eminem", "expected_score": 45, "category": "caution_limit"}
+{"title": "The Real Slim Shady", "artist": "Eminem", "expected_score": 42, "category": "caution_limit"}
+{"title": "Just Lose It", "artist": "Eminem", "expected_score": 40, "category": "caution_limit"}
+{"title": "Like Toy Soldiers", "artist": "Eminem", "expected_score": 51, "category": "caution_limit"}
+{"title": "Royals", "artist": "Lorde", "expected_score": 54, "category": "caution_limit"}
+{"title": "All of the Lights", "artist": "Kanye West", "expected_score": 50, "category": "caution_limit"}
+{"title": "Team", "artist": "Lorde", "expected_score": 52, "category": "caution_limit"}
+{"title": "Power", "artist": "Kanye West", "expected_score": 48, "category": "caution_limit"}
+{"title": "Stronger", "artist": "Kanye West", "expected_score": 49, "category": "caution_limit"}
+{"title": "Perfect Places", "artist": "Lorde", "expected_score": 50, "category": "caution_limit"}
+{"title": "Homemade Dynamite", "artist": "Lorde", "expected_score": 48, "category": "caution_limit"}
+{"title": "Hard Feelings", "artist": "Lorde", "expected_score": 49, "category": "caution_limit"}
+{"title": "Sober", "artist": "Lorde", "expected_score": 47, "category": "caution_limit"}
+{"title": "Supercut", "artist": "Lorde", "expected_score": 50, "category": "caution_limit"}
+{"title": "Ribs", "artist": "Lorde", "expected_score": 53, "category": "caution_limit"}
+{"title": "Bravado", "artist": "Lorde", "expected_score": 50, "category": "caution_limit"}
+{"title": "Glory and Gore", "artist": "Lorde", "expected_score": 46, "category": "caution_limit"}
+{"title": "Buzzcut Season", "artist": "Lorde", "expected_score": 51, "category": "caution_limit"}
+{"title": "Still Sane", "artist": "Lorde", "expected_score": 50, "category": "caution_limit"}
+{"title": "White Teeth Teens", "artist": "Lorde", "expected_score": 49, "category": "caution_limit"}
+{"title": "God Is a Woman", "artist": "Ariana Grande", "expected_score": 25, "category": "avoid_formation"}
+{"title": "Writer in the Dark", "artist": "Lorde", "expected_score": 51, "category": "caution_limit"}
+{"title": "Rude Boy", "artist": "Rihanna", "expected_score": 20, "category": "avoid_formation"}
+{"title": "S&M", "artist": "Rihanna", "expected_score": 18, "category": "avoid_formation"}
+{"title": "Highway to Hell", "artist": "AC/DC", "expected_score": 18, "category": "avoid_formation"}
+{"title": "Witchy Woman", "artist": "Eagles", "expected_score": 27, "category": "avoid_formation"}
+{"title": "Evil Woman", "artist": "Electric Light Orchestra", "expected_score": 29, "category": "avoid_formation"}
+{"title": "Devil in Disguise", "artist": "Elvis Presley", "expected_score": 32, "category": "avoid_formation"}
+{"title": "Paint It Black", "artist": "The Rolling Stones", "expected_score": 30, "category": "avoid_formation"}
+{"title": "Black Magic Woman", "artist": "Santana", "expected_score": 28, "category": "avoid_formation"}
+{"title": "Voodoo Child", "artist": "Jimi Hendrix", "expected_score": 26, "category": "avoid_formation"}
+{"title": "Lucifer", "artist": "SHINee", "expected_score": 20, "category": "avoid_formation"}
+{"title": "DNA.", "artist": "Kendrick Lamar", "expected_score": 26, "category": "avoid_formation"}
+{"title": "King Kunta", "artist": "Kendrick Lamar", "expected_score": 30, "category": "avoid_formation"}
+{"title": "Work", "artist": "Rihanna", "expected_score": 28, "category": "avoid_formation"}
+{"title": "Rocket", "artist": "Beyonc\u00e9", "expected_score": 20, "category": "avoid_formation"}
+{"title": "Drunk in Love", "artist": "Beyonc\u00e9", "expected_score": 26, "category": "avoid_formation"}
+{"title": "Bodies", "artist": "Drowning Pool", "expected_score": 20, "category": "avoid_formation"}
+{"title": "Shout at the Devil", "artist": "M\u00f6tley Cr\u00fce", "expected_score": 14, "category": "avoid_formation"}
+{"title": "God Save the Queen", "artist": "Sex Pistols", "expected_score": 20, "category": "avoid_formation"}
+{"title": "Killing in the Name", "artist": "Rage Against the Machine", "expected_score": 25, "category": "avoid_formation"}
+{"title": "HUMBLE.", "artist": "Kendrick Lamar", "expected_score": 28, "category": "avoid_formation"}
+{"title": "Black Sabbath", "artist": "Black Sabbath", "expected_score": 16, "category": "avoid_formation"}

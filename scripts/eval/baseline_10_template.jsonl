@@ -1,0 +1,10 @@
+{"id":"baseline-01","title":"Amazing Grace","artist":"John Newton","lyrics":"[LYRICS TO BE ADDED]","labels":{"verdict":"freely_listen","score":100,"concern_flags":[],"scripture_refs":["Ephesians 2:8-9"]}}
+{"id":"baseline-02","title":"Oceans (Where Feet May Fail)","artist":"Hillsong United","lyrics":"[LYRICS TO BE ADDED]","labels":{"verdict":"freely_listen","score":92,"concern_flags":[],"scripture_refs":["Matthew 14:29"]}}
+{"id":"baseline-03","title":"Reckless Love","artist":"Cory Asbury","lyrics":"[LYRICS TO BE ADDED]","labels":{"verdict":"context_required","score":82,"concern_flags":["Theological Imprecision"],"scripture_refs":["Luke 15:4-7"]}}
+{"id":"baseline-04","title":"You Say","artist":"Lauren Daigle","lyrics":"[LYRICS TO BE ADDED]","labels":{"verdict":"context_required","score":78,"concern_flags":["Vague Spirituality"],"scripture_refs":["1 John 3:1"]}}
+{"id":"baseline-05","title":"Believer","artist":"Imagine Dragons","lyrics":"[LYRICS TO BE ADDED]","labels":{"verdict":"caution_limit","score":58,"concern_flags":["Self-Focus"],"scripture_refs":[]}}
+{"id":"baseline-06","title":"Fight Song","artist":"Rachel Platten","lyrics":"[LYRICS TO BE ADDED]","labels":{"verdict":"caution_limit","score":55,"concern_flags":["Self-Salvation"],"scripture_refs":[]}}
+{"id":"baseline-07","title":"Imagine","artist":"John Lennon","lyrics":"[LYRICS TO BE ADDED]","labels":{"verdict":"avoid_formation","score":35,"concern_flags":["Anti-Christian Themes"],"scripture_refs":[]}}
+{"id":"baseline-08","title":"Highway to Hell","artist":"AC/DC","lyrics":"[LYRICS TO BE ADDED]","labels":{"verdict":"avoid_formation","score":12,"concern_flags":["Rebellion Against Authority"],"scripture_refs":[]}}
+{"id":"baseline-09","title":"Held","artist":"Natalie Grant","lyrics":"[LYRICS TO BE ADDED]","labels":{"verdict":"context_required","score":79,"concern_flags":["Lament"],"scripture_refs":["Psalm 34:18"]}}
+{"id":"baseline-10","title":"Stressed Out","artist":"Twenty One Pilots","lyrics":"[LYRICS TO BE ADDED]","labels":{"verdict":"caution_limit","score":60,"concern_flags":["Despair and Mental Health"],"scripture_refs":[]}}

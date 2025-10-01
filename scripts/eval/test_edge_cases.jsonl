@@ -1,0 +1,5 @@
+{"title": "Lean on Me", "artist": "Bill Withers", "expected_score": 75, "category": "context_required", "test_reason": "Secular inspirational - community (should score 60-75 with Common Grace)"}
+{"title": "Man in the Mirror", "artist": "Michael Jackson", "expected_score": 72, "category": "context_required", "test_reason": "Secular inspirational - self-reflection (should score 60-75 with Common Grace)"}
+{"title": "Bridge Over Troubled Water", "artist": "Simon & Garfunkel", "expected_score": 74, "category": "context_required", "test_reason": "Secular inspirational - compassion (should score 60-75 with Common Grace)"}
+{"title": "Stan", "artist": "Eminem", "expected_score": 30, "category": "avoid_formation", "test_reason": "Character voice - cautionary tale (should get 30% penalty reduction)"}
+{"title": "Hallelujah", "artist": "Leonard Cohen", "expected_score": 35, "category": "avoid_formation", "test_reason": "Vague spiritual - theological confusion (should stay low 25-35)"}

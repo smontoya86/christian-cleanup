@@ -1,0 +1,27 @@
+
+<!doctype html>
+<html><head><meta charset='utf-8'><title>Eval Report</title>
+<style>body{font-family:sans-serif;margin:24px} table{border-collapse:collapse;width:100%} th,td{border:1px solid #ddd;padding:6px} th{background:#f5f5f5}</style>
+</head><body>
+<h1>Evaluation Report</h1>
+<pre>{
+  "n": 5,
+  "elapsed_sec": 200.41,
+  "verdict_acc": 0.4,
+  "verdict_f1": 0.25,
+  "score_mae": 20.2,
+  "score_pearson": 0.644,
+  "flags_precision": 0.0,
+  "flags_recall": 0.0,
+  "flags_f1": 0.0,
+  "scripture_jaccard": 0.067
+}</pre>
+<h2>Predictions (first 5)</h2>
+<table><thead><tr><th>#</th><th>ID</th><th>Verdict (true)</th><th>Verdict (pred)</th><th>Score (true)</th><th>Score (pred)</th></tr></thead><tbody>
+<tr><td>1</td><td>baseline-01</td><td>freely_listen</td><td>freely_listen</td><td>100.0</td><td>98.0</td></tr>
+<tr><td>2</td><td>baseline-03</td><td>context_required</td><td>freely_listen</td><td>82.0</td><td>95.0</td></tr>
+<tr><td>3</td><td>baseline-05</td><td>caution_limit</td><td>context_required</td><td>58.0</td><td>85.0</td></tr>
+<tr><td>4</td><td>baseline-07</td><td>avoid_formation</td><td>freely_listen</td><td>35.0</td><td>88.0</td></tr>
+<tr><td>5</td><td>baseline-09</td><td>context_required</td><td>context_required</td><td>79.0</td><td>85.0</td></tr>
+</tbody></table>
+</body></html>

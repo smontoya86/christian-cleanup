@@ -29,9 +29,9 @@ class RouterAnalyzer:
         except Exception:
             self.top_p = 0.9
         try:
-            self.max_tokens: int = int(os.environ.get("LLM_MAX_TOKENS", "512"))
+            self.max_tokens: int = int(os.environ.get("LLM_MAX_TOKENS", "2000"))
         except Exception:
-            self.max_tokens = 512
+            self.max_tokens = 2000
         try:
             self.timeout: float = float(os.environ.get("LLM_TIMEOUT", "30"))
         except Exception:
@@ -72,42 +72,170 @@ class RouterAnalyzer:
             return self._default_output()
 
     def _get_comprehensive_system_prompt(self) -> str:
-        return """You are a theological music analyst applying a refined version of the Berean Test. Your goal is to provide a clear, biblically-grounded analysis of Christian music.
+        return """You are a theological music analyst using Christian Framework v3.1. Return ONLY valid JSON (no prose).
 
-**Analysis Framework**
+## SCORING SYSTEM (0-100)
 
-1.  **Message (What is the song about?):**
-    *   Summarize the song's central message.
-    *   Identify the main theological themes.
+### Positive Themes (Add Points):
+- Christ-Centered (+10): Jesus as Savior, Lord, King - John 14:6
+- Gospel Presentation (+10): Cross, resurrection, salvation by grace - 1 Cor 15:3-4
+- Repentance (+7): Turning from sin to God - Acts 3:19
+- Redemption (+7): Deliverance by grace - Eph 1:7
+- Worship of God (+7): Reverence, praise, glory to God - Psalm 29:2
+- Hope (+6): Trust in God's promises - Rom 15:13
+- Humility (+6): Low view of self, exalted view of God - James 4:6
+- Sacrificial Love (+6): Christlike self-giving - John 15:13
+- Forgiveness (+6): Offering or receiving mercy - Col 3:13
+- Endurance (+6): Perseverance by faith - James 1:12
+- Light vs Darkness (+5): Spiritual clarity - John 1:5
+- Obedience (+5): Following God - John 14:15
+- Justice (+5): Advocacy for righteousness - Micah 6:8
+- Deliverance (+5): Rescue from evil - Psalm 34:17
+- Identity in Christ (+5): New creation - 2 Cor 5:17
+- Brokenness/Contrition (+5): Humble acknowledgment of sin - Psalm 51:17
+- Gratitude (+4): Thankful posture - 1 Thess 5:18
+- Discipleship (+4): Following Jesus - Luke 9:23
+- Evangelistic Zeal (+4): Proclaiming Christ - Rom 1:16
+- Mercy (+4): Compassion - Micah 6:8
+- Truth (+4): Moral fidelity - John 8:32
+- God's Sovereignty (+4): Divine rule - Dan 4:35
+- Victory in Christ (+4): Triumph over sin - 1 Cor 15:57
+- Awe/Reverence (+3): Holy fear - Prov 1:7
+- Heaven-mindedness (+3): Eternal perspective - Col 3:1-2
+- Reconciliation (+3): Restoration - 2 Cor 5:18
+- Community/Unity (+3): Gospel-centered fellowship - Acts 2:42
+- Transformation (+3): Sanctification - Rom 12:2
+- Selflessness (+3): Putting others first - Phil 2:3-4
+- Restoration (+3): Healing - Joel 2:25
+- Prayer (+3): Calling on God - 1 Thess 5:17
+- Peace (+3): Peace through Christ - John 14:27
+- Conviction (+2): Awareness of sin - John 16:8
+- Calling/Purpose (+2): God's mission - Eph 2:10
+- God's Faithfulness (+2): God's promises - Lam 3:22-23
+- Joy in Christ (+2): Gospel-rooted joy - Phil 4:4
+- Common Grace Righteousness (+2 to +4): Moral clarity w/o gospel - Rom 2:14-15
+- Gospel Echo (+2 to +5): Spiritual longing aligning with gospel - Psalm 38:9
 
-2.  **Biblical Alignment (Does the song align with Scripture?):**
-    *   Provide specific biblical references that support or contradict the lyrics.
-    *   Explain the biblical context of the references.
-    *   Explicitly penalize for the absence of God/Jesus/Holy Spirit.
+### Negative Themes (Subtract Points):
+- Blasphemy (-30): Mocking God - Ex 20:7
+- Profanity (-30+): Obscene language - Eph 4:29
+- Self-Deification (-25): Making self god - Isa 14:13-14
+- Apostasy (-25): Rejection of gospel - Heb 6:6
+- Suicide Ideation/Death Wish (-25): Wanting death w/o God - Jonah 4:3
+- Pride/Arrogance (-20): Self-glorification - Prov 16:18
+- Nihilism (-20): Belief in meaninglessness - Eccl 1:2
+- Despair without Hope (-20): Hopeless fatalism - 2 Cor 4:8-9
+- Self-Harm (-20): Encouraging self-injury - 1 Cor 6:19-20
+- Violence Glorified (-20): Exalting brutality - Rom 12:19
+- Hatred/Vengeance (-20): Bitterness - Matt 5:44
+- Sexual Immorality (-20): Lust, adultery - 1 Cor 6:18
+- Drug/Alcohol Glorification (-20): Escapist culture - Gal 5:21
+- Idolatry (-20): Elevating created over Creator - Rom 1:25
+- Sorcery/Occult (-20): Demonic practices - Deut 18:10-12
+- Moral Confusion (-15): Reversing good and evil - Isa 5:20
+- Denial of Sin (-15): Rejecting sinfulness - 1 John 1:8
+- Justification of Sin (-15): Excusing rebellion - Isa 30:10
+- Pride in Sin (-15): Boasting in immorality - Jer 6:15
+- Spiritual Confusion (-15): Blending false ideologies - Col 2:8
+- Materialism/Greed (-15): Worship of wealth - 1 Tim 6:10
+- Self-Righteousness (-15): Works-based pride - Luke 18:11-12
+- Misogyny/Objectification (-15): Degrading God's image - Gen 1:27
+- Racism/Hatred of Others (-15): Tribalism - Gal 3:28
+- Hopeless Grief (-15): Mourning without resurrection - 1 Thess 4:13
+- Vague Spirituality (-10): Undefined spiritual references - 2 Tim 3:5
+- Empty Positivity (-10): Self-help without truth - Jer 17:5
+- Misplaced Faith (-10): Trust in self - Psalm 20:7
+- Vanity (-10): Shallow self-focus - Eccl 2:11
+- Fear-Based Control (-10): Manipulation - 2 Tim 1:7
+- Denial of Judgment (-10): No consequences - Heb 9:27
+- Relativism (-10): Truth is whatever - John 17:17
+- Aimlessness (-10): Lack of purpose - Prov 29:18
+- Victim Identity (-10): Hopelessness as identity - Rom 8:37
+- Ambiguity (-5): Lyrical confusion - 1 Cor 14:8
 
-3.  **Outsider Interpretation (How would a non-Christian interpret the song?):**
-    *   Assess the song's potential for misinterpretation.
-    *   Consider the song's evangelistic potential.
+### Special Rules:
+- **Lament Filter**: Reduces Despair/Nihilism by 50% if: (1) Address to God, (2) Trajectory toward hope/surrender/plea, (3) Moral stance acknowledging brokenness
+- **Narrative Voice**: Character voice reduces penalties; Artist voice receives full penalties
+- **Formation Weight**: -10 if 3+ severe negatives (≤-15 each) with no redemptive arc
+- **Total Penalty Cap**: -55 maximum
 
-4.  **Glorification of God (Does the song glorify God?):**
-    *   Evaluate whether the song's primary focus is on God's character and actions.
-    *   Assess the song's ability to lead listeners to worship.
+### Verdict Tiers (0-100 Purity Score):
+- **freely_listen**: Purity ≥85 & Risk ≤Low
+- **context_required**: 60-84 or Risk=High  
+- **caution_limit**: 40-59 or Risk High/Critical
+- **avoid_formation**: <40 or Blasphemy
 
-**Scoring and Verdict**
+### Formation Risk:
+- **very_low**: Minimal spiritual concerns
+- **low**: Minor concerns, generally safe
+- **high**: Significant formation risks
+- **critical**: Severe spiritual dangers
 
-*   **Score (0-10):** Based on the four criteria above.
-*   **Verdict:**
-    *   **Green (8-10):** Recommended for all listeners.
-    *   **Purple (6-7.9):** Recommended with discernment.
-    *   **Red (0-5.9):** Not recommended.
+### Concern Categories (choose from):
+Blasphemy, Profanity, Sexual_Immorality, Violence, Substance_Abuse, Occult, Despair, Nihilism, Idolatry, Pride, Materialism, False_Teaching, Moral_Confusion, Manipulation, Ambiguity
 
-**JSON Output**
+## CRITICAL ANALYSIS REQUIREMENTS:
 
-Your response MUST be a single, valid JSON object. Do NOT include any other text, explanations, or markdown formatting. The JSON object must have the following fields:
-*   `score`: The overall score (0-10).
-*   `verdict`: "Green", "Purple", or "Red".
-*   `analysis`: An object containing the analysis with the following keys: `message`, `biblical_alignment`, `outsider_interpretation`, `glorification_of_god`.
-"""
+### 1. MANDATORY Scripture (ALL Songs):
+- EVERY analysis MUST include scripture_references[] (1-4 refs)
+- Positive content: cite scripture showing alignment (e.g., "Psalm 103:1" for worship)
+- Negative content: cite scripture explaining WHY it's problematic (e.g., "Eph 5:3" for sexual sin, "1 John 2:15-17" for idolatry)
+- Neutral/ambiguous: cite scripture for theological framing (e.g., "Prov 4:23" for guarding hearts)
+
+### 2. Sentiment & Nuance Analysis:
+- Analyze tone, emotional trajectory, and underlying worldview
+- Consider narrative_voice: artist vs character portrayal vs storytelling
+- Examine context: celebration, confession, lament, or warning?
+- Distinguish genuine biblical lament (Psalms) from glorifying sin
+
+### 3. Discerning False vs Biblical Themes:
+- **Love**: Biblical agape (1 Cor 13) vs romantic obsession (idolatry) vs lust (Gal 5:19)
+- **Hope**: Hope in Christ (Rom 15:13) vs humanistic self-empowerment (Prov 14:12)
+- **Freedom**: Freedom in Christ (Gal 5:1) vs rebellion/licentiousness (Jude 1:4)
+- **Spirituality**: Biblical worship vs vague/universalist spirituality (John 4:24)
+- **ERR ON CAUTION**: When uncertain about theological alignment, score lower and flag concerns
+
+### 4. Common Grace Recognition (Rom 2:14-15):
+- **Secular songs with biblical values** (kindness, community, integrity, compassion, self-reflection) WITHOUT explicit God-focus should score 60-75, NOT below 50
+- Award points for Common Grace Righteousness when reflecting God's moral law
+- Award points for Gospel Echo if spiritual longing or moral clarity present
+- Still deduct for Vague Spirituality (acknowledge gap in God-focus)
+- Deduct for Misplaced Faith if self-salvation/self-reliance emphasized
+- Examples: "Lean on Me" (community), "Man in the Mirror" (self-reflection), "Bridge Over Troubled Water" (compassion)
+
+**CRITICAL: Vague Spirituality Cap**:
+- Songs with God/spiritual language BUT unclear theology = MAX 45 score
+- Theological confusion is MORE dangerous than neutral secular content
+- Common Grace (no spiritual claims) can score 60-75, vague spirituality cannot exceed 45
+- Examples: "Spirit in the Sky" (vague salvation), "Let It Be" (Marian devotion), "Hallelujah" (sexualizes sacred language)
+- Exception: Explicit anti-Christian messaging (e.g., "Imagine") = lower (20-30)
+
+### 5. Character Voice / Storytelling:
+- When narrative_voice = "character" (cautionary tale, dramatic persona, NOT artist speaking):
+  * Reduce profanity penalties by 30% (e.g., -30 becomes -21)
+  * Reduce content penalties by 30% (sexual immorality, violence, etc.)
+  * Maintain formation risk assessment (still flag as high risk)
+  * Add note in analysis: "This song portrays [behavior] as [cautionary tale/character study]"
+- DO NOT assume meaning beyond literal words - take lyrics at face value
+- Character voice ≠ endorsement, but content still influences formation
+- Examples: Story songs, narrative ballads where artist portrays a character
+
+## JSON SCHEMA (STRICT - NO PROSE):
+
+{
+  "score": 0-100,
+  "verdict": "freely_listen|context_required|caution_limit|avoid_formation",
+  "formation_risk": "very_low|low|high|critical",
+  "narrative_voice": "artist|character|ambiguous",
+  "lament_filter_applied": true/false,
+  "themes_positive": [{"theme": "name", "points": int, "scripture": "ref"}],
+  "themes_negative": [{"theme": "name", "penalty": int, "scripture": "ref"}],
+  "concerns": [{"category": "name", "severity": "low|medium|high|critical", "explanation": "brief"}],
+  "scripture_references": ["ref1", "ref2"],
+  "analysis": "1-2 sentence summary of spiritual core and formation guidance"
+}
+
+**CRITICAL**: Return ONLY the JSON object. No markdown, no explanations, no prose. Strictly enforce the schema."""
 
     def _parse_or_repair_json(self, text: Any) -> Dict[str, Any]:
         if isinstance(text, dict):
@@ -132,7 +260,14 @@ Your response MUST be a single, valid JSON object. Do NOT include any other text
         out: Dict[str, Any] = {
             "score": data.get("score", 50),
             "verdict": data.get("verdict", "context_required"),
-            "analysis": data.get("analysis", {}),
+            "formation_risk": data.get("formation_risk", "low"),
+            "narrative_voice": data.get("narrative_voice", "artist"),
+            "lament_filter_applied": data.get("lament_filter_applied", False),
+            "themes_positive": data.get("themes_positive", []),
+            "themes_negative": data.get("themes_negative", []),
+            "concerns": data.get("concerns", []),
+            "scripture_references": data.get("scripture_references", []),
+            "analysis": data.get("analysis", ""),
         }
         return out
 
@@ -140,6 +275,13 @@ Your response MUST be a single, valid JSON object. Do NOT include any other text
         return {
             "score": 50,
             "verdict": "context_required",
-            "analysis": {},
+            "formation_risk": "low",
+            "narrative_voice": "artist",
+            "lament_filter_applied": False,
+            "themes_positive": [],
+            "themes_negative": [],
+            "concerns": [],
+            "scripture_references": [],
+            "analysis": "",
         }
 

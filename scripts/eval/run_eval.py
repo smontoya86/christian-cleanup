@@ -55,12 +55,25 @@ def build_messages(title: str, artist: str, lyrics: str) -> List[Dict[str, str]]
         "  \"confidence\": string (high|medium|low),\n"
         "  \"needs_review\": boolean,\n"
         "  \"verdict\": {\"summary\": string (freely_listen|context_required|caution_limit|avoid_formation)}\n"
-        "}.\n"
-        "Rules:\n"
-        "- Concerns categories must be chosen from: Idolatry, False Worship, Vague Spirituality, Self-Salvation, Relativism, Profanity, Sexual Purity, Violence and Aggression, Substance Use, Rebellion Against Authority, Despair and Mental Health, Occult and Spiritual Darkness, Materialism and Greed, Language and Expression, Pride and Self-Focus.\n"
-        "- Scripture references: include as short references (e.g., 'John 3:16') in supporting_scripture[].reference.\n"
-        "- Ensure JSON is syntactically valid and compact; do not include comments or extra text.\n"
-        "- Prefer \"verdict.summary\" string as the verdict tier.\n"
+        "}.\n\n"
+        "## Core Rules:\n"
+        "1. **MANDATORY Scripture**: EVERY song must include supporting_scripture (1-4 refs) justifying the score/verdict:\n"
+        "   - Positive themes: cite scripture showing alignment (e.g., 'Psalm 103:1' for worship)\n"
+        "   - Negative/problematic content: cite scripture explaining WHY it's concerning (e.g., 'Eph 5:3' for sexual content, '1 John 2:15-17' for idolatry)\n"
+        "   - Neutral/ambiguous: cite scripture for theological framing (e.g., 'Prov 4:23' for guarding hearts)\n\n"
+        "2. **Sentiment & Nuance Analysis**:\n"
+        "   - Analyze tone, emotional trajectory, and underlying worldview\n"
+        "   - Consider narrative voice (artist vs character portrayal vs storytelling)\n"
+        "   - Examine context: is this celebration, confession, lament, or warning?\n"
+        "   - Distinguish genuine lament (Psalms) from glorifying sin\n\n"
+        "3. **Discerning False vs Biblical Themes**:\n"
+        "   - **Love**: Biblical agape (1 Cor 13) vs romantic obsession (idolatry) vs lust (Gal 5:19)\n"
+        "   - **Hope**: Hope in Christ (Rom 15:13) vs humanistic self-empowerment (Prov 14:12)\n"
+        "   - **Freedom**: Freedom in Christ (Gal 5:1) vs rebellion/licentiousness (Jude 1:4)\n"
+        "   - **Spirituality**: Biblical worship vs vague/universalist spirituality (John 4:24)\n"
+        "   - ERR ON CAUTION: When in doubt about theological alignment, score lower and flag concerns\n\n"
+        "4. **Concern Categories** (choose from): Idolatry, False Worship, Vague Spirituality, Self-Salvation, Relativism, Profanity, Sexual Purity, Violence and Aggression, Substance Use, Rebellion Against Authority, Despair and Mental Health, Occult and Spiritual Darkness, Materialism and Greed, Language and Expression, Pride and Self-Focus\n\n"
+        "5. **JSON Format**: Valid, compact JSON only. No prose, comments, or extra text.\n"
     )
 
     # Few-shot examples to anchor structure and tiers
@@ -200,9 +213,12 @@ async def call_openai(
         "model": model,
         "messages": messages,
         "temperature": float(os.environ.get("LLM_TEMPERATURE", "0.2")),
-        "top_p": float(os.environ.get("LLM_TOP_P", "0.9")),
-        "max_tokens": int(os.environ.get("LLM_MAX_TOKENS", "256")),
+        "max_tokens": int(os.environ.get("LLM_MAX_TOKENS", "2000")),
     }
+    # Only add top_p for non-fine-tuned models (fine-tuned models may not support it)
+    if not model.startswith("ft:"):
+        payload["top_p"] = float(os.environ.get("LLM_TOP_P", "0.9"))
+    
     resp = await client.post(url, json=payload, timeout=timeout_s)
     resp.raise_for_status()
     data = resp.json()
@@ -344,7 +360,14 @@ async def run_eval(input_path: str, out_dir: str, local: bool = False) -> None:
             async with semaphore:
                 return await call_openai(client, base_url, model, msgs, timeout_s)
 
-        async with httpx.AsyncClient() as client:
+        # Set up authentication headers for OpenAI API
+        headers = {}
+        if "openai.com" in base_url:
+            api_key = os.environ.get("OPENAI_API_KEY", "")
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+        
+        async with httpx.AsyncClient(headers=headers) as client:
             async def _call_with_retry(item: EvalItem):
                 expected_flags = item.labels.get("concern_flags") or []
                 # First pass

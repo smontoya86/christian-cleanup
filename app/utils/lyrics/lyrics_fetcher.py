@@ -577,7 +577,6 @@ class LyricsFetcher:
                     self.genius_token,
                     timeout=self.config.genius_timeout,
                     sleep_time=self.config.genius_sleep_time,
-                    retries=self.config.genius_retries,
                     remove_section_headers=True,
                     skip_non_songs=True,
                     excluded_terms=self.config.genius_excluded_terms,

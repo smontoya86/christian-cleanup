@@ -1,0 +1,2125 @@
+/usr/local/lib/python3.10/site-packages/flask_sqlalchemy/model.py:144: SAWarning: This declarative base already contains a class with the same class name and module name as app.models.models.LyricsCache, and will be replaced in the string-lookup table.
+  super().__init__(name, bases, d, **kwargs)
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+📋 Loaded 300 songs from scripts/eval/songs_300.jsonl
+🚀 Processing 300 songs with gpt-4o-mini
+⚡ Concurrency: 10
+
+Processing: Amazing Grace - John Newton
+Processing: How Great Thou Art - Carl Boberg
+Processing: It Is Well With My Soul - Horatio Spafford
+Processing: Holy, Holy, Holy - Reginald Heber
+Processing: Great Is Thy Faithfulness - Thomas Chisholm
+Processing: Be Thou My Vision - Eleanor Hull
+Processing: A Mighty Fortress Is Our God - Martin Luther
+Processing: Crown Him with Many Crowns - Matthew Bridges
+Processing: Blessed Assurance - Fanny Crosby
+Processing: All Hail the Power of Jesus' Name - Edward Perronet
+  ✅ Lyrics fetched (538 chars)
+  ⚠️  No lyrics found - skipping
+Processing: Come, Thou Fount of Every Blessing - Robert Robinson
+  ⚠️  No lyrics found - skipping
+Processing: Rock of Ages - Augustus Toplady
+Progress: 1/300 songs
+Progress: 2/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: In Christ Alone - Keith Getty
+Progress: 3/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: The Solid Rock - Edward Mote
+Progress: 4/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: Nothing But the Blood - Robert Lowry
+  ⚠️  No lyrics found - skipping
+Processing: When I Survey the Wondrous Cross - Isaac Watts
+  ⚠️  No lyrics found - skipping
+Processing: And Can It Be - Charles Wesley
+Progress: 5/300 songs
+Progress: 6/300 songs
+Progress: 7/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: Love Divine, All Loves Excelling - Charles Wesley
+  ⚠️  No lyrics found - skipping
+Processing: O For a Thousand Tongues - Charles Wesley
+Progress: 8/300 songs
+Progress: 9/300 songs
+  ✅ Lyrics fetched (1260 chars)
+  ⚠️  No lyrics found - skipping
+Processing: Abide With Me - Henry Francis Lyte
+Progress: 10/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: 10,000 Reasons - Matt Redman
+Progress: 11/300 songs
+  ✅ Lyrics fetched (894 chars)
+  ⚠️  No lyrics found - skipping
+Processing: Oceans (Where Feet May Fail) - Hillsong UNITED
+Progress: 12/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: Good Good Father - Chris Tomlin
+Progress: 13/300 songs
+  ✅ Lyrics fetched (1380 chars)
+  ⚠️  No lyrics found - skipping
+Processing: Reckless Love - Cory Asbury
+Progress: 14/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: How He Loves - David Crowder Band
+Progress: 15/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: What A Beautiful Name - Hillsong Worship
+Progress: 16/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: Cornerstone - Hillsong Worship
+Progress: 17/300 songs
+  ✅ Lyrics fetched (2150 chars)
+  ✅ Lyrics fetched (1798 chars)
+  ✅ Lyrics fetched (1791 chars)
+  ✅ Lyrics fetched (945 chars)
+  ✅ Lyrics fetched (1310 chars)
+  ✅ Lyrics fetched (1782 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Way Maker - Sinach
+Progress: 18/300 songs
+  ✅ Lyrics fetched (1408 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Living Hope - Phil Wickham
+Progress: 19/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Battle Belongs - Phil Wickham
+Progress: 20/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: King of Kings - Hillsong Worship
+Progress: 21/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Raise a Hallelujah - Bethel Music
+Progress: 22/300 songs
+  ✅ Lyrics fetched (1736 chars)
+  ✅ Lyrics fetched (1628 chars)
+  ✅ Labeled: score=92, verdict=freely_listen
+Processing: Build Your Kingdom Here - Rend Collective
+Progress: 23/300 songs
+  ✅ Lyrics fetched (1097 chars)
+  ✅ Lyrics fetched (1748 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Great Are You Lord - All Sons & Daughters
+Progress: 24/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: O Come to the Altar - Elevation Worship
+Progress: 25/300 songs
+  ✅ Lyrics fetched (1406 chars)
+  ✅ Lyrics fetched (1367 chars)
+  ✅ Lyrics fetched (1412 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: Goodness of God - Bethel Music
+Progress: 26/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Lion and the Lamb - Leeland
+Progress: 27/300 songs
+  ✅ Lyrics fetched (1636 chars)
+  ✅ Lyrics fetched (1685 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Graves Into Gardens - Elevation Worship
+Progress: 28/300 songs
+  ✅ Lyrics fetched (1220 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Holy Spirit - Francesca Battistelli
+Progress: 29/300 songs
+  ✅ Lyrics fetched (1396 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: So Will I - Hillsong UNITED
+Progress: 30/300 songs
+  ✅ Lyrics fetched (1561 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: Tremble - Mosaic MSC
+Progress: 31/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Who You Say I Am - Hillsong Worship
+Progress: 32/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Do It Again - Elevation Worship
+Progress: 33/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: The Blessing - Kari Jobe
+Progress: 34/300 songs
+  ✅ Lyrics fetched (1446 chars)
+  ✅ Lyrics fetched (1449 chars)
+  ✅ Lyrics fetched (1774 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Jireh - Elevation Worship
+Progress: 35/300 songs
+  ✅ Lyrics fetched (2734 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Firm Foundation - Maverick City Music
+Progress: 36/300 songs
+  ✅ Lyrics fetched (4978 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: See A Victory - Elevation Worship
+Progress: 37/300 songs
+  ✅ Lyrics fetched (1098 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: Resurrecting - Elevation Worship
+Progress: 38/300 songs
+  ✅ Lyrics fetched (2179 chars)
+  ✅ Lyrics fetched (1707 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: This Is Amazing Grace - Phil Wickham
+Progress: 39/300 songs
+  ✅ Lyrics fetched (1478 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Build My Life - Housefires
+Progress: 40/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Whom Shall I Fear - Chris Tomlin
+Progress: 41/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Forever Reign - Hillsong Worship
+Progress: 42/300 songs
+  ✅ Lyrics fetched (2534 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Mighty To Save - Hillsong Worship
+Progress: 43/300 songs
+  ✅ Lyrics fetched (1561 chars)
+  ✅ Lyrics fetched (1576 chars)
+  ✅ Lyrics fetched (1927 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: Hosanna - Hillsong UNITED
+Progress: 44/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: One Thing Remains - Jesus Culture
+Progress: 45/300 songs
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: Our God - Chris Tomlin
+Progress: 46/300 songs
+  ✅ Lyrics fetched (1051 chars)
+  ✅ Lyrics fetched (2717 chars)
+  ✅ Lyrics fetched (1521 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: God of Wonders - Third Day
+Progress: 47/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: How Great Is Our God - Chris Tomlin
+Progress: 48/300 songs
+  ✅ Lyrics fetched (1330 chars)
+  ✅ Lyrics fetched (1134 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: The Stand - Hillsong UNITED
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Revelation Song - Kari Jobe
+Progress: 49/300 songs
+Progress: 50/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Oh Happy Day - Edwin Hawkins Singers
+Progress: 51/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Take My Hand, Precious Lord - Thomas A. Dorsey
+Progress: 52/300 songs
+  ✅ Lyrics fetched (1125 chars)
+  ✅ Lyrics fetched (2078 chars)
+  ✅ Lyrics fetched (1477 chars)
+  ✅ Lyrics fetched (694 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: I'll Fly Away - Albert E. Brumley
+Progress: 53/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Processing: His Eye Is on the Sparrow - Civilla D. Martin
+Progress: 54/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Victory in Jesus - Eugene Bartlett
+Progress: 55/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Just a Closer Walk with Thee - Traditional
+Progress: 56/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: Amazing Grace - Aretha Franklin
+Progress: 57/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: Total Praise - Richard Smallwood
+Progress: 58/300 songs
+  ⚠️  No lyrics found - skipping
+Processing: Never Would Have Made It - Marvin Sapp
+Progress: 59/300 songs
+  ✅ Lyrics fetched (1214 chars)
+  ✅ Lyrics fetched (598 chars)
+  ✅ Lyrics fetched (3096 chars)
+  ⚠️  No lyrics found - skipping
+Processing: I Smile - Kirk Franklin
+Progress: 60/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Break Every Chain - Tasha Cobbs Leonard
+Progress: 61/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Your Presence Is Heaven - Israel Houghton
+Progress: 62/300 songs
+  ✅ Lyrics fetched (3468 chars)
+  ✅ Lyrics fetched (1751 chars)
+  ✅ Lyrics fetched (751 chars)
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: The Blood Still Works - The Canton Spirituals
+Progress: 63/300 songs
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: It's Working - William Murphy
+Progress: 64/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Sunday Best - Surfaces
+Progress: 65/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: You Deserve It - JJ Hairston
+Progress: 66/300 songs
+  ✅ Lyrics fetched (1601 chars)
+  ✅ Lyrics fetched (1353 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Still I Rise - Yolanda Adams
+Progress: 67/300 songs
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: I Look to You - Whitney Houston
+Progress: 68/300 songs
+  ✅ Lyrics fetched (1211 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: I Love the Lord - Whitney Houston
+Progress: 69/300 songs
+  ✅ Lyrics fetched (1082 chars)
+  ⚠️  No lyrics found - skipping
+Processing: My Life Is In Your Hands - Kirk Franklin
+Progress: 70/300 songs
+  ✅ Lyrics fetched (1309 chars)
+  ✅ Labeled: score=75, verdict=context_required
+Processing: I Can Only Imagine - MercyMe
+Progress: 71/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Even If - MercyMe
+
+💾 Saved batch (50 songs)
+Progress: 72/300 songs
+  ✅ Lyrics fetched (3938 chars)
+  ✅ Lyrics fetched (938 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: You Say - Lauren Daigle
+Progress: 73/300 songs
+  ✅ Lyrics fetched (1486 chars)
+  ✅ Lyrics fetched (1367 chars)
+  ✅ Lyrics fetched (1320 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Rescue - Lauren Daigle
+Progress: 74/300 songs
+  ✅ Labeled: score=65, verdict=context_required
+Processing: Greater - MercyMe
+Progress: 75/300 songs
+  ✅ Lyrics fetched (1041 chars)
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Trust in You - Lauren Daigle
+Progress: 76/300 songs
+  ✅ Lyrics fetched (2314 chars)
+  ✅ Labeled: score=75, verdict=context_required
+Processing: God's Not Dead - Newsboys
+Progress: 77/300 songs
+  ✅ Lyrics fetched (1468 chars)
+  ✅ Lyrics fetched (1592 chars)
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: We Believe - Newsboys
+Progress: 78/300 songs
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: Overcomer - Mandisa
+Progress: 79/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Redeemed - Big Daddy Weave
+Progress: 80/300 songs
+  ✅ Labeled: score=75, verdict=context_required
+Processing: Speak Life - TobyMac
+Progress: 81/300 songs
+  ✅ Lyrics fetched (1476 chars)
+  ✅ Lyrics fetched (1271 chars)
+  ✅ Lyrics fetched (1580 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: Flawless - MercyMe
+Progress: 82/300 songs
+  ✅ Lyrics fetched (1998 chars)
+  ✅ Lyrics fetched (2111 chars)
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Control - Tenth Avenue North
+Progress: 83/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Fear Is a Liar - Zach Williams
+Progress: 84/300 songs
+  ✅ Lyrics fetched (1582 chars)
+  ✅ Lyrics fetched (1505 chars)
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Known - Tauren Wells
+Progress: 85/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Chain Breaker - Zach Williams
+Progress: 86/300 songs
+  ✅ Lyrics fetched (1288 chars)
+  ✅ Lyrics fetched (1338 chars)
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Broken Vessels - Hillsong Worship
+Progress: 87/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Hills and Valleys - Tauren Wells
+Progress: 88/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Run to the Father - Cody Carnes
+Progress: 89/300 songs
+  ✅ Lyrics fetched (1939 chars)
+  ✅ Lyrics fetched (1614 chars)
+  ✅ Lyrics fetched (2345 chars)
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: King of My Heart - Bethel Music
+Progress: 90/300 songs
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: Jesus Walks - Kanye West
+Progress: 91/300 songs
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Hallelujah - Leonard Cohen
+Progress: 92/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Spirit in the Sky - Norman Greenbaum
+Progress: 93/300 songs
+  ✅ Lyrics fetched (2671 chars)
+  ✅ Lyrics fetched (1272 chars)
+  ✅ Lyrics fetched (1075 chars)
+  ✅ Lyrics fetched (1066 chars)
+  ✅ Labeled: score=75, verdict=context_required
+Processing: One of Us - Joan Osborne
+Progress: 94/300 songs
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: Man in the Mirror - Michael Jackson
+Progress: 95/300 songs
+  ✅ Lyrics fetched (1432 chars)
+  ✅ Lyrics fetched (1627 chars)
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Lean on Me - Bill Withers
+Progress: 96/300 songs
+  ✅ Lyrics fetched (1393 chars)
+  ✅ Labeled: score=95, verdict=freely_listen
+Processing: Bridge Over Troubled Water - Simon & Garfunkel
+Progress: 97/300 songs
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: You Raise Me Up - Josh Groban
+Progress: 98/300 songs
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: The Prayer - Celine Dion
+Progress: 99/300 songs
+  ✅ Lyrics fetched (835 chars)
+  ✅ Lyrics fetched (890 chars)
+  ✅ Lyrics fetched (1118 chars)
+  ✅ Labeled: score=90, verdict=freely_listen
+Processing: Ave Maria - Franz Schubert
+Progress: 100/300 songs
+  ✅ Labeled: score=60, verdict=context_required
+Processing: Samson - Regina Spektor
+Progress: 101/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: The Sound of Silence - Simon & Garfunkel
+Progress: 102/300 songs
+  ✅ Lyrics fetched (1257 chars)
+  ✅ Lyrics fetched (856 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Tears in Heaven - Eric Clapton
+Progress: 103/300 songs
+  ✅ Lyrics fetched (754 chars)
+  ✅ Lyrics fetched (1186 chars)
+  ✅ Labeled: score=55, verdict=caution_limit
+Processing: Fix You - Coldplay
+Progress: 104/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Let It Be - The Beatles
+Progress: 105/300 songs
+  ✅ Labeled: score=75, verdict=context_required
+Processing: What's Going On - Marvin Gaye
+Progress: 106/300 songs
+  ✅ Lyrics fetched (1219 chars)
+  ✅ Lyrics fetched (909 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: A Change Is Gonna Come - Sam Cooke
+Progress: 107/300 songs
+  ✅ Labeled: score=75, verdict=context_required
+Processing: Keep Your Head Up - Andy Grammer
+Progress: 108/300 songs
+  ✅ Labeled: score=65, verdict=context_required
+Processing: I Will Survive - Gloria Gaynor
+Progress: 109/300 songs
+  ✅ Lyrics fetched (953 chars)
+  ✅ Lyrics fetched (863 chars)
+  ✅ Lyrics fetched (2057 chars)
+  ✅ Lyrics fetched (2941 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Stronger (What Doesn't Kill You) - Kelly Clarkson
+Progress: 110/300 songs
+  ✅ Labeled: score=50, verdict=caution_limit
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Processing: Beautiful Day - U2
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: With or Without You - U2
+Progress: 112/300 songs
+  ✅ Lyrics fetched (2088 chars)
+  ✅ Lyrics fetched (1399 chars)
+  ✅ Lyrics fetched (943 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: I Still Haven't Found What I'm Looking For - U2
+Progress: 113/300 songs
+  ✅ Labeled: score=55, verdict=caution_limit
+Processing: Where the Streets Have No Name - U2
+Progress: 114/300 songs
+  ✅ Labeled: score=55, verdict=caution_limit
+Processing: Sunday Bloody Sunday - U2
+Progress: 115/300 songs
+  ✅ Lyrics fetched (1057 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: MLK - U2
+Progress: 116/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Pride (In the Name of Love) - U2
+Progress: 117/300 songs
+  ✅ Lyrics fetched (1177 chars)
+  ✅ Lyrics fetched (1512 chars)
+  ✅ Lyrics fetched (315 chars)
+  ✅ Lyrics fetched (832 chars)
+  ✅ Labeled: score=55, verdict=caution_limit
+Processing: 40 - U2
+Progress: 118/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: I Believe I Can Fly - R. Kelly
+Progress: 119/300 songs
+  ✅ Lyrics fetched (626 chars)
+  ✅ Lyrics fetched (1631 chars)
+  ✅ Labeled: score=65, verdict=context_required
+Processing: Seasons of Love - Rent Cast
+Progress: 120/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Fight Song - Rachel Platten
+Progress: 121/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Brave - Sara Bareilles
+
+💾 Saved batch (50 songs)
+Progress: 122/300 songs
+  ✅ Lyrics fetched (1680 chars)
+  ✅ Lyrics fetched (1267 chars)
+  ✅ Lyrics fetched (1839 chars)
+  ✅ Labeled: score=55, verdict=caution_limit
+Processing: Roar - Katy Perry
+Progress: 123/300 songs
+  ✅ Labeled: score=65, verdict=context_required
+Processing: Firework - Katy Perry
+Progress: 124/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Titanium - David Guetta
+Progress: 125/300 songs
+  ✅ Lyrics fetched (1910 chars)
+  ✅ Lyrics fetched (2024 chars)
+  ✅ Labeled: score=55, verdict=caution_limit
+Processing: Skyscraper - Demi Lovato
+Progress: 126/300 songs
+  ✅ Lyrics fetched (1089 chars)
+  ✅ Lyrics fetched (1218 chars)
+  ✅ Labeled: score=85, verdict=freely_listen
+Processing: Try - Colbie Caillat
+Progress: 127/300 songs
+  ✅ Labeled: score=65, verdict=context_required
+Processing: Born This Way - Lady Gaga
+Progress: 128/300 songs
+  ✅ Lyrics fetched (1879 chars)
+  ✅ Lyrics fetched (2931 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: This Is Me - Keala Settle
+Progress: 129/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Shake It Off - Taylor Swift
+Progress: 130/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Count on Me - Bruno Mars
+Progress: 131/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Just the Way You Are - Bruno Mars
+Progress: 132/300 songs
+  ✅ Lyrics fetched (1986 chars)
+  ✅ Lyrics fetched (2941 chars)
+  ✅ Lyrics fetched (1441 chars)
+  ✅ Lyrics fetched (1484 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Unwritten - Natasha Bedingfield
+Progress: 133/300 songs
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Hall of Fame - The Script
+Progress: 134/300 songs
+  ✅ Lyrics fetched (2349 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: The Climb - Miley Cyrus
+Progress: 135/300 songs
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: High Hopes - Panic! at the Disco
+Progress: 136/300 songs
+  ✅ Lyrics fetched (2110 chars)
+  ✅ Lyrics fetched (1422 chars)
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: Thunder - Imagine Dragons
+Progress: 137/300 songs
+  ✅ Lyrics fetched (2410 chars)
+  ✅ Labeled: score=20, verdict=avoid_formation
+Processing: Believer - Imagine Dragons
+Progress: 138/300 songs
+  ✅ Lyrics fetched (2009 chars)
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: Something Just Like This - The Chainsmokers
+Progress: 139/300 songs
+  ✅ Lyrics fetched (2120 chars)
+  ✅ Lyrics fetched (1736 chars)
+  ✅ Labeled: score=50, verdict=caution_limit
+Processing: Best Day of My Life - American Authors
+Progress: 140/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Happy - Pharrell Williams
+Progress: 141/300 songs
+  ✅ Lyrics fetched (1386 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: 24K Magic - Bruno Mars
+Progress: 142/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Can't Stop the Feeling - Justin Timberlake
+Progress: 143/300 songs
+  ✅ Lyrics fetched (2657 chars)
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: Walking on Sunshine - Katrina and the Waves
+Progress: 144/300 songs
+  ✅ Labeled: score=55, verdict=caution_limit
+Processing: Don't Stop Believin' - Journey
+Progress: 145/300 songs
+  ✅ Lyrics fetched (2706 chars)
+  ✅ Lyrics fetched (2862 chars)
+  ✅ Lyrics fetched (1083 chars)
+  ✅ Lyrics fetched (1690 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Eye of the Tiger - Survivor
+Progress: 146/300 songs
+  ✅ Lyrics fetched (1306 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Survivor - Destiny's Child
+Progress: 147/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: We Are the Champions - Queen
+Progress: 148/300 songs
+  ✅ Lyrics fetched (3755 chars)
+  ✅ Lyrics fetched (1064 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: We Will Rock You - Queen
+Progress: 149/300 songs
+  ✅ Lyrics fetched (802 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Livin' on a Prayer - Bon Jovi
+Progress: 150/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Don't Stop Me Now - Queen
+Progress: 151/300 songs
+  ✅ Lyrics fetched (1498 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Here Comes the Sun - The Beatles
+Progress: 152/300 songs
+  ✅ Lyrics fetched (2068 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Three Little Birds - Bob Marley
+Progress: 153/300 songs
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: One Love - Bob Marley
+Progress: 154/300 songs
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Get Up, Stand Up - Bob Marley
+Progress: 155/300 songs
+  ✅ Lyrics fetched (1904 chars)
+  ✅ Lyrics fetched (1738 chars)
+  ✅ Lyrics fetched (884 chars)
+  ✅ Lyrics fetched (1323 chars)
+  ✅ Labeled: score=55, verdict=caution_limit
+Processing: Redemption Song - Bob Marley
+Progress: 156/300 songs
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: I Will Wait - Mumford & Sons
+Progress: 157/300 songs
+  ✅ Labeled: score=20, verdict=avoid_formation
+Processing: Little Lion Man - Mumford & Sons
+Progress: 158/300 songs
+  ✅ Lyrics fetched (1225 chars)
+  ✅ Lyrics fetched (1025 chars)
+  ✅ Lyrics fetched (1247 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Awake My Soul - Mumford & Sons
+Progress: 159/300 songs
+  ✅ Labeled: score=20, verdict=avoid_formation
+Processing: The Cave - Mumford & Sons
+Progress: 160/300 songs
+  ✅ Lyrics fetched (1066 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Demons - Imagine Dragons
+Progress: 161/300 songs
+  ✅ Lyrics fetched (1448 chars)
+  ✅ Lyrics fetched (1554 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: The Night We Met - Lord Huron
+Progress: 162/300 songs
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: Somebody That I Used to Know - Gotye
+Progress: 163/300 songs
+  ✅ Labeled: score=60, verdict=context_required
+Processing: Mad World - Gary Jules
+Progress: 164/300 songs
+  ✅ Labeled: score=65, verdict=context_required
+Processing: Hurt - Johnny Cash
+Progress: 165/300 songs
+  ✅ Lyrics fetched (791 chars)
+  ✅ Lyrics fetched (1833 chars)
+  ✅ Lyrics fetched (1071 chars)
+  ✅ Lyrics fetched (808 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: The Scientist - Coldplay
+Progress: 166/300 songs
+   4       k����   t�LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Chasing Cars - Snow Patrol
+Progress: 167/300 songs
+  ✅ Lyrics fetched (883 chars)
+  ✅ Lyrics fetched (1003 chars)
+  ✅ Labeled: score=55, verdict=caution_limit
+Processing: Viva La Vida - Coldplay
+Progress: 168/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Yellow - Coldplay
+Progress: 169/300 songs
+  ✅ Labeled: score=55, verdict=caution_limit
+Processing: Clocks - Coldplay
+Progress: 170/300 songs
+  ✅ Lyrics fetched (1496 chars)
+  ✅ Lyrics fetched (988 chars)
+  ✅ Lyrics fetched (867 chars)
+  ✅ Labeled: score=65, verdict=context_required
+Processing: The A Team - Ed Sheeran
+Progress: 171/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Photograph - Ed Sheeran
+
+💾 Saved batch (50 songs)
+Progress: 172/300 songs
+  ✅ Labeled: score=20, verdict=avoid_formation
+Processing: Thinking Out Loud - Ed Sheeran
+Progress: 173/300 songs
+  ✅ Lyrics fetched (1663 chars)
+  ✅ Lyrics fetched (1962 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Stay with Me - Sam Smith
+Progress: 174/300 songs
+  ✅ Lyrics fetched (1654 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Say Something - A Great Big World
+Progress: 175/300 songs
+  ✅ Lyrics fetched (823 chars)
+  ✅ Lyrics fetched (753 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Let Her Go - Passenger
+Progress: 176/300 songs
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Wake Me Up - Avicii
+Progress: 177/300 songs
+  ✅ Lyrics fetched (1995 chars)
+  ✅ Lyrics fetched (1206 chars)
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: Hey Brother - Avicii
+Progress: 178/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Chandelier - Sia
+Progress: 179/300 songs
+  ✅ Lyrics fetched (1001 chars)
+  ✅ Lyrics fetched (2066 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Elastic Heart - Sia
+Progress: 180/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Someone Like You - Adele
+Progress: 181/300 songs
+  ✅ Lyrics fetched (1658 chars)
+  ✅ Lyrics fetched (1781 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Hello - Adele
+Progress: 182/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: When We Were Young - Adele
+Progress: 183/300 songs
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: All of Me - John Legend
+Progress: 184/300 songs
+  ✅ Lyrics fetched (2001 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Ordinary People - John Legend
+Progress: 185/300 songs
+  ✅ Lyrics fetched (1891 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Glory - John Legend
+Progress: 186/300 songs
+  ✅ Lyrics fetched (1712 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Green Light - Lorde
+Progress: 187/300 songs
+  ✅ Labeled: score=50, verdict=caution_limit
+Processing: Perfect - Ed Sheeran
+Progress: 188/300 songs
+  ✅ Lyrics fetched (1909 chars)
+  ✅ Lyrics fetched (2331 chars)
+  ✅ Lyrics fetched (2086 chars)
+  ✅ Lyrics fetched (1497 chars)
+  ✅ Labeled: score=20, verdict=avoid_formation
+Processing: Castle on the Hill - Ed Sheeran
+Progress: 189/300 songs
+  ✅ Lyrics fetched (1842 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Happier - Ed Sheeran
+Progress: 190/300 songs
+  ✅ Lyrics fetched (1208 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Take Me to Church - Hozier
+Progress: 191/300 songs
+  ✅ Lyrics fetched (2234 chars)
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: Stressed Out - Twenty One Pilots
+Progress: 192/300 songs
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: We Are Young - Fun.
+Progress: 193/300 songs
+  ✅ Lyrics fetched (1838 chars)
+  ✅ Lyrics fetched (2653 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Pumped Up Kicks - Foster the People
+Progress: 194/300 songs
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Radioactive - Imagine Dragons
+Progress: 195/300 songs
+  ✅ Lyrics fetched (2049 chars)
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: Happier - Marshmello
+Progress: 196/300 songs
+  ✅ Lyrics fetched (1316 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Something I Need - OneRepublic
+Progress: 197/300 songs
+  ✅ Lyrics fetched (1924 chars)
+  ✅ Labeled: score=55, verdict=caution_limit
+Processing: Riptide - Vance Joy
+Progress: 198/300 songs
+  ✅ Lyrics fetched (1810 chars)
+  ✅ Lyrics fetched (1855 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Counting Stars - OneRepublic
+Progress: 199/300 songs
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Secrets - OneRepublic
+Progress: 200/300 songs
+  ✅ Lyrics fetched (2915 chars)
+  ✅ Lyrics fetched (1774 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Love Runs Out - OneRepublic
+Progress: 201/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Faded - Alan Walker
+Progress: 202/300 songs
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Alone - Marshmello
+Progress: 203/300 songs
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: The Middle - Zedd
+Progress: 204/300 songs
+  ✅ Lyrics fetched (2253 chars)
+  ✅ Lyrics fetched (481 chars)
+  ✅ Lyrics fetched (958 chars)
+  ✅ Labeled: score=15, verdict=avoid_formation
+Processing: Meant to Be - Bebe Rexha
+Progress: 205/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: In My Blood - Shawn Mendes
+Progress: 206/300 songs
+  ✅ Lyrics fetched (1699 chars)
+  ✅ Lyrics fetched (1553 chars)
+  ✅ Lyrics fetched (1409 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Lost Boy - Ruth B
+Progress: 207/300 songs
+  ✅ Lyrics fetched (2208 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Human - Rag'n'Bone Man
+Progress: 208/300 songs
+  ✅ Lyrics fetched (1613 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Say Amen (Saturday Night) - Panic! at the Disco
+Progress: 209/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Natural - Imagine Dragons
+Progress: 210/300 songs
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Stay - Rihanna
+Progress: 211/300 songs
+  ✅ Lyrics fetched (1838 chars)
+  ✅ Lyrics fetched (1697 chars)
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: We Found Love - Rihanna
+Progress: 212/300 songs
+  ✅ Lyrics fetched (1197 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Love the Way You Lie - Eminem
+Progress: 213/300 songs
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: Not Afraid - Eminem
+Progress: 214/300 songs
+  ✅ Lyrics fetched (1063 chars)
+  ✅ Lyrics fetched (3689 chars)
+  ✅ Lyrics fetched (3871 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Stan - Eminem
+Progress: 215/300 songs
+  ✅ Lyrics fetched (6612 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Lose Yourself - Eminem
+Progress: 216/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Till I Collapse - Eminem
+Progress: 217/300 songs
+  ✅ Lyrics fetched (4142 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Mockingbird - Eminem
+Progress: 218/300 songs
+  ✅ Lyrics fetched (4324 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Sing for the Moment - Eminem
+Progress: 219/300 songs
+  ✅ Lyrics fetched (4551 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: When I'm Gone - Eminem
+Progress: 220/300 songs
+  ✅ Lyrics fetched (4376 chars)
+  ✅ Lyrics fetched (4714 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Beautiful - Eminem
+Progress: 221/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Cleanin' Out My Closet - Eminem
+
+💾 Saved batch (50 songs)
+Progress: 222/300 songs
+  ✅ Lyrics fetched (3757 chars)
+  ✅ Lyrics fetched (5009 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: The Real Slim Shady - Eminem
+Progress: 223/300 songs
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+  ✅ Lyrics fetched (5063 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Without Me - Eminem
+Progress: 224/300 songs
+  ✅ Lyrics fetched (4002 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Just Lose It - Eminem
+Progress: 225/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Like Toy Soldiers - Eminem
+Progress: 226/300 songs
+  ✅ Lyrics fetched (3801 chars)
+  ✅ Lyrics fetched (4369 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Stronger - Kanye West
+Progress: 227/300 songs
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: Runaway - Kanye West
+Progress: 228/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: All of the Lights - Kanye West
+Progress: 229/300 songs
+  ✅ Labeled: score=45, verdict=caution_limit
+Processing: Power - Kanye West
+Progress: 230/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Royals - Lorde
+Progress: 231/300 songs
+  ✅ Lyrics fetched (4657 chars)
+  ✅ Lyrics fetched (2984 chars)
+  ✅ Lyrics fetched (2958 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Team - Lorde
+Progress: 232/300 songs
+  ✅ Lyrics fetched (2014 chars)
+  ✅ Lyrics fetched (2999 chars)
+  ✅ Lyrics fetched (1875 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Perfect Places - Lorde
+Progress: 233/300 songs
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Liability - Lorde
+Progress: 234/300 songs
+  ✅ Lyrics fetched (1370 chars)
+  ✅ Lyrics fetched (1270 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Homemade Dynamite - Lorde
+Progress: 235/300 songs
+  ✅ Lyrics fetched (1759 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Hard Feelings - Lorde
+Progress: 236/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Supercut - Lorde
+Progress: 237/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: The Louvre - Lorde
+Progress: 238/300 songs
+  ✅ Lyrics fetched (2453 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Sober - Lorde
+Progress: 239/300 songs
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Melodrama - Lorde
+Progress: 240/300 songs
+  ✅ Lyrics fetched (1897 chars)
+  ✅ Labeled: score=15, verdict=avoid_formation
+Processing: Tennis Court - Lorde
+Progress: 241/300 songs
+  ✅ Lyrics fetched (1805 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Ribs - Lorde
+Progress: 242/300 songs
+  ✅ Labeled: score=30, verdict=avoid_formation
+Processing: 400 Lux - Lorde
+Progress: 243/300 songs
+  ✅ Lyrics fetched (2461 chars)
+  ✅ Lyrics fetched (1320 chars)
+  ✅ Lyrics fetched (1959 chars)
+  ✅ Lyrics fetched (1992 chars)
+  ✅ Lyrics fetched (1898 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Bravado - Lorde
+Progress: 244/300 songs
+  ✅ Lyrics fetched (1692 chars)
+  ✅ Labeled: score=20, verdict=avoid_formation
+Processing: A World Alone - Lorde
+Progress: 245/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Buzzcut Season - Lorde
+Progress: 246/300 songs
+  ✅ Lyrics fetched (1946 chars)
+  ✅ Lyrics fetched (1550 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Glory and Gore - Lorde
+Progress: 247/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Still Sane - Lorde
+Progress: 248/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: White Teeth Teens - Lorde
+Progress: 249/300 songs
+  ✅ Lyrics fetched (1457 chars)
+  ✅ Lyrics fetched (2169 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Writer in the Dark - Lorde
+Progress: 250/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: WAP - Cardi B
+Progress: 251/300 songs
+  ✅ Lyrics fetched (2017 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: God Is a Woman - Ariana Grande
+Progress: 252/300 songs
+  ✅ Lyrics fetched (1486 chars)
+  ✅ Lyrics fetched (3557 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Closer - The Chainsmokers
+Progress: 253/300 songs
+  ✅ Lyrics fetched (2075 chars)
+  ✅ Lyrics fetched (1907 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Animals - Maroon 5
+Progress: 254/300 songs
+  ✅ Lyrics fetched (2674 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Blurred Lines - Robin Thicke
+Progress: 255/300 songs
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 200000, Requested 2567. Please try again in 770ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: S&M - Rihanna
+Progress: 256/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Rude Boy - Rihanna
+Progress: 257/300 songs
+  ✅ Lyrics fetched (2557 chars)
+  ✅ Lyrics fetched (3908 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Work - Rihanna
+Progress: 258/300 songs
+  ✅ Lyrics fetched (2998 chars)
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 199198, Requested 2757. Please try again in 586ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: Pour It Up - Rihanna
+Progress: 259/300 songs
+  ✅ Lyrics fetched (2964 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Birthday Cake - Rihanna
+Progress: 260/300 songs
+  ✅ Lyrics fetched (2057 chars)
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 199948, Requested 3068. Please try again in 904ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: Partition - Beyoncé
+Progress: 261/300 songs
+  ✅ Lyrics fetched (904 chars)
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 199478, Requested 2828. Please try again in 691ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: Drunk in Love - Beyoncé
+Progress: 262/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Rocket - Beyoncé
+Progress: 263/300 songs
+  ✅ Lyrics fetched (3840 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Blow - Beyoncé
+Progress: 264/300 songs
+  ✅ Lyrics fetched (3005 chars)
+  ✅ Labeled: score=35, verdict=avoid_formation
+Processing: Dance for You - Beyoncé
+Progress: 265/300 songs
+  ✅ Lyrics fetched (3273 chars)
+  ✅ Labeled: score=0, verdict=avoid_formation
+Processing: Imagine - John Lennon
+Progress: 266/300 songs
+  ✅ Lyrics fetched (3123 chars)
+  ✅ Lyrics fetched (701 chars)
+  ✅ Lyrics fetched (3664 chars)
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 198954, Requested 2841. Please try again in 538ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: Sympathy for the Devil - The Rolling Stones
+Progress: 267/300 songs
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 197644, Requested 2906. Please try again in 165ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+LyricsFetcher: No Genius token provided. Genius lyrics fetching will be disabled.
+Error accessing database cache: LyricsCache.find_cached_lyrics() takes 2 positional arguments but 3 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Error storing lyrics in database cache: LyricsCache.cache_lyrics() takes 4 positional arguments but 5 were given
+Processing: Highway to Hell - AC/DC
+Progress: 268/300 songs
+  ✅ Lyrics fetched (1956 chars)
+  ✅ Lyrics fetched (1019 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Hells Bells - AC/DC
+Progress: 269/300 songs
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Shout at the Devil - Mötley Crüe
+Progress: 270/300 songs
+  ✅ Lyrics fetched (1164 chars)
+  ✅ Lyrics fetched (1665 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: God Save the Queen - Sex Pistols
+Progress: 271/300 songs
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Killing in the Name - Rage Against the Machine
+Progress: 272/300 songs
+  ✅ Lyrics fetched (997 chars)
+  ✅ Lyrics fetched (2932 chars)
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 200000, Requested 2380. Please try again in 714ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: Break Stuff - Limp Bizkit
+Progress: 273/300 songs
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 200000, Requested 2509. Please try again in 752ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: Bodies - Drowning Pool
+Progress: 274/300 songs
+  ✅ Lyrics fetched (2181 chars)
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 200000, Requested 2341. Please try again in 702ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: Last Resort - Papa Roach
+Progress: 275/300 songs
+  ✅ Lyrics fetched (1766 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Lucifer - SHINee
+Progress: 276/300 songs
+  ✅ Lyrics fetched (1805 chars)
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Devil in Disguise - Elvis Presley
+Progress: 277/300 songs
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 199700, Requested 2828. Please try again in 758ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: Running with the Devil - Van Halen
+Progress: 278/300 songs
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Paint It Black - The Rolling Stones
+Progress: 279/300 songs
+  ✅ Labeled: score=20, verdict=avoid_formation
+Processing: Black Magic Woman - Santana
+Progress: 280/300 songs
+  ✅ Lyrics fetched (1485 chars)
+  ✅ Lyrics fetched (983 chars)
+  ✅ Lyrics fetched (1200 chars)
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 198166, Requested 2531. Please try again in 209ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: Voodoo Child - Jimi Hendrix
+  ✅ Labeled: score=10, verdict=avoid_formation
+Processing: Evil Woman - Electric Light Orchestra
+Progress: 281/300 songs
+Progress: 282/300 songs
+  ✅ Lyrics fetched (1073 chars)
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 197397, Requested 2635. Please try again in 9ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: Witchy Woman - Eagles
+Progress: 283/300 songs
+  ✅ Lyrics fetched (581 chars)
+  ✅ Lyrics fetched (829 chars)
+  ✅ Lyrics fetched (1583 chars)
+  ✅ Lyrics fetched (782 chars)
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Request too large for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Requested 2541. The input or output tokens must be reduced in order to run successfully. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: Black Sabbath - Black Sabbath
+Progress: 284/300 songs
+  ✅ Labeled: score=20, verdict=avoid_formation
+Processing: The Number of the Beast - Iron Maiden
+
+💾 Saved batch (50 songs)
+Progress: 285/300 songs
+  ✅ Lyrics fetched (475 chars)
+  ✅ Lyrics fetched (1554 chars)
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 200000, Requested 2210. Please try again in 663ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: HUMBLE. - Kendrick Lamar
+Progress: 286/300 songs
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 200000, Requested 2482. Please try again in 744ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Processing: DNA. - Kendrick Lamar
+Progress: 287/300 songs
+  ✅ Lyrics fetched (2925 chars)
+  ✅ Labeled: score=25, verdict=avoid_formation
+Processing: Alright - Kendrick Lamar
+Progress: 288/300 songs
+  ✅ Labeled: score=20, verdict=avoid_formation
+Processing: King Kunta - Kendrick Lamar
+Progress: 289/300 songs
+  ✅ Labeled: score=20, verdict=avoid_formation
+Processing: Swimming Pools (Drank) - Kendrick Lamar
+Progress: 290/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Progress: 291/300 songs
+  ✅ Lyrics fetched (3729 chars)
+  ✅ Labeled: score=20, verdict=avoid_formation
+Progress: 292/300 songs
+  ✅ Lyrics fetched (3483 chars)
+  ✅ Labeled: score=20, verdict=avoid_formation
+Progress: 293/300 songs
+  ✅ Lyrics fetched (3582 chars)
+  ✅ Lyrics fetched (3023 chars)
+  ✅ Labeled: score=20, verdict=avoid_formation
+Progress: 294/300 songs
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 200000, Requested 2821. Please try again in 846ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Progress: 295/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Progress: 296/300 songs
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 197214, Requested 2849. Please try again in 18ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Progress: 297/300 songs
+  ❌ GPT-4o-mini error: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-4o-mini in organization org-mv4HAWiR1aTbR39k7RrbU3el on tokens per min (TPM): Limit 200000, Used 199413, Requested 2961. Please try again in 712ms. Visit https://platform.openai.com/account/rate-limits to learn more.', 'type': 'tokens', 'param': None, 'code': 'rate_limit_exceeded'}}
+Progress: 298/300 songs
+  ✅ Labeled: score=25, verdict=avoid_formation
+Progress: 299/300 songs
+  ✅ Labeled: score=20, verdict=avoid_formation
+Progress: 300/300 songs
+
+💾 Saved final batch (10 songs)
+
+============================================================
+✅ Training data generation complete!
+📊 Total songs labeled: 300
+💰 Total tokens: 690,641
+💵 Estimated cost: $0.91
+📝 Output: scripts/eval/training_data_300.jsonl
+============================================================

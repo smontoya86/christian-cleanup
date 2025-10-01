@@ -1,0 +1,11 @@
+id,verdict_true,verdict_pred,score_true,score_pred
+baseline-01,freely_listen,freely_listen,100.0,98.0
+baseline-02,freely_listen,freely_listen,92.0,93.0
+baseline-03,context_required,freely_listen,82.0,93.0
+baseline-04,context_required,freely_listen,78.0,95.0
+baseline-05,caution_limit,freely_listen,58.0,88.0
+baseline-06,caution_limit,context_required,55.0,88.0
+baseline-07,avoid_formation,freely_listen,35.0,93.0
+baseline-08,avoid_formation,caution_limit,12.0,58.0
+baseline-09,context_required,freely_listen,79.0,88.0
+baseline-10,caution_limit,caution_limit,60.0,58.0

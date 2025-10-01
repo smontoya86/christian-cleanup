@@ -12,6 +12,7 @@ set -euo pipefail
 #   LLM_MAX_TOKENS  (default 2000)
 #   LLM_TEMPERATURE (default 0.2)
 #   LLM_CONCURRENCY (default 1)
+#   LLM_TIMEOUT     (default 600)
 
 INPUT=${1:-scripts/eval/songs_eval.jsonl}
 OUT_BASE=${2:-scripts/eval/reports}
@@ -24,6 +25,7 @@ MODEL=${LLM_MODEL:-llama3.1:8b}
 MAXTOK=${LLM_MAX_TOKENS:-2000}
 TEMP=${LLM_TEMPERATURE:-0.2}
 CONC=${LLM_CONCURRENCY:-1}
+TIMEOUT=${LLM_TIMEOUT:-600}
 
 docker compose exec -T \
   -e PYTHONPATH=/app \
@@ -32,6 +34,7 @@ docker compose exec -T \
   -e LLM_MAX_TOKENS="${MAXTOK}" \
   -e LLM_TEMPERATURE="${TEMP}" \
   -e LLM_CONCURRENCY="${CONC}" \
+  -e LLM_TIMEOUT="${TIMEOUT}" \
   web python scripts/eval/run_eval.py --input "${INPUT}" --out "${RUN_DIR}"
 
 # Write simple metadata for the run

@@ -1,0 +1,5522 @@
+[
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes or messages"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Idolatry",
+          "severity": "critical",
+          "explanation": "The lyrics promote self-centeredness and materialism, which contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or messages"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The song promotes themes that contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The song promotes themes that contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or messages"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical foundation and promotes ambiguous themes"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The song promotes themes that contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or messages"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a self-centered view of spirituality that contradicts biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical foundation and promotes ambiguous beliefs"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The song promotes themes that contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The song promotes themes that contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a worldview contrary to biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or truths"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a self-centered view of spirituality that contradicts biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a self-centered view of spirituality that contradicts biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical foundation and promotes ambiguous beliefs"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lacks clear biblical themes and promotes ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or messages"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical foundation and promotes ambiguous beliefs"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical foundation and promotes ambiguous beliefs"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or messages"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a message that contradicts biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or messages"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a self-centered view of spirituality that contradicts biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or teachings"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lacks clear biblical themes and promotes ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics do not align with biblical teachings and promote a false understanding of worship."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lack of clear biblical themes or messages."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The song promotes themes that contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a worldview contrary to biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or teachings"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The song promotes themes that contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or truths"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a message that contradicts biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lacks clear biblical themes and promotes ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lack of clear biblical themes or messages."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Idolatry",
+          "severity": "critical",
+          "explanation": "The lyrics promote self-centeredness and materialism, which contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "confused",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a self-centered view of spirituality that contradicts biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lack of clear biblical themes or truths."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Idolatry",
+          "severity": "critical",
+          "explanation": "The lyrics promote self-centeredness and idolization of personal desires."
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical foundation and promotes ambiguous beliefs"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or messages"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The song promotes themes that contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical foundation and promotes ambiguous beliefs"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The song promotes themes that contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or messages"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics do not align with biblical teachings and promote a false understanding of worship."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "high",
+          "explanation": "The lyrics promote a self-centered view of spirituality that contradicts biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "Lyrics lack clear biblical themes and promote ambiguous spirituality."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes and promotes ambiguous spirituality"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote themes that contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The song promotes themes that contradict biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "critical",
+          "explanation": "lacks clear biblical foundation and promotes ambiguous beliefs"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or teachings"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "high",
+          "explanation": "lacks clear biblical themes or truths"
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  },
+  {
+    "id": "None",
+    "title": "",
+    "artist": "",
+    "lyrics": "",
+    "expected_verdict": null,
+    "expected_score": null,
+    "expected_flags": null,
+    "expected_scripture_refs": null,
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 0,
+      "concern_level": "Critical",
+      "biblical_themes": [],
+      "supporting_scripture": [],
+      "concerns": [
+        {
+          "category": "False Worship",
+          "severity": "critical",
+          "explanation": "The lyrics promote a view of God that is not aligned with biblical teachings."
+        }
+      ],
+      "narrative_voice": "ambiguous",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "null",
+      "confidence": "low",
+      "needs_review": true,
+      "verdict": "avoid_formation"
+    }
+  }
+]

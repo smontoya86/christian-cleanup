@@ -1,0 +1,548 @@
+[
+  {
+    "id": "baseline-01",
+    "title": "Amazing Grace",
+    "artist": "John Newton",
+    "lyrics": "Amazing grace, how sweet the sound\n That saved a wretch like me\n I once was lost but now am found\n Was blind but now I see\n 'Twas grace that taught my heart to fear\n And grace, my fears relieved\n How precious did that grace appear\n The hour I first believed\n\n Yeah, when this flesh and heart shall fail\n And mortal life shall cease\n I shall possess within the veil\n A life of joy and peace\n Amazing grace, how sweet the sound\n That saved a wretch like me\n I once was lost but now am found\n Was blind but now I see\n Was blind but now I see",
+    "expected_verdict": "freely_listen",
+    "expected_score": 100,
+    "expected_flags": [],
+    "expected_scripture_refs": [
+      "Ephesians 2:8-9"
+    ],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 98,
+      "concern_level": "Very Low",
+      "biblical_themes": [
+        {
+          "name": "Salvation"
+        },
+        {
+          "name": "Redemption"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Ephesians 2:8-9"
+        },
+        {
+          "reference": "Romans 3:23-24"
+        }
+      ],
+      "concerns": [],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "sound",
+      "confidence": "high",
+      "needs_review": false,
+      "verdict": "freely_listen"
+    }
+  },
+  {
+    "id": "baseline-02",
+    "title": "Oceans (Where Feet May Fail)",
+    "artist": "Hillsong United",
+    "lyrics": "You call me out upon the waters\n The great unknown\n Where feet may fail\n And there I find You in the mystery\n In oceans deep\n My faith will stand\n And I will call upon Your name\n And keep my eyes above the waves\n When oceans rise\n My soul will rest in Your embrace\n For I am Yours\n You are mine\n\n Your grace abounds in deepest waters\n Your sovereign hand\n Will be my guide\n Where feet may fail and fear surrounds me\n You've never failed\n And You won't start now\n So I will call upon Your name\n And keep my eyes above the waves\n When oceans rise\n My soul will rest in Your embrace\n For I am Yours\n And You are mine (You are mine)\n\n (And you are mine)\n\n Spirit lead me where my trust is without borders\n Let me walk upon the waters\n Wherever You would call me\n Take me deeper than my feet could ever wander\n And my faith will be made stronger\n In the presence of my Savior\n Spirit lead me where my trust is without borders\n Let me walk upon the waters\n Wherever You would call me\n Take me deeper than my feet could ever wander\n And my faith will be made stronger\n In the presence of my Savior\n Spirit lead me where my trust is without borders\n Let me walk upon the waters\n Wherever You would call me\n Take me deeper than my feet could ever wander\n And my faith will be made stronger\n In the presence of my Savior\n Spirit lead me where my trust is without borders\n Let me walk upon the waters\n Wherever You would call me\n And take me deeper than my feet could ever wander\n And my faith will be made stronger\n In the presence of my Savior\n Spirit lead me where my trust is without borders\n Let me walk upon the waters\n Wherever You would call me\n And take me deeper than my feet could ever wander\n And my faith will be made stronger\n In the presence of my Savior\n Spirit lead me where my trust is without borders\n Let me walk upon the waters\n Wherever You would call me\n Take me deeper than my feet could ever wander\n And my faith will be made stronger\n In the presence of my Savior\n\n Yeah-yeah-yeah-yeah\n\n Oh, Jesus, You're my God\n I will call upon Your name\n Keep my eyes above the waves\n My soul will rest in Your embrace\n I am Yours\n And You are mine",
+    "expected_verdict": "freely_listen",
+    "expected_score": 92,
+    "expected_flags": [],
+    "expected_scripture_refs": [
+      "Matthew 14:29"
+    ],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 93,
+      "concern_level": "Very Low",
+      "biblical_themes": [
+        {
+          "name": "Worship of God"
+        },
+        {
+          "name": "Hope"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Matthew 14:22-33"
+        },
+        {
+          "reference": "Ephesians 2:8-9"
+        }
+      ],
+      "concerns": [],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "sound",
+      "confidence": "high",
+      "needs_review": false,
+      "verdict": "freely_listen"
+    }
+  },
+  {
+    "id": "baseline-03",
+    "title": "Reckless Love",
+    "artist": "Cory Asbury",
+    "lyrics": "Before I spoke a word, you were singing over me\n\n You have been so, so good to me\n Before I took a breath, you breathe your life in me\n You have been so, so good to me\n Oh, the overwhelming, never-ending, reckless love of God\n Oh, it chases me down, fights 'til I'm found, leaves the ninety-nine\n I couldn't earn it, and I don't deserve it, still, you give yourself away\n Oh, the overwhelming, never-ending, reckless love of God, yeah\n\n When I was your foe, still your love fought for me\n You have been so, so good to me\n\n When I felt no worth, you paid it all for me\n You have been so, so kind to me\n And oh, the overwhelming, never-ending, reckless love of God\n Oh, it chases me down, fights 'til I'm found, leaves the ninety-nine\n I couldn't earn it, and I don't deserve it, still, you give yourself away\n Oh, the overwhelming, never-ending, reckless love of God, yeah\n\n There's no shadow you won't light up\n Mountain you won't climb up\n Coming after me\n There's no wall you won't kick down\n Lie you won't tear down\n Coming after me\n There's no shadow you won't light up\n Mountain you won't climb up\n Coming after me\n There's no wall you won't kick down\n Lie you won't tear down\n Coming after me\n There's no shadow you won't light up\n Mountain you won't climb up\n Coming after me\n There's no wall you won't kick down\n Lie you won't tear down\n Coming after me\n There's no shadow you won't light up\n Mountain you won't climb up\n Coming after me\n There's no wall you won't kick down\n Lie you won't tear down\n Coming after me\n Oh, the overwhelming, never-ending, reckless love of God\n Oh, it chases me down, fights 'til I'm found, leaves the ninety-nine\n I couldn't earn it, and I don't deserve it, still, you give Yourself away\n Oh, the overwhelming, never-ending, reckless love of God, yeah",
+    "expected_verdict": "context_required",
+    "expected_score": 82,
+    "expected_flags": [
+      "Theological Imprecision"
+    ],
+    "expected_scripture_refs": [
+      "Luke 15:4-7"
+    ],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 93,
+      "concern_level": "Low",
+      "biblical_themes": [
+        {
+          "name": "Worship of God"
+        },
+        {
+          "name": "Hope"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Romans 5:8"
+        },
+        {
+          "reference": "Ephesians 2:8-9"
+        },
+        {
+          "reference": "Luke 15:4-7"
+        }
+      ],
+      "concerns": [],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "sound",
+      "confidence": "high",
+      "needs_review": false,
+      "verdict": "freely_listen"
+    }
+  },
+  {
+    "id": "baseline-04",
+    "title": "You Say",
+    "artist": "Lauren Daigle",
+    "lyrics": "I keep fighting voices in my mind that say I'm not enough\n\n Every single lie that tells me I will never measure up\n\n Am I more than just the sum of every high and every low\n\n Remind me once again just who I am because I need to know\n Ooh-oh\n You say I am loved when I can't feel a thing\n You say I am strong when I think I am weak\n And you say I am held when I am falling short\n And when I don't belong, oh You say I am Yours\n And I believe (I)\n Oh, I believe (I)\n What You say of me (I)\n I believe\n The only thing that matters now is everything You think of me\n\n In You I find my worth, in You I find my identity\n Ooh-oh\n You say I am loved when I can't feel a thing\n You say I am strong when I think I am weak\n And you say I am held when I am falling short\n When I don't belong, oh You say I am Yours\n And I believe (I)\n Oh, I believe (I)\n What You say of me (I)\n Oh, I believe\n\n Taking all I have, and now I'm laying it at Your feet\n You have every failure, God, You have every victory\n Ooh-oh\n You say I am loved when I can't feel a thing\n You say I am strong when I think I am weak\n You say I am held when I am falling short\n When I don't belong, oh You say I am Yours\n And I believe (I)\n Oh, I believe (I)\n What You say of me (I)\n I believe\n Oh, I believe (I)\n Yes, I believe (I)\n What You say of me (I)\n I believe",
+    "expected_verdict": "context_required",
+    "expected_score": 78,
+    "expected_flags": [
+      "Vague Spirituality"
+    ],
+    "expected_scripture_refs": [
+      "1 John 3:1"
+    ],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 95,
+      "concern_level": "Very Low",
+      "biblical_themes": [
+        {
+          "name": "Identity in Christ"
+        },
+        {
+          "name": "Worship of God"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Psalm 29:2"
+        },
+        {
+          "reference": "Romans 15:13"
+        }
+      ],
+      "concerns": [],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "sound",
+      "confidence": "high",
+      "needs_review": false,
+      "verdict": "freely_listen"
+    }
+  },
+  {
+    "id": "baseline-05",
+    "title": "Believer",
+    "artist": "Imagine Dragons",
+    "lyrics": "First things first, I'ma say all the words inside my head\n I'm fired up, and tired of the way that things have been, oh-ooh\n The way that things have been, oh-ooh\n Second thing second, don't you tell me what you think that I can be\n I'm the one at the sail, I'm the master of my sea, oh-ooh\n\n The master of my sea, oh-ooh\n I was broken from a young age\n Taking my sulking to the masses\n Writing my poems for the few\n That look at me, took to me, shook to me, feelin' me\n Singing from heartache from the pain\n Taking my message from the veins\n Speaking my lesson from the brain\n Seeing the beauty through the\n Pain!\n You made me a, you made me a believer, believer\n Pain!\n You break me down, and build me up, believer, believer\n Pain!\n Oh, let the bullets fly, oh, let them rain\n My life, my love, my drive it came from\n Pain!\n You made me a, you made me a believer, believer\n Third things third, send a prayer to the ones up above\n All the hate that you've heard has turned your spirit to a dove, oh-ooh\n Your spirit up above, oh-ooh\n I was choking in the crowd\n Building my rain up in the cloud\n Falling like ashes to the ground\n Hoping my feelings, they would drown\n But they never did, ever lived, ebbin' and flowin'\n Inhibited, limited, 'til it broke open, and it rained down\n It rained down like\n Pain!\n You made me a, you made me a believer, believer\n Pain!\n You break me down, and build me up, believer, believer\n Pain!\n Oh, let the bullets fly, oh, let them rain\n My life, my love, my drive it came from\n Pain!\n You made me a, you made me a believer, believer\n Last things last, by the grace of the fire and the flames\n You're the face of the future, the blood in my veins, oh-ooh\n The blood in my veins, oh-ooh\n But they never did, ever lived, ebbin' and flowin'\n Inhibited, limited, 'til it broke open, and it rained down\n It rained down like\n\n Pain!\n You made me a, you made me a believer, believer\n Pain!\n You break me down, and build me up, believer, believer\n Pain!\n Oh, let the bullets fly, oh, let them rain\n My life, my love, my drive it came from\n Pain!\n You made me a, you made me a believer, believer",
+    "expected_verdict": "caution_limit",
+    "expected_score": 58,
+    "expected_flags": [
+      "Self-Focus"
+    ],
+    "expected_scripture_refs": [],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 88,
+      "concern_level": "Low",
+      "biblical_themes": [
+        {
+          "name": "Worship of God"
+        },
+        {
+          "name": "Hope"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Psalm 29:2"
+        },
+        {
+          "reference": "Romans 15:13"
+        }
+      ],
+      "concerns": [
+        {
+          "category": "Self-Focus",
+          "severity": "medium",
+          "explanation": "emphasis on personal mastery over pain"
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "sound",
+      "confidence": "high",
+      "needs_review": false,
+      "verdict": "freely_listen"
+    }
+  },
+  {
+    "id": "baseline-06",
+    "title": "Fight Song",
+    "artist": "Rachel Platten",
+    "lyrics": "Like a small boat on the ocean\n Sending big waves into motion\n Like how a single word\n Can make a heart open\n I might only have one match\n But I can make an explosion\n And all those things I didn't say\n Wrecking balls inside my brain\n I will scream them loud tonight\n Can you hear my voice?\n This time this is my fight song\n Take back my life song\n Prove I'm alright song\n My power's turned on\n Starting right now I'll be strong\n I'll play my fight song\n And I don't really care\n If nobody else believes\n 'Cause I've still got\n A lot of fight left in me\n Losing friends and I'm chasing sleep\n Everybody's worried about me\n In too deep they say I'm in too deep\n And it's been two years\n I miss my home\n But there's a fire burning in my bones\n I still believe, yeah I still believe\n And all those things I didn't say\n Wrecking balls inside my brain\n I will scream them loud tonight\n Can you hear my voice?\n This time this is my fight song\n Take back my life song\n Prove I'm alright song\n My power's turned on\n Starting right now I'll be strong\n I'll play my fight song\n And I don't really care\n If nobody else believes\n 'Cause I've still got\n A lot of fight left in me\n\n A lot of fight left In me\n\n Like a small boat on the ocean\n Sending big waves into motion\n Like how a single word\n Can make a heart open\n I might only have one match\n But I can make an explosion\n This is my fight song\n Take back my life song\n Prove I'm alright song\n My power's turned on\n Starting right now I'll be strong\n (I'll be strong)\n I'll play my fight song\n And I don't really care\n If nobody else believes\n 'Cause I've still got\n A lot of fight left in me\n Now I've still got a lot of fight left in me",
+    "expected_verdict": "caution_limit",
+    "expected_score": 55,
+    "expected_flags": [
+      "Self-Salvation"
+    ],
+    "expected_scripture_refs": [],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 88,
+      "concern_level": "Low",
+      "biblical_themes": [
+        {
+          "name": "Hope"
+        },
+        {
+          "name": "Perseverance"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Philippians 4:13"
+        },
+        {
+          "reference": "Romans 5:3-4"
+        }
+      ],
+      "concerns": [
+        {
+          "category": "Self-Salvation",
+          "severity": "low",
+          "explanation": "Emphasis on personal strength without explicit reference to divine reliance"
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "thin",
+      "confidence": "medium",
+      "needs_review": false,
+      "verdict": "context_required"
+    }
+  },
+  {
+    "id": "baseline-07",
+    "title": "Imagine",
+    "artist": "John Lennon",
+    "lyrics": "Imagine there's no Heaven\n It's easy if you try\n No Hell below us\n\n Above us only sky\n Imagine all the people\n Living for today\n Ah, ah, ah-ah\n Imagine there's no countries\n It isn't hard to do\n Nothing to kill or die for\n And no religion, too\n Imagine all the people\n Living life in peace\n Yoo-hoo, ooh-ooh\n You may say I'm a dreamer\n But I'm not the only one\n I hope someday you'll join us\n And the world will be as one\n Imagine no possessions\n\n I wonder if you can\n\n No need for greed or hunger\n A brotherhood of man\n Imagine all the people\n Sharing all the world\n Yoo-hoo, ooh-ooh\n You may say I'm a dreamer\n But I'm not the only one\n I hope someday you'll join us\n\n And the world will live as one",
+    "expected_verdict": "avoid_formation",
+    "expected_score": 35,
+    "expected_flags": [
+      "Anti-Christian Themes"
+    ],
+    "expected_scripture_refs": [],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 93,
+      "concern_level": "Low",
+      "biblical_themes": [
+        {
+          "name": "Hope"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Romans 15:13"
+        }
+      ],
+      "concerns": [
+        {
+          "category": "Vague Spirituality",
+          "severity": "medium",
+          "explanation": "lacks specific theological framework"
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "thin",
+      "confidence": "high",
+      "needs_review": false,
+      "verdict": "freely_listen"
+    }
+  },
+  {
+    "id": "baseline-08",
+    "title": "Highway to Hell",
+    "artist": "AC/DC",
+    "lyrics": "Livin' easy\n Lovin' free\n Season ticket on a one-way ride\n Askin' nothin'\n Leave me be\n Takin' everything in my stride\n Don't need reason\n Don't need rhyme\n Ain't nothin' I'd rather do\n Goin' down\n Party time\n My friends are gonna be there too, yeah\n I'm on the highway to hell\n On the highway to hell\n Highway to hell\n I'm on the highway to hell\n\n No stop signs\n Speed limit\n Nobody's gonna slow me down\n Like a wheel\n Gonna spin it\n Nobody's gonna mess me around\n Hey Satan\n Payin' my dues\n Playin' in a rocking band\n Hey momma\n Look at me\n I'm on my way to the Promised Land, ow\n I'm on the highway to hell\n Highway to hell\n I'm on the highway to hell\n Highway to hell\n Mmm, don't stop me\n Ehh, ehh, oww\n\n I'm on the highway to hell\n On the highway to hell\n I'm on the highway to hell\n On the highway to\n Hell\n Highway to hell (I'm on the highway to hell)\n Highway to hell (highway to hell)\n Highway to hell (I'm on the highway to hell)\n Highway to hell\n And I'm goin' down\n All the way, wow\n\n On the highway to hell",
+    "expected_verdict": "avoid_formation",
+    "expected_score": 12,
+    "expected_flags": [
+      "Rebellion Against Authority"
+    ],
+    "expected_scripture_refs": [],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 58,
+      "concern_level": "High",
+      "biblical_themes": [
+        {
+          "name": "Judgment"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Isaiah 30:15"
+        },
+        {
+          "reference": "Romans 1:18-32"
+        }
+      ],
+      "concerns": [
+        {
+          "category": "Idolatry",
+          "severity": "medium",
+          "explanation": "Explicit reference to Satan and worship of self-indulgence"
+        },
+        {
+          "category": "Rebellion Against Authority",
+          "severity": "medium",
+          "explanation": "Carefree attitude toward moral and spiritual boundaries"
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "thin",
+      "confidence": "medium",
+      "needs_review": false,
+      "verdict": "caution_limit"
+    }
+  },
+  {
+    "id": "baseline-09",
+    "title": "Held",
+    "artist": "Natalie Grant",
+    "lyrics": "Two months is too little\nThey let him go, they had no sudden healing\nTo think that providence would\nTake a child from his mother while she prays is appalling\n\nWho told us we'd be rescued?\nWhat has changed and why should we be saved from nightmares?\nWe're asking why this happens to us who have died to live\nIt's unfair\n\nThis is what it means to be held\nHow it feels when the sacred is torn from your life\nAnd you survive\nThis is what it is to be loved\nAnd to know that the promise was when everything fell\nWe'd be held\n\nThis hand is bitterness\nWe wanna taste it, let the hatred numb our sorrow\nThe wise hand opens slowly\nTo lilies of the valley and tomorrow\n\nThis is what it means to be held\nHow it feels when the sacred is torn from your life\nAnd you survive\nThis is what it is to be loved\nAnd to know that the promise was when everything fell\nWe'd be held\n\nIf hope is born of suffering\nIf this is only the beginning\nCan we not wait for one hour\nWatching for our Savior?\n\nThis is what it means to be held\nHow it feels when the sacred is torn from your life\nAnd you survive\nThis is what it is to be loved\nAnd to know that the promise was when everything fell\nWe'd be held\nYeah, ooh, be held, oh\n\nThis is what it is to be loved\nAnd to know that the promise was when everything fell\nWe'd be held\nThis is what it means to be held",
+    "expected_verdict": "context_required",
+    "expected_score": 79,
+    "expected_flags": [
+      "Lament"
+    ],
+    "expected_scripture_refs": [
+      "Psalm 34:18"
+    ],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 88,
+      "concern_level": "Low",
+      "biblical_themes": [
+        {
+          "name": "Lament"
+        },
+        {
+          "name": "Hope"
+        },
+        {
+          "name": "Sovereignty of God"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Psalm 30:11"
+        },
+        {
+          "reference": "Romans 5:3-5"
+        },
+        {
+          "reference": "Isaiah 40:31"
+        }
+      ],
+      "concerns": [
+        {
+          "category": "Despair and Mental Health",
+          "severity": "low",
+          "explanation": "questioning of divine justice"
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": true,
+      "doctrinal_clarity": "sound",
+      "confidence": "medium",
+      "needs_review": false,
+      "verdict": "freely_listen"
+    }
+  },
+  {
+    "id": "baseline-10",
+    "title": "Stressed Out",
+    "artist": "Twenty One Pilots",
+    "lyrics": "I wish I found some better sounds no one's ever heard\n I wish I had a better voice that sang some better words\n I wish I found some chords in an order that is new\n I wish I didn't have to rhyme every time I sang\n I was told when I get older, all my fears would shrink\n But now I'm insecure, and I care what people think\n My name's Blurryface and I care what you think\n My name's Blurryface and I care what you think\n\n Wish we could turn back time\n To the good old days\n When our mama sang us to sleep\n But now we're stressed out (oh)\n Wish we could turn back time (oh)\n To the good old days (oh)\n When our mama sang us to sleep\n But now we're stressed out\n\n We're stressed out\n\n Sometimes a certain smell will take me back to when I was young\n How come I'm never able to identify where it's coming from?\n I'd make a candle out of it if I ever found it\n Try to sell it, never sell out of it, I'd probably only sell one\n It'd be to my brother, 'cause we have the same nose\n Same clothes, homegrown, a stone's throw from a creek we used to roam\n But it would remind us of when nothing really mattered\n Out of student loans and tree house homes, we all would take the latter\n My name's Blurryface and I care what you think\n My name's Blurryface and I care what you think\n Wish we could turn back time\n To the good old days\n When our mama sang us to sleep\n But now we're stressed out (oh)\n Wish we could turn back time (oh)\n To the good old days (oh)\n When our mama sang us to sleep\n But now we're stressed out\n Used to play pretend, give each other different names\n We would build a rocket ship and then we'd fly it far away\n Used to dream of outer space, but now they're laughing at our face saying\n \"Wake up, you need to make money\", yeah\n We used to play pretend, give each other different names\n We would build a rocket ship and then we'd fly it far away\n Used to dream of outer space, but now they're laughing at our face saying\n \"Wake up, you need to make money\", yeah\n Wish we could turn back time\n To the good old days\n When our mama sang us to sleep\n But now we're stressed out (oh)\n Wish we could turn back time (oh)\n To the good old days (oh)\n When our mama sang us to sleep\n But now we're stressed out\n We used to play pretend, used to play pretend, money\n We used to play pretend, wake up, you need the money\n Used to play pretend, used to play pretend, money\n We used to play pretend, wake up, you need the money\n Used to play pretend, give each other different names\n We would build a rocket ship and then we'd fly it far away\n Used to dream of outer space, but now they're laughing at our face saying\n \"Wake up, you need to make money\", yeah",
+    "expected_verdict": "caution_limit",
+    "expected_score": 60,
+    "expected_flags": [
+      "Despair and Mental Health"
+    ],
+    "expected_scripture_refs": [],
+    "expected_concern_level": null,
+    "expected_biblical_themes": null,
+    "expected_supporting_scripture_detailed": null,
+    "expected_positive_themes": null,
+    "expected_purity_flags_details": null,
+    "expected_narrative_voice": null,
+    "expected_lament_filter_applied": null,
+    "expected_doctrinal_clarity": null,
+    "expected_confidence": null,
+    "expected_needs_review": null,
+    "expected_formation_risk": null,
+    "model_json": {
+      "score": 58,
+      "concern_level": "High",
+      "biblical_themes": [
+        {
+          "name": "Despair"
+        }
+      ],
+      "supporting_scripture": [
+        {
+          "reference": "Philippians 4:6-7"
+        }
+      ],
+      "concerns": [
+        {
+          "category": "Materialism and Greed",
+          "severity": "high",
+          "explanation": "repeated emphasis on financial pressure and 'make money'"
+        },
+        {
+          "category": "Despair and Mental Health",
+          "severity": "medium",
+          "explanation": "chronic stress, insecurity, and longing for past simplicity"
+        }
+      ],
+      "narrative_voice": "artist",
+      "lament_filter_applied": false,
+      "doctrinal_clarity": "thin",
+      "confidence": "medium",
+      "needs_review": false,
+      "verdict": "caution_limit"
+    }
+  }
+]

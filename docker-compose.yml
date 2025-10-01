@@ -4,6 +4,8 @@ services:
       context: .
       network: host
     command: gunicorn --bind 0.0.0.0:5001 --workers 1 --timeout 1800 --worker-connections 100 run:app
+    ports:
+      - "5001:5001"
     volumes:
       - .:/app
     env_file:
@@ -22,7 +24,6 @@ services:
       - db
       - redis
     restart: unless-stopped
-    network_mode: "host"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5001/"]
       interval: 30s
@@ -39,7 +40,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     restart: unless-stopped
-    network_mode: "host"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
@@ -52,7 +52,6 @@ services:
       - redis_data:/data
     command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save 60 1000
     restart: unless-stopped
-    network_mode: "host"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
