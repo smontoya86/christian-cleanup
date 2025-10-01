@@ -8,42 +8,70 @@ from typing import Any, Dict
 
 import requests
 
-from ..intelligent_llm_router import get_intelligent_router
-
 logger = logging.getLogger(__name__)
 
 class RouterAnalyzer:
+    """
+    OpenAI-powered theological music analyzer using fine-tuned GPT-4o-mini.
+    
+    This analyzer uses the Christian Framework v3.1 to evaluate songs for
+    biblical alignment, spiritual formation impact, and theological accuracy.
+    """
+    
     def __init__(self) -> None:
-        self.router = get_intelligent_router()
+        # OpenAI API configuration
+        self.base_url: str = os.environ.get(
+            "LLM_API_BASE_URL", 
+            "https://api.openai.com/v1"
+        ).rstrip("/")
         
-        provider_config = self.router.get_optimal_provider()
-        self.base_url: str = provider_config.get("api_base", "http://localhost:11434/v1").rstrip("/")
-        self.model: str = provider_config.get("model", "llama3.1:8b")
+        # Fine-tuned GPT-4o-mini model
+        self.model: str = os.environ.get(
+            "OPENAI_MODEL",
+            "ft:gpt-4o-mini-2024-07-18:personal:christian-discernment-4o-mini-v1:CLxyepav"
+        )
         
+        # API key (required)
+        self.api_key: str = os.environ.get("OPENAI_API_KEY", "")
+        if not self.api_key:
+            logger.error("OPENAI_API_KEY environment variable is not set")
+            raise ValueError("OPENAI_API_KEY is required for OpenAI API access")
+        
+        # Model parameters
         try:
             self.temperature: float = float(os.environ.get("LLM_TEMPERATURE", "0.2"))
         except Exception:
             self.temperature = 0.2
         try:
-            self.top_p: float = float(os.environ.get("LLM_TOP_P", "0.9"))
-        except Exception:
-            self.top_p = 0.9
-        try:
             self.max_tokens: int = int(os.environ.get("LLM_MAX_TOKENS", "2000"))
         except Exception:
             self.max_tokens = 2000
         try:
-            self.timeout: float = float(os.environ.get("LLM_TIMEOUT", "30"))
+            self.timeout: float = float(os.environ.get("LLM_TIMEOUT", "60"))
         except Exception:
-            self.timeout = 30.0
+            self.timeout = 60.0
+        
+        logger.info(f"✅ RouterAnalyzer initialized with OpenAI model: {self.model}")
 
     def analyze_song(self, title: str, artist: str, lyrics: str) -> Dict[str, Any]:
+        """
+        Analyze a song using the fine-tuned GPT-4o-mini model.
+        
+        Args:
+            title: Song title
+            artist: Artist name
+            lyrics: Full song lyrics
+            
+        Returns:
+            Dictionary containing analysis results with Christian Framework v3.1 schema
+        """
         url = f"{self.base_url}/chat/completions"
         
-        logger.info(f"Analyzing song with {self.model} at {url}")
+        logger.info(f"🎵 Analyzing '{title}' by {artist} with {self.model}")
 
         system = self._get_comprehensive_system_prompt()
         user = f"Song: {title} — {artist}\n\nLyrics:\n{lyrics or ''}"
+        
         payload = {
             "model": self.model,
             "messages": [
@@ -51,24 +79,33 @@ class RouterAnalyzer:
                 {"role": "user", "content": user},
             ],
             "temperature": self.temperature,
-            "top_p": self.top_p,
             "max_tokens": self.max_tokens,
             "stream": False,
         }
         
-        logger.info(f"Payload: {json.dumps(payload, indent=2)}")
+        # Add top_p only for non-fine-tuned models (fine-tuned models may not support it)
+        if not self.model.startswith("ft:"):
+            payload["top_p"] = 0.9
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
 
         try:
-            resp = requests.post(url, json=payload, timeout=self.timeout)
-            logger.info(f"Response status code: {resp.status_code}")
-            logger.info(f"Response text: {resp.text}")
+            resp = requests.post(url, json=payload, headers=headers, timeout=self.timeout)
             resp.raise_for_status()
             data = resp.json()
             content = (data.get("choices", [{}])[0] or {}).get("message", {}).get("content", "{}")
             parsed = self._parse_or_repair_json(content)
-            return self._normalize_output(parsed)
+            normalized = self._normalize_output(parsed)
+            logger.info(f"✅ Analysis complete: Score={normalized.get('score')}, Verdict={normalized.get('verdict')}")
+            return normalized
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"❌ HTTP error during analysis: {e.response.status_code} - {e.response.text}")
+            return self._default_output()
         except Exception as e:
-            logger.error(f"Error during analysis: {e}")
+            logger.error(f"❌ Error during analysis: {e}")
             return self._default_output()
 
     def _get_comprehensive_system_prompt(self) -> str:

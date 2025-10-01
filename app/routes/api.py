@@ -21,8 +21,6 @@ from .. import db
 from ..models.models import AnalysisResult, Playlist, PlaylistSong, Song, User, Whitelist
 from ..services.framework_loader import get_rules
 from ..services.progress_tracker import JobType, get_progress_tracker
-from ..services.rules_rag import build_index as rag_build_index
-from ..services.rules_rag import status as rag_status
 from ..services.unified_analysis_service import UnifiedAnalysisService
 from ..utils.auth import admin_required
 from ..utils.correlation import get_request_id
