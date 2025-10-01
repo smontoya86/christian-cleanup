@@ -16,7 +16,7 @@ The biblical discernment system consists of three integrated components working 
 
 #### **1. SimplifiedChristianAnalysisService**
 - **Primary Analysis Engine**: Coordinates all biblical analysis components
-- **AI Integration**: Uses HuggingFace models for nuanced content understanding
+- **AI Integration**: Uses fine-tuned GPT-4o-mini model via OpenAI API for nuanced content understanding
 - **Educational Focus**: Generates comprehensive explanations with Christian perspectives
 - **Performance**: Analyzes songs in <1 second with detailed biblical insights
 

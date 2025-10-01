@@ -16,8 +16,8 @@ This framework provides comprehensive theological analysis for **all music genre
 - **Universal Application**: Works for Christian, secular, and mixed-genre content
 
 ### **Technical Architecture:**
-- **Direct ML Analysis**: No queue system - immediate batch processing
-- **Model Caching**: HuggingFace models cached locally to prevent rate limits
+- **OpenAI API Integration**: Fine-tuned GPT-4o-mini model for analysis
+- **Direct API Calls**: Immediate, high-quality theological analysis
 - **Batch Processing**: Efficient analysis of multiple songs simultaneously
 - **Admin-Only Re-analysis**: Restricted access for quality control
 
@@ -228,40 +228,34 @@ These examples show how to apply the framework accurately. Every song must be ev
 
 ## 🚀 Future Enhancement Roadmap
 
-### **Phase 1: Training Data Collection (Planned)**
-- **Multi-Genre Dataset**: Collect lyrics from Christian, secular, metal, pop, hip-hop, country, etc.
-- **Rate-Limited Fetching**: Implement throttling to avoid provider limits
-- **Annotation Pipeline**: Generate training labels using current framework
-- **Quality Validation**: Human review of edge cases and controversial content
+### **Completed Enhancements**
+- ✅ **Fine-Tuned GPT-4o-mini**: Trained on 1,378 songs with Christian Framework v3.1
+- ✅ **80.4% Verdict Accuracy**: High-quality theological analysis
+- ✅ **OpenAI API Integration**: Reliable, scalable analysis infrastructure
+- ✅ **Comprehensive Dataset**: Multi-genre coverage with biblical evaluation
 
-### **Phase 2: Custom Model Training (OpenAI gpt-oss-20b)**
-- **Fine-Tuning Approach**: Train on collected dataset with theological labels
-- **Single Model Architecture**: Replace 4 HuggingFace models with 1 custom model
-- **Local Deployment**: Eliminate API costs and rate limits
-- **Performance Optimization**: Target 20B parameter model for laptop compatibility
-
-### **Phase 3: Advanced Features**
-- **Contextual Understanding**: Better nuance detection in complex lyrics
-- **Genre-Specific Analysis**: Tailored evaluation criteria by music style
-- **Confidence Scoring**: Uncertainty quantification for edge cases
-- **Batch Optimization**: Further performance improvements for large playlists
+### **Future Advanced Features**
+- **Multilingual Analysis**: Extend to Spanish, Portuguese, and other languages
+- **Enhanced Confidence Scoring**: Uncertainty quantification for edge cases
+- **Genre-Specific Tuning**: Further refinement for metal, hip-hop, country analysis
+- **Batch Optimization**: Performance improvements for large playlist analysis
 
 ## 🔧 Technical Implementation Notes
 
 ### **Current Architecture:**
-- **Framework**: Flask + HuggingFace Transformers
-- **Models**: Sentiment, Safety, Emotion, Zero-shot Classification
-- **Caching**: AnalyzerCache with model persistence
-- **Processing**: Direct batch analysis (queue system removed)
+- **Framework**: Flask + OpenAI API
+- **Model**: Fine-tuned GPT-4o-mini (ft:gpt-4o-mini-2024-07-18:personal:christian-discernment-4o-mini-v1:CLxyepav)
+- **Caching**: AnalyzerCache with singleton pattern
+- **Processing**: Direct OpenAI API calls with batch support
 - **Database**: PostgreSQL with analysis result storage
 - **Access Control**: Admin-only re-analysis functionality
 
-### **Model Training Considerations:**
-- **Open Weights Advantage**: No API costs, unlimited usage, custom training
-- **Training Data Sources**: Genius, LyricsGenius, MusixMatch APIs
-- **Annotation Quality**: Current framework provides high-quality labels
-- **Hardware Requirements**: 20B model requires significant GPU memory
-- **Deployment Strategy**: Docker containerization with model persistence
+### **Fine-Tuned Model Details:**
+- **Training Data**: 1,378 songs with Christian Framework v3.1 labels
+- **Training Cost**: ~$30 for GPT-4o-mini fine-tuning
+- **Inference Cost**: $0.0006 per song (~$6 per 10,000 songs)
+- **Performance**: 80.4% verdict accuracy, 4.47 MAE on hold-out set
+- **Deployment**: OpenAI-hosted, accessible via API key
 
 ## 📚 Usage Guidelines
 
