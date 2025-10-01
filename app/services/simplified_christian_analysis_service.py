@@ -14,9 +14,6 @@ from app.services.analyzer_cache import get_shared_analyzer, is_analyzer_ready
 from app.services.provider_resolver import get_analyzer as get_provider_analyzer
 from app.utils.analysis.analysis_result import AnalysisResult
 
-from .enhanced_concern_detector import EnhancedConcernDetector
-from .enhanced_scripture_mapper import EnhancedScriptureMapper
-
 logger = logging.getLogger(__name__)
 
 
@@ -28,17 +25,34 @@ class SimplifiedChristianAnalysisService:
 
     def __init__(self):
         """Initialize the analysis service components."""
-        # Router-first analyzer via provider; fallback to shared HF analyzer for batch path compatibility
+        # Router-first analyzer via provider; fallback to shared analyzer for batch path compatibility
         try:
             self.analyzer = get_provider_analyzer()
         except Exception:
             self.analyzer = get_shared_analyzer()
         # Back-compat: many tests expect an 'ai_analyzer' attribute
         self.ai_analyzer = self.analyzer
-
-        # Keep other services for educational content and scripture mapping
-        self.concern_detector = EnhancedConcernDetector()
-        self.scripture_mapper = EnhancedScriptureMapper()
+        
+        # Stub services for backward compatibility (GPT-4o-mini handles these now)
+        self.concern_detector = self._StubConcernDetector()
+        self.scripture_mapper = self._StubScriptureMapper()
+    
+    class _StubConcernDetector:
+        """Stub for backward compatibility - GPT-4o-mini handles concern detection now."""
+        def analyze_content_concerns(self, title, artist, lyrics):
+            return {
+                "detailed_concerns": [],
+                "discernment_guidance": [],
+                "educational_summary": ""
+            }
+    
+    class _StubScriptureMapper:
+        """Stub for backward compatibility - GPT-4o-mini handles scripture mapping now."""
+        def find_relevant_passages(self, themes):
+            return []
+        
+        def find_scriptural_foundation_for_concern(self, concern_category):
+            return []
 
     def analyze_song_content(self, song_title: str, artist: str, lyrics: str) -> Dict[str, Any]:
         """
