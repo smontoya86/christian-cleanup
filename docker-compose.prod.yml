@@ -40,9 +40,8 @@ services:
       - app_logs:/app/logs
       - ./uploads:/app/uploads:rw
     environment:
-      # Analyzer configuration (Router-only)
-      - LLM_API_BASE_URL=http://llm:8000/v1
-      - LLM_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct
+      # OpenAI API configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - FLASK_ENV=production
       - FLASK_DEBUG=false
       - SECRET_KEY=${SECRET_KEY}
@@ -57,12 +56,7 @@ services:
       - GA4_API_SECRET=${GA4_API_SECRET}
       - GA4_DEBUG_MODE=${GA4_DEBUG_MODE}
       - LOG_LEVEL=INFO
-      # ML optimization settings (legacy HF removed)
-      - OMP_NUM_THREADS=8
-      - MKL_NUM_THREADS=8
     depends_on:
-      llm:
-        condition: service_healthy
       db:
         condition: service_healthy
       redis:
@@ -92,50 +86,7 @@ services:
         window: 180s
 
   # Queue workers removed: analysis runs synchronously within web container
-
-  # LLM inference service (vLLM OpenAI-compatible)
-  llm:
-    image: vllm/vllm-openai:latest
-    command: --model meta-llama/Meta-Llama-3.1-8B-Instruct --host 0.0.0.0 --port 8000 --download-dir /data/models --gpu-memory-utilization 0.9
-    environment:
-      - HF_HUB_ENABLE_HF_TRANSFER=1
-    volumes:
-      - model_cache:/data/models
-    expose:
-      - "8000"
-    restart: unless-stopped
-    networks:
-      - backend
-  # Optional in-docker Ollama for local GPU/CPU routing (OpenAI-compatible via /v1 when proxied)
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - model_cache:/root/.ollama
-    command: ["serve"]
-    networks:
-      - backend
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/models"]
-      interval: 60s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
-    deploy:
-      resources:
-        limits:
-          memory: 24G
-          cpus: '8.0'
-        reservations:
-          memory: 16G
-          cpus: '4.0'
-      restart_policy:
-        condition: on-failure
-        delay: 10s
-        max_attempts: 3
-        window: 180s
+  # LLM services removed: Using OpenAI API directly (no local inference needed)
 
   # PostgreSQL database with optimization
   db:
@@ -361,12 +312,6 @@ volumes:
       type: none
       o: bind
       device: ./data/redis
-  model_cache:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/models
   prometheus_data:
     driver: local
   grafana_data:

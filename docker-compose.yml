@@ -13,10 +13,6 @@ services:
     environment:
       - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
       - DEBUG=false
-      - LLM_API_BASE_URL=http://localhost:11434/v1
-      - OMP_NUM_THREADS=4
-      - MKL_NUM_THREADS=4
-      - TOKENIZERS_PARALLELISM=false
       - BACKFILL_WORKERS=3
       - BACKFILL_BATCH_SIZE=25
       - LLM_TIMEOUT=120
