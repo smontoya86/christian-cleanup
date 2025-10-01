@@ -1,25 +1,20 @@
 """
-Analyzer provider resolver
+Analyzer provider resolver - OpenAI-only
 
-Defaults to router; HF disabled regardless of legacy flags.
-
-Env:
-- ANALYZER_PROVIDER=router (default)
-- USE_HF_ANALYZER (ignored)
+Returns the RouterAnalyzer which uses the fine-tuned GPT-4o-mini model
+via OpenAI API for theological music analysis.
 """
-
-import os
-from typing import Any
 
 from app.services.analyzers import RouterAnalyzer
 
 
-def get_analyzer() -> Any:
-    provider = (os.environ.get("ANALYZER_PROVIDER") or "router").strip().lower()
-    # Explicitly ignore any legacy HF flags
-    if provider in ("router", "default", "openai", "llm"):
-        return RouterAnalyzer()
-    # Fallback to router for unknown values
+def get_analyzer() -> RouterAnalyzer:
+    """
+    Get the OpenAI-powered RouterAnalyzer instance.
+    
+    Returns:
+        RouterAnalyzer: The fine-tuned GPT-4o-mini analyzer
+    """
     return RouterAnalyzer()
 
 

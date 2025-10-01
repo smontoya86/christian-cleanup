@@ -42,32 +42,9 @@ class AnalyzerCache:
                 if self._analyzer is None and not self._is_initializing:
                     self._is_initializing = True
                     try:
-                        # Router-only initialization
-                        base = os.environ.get("LLM_API_BASE_URL")
-                        candidates = []
-                        if base:
-                            candidates.append(base)
-                        # Common in-docker endpoints (auto-detect) - prefer vLLM, then Ollama
-                        candidates.append("http://llm:8000/v1")
-                        candidates.append("http://ollama:11434/v1")
-                        # Host fallback for Docker Desktop
-                        candidates.append("http://host.docker.internal:11434/v1")
-                        reachable = None
-                        for url in candidates:
-                            try:
-                                r = requests.get(f"{url.rstrip('/')}/models", timeout=1.5)
-                                if r.status_code == 200:
-                                    reachable = url
-                                    break
-                            except Exception:
-                                continue
-                        if reachable and not base:
-                            os.environ["LLM_API_BASE_URL"] = reachable
-
-                        logger.info("🚀 Initializing shared Router analyzer (OpenAI-compatible)…")
+                        logger.info("🚀 Initializing shared Router analyzer (OpenAI API)...")
                         self._analyzer = RouterAnalyzer()
-
-                        logger.info("✅ Shared analyzer initialized successfully")
+                        logger.info("✅ Shared Router analyzer initialized successfully")
                     except Exception as e:
                         logger.error(f"❌ Failed to initialize shared analyzer: {e}")
                         raise
@@ -76,7 +53,6 @@ class AnalyzerCache:
                 elif self._is_initializing:
                     # Another thread is initializing, wait for it
                     import time
-
                     while self._is_initializing and self._analyzer is None:
                         time.sleep(0.1)
 
@@ -86,58 +62,15 @@ class AnalyzerCache:
         return self._analyzer
 
     def preflight(self) -> Tuple[bool, str]:
-        """Quick readiness check. Verifies LLM endpoint when selected."""
+        """Quick readiness check for OpenAI API."""
         try:
-            forced_llm = os.environ.get("USE_LLM_ANALYZER")
-            if forced_llm is not None:
-                use_llm = forced_llm in ("1", "true", "True")
-            else:
-                # Mirror auto-detect logic
-                base = os.environ.get("LLM_API_BASE_URL")
-                candidates = []
-                if base:
-                    candidates.append(base)
-                # Prefer vLLM first for readiness, then Ollama
-                candidates.append("http://llm:8000/v1")
-                candidates.append("http://ollama:11434/v1")
-                candidates.append("http://host.docker.internal:11434/v1")
-                reachable = None
-                for url in candidates:
-                    try:
-                        r = requests.get(f"{url.rstrip('/')}/models", timeout=1.5)
-                        if r.status_code == 200:
-                            reachable = url
-                            break
-                    except Exception:
-                        continue
-                use_llm = reachable is not None
-
-            if not use_llm:
-                return True, "Router analyzer not enabled (endpoint not detected)"
-
-            base = os.environ.get("LLM_API_BASE_URL") or "http://host.docker.internal:11434/v1"
-            try:
-                resp = requests.get(f"{base.rstrip('/')}/models", timeout=2.5)
-                if resp.status_code != 200:
-                    return False, f"LLM endpoint responded {resp.status_code}"
-                models = (
-                    resp.json()
-                    if resp.headers.get("content-type", "").startswith("application/json")
-                    else {}
-                )
-                target = os.environ.get("LLM_MODEL")
-                if target:
-                    # Ollama returns objects with 'name'; vLLM returns 'id'
-                    names = set()
-                    if isinstance(models, dict) and "data" in models:
-                        names = {m.get("id") or m.get("name") for m in models["data"]}
-                    elif isinstance(models, list):
-                        names = {m.get("name") or m.get("id") for m in models}
-                    if target not in names:
-                        return False, f"Model {target} not available at endpoint"
-                return True, "Router LLM endpoint ready"
-            except Exception as e:
-                return False, f"LLM preflight failed: {e}"
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if not api_key:
+                return False, "OPENAI_API_KEY not configured"
+            
+            # Simple check - just verify API key is set
+            # Actual connectivity will be verified on first request
+            return True, "OpenAI API configured"
         except Exception as e:
             return False, f"Analyzer preflight error: {e}"
 
@@ -146,17 +79,17 @@ class AnalyzerCache:
         return self._analyzer is not None and not self._is_initializing
 
     def get_model_info(self) -> dict:
-        """Get information about loaded models"""
+        """Get information about the OpenAI analyzer"""
         if self._analyzer is None:
-            return {"status": "not_initialized", "models": []}
+            return {"status": "not_initialized", "provider": "openai"}
 
-        # Router-only: report endpoint/model info rather than HF internals
         analyzer_type = type(self._analyzer).__name__ if self._analyzer else "unknown"
-        api_base = os.environ.get("LLM_API_BASE_URL")
-        model = os.environ.get("LLM_MODEL")
+        api_base = os.environ.get("LLM_API_BASE_URL", "https://api.openai.com/v1")
+        model = os.environ.get("OPENAI_MODEL", "ft:gpt-4o-mini-2024-07-18:personal:christian-discernment-4o-mini-v1:CLxyepav")
         return {
             "status": "ready" if self._analyzer is not None else "loading",
             "analyzer_type": analyzer_type,
+            "provider": "openai",
             "endpoint": api_base,
             "model": model,
         }
@@ -175,13 +108,13 @@ _global_cache = AnalyzerCache()
 
 def get_shared_analyzer() -> RouterAnalyzer:
     """
-    Get the shared HuggingFace analyzer instance.
+    Get the shared Router analyzer instance.
 
-    This function provides access to a singleton analyzer that loads
-    models once and reuses them across all song analyses.
+    This function provides access to a singleton analyzer that uses
+    the fine-tuned GPT-4o-mini model via OpenAI API.
 
     Returns:
-        HuggingFaceAnalyzer: The shared analyzer instance
+        RouterAnalyzer: The shared analyzer instance
     """
     return _global_cache.get_analyzer()
 
@@ -205,13 +138,13 @@ def initialize_analyzer() -> RouterAnalyzer:
     """
     Initialize the shared analyzer (can be called at worker startup).
 
-    This is useful for pre-loading models during worker initialization
-    rather than waiting for the first analysis request.
+    This is useful for pre-initializing the OpenAI connection during
+    worker startup rather than waiting for the first analysis request.
 
     Returns:
-        HuggingFaceAnalyzer: The initialized analyzer
+        RouterAnalyzer: The initialized analyzer
     """
     logger.info("🔧 Pre-initializing shared analyzer at startup...")
     analyzer = get_shared_analyzer()
-    logger.info(f"✅ Analyzer pre-initialization complete. Models: {get_analyzer_info()}")
+    logger.info(f"✅ Analyzer pre-initialization complete. Info: {get_analyzer_info()}")
     return analyzer
