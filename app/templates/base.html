@@ -142,16 +142,16 @@
                 <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="#how-it-works">How It Works</a>
                 {% if current_user and current_user.is_authenticated %}
                     <!-- Authenticated User Navigation -->
-                    {# <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.dashboard') }}">Dashboard</a> #}
+                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.dashboard') }}">Dashboard</a>
                     
                     <!-- Logout Button -->
-                    {# <a class="btn btn-outline-danger btn-sm ms-2" href="{{ url_for('auth.logout') }}">
+                    <a class="btn btn-outline-danger btn-sm ms-2" href="{{ url_for('auth.logout') }}">
                         🚪 Logout
-                    </a> #}
+                    </a>
                 {% else %}
                     <!-- Non-Authenticated User Navigation -->
-                    {# <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('auth.login') }}">Login</a> #}
-                    <a class="btn btn-primary btn-connect-spotify ms-3" href="#how-it-works" data-analytics="connect_spotify_header">🎵 Connect to Spotify</a>
+                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('auth.login') }}">Login</a>
+                    <a class="btn btn-primary btn-connect-spotify ms-3" href="{{ url_for('auth.login') }}" data-analytics="connect_spotify_header">🎵 Connect to Spotify</a>
                 {% endif %}
             </div>
         </nav>
@@ -210,14 +210,14 @@
                     <h5>SUPPORT</h5>
                     <ul class="list-unstyled text-small">
                         <li><a class="link-secondary text-decoration-none" href="#">Help Center</a></li>
-                        <li><a class="link-secondary text-decoration-none" href="#" onclick="return false;">Contact Us</a></li>
+                        <li><a class="link-secondary text-decoration-none" href="{{ url_for('main.contact') }}">Contact Us</a></li>
                     </ul>
                 </div>
                 <div class="col-md-2 mb-3">
                     <h5>LEGAL</h5>
                      <ul class="list-unstyled text-small">
-                        <li><a class="link-secondary text-decoration-none" href="#" onclick="return false;">Privacy Policy</a></li>
-                        <li><a class="link-secondary text-decoration-none" href="#" onclick="return false;">Terms of Service</a></li>
+                        <li><a class="link-secondary text-decoration-none" href="{{ url_for('main.privacy') }}">Privacy Policy</a></li>
+                        <li><a class="link-secondary text-decoration-none" href="{{ url_for('main.terms') }}">Terms of Service</a></li>
                     </ul>
                 </div>
             </div>
