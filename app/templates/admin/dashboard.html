@@ -6,26 +6,51 @@
     <title>Admin Dashboard - Christian Cleanup</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+        /* Modern Design System for Admin Dashboard */
+        :root {
+            --primary-purple: #6b46c1;
+            --primary-color: #7c5cdb;
+            --primary-light: #9f7aea;
+            --dark-text: #1a202c;
+            --muted-text: #718096;
+            --light-bg: #fafbfc;
+            --card-bg: #ffffff;
+            --border-color: #e8eaed;
+            --border-radius-sm: 12px;
+            --border-radius: 16px;
+            --box-shadow-card: 0 4px 20px rgba(0, 0, 0, 0.06);
+            --box-shadow-hover: 0 8px 30px rgba(107, 70, 193, 0.12);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f5f7;
-            color: #1d1d1f;
-            line-height: 1.6;
+            font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--light-bg);
+            color: var(--dark-text);
+            line-height: 1.7;
+            font-size: 18px;
         }
         
         .header {
-            background: #fff;
-            border-bottom: 1px solid #d2d2d7;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
             padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         
         .header h1 {
             font-size: 1.5rem;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--primary-purple);
         }
         
         .nav {
@@ -34,15 +59,17 @@
         }
         
         .nav a {
-            color: #06c;
+            color: var(--primary-purple);
             text-decoration: none;
             padding: 0.5rem 1rem;
-            border-radius: 8px;
-            transition: background 0.2s;
+            border-radius: var(--border-radius-sm);
+            transition: var(--transition);
+            font-weight: 500;
         }
         
         .nav a:hover, .nav a.active {
-            background: #f5f5f7;
+            background: rgba(107, 70, 193, 0.1);
+            transform: translateY(-2px);
         }
         
         .container {
@@ -59,36 +86,48 @@
         }
         
         .metric-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 1.75rem;
+            box-shadow: var(--box-shadow-card);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            transition: var(--transition);
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--box-shadow-hover);
+            border-color: rgba(107, 70, 193, 0.1);
         }
         
         .metric-label {
             font-size: 0.875rem;
-            color: #86868b;
+            color: var(--muted-text);
             margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
         }
         
         .metric-value {
             font-size: 2rem;
-            font-weight: 600;
-            color: #1d1d1f;
+            font-weight: 700;
+            color: var(--primary-purple);
         }
         
         .metric-sub {
             font-size: 0.875rem;
-            color: #86868b;
+            color: var(--muted-text);
             margin-top: 0.5rem;
         }
         
         .status-badge {
             display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
+            padding: 0.4em 0.85em;
+            border-radius: 50rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
         }
         
         .status-healthy { background: #d1f4e0; color: #0a6e31; }
@@ -96,38 +135,44 @@
         .status-error { background: #f8d7da; color: #721c24; }
         
         .chart-container {
-            background: #fff;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 1.75rem;
+            box-shadow: var(--box-shadow-card);
             margin-bottom: 2rem;
+            border: 1px solid rgba(0, 0, 0, 0.04);
         }
         
         .chart-container h2 {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             margin-bottom: 1rem;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--dark-text);
         }
         
         .refresh-btn {
-            background: #06c;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-color) 100%);
             color: #fff;
             border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius-sm);
             cursor: pointer;
             font-size: 0.875rem;
-            transition: background 0.2s;
+            font-weight: 500;
+            transition: var(--transition);
+            box-shadow: 0 4px 12px rgba(107, 70, 193, 0.25);
         }
         
         .refresh-btn:hover {
-            background: #0051a8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(107, 70, 193, 0.35);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
         }
         
         .loading {
             text-align: center;
             padding: 2rem;
-            color: #86868b;
+            color: var(--muted-text);
         }
     </style>
 </head>
