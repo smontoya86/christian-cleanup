@@ -1,45 +1,71 @@
 /* Components CSS - Reusable UI components */
 
-/* Cards */
+/* Cards - Modern Design */
 .card {
-    border: none;
+    border: 1px solid rgba(0, 0, 0, 0.04);
     border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
+    box-shadow: var(--box-shadow-card);
     margin-bottom: 1.5rem;
     transition: var(--transition);
     background-color: var(--card-bg);
+    overflow: hidden;
 }
 
 .card:hover {
     box-shadow: var(--box-shadow-hover);
+    transform: translateY(-4px);
+    border-color: rgba(107, 70, 193, 0.1);
 }
 
 .card-header {
     background-color: var(--card-bg);
-    border-bottom: 1px solid rgb(0 0 0 / 5%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     font-weight: 600;
-    padding: 1rem 1.5rem;
+    padding: 1.25rem 1.75rem;
+}
+
+.card-body {
+    padding: 1.75rem;
 }
 
 .card-purple-bg {
-    background-color: var(--light-purple);
-    border: none;
+    background: linear-gradient(135deg, rgba(107, 70, 193, 0.05) 0%, rgba(159, 122, 234, 0.03) 100%);
+    border: 1px solid rgba(107, 70, 193, 0.1);
+}
+
+/* Feature Cards */
+.feature-card {
+    transition: var(--transition);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.feature-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--box-shadow-lg);
+    border-color: rgba(107, 70, 193, 0.15);
+}
+
+.feature-card .card-body {
+    padding: 2rem;
 }
 
 /* Enhanced card hover effects */
 #analysisResults .card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-4px);
 }
 
-/* Buttons */
+/* Buttons - Modern Design */
 .btn {
     font-weight: 500;
-    padding: 0.5rem 1.25rem;
+    padding: 0.75rem 1.5rem;
     border-radius: var(--border-radius-sm);
     transition: var(--transition);
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    border: none;
+    font-size: 1rem;
+    letter-spacing: 0.01em;
 }
 
 .btn i {
@@ -47,8 +73,22 @@
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-color) 100%);
+    border: none;
+    color: white;
+    box-shadow: 0 4px 12px rgba(107, 70, 193, 0.25);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(107, 70, 193, 0.35);
+}
+
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+    border-radius: var(--border-radius);
 }
 
 .btn-connect-spotify,
@@ -72,22 +112,26 @@
 }
 
 .btn-outline-secondary {
-    color: #495057;
-    border-color: #dee2e6;
+    color: var(--dark-text);
+    border: 2px solid var(--border-color);
+    background-color: transparent;
 }
 
 .btn-outline-secondary:hover {
     background-color: var(--light-bg);
-    border-color: #dee2e6;
-    color: #495057;
+    border-color: var(--primary-purple);
+    color: var(--primary-purple);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* Badges */
+/* Badges - Modern Design */
 .badge {
     font-weight: 500;
-    padding: 0.35em 0.65em;
-    font-size: 0.75em;
+    padding: 0.4em 0.85em;
+    font-size: 0.875rem;
     border-radius: 50rem;
+    letter-spacing: 0.01em;
 }
 
 .badge.bg-success {
