@@ -44,6 +44,44 @@
         </div>
     {% endif %}
 
+    <!-- Analysis Confirmation Modal -->
+    {% if session.get('show_analysis_modal') %}
+    <div class="modal fade show" id="analysisModal" tabindex="-1" aria-labelledby="analysisModalLabel" style="display: block; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: var(--border-radius); border: none; box-shadow: var(--box-shadow-lg);">
+                <div class="modal-header" style="border-bottom: 1px solid var(--border-color); background: linear-gradient(135deg, rgba(107, 70, 193, 0.05) 0%, rgba(159, 122, 234, 0.03) 100%);">
+                    <h5 class="modal-title fw-bold" id="analysisModalLabel" style="color: var(--primary-purple);">
+                        🎉 {% if session.sync_info.get('is_new_user') %}Welcome to Music Disciple!{% else %}Library Update{% endif %}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="dismissAnalysisModal()"></button>
+                </div>
+                <div class="modal-body" style="padding: 2rem;">
+                    {% set sync_info = session.sync_info %}
+                    {% if sync_info.get('is_new_user') %}
+                        <p class="mb-3">We found <strong>{{ sync_info.playlists_count }} playlists</strong> with <strong>{{ sync_info.tracks_count }} songs</strong> in your Spotify library.</p>
+                        <p class="mb-4">Would you like to analyze them now? This will take approximately <strong>{{ ((sync_info.tracks_count * 2) / 60) | round(0, 'ceil') | int }} minutes</strong>.</p>
+                    {% elif sync_info.get('is_update') %}
+                        <p class="mb-3">We detected changes in <strong>{{ sync_info.playlists_count }} playlists</strong> with new songs.</p>
+                        <p class="mb-4">Would you like to analyze the updated content now?</p>
+                    {% elif sync_info.get('is_resume') %}
+                        <p class="mb-3">You have <strong>{{ sync_info.unanalyzed_count }} unanalyzed songs</strong> in your library.</p>
+                        <p class="mb-4">Would you like to continue analyzing them now?</p>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-lg" onclick="startAnalysisFromModal()" style="background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-color) 100%); border: none; box-shadow: 0 4px 12px rgba(107, 70, 193, 0.25);">
+                            ✅ Yes, Analyze Now
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="dismissAnalysisModal()">
+                            ⏸️ Maybe Later
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     {% if error_message %}
         <div class="alert alert-danger" role="alert">
             ⚠️ {{ error_message }}
@@ -1302,6 +1340,36 @@ async function startBackgroundAnalysis() {
         btn.disabled = false;
         btn.innerHTML = '▶️ Analyze All';
     }
+}
+
+// Modal functions for auto-sync analysis confirmation
+async function startAnalysisFromModal() {
+    console.log('Starting analysis from modal confirmation...');
+    
+    // Hide the modal
+    const modal = document.getElementById('analysisModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    // Clear the session flag
+    await fetch('/api/clear-analysis-modal', { method: 'POST' });
+    
+    // Trigger the analysis
+    await startBackgroundAnalysis();
+}
+
+async function dismissAnalysisModal() {
+    console.log('Dismissing analysis modal...');
+    
+    // Hide the modal
+    const modal = document.getElementById('analysisModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    // Clear the session flag
+    await fetch('/api/clear-analysis-modal', { method: 'POST' });
 }
 </script>
 

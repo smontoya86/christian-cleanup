@@ -153,6 +153,15 @@ def get_analysis_progress():
         }), 500
 
 
+@bp.route("/clear-analysis-modal", methods=["POST"])
+@login_required
+def clear_analysis_modal():
+    """Clear the analysis modal session flag"""
+    session.pop('show_analysis_modal', None)
+    session.pop('sync_info', None)
+    return jsonify({"success": True})
+
+
 @bp.route("/background-analysis/public-status")
 def get_background_analysis_public_status():
     """Get background analysis public status"""

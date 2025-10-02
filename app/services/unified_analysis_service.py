@@ -421,4 +421,137 @@ class UnifiedAnalysisService:
             self.logger.error(f"Failed to get analysis progress for user {user_id}: {e}")
             return {"success": False, "error": str(e)}
 
+    def get_unanalyzed_songs_count(self, user_id):
+        """
+        Get count of songs that haven't been analyzed yet for a user.
+        """
+        try:
+            from ..models import Playlist, PlaylistSong
+            
+            # Get all songs for user
+            total_songs = db.session.query(func.count(Song.id.distinct())).join(
+                PlaylistSong
+            ).join(
+                Playlist
+            ).filter(
+                Playlist.owner_id == user_id
+            ).scalar() or 0
+            
+            # Get analyzed songs
+            analyzed_songs = db.session.query(func.count(AnalysisResult.id.distinct())).join(
+                AnalysisResult.song
+            ).join(
+                Song.playlist_associations
+            ).join(
+                PlaylistSong.playlist
+            ).filter(
+                Playlist.owner_id == user_id,
+                AnalysisResult.status == 'completed'
+            ).scalar() or 0
+            
+            return max(0, total_songs - analyzed_songs)
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get unanalyzed songs count for user {user_id}: {e}")
+            return 0
+
+    def detect_playlist_changes(self, user_id):
+        """
+        Detect changes in user's playlists compared to Spotify.
+        Returns dict with changed playlist info.
+        """
+        try:
+            from ..models import Playlist
+            from ..services.spotify_service import SpotifyService
+            
+            spotify_service = SpotifyService()
+            
+            # Get current playlists from database
+            db_playlists = Playlist.query.filter_by(owner_id=user_id).all()
+            db_playlist_map = {p.spotify_id: p for p in db_playlists}
+            
+            # Get playlists from Spotify
+            spotify_playlists = spotify_service.get_user_playlists(user_id)
+            
+            changed_playlists = []
+            
+            for sp_playlist in spotify_playlists:
+                spotify_id = sp_playlist['id']
+                spotify_track_count = sp_playlist['tracks']['total']
+                
+                if spotify_id in db_playlist_map:
+                    db_playlist = db_playlist_map[spotify_id]
+                    # Check if track count changed
+                    if db_playlist.track_count != spotify_track_count:
+                        changed_playlists.append({
+                            'id': db_playlist.id,
+                            'spotify_id': spotify_id,
+                            'name': sp_playlist['name'],
+                            'old_count': db_playlist.track_count,
+                            'new_count': spotify_track_count
+                        })
+                else:
+                    # New playlist
+                    changed_playlists.append({
+                        'spotify_id': spotify_id,
+                        'name': sp_playlist['name'],
+                        'new_count': spotify_track_count,
+                        'is_new': True
+                    })
+            
+            return {
+                "success": True,
+                "changed_playlists": changed_playlists,
+                "total_changed": len(changed_playlists)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to detect playlist changes for user {user_id}: {e}")
+            return {"success": False, "error": str(e), "changed_playlists": [], "total_changed": 0}
+
+    def analyze_changed_playlists(self, changed_playlists):
+        """
+        Analyze only songs in changed playlists.
+        Returns count of songs analyzed.
+        """
+        try:
+            from ..models import Playlist, PlaylistSong
+            
+            analyzed_count = 0
+            
+            for playlist_info in changed_playlists:
+                playlist_id = playlist_info.get('id')
+                if not playlist_id:
+                    continue
+                
+                # Get unanalyzed songs from this playlist
+                unanalyzed_songs = db.session.query(Song).join(
+                    PlaylistSong
+                ).outerjoin(
+                    AnalysisResult, Song.id == AnalysisResult.song_id
+                ).filter(
+                    PlaylistSong.playlist_id == playlist_id,
+                    db.or_(
+                        AnalysisResult.id.is_(None),
+                        AnalysisResult.status != 'completed'
+                    )
+                ).all()
+                
+                # Analyze each song
+                for song in unanalyzed_songs:
+                    try:
+                        self.analyze_song(song.id)
+                        analyzed_count += 1
+                    except Exception as e:
+                        self.logger.error(f"Failed to analyze song {song.id}: {e}")
+            
+            return {
+                "success": True,
+                "analyzed_songs": analyzed_count
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to analyze changed playlists: {e}")
+            return {"success": False, "error": str(e), "analyzed_songs": 0}
+
 

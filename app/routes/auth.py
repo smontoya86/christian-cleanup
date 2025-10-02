@@ -200,15 +200,12 @@ def _get_or_create_user(spotify_user, token_info):
 
 
 def _handle_new_user_sync(user):
-    """Handle full sync and analysis for new users"""
+    """Handle full sync for new users and prepare modal confirmation"""
     from ..services.playlist_sync_service import PlaylistSyncService
-    from ..services.unified_analysis_service import UnifiedAnalysisService
     
     current_app.logger.info(f"Starting automatic sync for new user {user.id}")
     
     sync_service = PlaylistSyncService()
-    analysis_service = UnifiedAnalysisService()
-    
     sync_result = sync_service.sync_user_playlists(user)
     
     if sync_result["status"] == "completed":
@@ -217,16 +214,15 @@ def _handle_new_user_sync(user):
         
         current_app.logger.info(f'Synced {playlists_count} playlists with {tracks_count} tracks for new user {user.id}')
         
-        # Start automatic analysis
-        try:
-            analysis_result = analysis_service.auto_analyze_user_after_sync(user.id)
-            if analysis_result.get("success"):
-                flash(f"Welcome, {user.display_name}! Synced {playlists_count} playlists with {tracks_count} songs. Analysis starting in background.", "success")
-            else:
-                flash(f"Welcome, {user.display_name}! Synced {playlists_count} playlists. You can analyze songs from the dashboard.", "success")
-        except Exception as e:
-            current_app.logger.warning(f"Auto-analysis failed for user {user.id}: {e}")
-            flash(f"Welcome, {user.display_name}! Synced {playlists_count} playlists. You can analyze songs from the dashboard.", "success")
+        # Store sync info in session for modal display
+        session['show_analysis_modal'] = True
+        session['sync_info'] = {
+            'playlists_count': playlists_count,
+            'tracks_count': tracks_count,
+            'is_new_user': True
+        }
+        
+        flash(f"Welcome, {user.display_name}! Successfully synced {playlists_count} playlists with {tracks_count} songs.", "success")
     else:
         current_app.logger.error(f'Sync failed for new user {user.id}: {sync_result.get("error")}')
         flash(f"Welcome, {user.display_name}! There was an issue syncing your playlists. You can try again from the dashboard.", "warning")
@@ -242,7 +238,6 @@ def _handle_returning_user_sync(user):
     sync_service = PlaylistSyncService()
     analysis_service = UnifiedAnalysisService()
     
-    # Simple approach: Always do a quick sync check, only update if changes detected
     try:
         # Check for changes first
         change_result = analysis_service.detect_playlist_changes(user.id)
@@ -254,13 +249,18 @@ def _handle_returning_user_sync(user):
             sync_result = sync_service.sync_user_playlists(user)
             
             if sync_result["status"] == "completed":
-                # Start analysis for new songs
-                analysis_result = analysis_service.analyze_changed_playlists(change_result["changed_playlists"])
+                tracks_count = sync_result.get("total_tracks", 0)
                 
-                if analysis_result.get("success"):
-                    flash(f'Welcome back, {user.display_name}! Updated {change_result["total_changed"]} playlists. Analyzing {analysis_result.get("analyzed_songs", 0)} new songs.', "success")
-                else:
-                    flash(f"Welcome back, {user.display_name}! Updated {change_result['total_changed']} playlists.", "success")
+                # Store sync info in session for modal display
+                session['show_analysis_modal'] = True
+                session['sync_info'] = {
+                    'playlists_count': change_result["total_changed"],
+                    'tracks_count': tracks_count,
+                    'is_new_user': False,
+                    'is_update': True
+                }
+                
+                flash(f'Welcome back, {user.display_name}! Updated {change_result["total_changed"]} playlists with changes.', "success")
             else:
                 flash(f"Welcome back, {user.display_name}! Detected playlist changes but sync failed.", "warning")
         else:
@@ -268,8 +268,14 @@ def _handle_returning_user_sync(user):
             try:
                 unanalyzed_count = analysis_service.get_unanalyzed_songs_count(user.id)
                 if unanalyzed_count > 0:
-                    analysis_service.auto_analyze_user_after_sync(user.id)
-                    flash(f"Welcome back, {user.display_name}! No playlist changes detected. Analyzing {unanalyzed_count} unanalyzed songs in background.", "success")
+                    # Store info for modal
+                    session['show_analysis_modal'] = True
+                    session['sync_info'] = {
+                        'unanalyzed_count': unanalyzed_count,
+                        'is_new_user': False,
+                        'is_resume': True
+                    }
+                    flash(f"Welcome back, {user.display_name}! Found {unanalyzed_count} unanalyzed songs.", "success")
                 else:
                     flash(f"Welcome back, {user.display_name}! Everything is up to date.", "success")
             except Exception as e:
