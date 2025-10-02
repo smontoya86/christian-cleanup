@@ -120,6 +120,39 @@ def playlist_detail(playlist_id):
     )
 
 
+@main_bp.route("/playlist/<int:playlist_id>/remove/<int:song_id>", methods=["POST"])
+@login_required
+def remove_from_playlist(playlist_id, song_id):
+    """Remove a song from a playlist"""
+    try:
+        # Get the playlist and verify ownership
+        playlist = Playlist.query.get_or_404(playlist_id)
+        
+        if playlist.owner_id != current_user.id:
+            flash("You don't have permission to modify this playlist.", "error")
+            return redirect(url_for("main.dashboard"))
+        
+        # Remove the playlist-song association
+        playlist_song = PlaylistSong.query.filter_by(
+            playlist_id=playlist_id,
+            song_id=song_id
+        ).first()
+        
+        if playlist_song:
+            db.session.delete(playlist_song)
+            db.session.commit()
+            flash("Song removed from playlist.", "success")
+        else:
+            flash("Song not found in playlist.", "warning")
+            
+    except Exception as e:
+        current_app.logger.error(f"Error removing song {song_id} from playlist {playlist_id}: {e}")
+        flash("An error occurred while removing the song.", "error")
+        db.session.rollback()
+    
+    return redirect(url_for("main.playlist_detail", playlist_id=playlist_id))
+
+
 @main_bp.route("/song/<int:song_id>")
 @login_required
 def song_detail(song_id):
