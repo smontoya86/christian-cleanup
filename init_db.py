@@ -15,8 +15,8 @@ def init_database():
     """Initialize the database with proper tables"""
     print("🔧 Initializing database...")
     
-    # Create app with development config
-    app = create_app('development')
+    # Create app
+    app = create_app()
     
     with app.app_context():
         # Drop all tables and recreate (for clean slate)
