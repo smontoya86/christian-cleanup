@@ -17,13 +17,17 @@ from app.extensions import db
 from app.models.models import User, Song, Playlist, AnalysisResult, LyricsCache
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def app():
-    """Create application for testing"""
+    """Create application for testing with isolated database"""
+    # Override DATABASE_URL for testing
+    os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
+    
     app = create_app()
     app.config.update({
         'TESTING': True,
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+        'SQLALCHEMY_TRACK_MODIFICATIONS': False,
         'WTF_CSRF_ENABLED': False,
         'SECRET_KEY': 'test-secret-key',
     })
@@ -58,10 +62,15 @@ def db_session(app):
 @pytest.fixture
 def sample_user(db_session):
     """Create a sample user"""
+    from datetime import datetime, timezone, timedelta
+    
     user = User(
         spotify_id='test_user_123',
         display_name='Test User',
-        email='test@example.com'
+        email='test@example.com',
+        access_token='test_access_token',
+        refresh_token='test_refresh_token',
+        token_expiry=datetime.now(timezone.utc) + timedelta(hours=1)
     )
     db_session.add(user)
     db_session.commit()
@@ -89,8 +98,8 @@ def sample_playlist(db_session, sample_user):
     playlist = Playlist(
         spotify_id='test_playlist_123',
         name='Test Playlist',
-        user_id=sample_user.id,
-        snapshot_id='snapshot_123'
+        owner_id=sample_user.id,
+        spotify_snapshot_id='snapshot_123'
     )
     db_session.add(playlist)
     db_session.commit()

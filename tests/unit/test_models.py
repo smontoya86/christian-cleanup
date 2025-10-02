@@ -12,23 +12,29 @@ class TestUserModel:
     
     def test_create_user(self, db_session):
         """Test creating a user"""
+        from datetime import datetime, timezone, timedelta
+        
         user = User(
-            spotify_id='user_123',
+            spotify_id='user_test_create_123',
             display_name='Test User',
-            email='test@example.com'
+            email='test_create@example.com',
+            access_token='test_token',
+            refresh_token='test_refresh',
+            token_expiry=datetime.now(timezone.utc) + timedelta(hours=1)
         )
         db_session.add(user)
         db_session.commit()
         
         assert user.id is not None
-        assert user.spotify_id == 'user_123'
+        assert user.spotify_id == 'user_test_create_123'
         assert user.display_name == 'Test User'
-        assert user.email == 'test@example.com'
+        assert user.email == 'test_create@example.com'
     
     def test_user_playlists_relationship(self, sample_user, sample_playlist):
         """Test user playlists relationship"""
-        assert len(sample_user.playlists) == 1
-        assert sample_user.playlists[0] == sample_playlist
+        playlists = list(sample_user.playlists)
+        assert len(playlists) == 1
+        assert playlists[0] == sample_playlist
 
 
 class TestSongModel:
@@ -37,7 +43,7 @@ class TestSongModel:
     def test_create_song(self, db_session):
         """Test creating a song"""
         song = Song(
-            spotify_id='song_123',
+            spotify_id='song_test_create_456',
             title='Test Song',
             artist='Test Artist',
             album='Test Album',
@@ -47,7 +53,7 @@ class TestSongModel:
         db_session.commit()
         
         assert song.id is not None
-        assert song.spotify_id == 'song_123'
+        assert song.spotify_id == 'song_test_create_456'
         assert song.title == 'Test Song'
         assert song.artist == 'Test Artist'
     
@@ -65,15 +71,15 @@ class TestPlaylistModel:
         playlist = Playlist(
             spotify_id='playlist_123',
             name='Test Playlist',
-            user_id=sample_user.id,
-            snapshot_id='snapshot_123'
+            owner_id=sample_user.id,
+            spotify_snapshot_id='snapshot_123'
         )
         db_session.add(playlist)
         db_session.commit()
         
         assert playlist.id is not None
         assert playlist.spotify_id == 'playlist_123'
-        assert playlist.user_id == sample_user.id
+        assert playlist.owner_id == sample_user.id
 
 
 class TestAnalysisResultModel:
@@ -129,7 +135,7 @@ class TestLyricsCacheModel:
         assert found.id == sample_lyrics_cache.id
         assert 'Amazing grace' in found.lyrics
     
-    def test_find_cached_lyrics_not_found(self):
+    def test_find_cached_lyrics_not_found(self, db_session):
         """Test finding non-existent cached lyrics"""
         found = LyricsCache.find_cached_lyrics('Unknown Artist', 'Unknown Song')
         assert found is None
