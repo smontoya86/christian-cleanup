@@ -384,6 +384,7 @@ class AnalysisResult(db.Model):
     formation_risk = db.Column(db.String(20), nullable=True)
     doctrinal_clarity = db.Column(db.String(20), nullable=True)
     confidence = db.Column(db.String(20), nullable=True)
+    analysis_quality = db.Column(db.String(20), default='full', nullable=False)  # 'full', 'degraded', 'cached'
     needs_review = db.Column(db.Boolean, default=False)
     narrative_voice = db.Column(db.String(20), nullable=True)
     lament_filter_applied = db.Column(db.Boolean, default=False)
@@ -429,6 +430,7 @@ class AnalysisResult(db.Model):
         formation_risk=None,
         doctrinal_clarity=None,
         confidence=None,
+        analysis_quality=None,
         needs_review=None,
         narrative_voice=None,
         lament_filter_applied=None,
@@ -449,6 +451,8 @@ class AnalysisResult(db.Model):
         self.formation_risk = formation_risk
         self.doctrinal_clarity = doctrinal_clarity
         self.confidence = confidence
+        if analysis_quality is not None:
+            self.analysis_quality = analysis_quality
         self.needs_review = needs_review
         self.narrative_voice = narrative_voice
         self.lament_filter_applied = lament_filter_applied
