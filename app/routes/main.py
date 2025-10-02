@@ -7,7 +7,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import desc, func
 
 from .. import db
-from ..models import AnalysisResult, Playlist, Song
+from ..models import AnalysisResult, Playlist, PlaylistSong, Song
 
 main_bp = Blueprint("main", __name__)
 
@@ -29,16 +29,20 @@ def dashboard():
     
     # Calculate stats
     total_playlists = len(playlists)
-    total_songs = db.session.query(func.count(Song.id)).join(
-        Song.playlists
+    total_songs = db.session.query(func.count(Song.id.distinct())).join(
+        Song.playlist_associations
+    ).join(
+        PlaylistSong.playlist
     ).filter(
         Playlist.owner_id == current_user.id
     ).scalar() or 0
     
-    analyzed_songs = db.session.query(func.count(AnalysisResult.id)).join(
+    analyzed_songs = db.session.query(func.count(AnalysisResult.id.distinct())).join(
         AnalysisResult.song
     ).join(
-        Song.playlists
+        Song.playlist_associations
+    ).join(
+        PlaylistSong.playlist
     ).filter(
         Playlist.owner_id == current_user.id,
         AnalysisResult.status == 'completed'
