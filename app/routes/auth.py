@@ -27,6 +27,25 @@ from ..utils.ga4 import send_event_async
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
+@bp.before_app_request
+def check_user_needs_reauth():
+    """Check if authenticated user needs to re-authenticate"""
+    if current_user.is_authenticated:
+        # Skip check for auth and logout routes
+        if request.endpoint and (
+            request.endpoint.startswith('auth.') or 
+            request.endpoint in ['static', 'main.index']
+        ):
+            return
+        
+        # Check if user needs re-authentication (30 days)
+        if current_user.needs_reauth(days_threshold=30):
+            logout_user()
+            session.clear()
+            flash("For your security, please log in again. It's been more than 30 days since your last login.", "info")
+            return redirect(url_for("auth.login"))
+
+
 @bp.route("/login")
 def login():
     """Initiate Spotify OAuth login"""
@@ -127,8 +146,13 @@ def callback():
         # Create or update user in database
         user, is_new_user = _get_or_create_user(spotify_user, token_info)
 
-        # Log the user in
+        # Update last_login timestamp
+        user.last_login = datetime.now(timezone.utc)
+        db.session.commit()
+        
+        # Log the user in with permanent session
         login_user(user, remember=True)
+        session.permanent = True
         current_app.logger.info(f"User {user.id} logged in successfully")
 
         # Handle automatic sync and analysis
@@ -328,6 +352,13 @@ def logout():
     
     was_authenticated = current_user.is_authenticated
     
+    # Revoke Spotify tokens before logging out
+    if was_authenticated and current_user.get_access_token():
+        try:
+            _revoke_spotify_tokens(current_user)
+        except Exception as e:
+            current_app.logger.warning(f"Failed to revoke Spotify tokens for user {current_user.id}: {e}")
+    
     if was_authenticated:
         logout_user()
     
@@ -488,6 +519,37 @@ def config_status():
             ),
         }
     )
+
+
+def _revoke_spotify_tokens(user):
+    """Revoke Spotify access and refresh tokens"""
+    try:
+        access_token = user.get_access_token()
+        
+        if not access_token:
+            return
+        
+        # Revoke access token
+        revoke_data = {
+            "token": access_token,
+            "token_type_hint": "access_token",
+            "client_id": current_app.config["SPOTIFY_CLIENT_ID"],
+            "client_secret": current_app.config["SPOTIFY_CLIENT_SECRET"],
+        }
+        
+        revoke_response = requests.post(
+            "https://accounts.spotify.com/api/token/revoke",
+            data=revoke_data,
+            timeout=10,
+        )
+        
+        # Note: Spotify's revoke endpoint may return 200 even if token is already invalid
+        # This is expected behavior
+        current_app.logger.info(f"Revoked Spotify tokens for user {user.id}")
+        
+    except Exception as e:
+        current_app.logger.error(f"Error revoking Spotify tokens for user {user.id}: {e}")
+        raise
 
 
 @bp.route("/mock-users")

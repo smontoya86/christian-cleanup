@@ -33,6 +33,7 @@ class User(UserMixin, db.Model):
     access_token = db.Column(db.String(1024), nullable=False)
     refresh_token = db.Column(db.String(1024), nullable=True)
     token_expiry = db.Column(db.DateTime, nullable=False)
+    last_login = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,
@@ -101,6 +102,21 @@ class User(UserMixin, db.Model):
 
     def ensure_token_valid(self):
         return not self.is_token_expired
+    
+    def needs_reauth(self, days_threshold=30):
+        """Check if user needs to re-authenticate based on last login time"""
+        if not self.last_login:
+            return True
+        
+        now = datetime.now(timezone.utc)
+        last_login = self.last_login
+        
+        # Handle timezone-aware vs naive datetimes
+        if last_login.tzinfo is None:
+            last_login = last_login.replace(tzinfo=timezone.utc)
+        
+        days_since_login = (now - last_login).days
+        return days_since_login >= days_threshold
 
     def refresh_access_token(self):
         refresh_token = self.get_refresh_token()
