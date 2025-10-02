@@ -30,7 +30,8 @@ class SpotifyService:
 
     def _ensure_valid_token(self):
         """Ensure user has a valid access token"""
-        if not self.user.access_token:
+        access_token = self.user.get_access_token()
+        if not access_token:
             raise ValueError("User has no access token")
 
         # Check if token is expired (with 5 minute buffer)
@@ -46,14 +47,15 @@ class SpotifyService:
 
     def _refresh_token(self):
         """Refresh the user's access token"""
-        if not self.user.refresh_token:
+        refresh_token = self.user.get_refresh_token()
+        if not refresh_token:
             raise ValueError("No refresh token available")
 
         from flask import current_app
 
         token_data = {
             "grant_type": "refresh_token",
-            "refresh_token": self.user.refresh_token,
+            "refresh_token": refresh_token,
             "client_id": current_app.config["SPOTIFY_CLIENT_ID"],
             "client_secret": current_app.config["SPOTIFY_CLIENT_SECRET"],
         }
@@ -83,7 +85,8 @@ class SpotifyService:
         """Make an authenticated request to Spotify API"""
         url = f"{self.BASE_URL}/{endpoint.lstrip('/')}"
         headers = kwargs.get("headers", {})
-        headers.update({"Authorization": f"Bearer {self.user.access_token}"})
+        access_token = self.user.get_access_token()
+        headers.update({"Authorization": f"Bearer {access_token}"})
         kwargs["headers"] = headers
 
         # Ensure timeout
