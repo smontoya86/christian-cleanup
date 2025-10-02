@@ -21,7 +21,7 @@
                     <strong>Built on the Word. Powered by AI.</strong>
                 </p>
                 <div class="d-flex flex-column flex-sm-row gap-3">
-                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg px-5 py-3">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-spotify btn-lg px-5 py-3">
                         🎵 Connect to Spotify
                     </a>
                     <a href="#features" class="btn btn-outline-secondary btn-lg px-5 py-3">
@@ -31,10 +31,10 @@
             </div>
             <div class="col-lg-6">
                 <div class="hero-image-wrapper">
-                    <img src="{{ url_for('static', filename='images/hero-placeholder.png') }}" 
+                    <img src="{{ url_for('static', filename='images/hero-placeholder.svg') }}" 
                          alt="Person listening to music with Bible" 
                          class="img-fluid rounded-3 shadow-lg"
-                         onerror="this.src='https://images.unsplash.com/photo-1499652848871-1527a310b13a?auto=format&fit=crop&w=800&h=600'">
+                         loading="eager">
                 </div>
             </div>
         </div>
@@ -100,9 +100,11 @@
         
         <div class="row align-items-center mb-5">
             <div class="col-lg-6 order-lg-2 mb-4 mb-lg-0">
-                <img src="https://images.unsplash.com/photo-1578574577315-3fbeb0cecdc2?auto=format&fit=crop&w=600&h=400" 
-                     alt="People discussing faith" 
-                     class="img-fluid rounded-3 shadow">
+                <div class="how-it-works-image bg-gradient rounded-3 shadow p-5 text-center">
+                    <div class="display-1 mb-3">🎵</div>
+                    <h4 class="text-white fw-bold">Your Music Journey</h4>
+                    <p class="text-white opacity-75">Guided by Scripture</p>
+                </div>
             </div>
             <div class="col-lg-6 order-lg-1">
                 <div class="pe-lg-5">
@@ -135,7 +137,7 @@
         <p class="lead text-white mb-4" style="opacity: 0.9;">
             Discover how to align your music choices with your faith and grow spiritually through guided lyric analysis and discernment.
         </p>
-        <a href="{{ url_for('auth.login') }}" class="btn btn-light btn-lg px-5 py-3">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-light btn-lg px-5 py-3 shadow-lg">
             🎵 Get Started Free
         </a>
     </div>
@@ -205,6 +207,30 @@
 
 .stat-card h3 {
     margin-bottom: 0.5rem;
+}
+
+.how-it-works-image {
+    background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-color) 100%);
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-spotify {
+    background-color: #1DB954;
+    color: white;
+    border: none;
+    font-weight: 600;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-spotify:hover {
+    background-color: #1ed760;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(29, 185, 84, 0.4);
 }
 
 .btn-primary {
