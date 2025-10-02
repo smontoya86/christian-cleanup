@@ -333,11 +333,11 @@ from cryptography.fernet import Fernet
 import os
 
 def encrypt_token(token):
-    cipher = Fernet(os.environ['ENCRYPTION_KEY'])
+    cipher = Fernet(os.environ['ENCRYPTION_KEY'])  # Use env var, not hardcoded
     return cipher.encrypt(token.encode()).decode()
 
 def decrypt_token(encrypted_token):
-    cipher = Fernet(os.environ['ENCRYPTION_KEY'])
+    cipher = Fernet(os.environ['ENCRYPTION_KEY'])  # Use env var, not hardcoded
     return cipher.decrypt(encrypted_token.encode()).decode()
 ```
 

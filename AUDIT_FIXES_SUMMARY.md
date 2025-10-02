@@ -188,7 +188,8 @@
 ### Added to .env:
 ```bash
 # Encryption Key for Token Storage (IMPORTANT: Keep secret, rotate regularly)
-ENCRYPTION_KEY=PNxyjqTeGKBePxk3lxxr5rJuL-ue_vyn3NJ29tqHKqU=
+# Generate using: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+ENCRYPTION_KEY=<your-generated-fernet-key-here>
 ```
 
 ### Production Deployment Notes:
