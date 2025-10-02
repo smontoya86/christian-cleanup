@@ -27,6 +27,7 @@ lyricsgenius<3.0
 python-dotenv
 marshmallow
 psutil
+cryptography>=41.0.0
 
 # Monitoring
 prometheus-client

@@ -186,9 +186,9 @@ def _get_or_create_user(spotify_user, token_info):
         db.session.add(user)
         is_new_user = True
 
-    # Update tokens and user info
-    user.access_token = token_info["access_token"]
-    user.refresh_token = token_info.get("refresh_token")
+    # Update tokens and user info (tokens are automatically encrypted via setters)
+    user.set_access_token(token_info["access_token"])
+    user.set_refresh_token(token_info.get("refresh_token"))
     user.token_expiry = datetime.now(timezone.utc) + timedelta(seconds=token_info["expires_in"])
     user.display_name = spotify_user.get("display_name", spotify_user["id"])
     user.email = spotify_user.get("email")

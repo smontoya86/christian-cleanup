@@ -21,6 +21,7 @@ from sqlalchemy import CheckConstraint
 from sqlalchemy import literal
 
 from ..extensions import db
+from ..utils.crypto import encrypt_token, decrypt_token
 
 
 class User(UserMixin, db.Model):
@@ -61,16 +62,28 @@ class User(UserMixin, db.Model):
         return f"<User {self.email}>"
 
     def set_access_token(self, token: str) -> None:
-        self.access_token = token
+        """Set access token with encryption"""
+        self.access_token = encrypt_token(token) if token else None
 
     def get_access_token(self) -> str:
-        return self.access_token
+        """Get decrypted access token"""
+        try:
+            return decrypt_token(self.access_token) if self.access_token else None
+        except Exception as e:
+            current_app.logger.error(f"Failed to decrypt access token for user {self.id}: {e}")
+            return None
 
     def set_refresh_token(self, token: str) -> None:
-        self.refresh_token = token
+        """Set refresh token with encryption"""
+        self.refresh_token = encrypt_token(token) if token else None
 
     def get_refresh_token(self) -> str:
-        return self.refresh_token
+        """Get decrypted refresh token"""
+        try:
+            return decrypt_token(self.refresh_token) if self.refresh_token else None
+        except Exception as e:
+            current_app.logger.error(f"Failed to decrypt refresh token for user {self.id}: {e}")
+            return None
 
     def clear_session(self) -> None:
         self.access_token = None

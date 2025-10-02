@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 text-center">
+            <div class="error-page">
+                <!-- 500 Icon -->
+                <div class="error-icon mb-4" style="font-size: 8rem; color: var(--primary-purple);">
+                    ⚠️
+                </div>
+                
+                <!-- Error Message -->
+                <h1 class="display-4 fw-bold mb-3">500</h1>
+                <h2 class="h4 mb-4">Internal Server Error</h2>
+                
+                <p class="lead text-muted mb-4">
+                    Something went wrong on our end. We're working to fix the issue. Please try again in a few moments.
+                </p>
+                
+                <!-- Scripture Reference -->
+                <div class="card bg-light border-0 mb-4">
+                    <div class="card-body py-3">
+                        <p class="mb-2 fst-italic text-muted">
+                            "And we know that in all things God works for the good of those who love him, who have been called according to his purpose."
+                        </p>
+                        <small class="text-muted">— Romans 8:28</small>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                    <button onclick="window.location.reload()" class="btn btn-primary px-4">
+                        🔄 Try Again
+                    </button>
+                    <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary px-4">
+                        🏠 Go Home
+                    </a>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary px-4">
+                        📊 Dashboard
+                    </a>
+                    {% endif %}
+                </div>
+                
+                <!-- Help Text -->
+                <div class="mt-5">
+                    <p class="small text-muted">
+                        If this problem persists, please <a href="/contact" class="text-decoration-none">contact us</a> and let us know what happened.
+                    </p>
+                    {% if config.DEBUG %}
+                    <div class="alert alert-warning mt-3 text-start">
+                        <strong>Debug Mode:</strong> Check server logs for detailed error information.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-page {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.error-icon {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+</style>
+{% endblock %}
+

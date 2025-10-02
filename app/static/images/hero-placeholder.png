@@ -1,0 +1,43 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="heroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#312e81;stop-opacity:0.1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="600" fill="url(#heroGrad)"/>
+  
+  <!-- Person with headphones listening -->
+  <g transform="translate(400, 300)">
+    <!-- Head -->
+    <circle cx="0" cy="-20" r="40" fill="#6f42c1" opacity="0.8"/>
+    
+    <!-- Headphones -->
+    <ellipse cx="-50" cy="-20" rx="15" ry="20" fill="#8b5cf6" opacity="0.9"/>
+    <ellipse cx="50" cy="-20" rx="15" ry="20" fill="#8b5cf6" opacity="0.9"/>
+    <path d="M -40 -40 Q 0 -60 40 -40" stroke="#8b5cf6" stroke-width="4" fill="none" opacity="0.9"/>
+    
+    <!-- Bible -->
+    <rect x="-30" y="40" width="60" height="80" fill="#6f42c1" opacity="0.8" rx="3"/>
+    <rect x="-25" y="45" width="50" height="70" fill="#f8f9fa" opacity="0.3" rx="2"/>
+    <line x1="0" y1="45" x2="0" y2="115" stroke="#6f42c1" stroke-width="2" opacity="0.6"/>
+    
+    <!-- Cross on Bible -->
+    <line x1="-10" y1="80" x2="10" y2="80" stroke="#8b5cf6" stroke-width="3" opacity="0.9"/>
+    <line x1="0" y1="70" x2="0" y2="90" stroke="#8b5cf6" stroke-width="3" opacity="0.9"/>
+  </g>
+  
+  <!-- Music notes floating -->
+  <g opacity="0.4">
+    <text x="150" y="100" font-size="48" fill="#6f42c1">♪</text>
+    <text x="650" y="150" font-size="40" fill="#8b5cf6">♫</text>
+    <text x="200" y="500" font-size="36" fill="#6f42c1">♪</text>
+    <text x="600" y="480" font-size="44" fill="#8b5cf6">♫</text>
+  </g>
+  
+  <!-- Text -->
+  <text x="400" y="550" text-anchor="middle" font-family="Rubik, Arial, sans-serif" font-size="20" fill="#6c757d" opacity="0.7">Music Disciple</text>
+</svg>
+

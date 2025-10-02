@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 text-center">
+            <div class="error-page">
+                <!-- 404 Icon -->
+                <div class="error-icon mb-4" style="font-size: 8rem; color: var(--primary-purple);">
+                    🎵
+                </div>
+                
+                <!-- Error Message -->
+                <h1 class="display-4 fw-bold mb-3">404</h1>
+                <h2 class="h4 mb-4">Page Not Found</h2>
+                
+                <p class="lead text-muted mb-4">
+                    Looks like this page took a different path. The page you're looking for doesn't exist or may have been moved.
+                </p>
+                
+                <!-- Scripture Reference -->
+                <div class="card bg-light border-0 mb-4">
+                    <div class="card-body py-3">
+                        <p class="mb-2 fst-italic text-muted">
+                            "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight."
+                        </p>
+                        <small class="text-muted">— Proverbs 3:5-6</small>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary px-4">
+                        🏠 Go Home
+                    </a>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary px-4">
+                        📊 Dashboard
+                    </a>
+                    {% endif %}
+                    <button onclick="window.history.back()" class="btn btn-outline-secondary px-4">
+                        ← Go Back
+                    </button>
+                </div>
+                
+                <!-- Help Text -->
+                <div class="mt-5">
+                    <p class="small text-muted">
+                        Need help? <a href="/contact" class="text-decoration-none">Contact us</a> or visit our <a href="/#features" class="text-decoration-none">features page</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-page {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.error-icon {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+{% endblock %}
+

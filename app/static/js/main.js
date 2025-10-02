@@ -136,9 +136,20 @@ class ChristianMusicCuratorApp {
                 window.addEventListener('load', () => {
                     const navigationTiming = performance.getEntriesByType('navigation')[0];
                     if (navigationTiming) {
-                        this.reportPerformanceMetric('page_load_time', navigationTiming.loadEventEnd - navigationTiming.navigationStart);
-                        this.reportPerformanceMetric('dom_content_loaded', navigationTiming.domContentLoadedEventEnd - navigationTiming.navigationStart);
-                        this.reportPerformanceMetric('time_to_interactive', navigationTiming.domInteractive - navigationTiming.navigationStart);
+                        // Only report valid (non-zero) timing metrics
+                        const pageLoadTime = navigationTiming.loadEventEnd - navigationTiming.fetchStart;
+                        const domContentLoaded = navigationTiming.domContentLoadedEventEnd - navigationTiming.fetchStart;
+                        const timeToInteractive = navigationTiming.domInteractive - navigationTiming.fetchStart;
+                        
+                        if (pageLoadTime > 0) {
+                            this.reportPerformanceMetric('page_load_time', pageLoadTime);
+                        }
+                        if (domContentLoaded > 0) {
+                            this.reportPerformanceMetric('dom_content_loaded', domContentLoaded);
+                        }
+                        if (timeToInteractive > 0) {
+                            this.reportPerformanceMetric('time_to_interactive', timeToInteractive);
+                        }
                     }
                 });
 
@@ -555,17 +566,39 @@ class ChristianMusicCuratorApp {
      * Show service worker update prompt
      */
     showServiceWorkerUpdatePrompt() {
-        const uiHelpers = this.modules.get('uiHelpers');
-        if (uiHelpers) {
-            // Show a user-friendly update prompt
-            const updateMessage = `
-                A new version of the app is available.
-                <button class="btn btn-sm btn-primary ms-2" onclick="window.location.reload()">
-                    Update Now
-                </button>
-            `;
-            uiHelpers.showInfo(updateMessage, 10000); // Show for 10 seconds
-        }
+        // Create a toast notification for the update
+        const toastContainer = document.querySelector('.toast-container') || this.createToastContainer();
+        
+        const toastHTML = `
+            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
+                <div class="toast-header bg-primary text-white">
+                    <strong class="me-auto">🎉 Update Available</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    <p class="mb-2">A new version of Music Disciple is available!</p>
+                    <button class="btn btn-primary btn-sm w-100" onclick="window.location.reload()">
+                        🔄 Update Now
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        
+        // Also log for debugging
+        console.log('✨ New version available. Showing update prompt to user.');
+    }
+    
+    /**
+     * Create toast container if it doesn't exist
+     */
+    createToastContainer() {
+        const container = document.createElement('div');
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+        return container;
     }
 
     /**
