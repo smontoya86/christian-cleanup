@@ -2,7 +2,7 @@
 Main application routes for Music Disciple
 """
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import desc, func
 
