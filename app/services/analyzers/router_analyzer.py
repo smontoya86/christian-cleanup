@@ -4,9 +4,11 @@ import json
 import os
 import re
 import logging
+import time
 from typing import Any, Dict
 
 import requests
+from app.utils.openai_rate_limiter import get_rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +53,14 @@ class RouterAnalyzer:
         except Exception:
             self.timeout = 60.0
         
+        # Rate limiter for API calls
+        self.rate_limiter = get_rate_limiter()
+        
         logger.info(f"✅ RouterAnalyzer initialized with OpenAI model: {self.model}")
 
     def analyze_song(self, title: str, artist: str, lyrics: str) -> Dict[str, Any]:
         """
-        Analyze a song using the fine-tuned GPT-4o-mini model.
+        Analyze a song using the fine-tuned GPT-4o-mini model with rate limiting.
         
         Args:
             title: Song title
@@ -92,21 +97,53 @@ class RouterAnalyzer:
             "Content-Type": "application/json"
         }
 
-        try:
-            resp = requests.post(url, json=payload, headers=headers, timeout=self.timeout)
-            resp.raise_for_status()
-            data = resp.json()
-            content = (data.get("choices", [{}])[0] or {}).get("message", {}).get("content", "{}")
-            parsed = self._parse_or_repair_json(content)
-            normalized = self._normalize_output(parsed)
-            logger.info(f"✅ Analysis complete: Score={normalized.get('score')}, Verdict={normalized.get('verdict')}")
-            return normalized
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"❌ HTTP error during analysis: {e.response.status_code} - {e.response.text}")
-            return self._default_output()
-        except Exception as e:
-            logger.error(f"❌ Error during analysis: {e}")
-            return self._default_output()
+        # Retry loop with exponential backoff
+        for attempt in range(3):  # Max 3 attempts
+            try:
+                # Acquire rate limit permission (blocks if needed)
+                self.rate_limiter.acquire()
+                
+                try:
+                    resp = requests.post(url, json=payload, headers=headers, timeout=self.timeout)
+                    resp.raise_for_status()
+                    
+                    # Success! Parse and return
+                    data = resp.json()
+                    content = (data.get("choices", [{}])[0] or {}).get("message", {}).get("content", "{}")
+                    parsed = self._parse_or_repair_json(content)
+                    normalized = self._normalize_output(parsed)
+                    logger.info(f"✅ Analysis complete: Score={normalized.get('score')}, Verdict={normalized.get('verdict')}")
+                    return normalized
+                    
+                finally:
+                    # Always release the rate limiter slot
+                    self.rate_limiter.release()
+                    
+            except requests.exceptions.HTTPError as e:
+                self.rate_limiter.release()  # Release on error too
+                
+                # Handle rate limit (429) with exponential backoff
+                if e.response.status_code == 429:
+                    if attempt < 2:  # Not last attempt
+                        backoff_time = self.rate_limiter.handle_rate_limit_error(attempt)
+                        logger.warning(f"⏳ Rate limited, retrying in {backoff_time:.1f}s...")
+                        time.sleep(backoff_time)
+                        continue  # Retry
+                    else:
+                        logger.error(f"❌ Rate limit exceeded after {attempt + 1} attempts")
+                        return self._default_output()
+                
+                # Other HTTP errors
+                logger.error(f"❌ HTTP error during analysis: {e.response.status_code} - {e.response.text}")
+                return self._default_output()
+                
+            except Exception as e:
+                self.rate_limiter.release()  # Release on any error
+                logger.error(f"❌ Error during analysis: {e}")
+                return self._default_output()
+        
+        # Should never reach here, but just in case
+        return self._default_output()
 
     def _get_comprehensive_system_prompt(self) -> str:
         return """You are a theological music analyst using Christian Framework v3.1. Return ONLY valid JSON (no prose).
