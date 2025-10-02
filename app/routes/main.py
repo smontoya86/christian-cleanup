@@ -70,8 +70,27 @@ def dashboard():
 @login_required
 def sync_playlists():
     """Sync user's Spotify playlists"""
-    # TODO: Implement playlist sync logic
-    flash("Playlist sync coming soon!", "info")
+    try:
+        from ..services.playlist_sync_service import PlaylistSyncService
+        
+        current_app.logger.info(f"Starting manual playlist sync for user {current_user.id}")
+        
+        sync_service = PlaylistSyncService()
+        result = sync_service.sync_user_playlists(current_user)
+        
+        if result["status"] == "completed":
+            playlists_count = result.get("playlists_synced", 0)
+            tracks_count = result.get("total_tracks", 0)
+            flash(f"Successfully synced {playlists_count} playlists with {tracks_count} songs!", "success")
+        else:
+            error_msg = result.get("error", "Unknown error")
+            flash(f"Sync failed: {error_msg}", "error")
+            current_app.logger.error(f"Sync failed for user {current_user.id}: {error_msg}")
+            
+    except Exception as e:
+        current_app.logger.error(f"Error syncing playlists for user {current_user.id}: {e}")
+        flash(f"An error occurred while syncing playlists: {str(e)}", "error")
+    
     return redirect(url_for("main.dashboard"))
 
 
