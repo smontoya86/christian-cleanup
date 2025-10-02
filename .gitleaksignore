@@ -1,0 +1,23 @@
+# Gitleaks Ignore File
+# This file contains patterns and paths that should be ignored by Gitleaks
+
+# False positives from CSS animations
+app/templates/index.html:*@keyframes*
+app/static/css/*.css:*@keyframes*
+
+# Documentation files that reference keys (not actual secrets)
+docs/*.md:*key*
+*.md:*ENCRYPTION_KEY*
+
+# Test files and mock data
+tests/**/*
+scripts/create_mock_data.py
+scripts/create_simple_mock_data.py
+scripts/create_minimal_mock_data.py
+
+# Example/template files
+*.example
+environments/env.*.example
+deploy/production.env.example
+env.runpod.example
+
