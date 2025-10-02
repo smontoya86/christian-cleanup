@@ -1,13 +1,23 @@
 # This file serves as an entry point for Gunicorn or other WSGI servers.
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load secrets from Docker secrets or environment variables
+try:
+    from app.utils.secrets_loader import inject_secrets_into_env
+    inject_secrets_into_env()
+except Exception as e:
+    logger.error(f"Failed to load secrets: {e}")
+    # Continue anyway for development environments
+    pass
 
 from app import create_app
 
-# Determine which configuration to use based on FLASK_CONFIG or default to 'default'
-# This should match how your Flask app determines its config (e.g., from an environment variable)
-flask_env = os.getenv("FLASK_CONFIG") or "default"
-
-app = create_app(config_name=flask_env)
+app = create_app()
 
 if __name__ == "__main__":
     # This allows running the app directly with `python wsgi.py` for development,

@@ -5,6 +5,7 @@ import os
 import re
 import logging
 import time
+import hashlib
 from typing import Any, Dict
 
 import requests
@@ -60,7 +61,7 @@ class RouterAnalyzer:
 
     def analyze_song(self, title: str, artist: str, lyrics: str) -> Dict[str, Any]:
         """
-        Analyze a song using the fine-tuned GPT-4o-mini model with rate limiting.
+        Analyze a song using the fine-tuned GPT-4o-mini model with caching and rate limiting.
         
         Args:
             title: Song title
@@ -70,6 +71,28 @@ class RouterAnalyzer:
         Returns:
             Dictionary containing analysis results with Christian Framework v3.1 schema
         """
+        # Check cache first
+        lyrics_hash = hashlib.sha256(lyrics.encode('utf-8')).hexdigest()
+        
+        try:
+            from app.models.models import AnalysisCache
+            from app import create_app
+            
+            # Use app context for database operations
+            app = create_app()
+            with app.app_context():
+                cached = AnalysisCache.find_cached_analysis(artist, title, lyrics_hash)
+                
+                if cached and cached.model_version == self.model:
+                    logger.info(f"✅ Cache hit for '{title}' by {artist}")
+                    result = cached.analysis_result
+                    result['cache_hit'] = True
+                    return result
+                elif cached:
+                    logger.info(f"⚠️  Found cached analysis with different model version. Re-analyzing...")
+        except Exception as e:
+            logger.warning(f"Cache lookup failed: {e}. Proceeding with API call...")
+        
         url = f"{self.base_url}/chat/completions"
         
         logger.info(f"🎵 Analyzing '{title}' by {artist} with {self.model}")
@@ -112,6 +135,26 @@ class RouterAnalyzer:
                     content = (data.get("choices", [{}])[0] or {}).get("message", {}).get("content", "{}")
                     parsed = self._parse_or_repair_json(content)
                     normalized = self._normalize_output(parsed)
+                    normalized['cache_hit'] = False
+                    
+                    # Cache the result
+                    try:
+                        from app.models.models import AnalysisCache
+                        from app import create_app
+                        
+                        app = create_app()
+                        with app.app_context():
+                            AnalysisCache.cache_analysis(
+                                artist=artist,
+                                title=title,
+                                lyrics_hash=lyrics_hash,
+                                analysis_result=normalized,
+                                model_version=self.model
+                            )
+                            logger.info(f"💾 Cached analysis for '{title}' by {artist}")
+                    except Exception as e:
+                        logger.warning(f"Failed to cache analysis: {e}")
+                    
                     logger.info(f"✅ Analysis complete: Score={normalized.get('score')}, Verdict={normalized.get('verdict')}")
                     return normalized
                     

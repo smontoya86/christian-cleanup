@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Christian Cleanup</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: #fff;
+            border-bottom: 1px solid #d2d2d7;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .nav a {
+            color: #06c;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        
+        .nav a:hover, .nav a.active {
+            background: #f5f5f7;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .metric-label {
+            font-size: 0.875rem;
+            color: #86868b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .metric-sub {
+            font-size: 0.875rem;
+            color: #86868b;
+            margin-top: 0.5rem;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-healthy { background: #d1f4e0; color: #0a6e31; }
+        .status-warning { background: #fff3cd; color: #856404; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        
+        .chart-container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .chart-container h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        
+        .refresh-btn {
+            background: #06c;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: background 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: #0051a8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #86868b;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛠️ Admin Dashboard</h1>
+        <nav class="nav">
+            <a href="/admin/dashboard" class="active">Overview</a>
+            <a href="/admin/costs">Costs</a>
+            <a href="/admin/analytics">Analytics</a>
+            <a href="/admin/health">Health</a>
+            <a href="/">← Back to App</a>
+        </nav>
+    </div>
+    
+    <div class="container">
+        <div class="loading" id="loading">Loading metrics...</div>
+        
+        <div id="metrics" style="display: none;">
+            <!-- User Metrics -->
+            <h2 style="margin-bottom: 1rem; font-size: 1.5rem; font-weight: 600;">👥 User Metrics</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Users</div>
+                    <div class="metric-value" id="total-users">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Active Users (30d)</div>
+                    <div class="metric-value" id="active-users">-</div>
+                </div>
+            </div>
+            
+            <!-- Content Metrics -->
+            <h2 style="margin: 2rem 0 1rem; font-size: 1.5rem; font-weight: 600;">🎵 Content Metrics</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Songs</div>
+                    <div class="metric-value" id="total-songs">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Analyses</div>
+                    <div class="metric-value" id="total-analyses">-</div>
+                    <div class="metric-sub"><span id="analyses-24h">-</span> in last 24h</div>
+                </div>
+            </div>
+            
+            <!-- Cache Metrics -->
+            <h2 style="margin: 2rem 0 1rem; font-size: 1.5rem; font-weight: 600;">💾 Cache Performance</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Cached Analyses</div>
+                    <div class="metric-value" id="total-cached">-</div>
+                    <div class="metric-sub">Hit Rate: <span id="cache-hit-rate">-</span>%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Cached Lyrics</div>
+                    <div class="metric-value" id="lyrics-cached">-</div>
+                </div>
+            </div>
+            
+            <!-- Rate Limiter -->
+            <h2 style="margin: 2rem 0 1rem; font-size: 1.5rem; font-weight: 600;">⚡ Rate Limiter Status</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Current RPM</div>
+                    <div class="metric-value" id="current-rpm">-</div>
+                    <div class="metric-sub"><span id="capacity-percent">-</span>% capacity</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Active Requests</div>
+                    <div class="metric-value" id="active-requests">-</div>
+                    <div class="metric-sub">Max: <span id="max-concurrent">-</span></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Requests</div>
+                    <div class="metric-value" id="total-requests">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Rate Limit Hits</div>
+                    <div class="metric-value" id="rate-limit-hits">-</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 2rem; text-align: center;">
+                <button class="refresh-btn" onclick="loadMetrics()">🔄 Refresh</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function loadMetrics() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('metrics').style.display = 'none';
+            
+            try {
+                const response = await fetch('/admin/api/overview');
+                const data = await response.json();
+                
+                // User metrics
+                document.getElementById('total-users').textContent = data.users.total.toLocaleString();
+                document.getElementById('active-users').textContent = data.users.active_30d.toLocaleString();
+                
+                // Content metrics
+                document.getElementById('total-songs').textContent = data.content.total_songs.toLocaleString();
+                document.getElementById('total-analyses').textContent = data.content.total_analyses.toLocaleString();
+                document.getElementById('analyses-24h').textContent = data.content.analyses_24h.toLocaleString();
+                
+                // Cache metrics
+                document.getElementById('total-cached').textContent = data.cache.total_cached.toLocaleString();
+                document.getElementById('cache-hit-rate').textContent = data.cache.cache_hit_rate;
+                document.getElementById('lyrics-cached').textContent = data.cache.lyrics_cached.toLocaleString();
+                
+                // Rate limiter
+                document.getElementById('current-rpm').textContent = data.rate_limiter.current_rpm;
+                document.getElementById('capacity-percent').textContent = data.rate_limiter.capacity_percent;
+                document.getElementById('active-requests').textContent = data.rate_limiter.active_requests;
+                document.getElementById('max-concurrent').textContent = data.rate_limiter.max_concurrent;
+                document.getElementById('total-requests').textContent = data.rate_limiter.total_requests.toLocaleString();
+                document.getElementById('rate-limit-hits').textContent = data.rate_limiter.total_rate_limit_hits;
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('metrics').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+                document.getElementById('loading').textContent = 'Error loading metrics. Please try again.';
+            }
+        }
+        
+        // Load metrics on page load
+        loadMetrics();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadMetrics, 30000);
+    </script>
+</body>
+</html>
+

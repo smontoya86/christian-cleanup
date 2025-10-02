@@ -501,6 +501,83 @@ class BibleVerse(db.Model):
     __table_args__ = (db.UniqueConstraint("book", "chapter", "verse", name="uq_bible_verse"),)
 
 
+class AnalysisCache(db.Model):
+    """
+    Permanent cache for song analysis results.
+    Prevents re-analyzing the same song multiple times.
+    """
+    __tablename__ = "analysis_cache"
+    __table_args__ = (
+        db.UniqueConstraint('artist', 'title', 'lyrics_hash', name='uq_analysis_cache_song'),
+        db.Index('idx_analysis_cache_artist_title', 'artist', 'title'),
+        db.Index('idx_analysis_cache_model_version', 'model_version'),
+        db.Index('idx_analysis_cache_created_at', 'created_at'),
+    )
+    
+    id = db.Column(db.Integer, primary_key=True)
+    artist = db.Column(db.String(500), nullable=False)
+    title = db.Column(db.String(500), nullable=False)
+    lyrics_hash = db.Column(db.String(64), nullable=False)  # SHA256 hash of lyrics
+    analysis_result = db.Column(db.JSON, nullable=False)  # Full analysis JSON
+    model_version = db.Column(db.String(100), nullable=False)  # Track which model version
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), 
+                          onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    
+    @classmethod
+    def find_cached_analysis(cls, artist: str, title: str, lyrics_hash: str):
+        """Find cached analysis by artist, title, and lyrics hash."""
+        return cls.query.filter_by(
+            artist=artist.strip(),
+            title=title.strip(),
+            lyrics_hash=lyrics_hash
+        ).first()
+    
+    @classmethod
+    def cache_analysis(cls, artist: str, title: str, lyrics_hash: str, 
+                      analysis_result: dict, model_version: str):
+        """Cache analysis result for a song."""
+        from app.extensions import db
+        
+        artist = artist.strip()
+        title = title.strip()
+        
+        # Check if already cached
+        cached = cls.find_cached_analysis(artist, title, lyrics_hash)
+        if cached:
+            # Update existing cache
+            cached.analysis_result = analysis_result
+            cached.model_version = model_version
+            cached.updated_at = datetime.now(timezone.utc)
+        else:
+            # Create new cache entry
+            cached = cls(
+                artist=artist,
+                title=title,
+                lyrics_hash=lyrics_hash,
+                analysis_result=analysis_result,
+                model_version=model_version
+            )
+            db.session.add(cached)
+        
+        db.session.commit()
+        return cached
+    
+    @classmethod
+    def get_cache_stats(cls):
+        """Get cache statistics."""
+        from sqlalchemy import func
+        
+        total = cls.query.count()
+        by_model = db.session.query(
+            cls.model_version, 
+            func.count(cls.id)
+        ).group_by(cls.model_version).all()
+        
+        return {
+            'total_cached': total,
+            'by_model_version': dict(by_model)
+        }
 
 
 class LyricsCache(db.Model):
