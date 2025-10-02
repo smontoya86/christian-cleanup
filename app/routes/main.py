@@ -38,7 +38,7 @@ def dashboard():
     ).scalar() or 0
     
     analyzed_songs = db.session.query(func.count(AnalysisResult.id.distinct())).join(
-        AnalysisResult.song
+        AnalysisResult.song_rel
     ).join(
         Song.playlist_associations
     ).join(
