@@ -315,7 +315,7 @@ class UnifiedAnalysisService:
                     AnalysisResult, Song.id == AnalysisResult.song_id
                 ).filter(
                     db.or_(
-                        AnalysisResult.id == None,
+                        AnalysisResult.id.is_(None),
                         AnalysisResult.status != 'completed'
                     )
                 ).all()
@@ -401,7 +401,7 @@ class UnifiedAnalysisService:
                 PlaylistSong.playlist
             ).filter(
                 Playlist.owner_id == user_id,
-                AnalysisResult.error != None
+                AnalysisResult.error.is_not(None)
             ).scalar() or 0
             
             percentage = round((analyzed_songs / total_songs * 100) if total_songs > 0 else 0, 1)
