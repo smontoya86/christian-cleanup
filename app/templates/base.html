@@ -150,7 +150,7 @@
                 {% else %}
                     <!-- Non-Authenticated User Navigation -->
                     <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('auth.login') }}">Login</a>
-                    <a class="btn btn-primary btn-connect-spotify ms-3" href="{{ url_for('auth.login') }}" data-analytics="connect_spotify_header">🎵 Connect to Spotify</a>
+                    <a class="btn btn-spotify btn-connect-spotify ms-3" href="{{ url_for('auth.login') }}" data-analytics="connect_spotify_header">🎵 Connect to Spotify</a>
                 {% endif %}
             </div>
         </nav>
