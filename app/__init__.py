@@ -12,6 +12,33 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@localhost/christian_cleanup')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
+    # Database Connection Pooling
+    # Only apply pooling config for PostgreSQL (not SQLite/in-memory databases)
+    database_url = app.config['SQLALCHEMY_DATABASE_URI']
+    is_postgresql = database_url.startswith('postgresql')
+    
+    if is_postgresql:
+        # Optimal settings for production performance and stability
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            # Pool size: number of connections to keep in the pool
+            'pool_size': int(os.environ.get('DB_POOL_SIZE', 10)),
+            
+            # Max overflow: additional connections beyond pool_size when pool is full
+            'max_overflow': int(os.environ.get('DB_MAX_OVERFLOW', 20)),
+            
+            # Pool timeout: seconds to wait for a connection before raising error
+            'pool_timeout': int(os.environ.get('DB_POOL_TIMEOUT', 30)),
+            
+            # Pool recycle: recycle connections after N seconds (prevent stale connections)
+            'pool_recycle': int(os.environ.get('DB_POOL_RECYCLE', 3600)),  # 1 hour
+            
+            # Pool pre-ping: test connection before using (prevents stale connection errors)
+            'pool_pre_ping': True,
+            
+            # Echo pool: log connection pool events (set to False in production)
+            'echo_pool': os.environ.get('DB_ECHO_POOL', 'false').lower() == 'true',
+        }
+    
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)

@@ -21,6 +21,7 @@ from app.models.models import (
 from app.extensions import db
 from app.utils.openai_rate_limiter import get_rate_limiter
 from app.utils.redis_cache import get_redis_cache
+from app.utils.db_pool_monitor import get_pool_stats
 
 logger = logging.getLogger(__name__)
 
@@ -305,8 +306,12 @@ def api_health():
         cache_stats = AnalysisCache.get_cache_stats()
         cache_healthy = cache_stats['total_cached'] > 0
         
+        # Database pool health
+        pool_stats = get_pool_stats()
+        pool_healthy = pool_stats.get('healthy', False) and pool_stats.get('utilization_percent', 100) < 90
+        
         # Overall health
-        overall_healthy = db_healthy and limiter_healthy
+        overall_healthy = db_healthy and limiter_healthy and pool_healthy
         
         return jsonify({
             'overall': {
@@ -316,7 +321,8 @@ def api_health():
             'components': {
                 'database': {
                     'status': 'healthy' if db_healthy else 'unhealthy',
-                    'message': db_message
+                    'message': db_message,
+                    'pool': pool_stats
                 },
                 'rate_limiter': {
                     'status': 'healthy' if limiter_healthy else 'warning',
