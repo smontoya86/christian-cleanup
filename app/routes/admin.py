@@ -20,6 +20,7 @@ from app.models.models import (
 )
 from app.extensions import db
 from app.utils.openai_rate_limiter import get_rate_limiter
+from app.utils.redis_cache import get_redis_cache
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,10 @@ def api_overview():
         # Lyrics cache
         total_lyrics_cached = LyricsCache.query.count()
         
+        # Redis cache stats
+        redis_cache = get_redis_cache()
+        redis_stats = redis_cache.get_stats()
+        
         # Rate limiter metrics
         rate_limiter = get_rate_limiter()
         limiter_metrics = rate_limiter.get_metrics()
@@ -94,10 +99,13 @@ def api_overview():
                 'analyses_24h': analyses_24h
             },
             'cache': {
-                'total_cached': total_cached,
-                'cache_hit_rate': round(cache_hit_rate, 1),
-                'lyrics_cached': total_lyrics_cached,
-                'by_model_version': cache_stats['by_model_version']
+                'database': {
+                    'total_cached': total_cached,
+                    'cache_hit_rate': round(cache_hit_rate, 1),
+                    'by_model_version': cache_stats['by_model_version']
+                },
+                'redis': redis_stats,
+                'lyrics_cached': total_lyrics_cached
             },
             'rate_limiter': limiter_metrics,
             'timestamp': datetime.now(timezone.utc).isoformat()

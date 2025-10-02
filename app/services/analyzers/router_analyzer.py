@@ -11,6 +11,7 @@ from typing import Any, Dict
 import requests
 from app.utils.openai_rate_limiter import get_rate_limiter
 from app.utils.circuit_breaker import get_openai_circuit_breaker, CircuitBreakerOpenError
+from app.utils.redis_cache import get_redis_cache
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,9 @@ class RouterAnalyzer:
         # Circuit breaker for graceful degradation
         self.circuit_breaker = get_openai_circuit_breaker()
         
+        # Redis cache for fast lookups
+        self.redis_cache = get_redis_cache()
+        
         logger.info(f"✅ RouterAnalyzer initialized with OpenAI model: {self.model}")
 
     def analyze_song(self, title: str, artist: str, lyrics: str) -> Dict[str, Any]:
@@ -75,9 +79,17 @@ class RouterAnalyzer:
         Returns:
             Dictionary containing analysis results with Christian Framework v3.1 schema
         """
-        # Check cache first
+        # Cache hierarchy: Redis → Database → API
         lyrics_hash = hashlib.sha256(lyrics.encode('utf-8')).hexdigest()
         
+        # 1. Check Redis cache first (fastest)
+        redis_result = self.redis_cache.get_analysis(artist, title, lyrics_hash, self.model)
+        if redis_result:
+            logger.info(f"✅ Redis cache hit for '{title}' by {artist}")
+            redis_result['analysis_quality'] = 'cached'
+            return redis_result
+        
+        # 2. Check database cache (persistent)
         try:
             from app.models.models import AnalysisCache
             from app import create_app
@@ -88,10 +100,15 @@ class RouterAnalyzer:
                 cached = AnalysisCache.find_cached_analysis(artist, title, lyrics_hash)
                 
                 if cached and cached.model_version == self.model:
-                    logger.info(f"✅ Cache hit for '{title}' by {artist}")
+                    logger.info(f"✅ Database cache hit for '{title}' by {artist}")
                     result = cached.analysis_result
                     result['cache_hit'] = True
+                    result['cache_source'] = 'database'
                     result['analysis_quality'] = 'cached'
+                    
+                    # Backfill Redis cache
+                    self.redis_cache.set_analysis(artist, title, lyrics_hash, self.model, result)
+                    
                     return result
                 elif cached:
                     logger.info(f"⚠️  Found cached analysis with different model version. Re-analyzing...")
@@ -152,8 +169,12 @@ class RouterAnalyzer:
                 normalized['cache_hit'] = False
                 normalized['analysis_quality'] = 'full'  # Mark as full quality
                 
-                # Cache the result
+                # Cache the result in both Redis and Database
                 try:
+                    # Cache in Redis (fast tier)
+                    self.redis_cache.set_analysis(artist, title, lyrics_hash, self.model, normalized)
+                    
+                    # Cache in Database (persistent tier)
                     from app.models.models import AnalysisCache
                     from app import create_app
                     
@@ -166,7 +187,7 @@ class RouterAnalyzer:
                             analysis_result=normalized,
                             model_version=self.model
                         )
-                        logger.info(f"💾 Cached analysis for '{title}' by {artist}")
+                        logger.info(f"💾 Cached analysis for '{title}' by {artist} (Redis + Database)")
                 except Exception as e:
                     logger.warning(f"Failed to cache analysis: {e}")
                 

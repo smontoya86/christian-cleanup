@@ -178,7 +178,13 @@
             <h2 style="margin: 2rem 0 1rem; font-size: 1.5rem; font-weight: 600;">💾 Cache Performance</h2>
             <div class="metrics-grid">
                 <div class="metric-card">
-                    <div class="metric-label">Cached Analyses</div>
+                    <div class="metric-label">Redis Cache</div>
+                    <div class="metric-value" id="redis-keys">-</div>
+                    <div class="metric-sub">Hit Rate: <span id="redis-hit-rate">-</span>%</div>
+                    <div class="metric-sub">Memory: <span id="redis-memory">-</span> MB</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Database Cache</div>
                     <div class="metric-value" id="total-cached">-</div>
                     <div class="metric-sub">Hit Rate: <span id="cache-hit-rate">-</span>%</div>
                 </div>
@@ -235,9 +241,20 @@
                 document.getElementById('total-analyses').textContent = data.content.total_analyses.toLocaleString();
                 document.getElementById('analyses-24h').textContent = data.content.analyses_24h.toLocaleString();
                 
-                // Cache metrics
-                document.getElementById('total-cached').textContent = data.cache.total_cached.toLocaleString();
-                document.getElementById('cache-hit-rate').textContent = data.cache.cache_hit_rate;
+                // Cache metrics - Redis
+                if (data.cache.redis.connected) {
+                    document.getElementById('redis-keys').textContent = data.cache.redis.analysis_keys.toLocaleString();
+                    document.getElementById('redis-hit-rate').textContent = data.cache.redis.hit_rate;
+                    document.getElementById('redis-memory').textContent = data.cache.redis.used_memory_mb;
+                } else {
+                    document.getElementById('redis-keys').textContent = 'Offline';
+                    document.getElementById('redis-hit-rate').textContent = '-';
+                    document.getElementById('redis-memory').textContent = '-';
+                }
+                
+                // Cache metrics - Database
+                document.getElementById('total-cached').textContent = data.cache.database.total_cached.toLocaleString();
+                document.getElementById('cache-hit-rate').textContent = data.cache.database.cache_hit_rate;
                 document.getElementById('lyrics-cached').textContent = data.cache.lyrics_cached.toLocaleString();
                 
                 // Rate limiter
