@@ -5,7 +5,7 @@ API Blueprint for JSON endpoints
 
 from datetime import datetime
 
-from flask import Blueprint, current_app, jsonify
+from flask import Blueprint, current_app, jsonify, session
 from flask_login import current_user, login_required
 from sqlalchemy import text
 
