@@ -1012,10 +1012,11 @@ function updateAllProgressDisplays(data) {
         return;
     }
 
-    const completed = data.recent_completed || 0;
+    const completed = data.analyzed_songs || 0;
     const total = data.total_songs || 0;
-    const percentage = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0; // Cap at 100%
-    const remaining = Math.max(0, total - completed);
+    const failed = data.failed_songs || 0;
+    const percentage = data.percentage || (total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0);
+    const remaining = data.remaining_songs || Math.max(0, total - completed - failed);
 
     // Check if analysis is actually complete (negative ETA or completed >= total)
     const isComplete = (data.estimated_hours && data.estimated_hours < 0) || (completed >= total);
@@ -1135,20 +1136,33 @@ function updateAllProgressDisplays(data) {
 async function startProgressPolling() {
     const pollInterval = setInterval(async () => {
         try {
-            const response = await fetch('/api/background-analysis/public-status');
+            const response = await fetch('/api/analysis/progress');
             const data = await response.json();
 
-            if (data.status === 'success') {
+            if (data.success) {
                 updateAllProgressDisplays(data);
 
                 // Stop polling if analysis is complete
-                const completed = data.recent_completed || 0;
-                const total = data.total_songs || 0;
-                const isComplete = (data.estimated_hours && data.estimated_hours < 0) || (completed >= total);
-
-                if (isComplete) {
+                if (data.is_complete || data.remaining_songs === 0) {
                     console.log('✅ Analysis complete, stopping progress polling');
                     clearInterval(pollInterval);
+                    hideAnalysisProgress();
+                    
+                    // Show completion message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+                    alertDiv.innerHTML = `
+                        ✅
+                        <strong>Analysis Complete!</strong> Analyzed ${data.analyzed_songs} songs total${data.failed_songs > 0 ? ` (${data.failed_songs} failed)` : ''}.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    const container = document.querySelector('.container.py-4');
+                    if (container) {
+                        container.insertBefore(alertDiv, container.firstChild);
+                    }
+                    
+                    // Refresh the page after a delay to show updated stats
+                    setTimeout(() => location.reload(), 3000);
                 }
             }
         } catch (error) {
@@ -1239,7 +1253,7 @@ async function startBackgroundAnalysis() {
     btn.innerHTML = '⏳ Starting...';
 
     try {
-                    const response = await fetch('/api/analyze-all', {
+        const response = await fetch('/api/analysis/start-all', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1249,7 +1263,7 @@ async function startBackgroundAnalysis() {
         const data = await response.json();
 
         if (data.success) {
-            if (data.already_complete) {
+            if (data.total_songs === 0 || data.songs_analyzed === data.total_songs) {
                 // All songs are already analyzed
                 btn.innerHTML = '✅ All Songs Analyzed';
                 btn.disabled = true;
@@ -1259,7 +1273,7 @@ async function startBackgroundAnalysis() {
                 alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
                 alertDiv.innerHTML = `
                     ✅
-                    <strong>Analysis Complete!</strong> ${data.message}
+                    <strong>Analysis Complete!</strong> ${data.message || 'All songs have been analyzed.'}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 `;
 
@@ -1273,20 +1287,18 @@ async function startBackgroundAnalysis() {
                     }
                 }, 5000);
 
-            } else if (data.job_id) {
+            } else {
                 // Analysis started successfully
-                currentJobId = data.job_id;
                 showAnalysisProgress();
                 startProgressPolling();
-            } else {
-                throw new Error(data.message || 'Unexpected response format');
+                console.log(`✅ Started analysis: ${data.songs_analyzed} songs analyzed, ${data.songs_failed} failed out of ${data.total_songs} total`);
             }
         } else {
-            throw new Error(data.message || 'Failed to start analysis');
+            throw new Error(data.error || 'Failed to start analysis');
         }
     } catch (error) {
         console.error('Error starting analysis:', error);
-        alert('Failed to start analysis. Please try again.');
+        alert('Failed to start analysis: ' + (error.message || 'Unknown error'));
         btn.disabled = false;
         btn.innerHTML = '▶️ Analyze All';
     }

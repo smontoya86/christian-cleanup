@@ -96,6 +96,63 @@ def get_dashboard_stats():
     # Implement logic to get dashboard stats
     return jsonify({"success": True, "stats": {}})
 
+
+@bp.route("/analysis/start-all", methods=["POST"])
+@login_required
+def start_batch_analysis():
+    """Start batch analysis for all unanalyzed songs for the current user"""
+    try:
+        current_app.logger.info(f"Starting batch analysis for user {current_user.id}")
+        
+        svc = UnifiedAnalysisService()
+        result = svc.auto_analyze_user_after_sync(current_user.id)
+        
+        if result.get("success"):
+            return jsonify({
+                "success": True,
+                "message": result.get("message"),
+                "songs_analyzed": result.get("songs_analyzed", 0),
+                "songs_failed": result.get("songs_failed", 0),
+                "total_songs": result.get("total_songs", 0)
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": result.get("error", "Analysis failed")
+            }), 500
+            
+    except Exception as e:
+        current_app.logger.error(f"Batch analysis failed for user {current_user.id}: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@bp.route("/analysis/progress", methods=["GET"])
+@login_required
+def get_analysis_progress():
+    """Get the current analysis progress for the current user"""
+    try:
+        svc = UnifiedAnalysisService()
+        progress = svc.get_analysis_progress(current_user.id)
+        
+        if progress.get("success"):
+            return jsonify(progress)
+        else:
+            return jsonify({
+                "success": False,
+                "error": progress.get("error", "Failed to get progress")
+            }), 500
+            
+    except Exception as e:
+        current_app.logger.error(f"Failed to get progress for user {current_user.id}: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 @bp.route("/background-analysis/public-status")
 def get_background_analysis_public_status():
     """Get background analysis public status"""

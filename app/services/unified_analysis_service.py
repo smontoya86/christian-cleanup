@@ -1,6 +1,8 @@
  
 import logging
 
+from sqlalchemy import func
+
 from .. import db
 from ..models import AnalysisResult, Blacklist, Song, Whitelist
 from .analyzer_cache import get_shared_analyzer, is_analyzer_ready
@@ -280,5 +282,143 @@ class UnifiedAnalysisService:
             (theme.get("theme") if isinstance(theme, dict) else str(theme))
             for theme in themes
         ]
+
+    def auto_analyze_user_after_sync(self, user_id):
+        """
+        Automatically analyze all unanalyzed songs for a user after sync.
+        Prioritizes playlists by track count (larger playlists first).
+        Returns status and count of songs queued for analysis.
+        """
+        try:
+            from ..models import Playlist, PlaylistSong
+            
+            self.logger.info(f"Starting auto-analysis for user {user_id}")
+            
+            # Get user's playlists ordered by track count (largest first) and updated_at
+            playlists = Playlist.query.filter_by(owner_id=user_id).order_by(
+                db.desc(Playlist.track_count),
+                db.desc(Playlist.updated_at)
+            ).all()
+            
+            if not playlists:
+                self.logger.info(f"No playlists found for user {user_id}")
+                return {"success": True, "message": "No playlists to analyze", "songs_queued": 0}
+            
+            # Get all unanalyzed songs from these playlists
+            unanalyzed_songs = []
+            for playlist in playlists:
+                playlist_songs = db.session.query(Song).join(
+                    PlaylistSong
+                ).filter(
+                    PlaylistSong.playlist_id == playlist.id
+                ).outerjoin(
+                    AnalysisResult, Song.id == AnalysisResult.song_id
+                ).filter(
+                    db.or_(
+                        AnalysisResult.id == None,
+                        AnalysisResult.status != 'completed'
+                    )
+                ).all()
+                
+                unanalyzed_songs.extend(playlist_songs)
+            
+            # Remove duplicates (songs in multiple playlists)
+            unique_song_ids = list(set([song.id for song in unanalyzed_songs]))
+            
+            self.logger.info(f"Found {len(unique_song_ids)} unanalyzed songs for user {user_id}")
+            
+            if not unique_song_ids:
+                return {"success": True, "message": "All songs already analyzed", "songs_queued": 0}
+            
+            # Analyze songs in batches to avoid overwhelming the system
+            # For now, we'll analyze them synchronously in chunks
+            # In production, you might want to use a job queue
+            batch_size = 10
+            analyzed_count = 0
+            failed_count = 0
+            
+            for i in range(0, len(unique_song_ids), batch_size):
+                batch = unique_song_ids[i:i+batch_size]
+                self.logger.info(f"Analyzing batch {i//batch_size + 1}: songs {i+1}-{min(i+batch_size, len(unique_song_ids))}")
+                
+                for song_id in batch:
+                    try:
+                        self.analyze_song(song_id, user_id=user_id)
+                        analyzed_count += 1
+                    except Exception as e:
+                        self.logger.error(f"Failed to analyze song {song_id}: {e}")
+                        failed_count += 1
+            
+            self.logger.info(f"Auto-analysis complete: {analyzed_count} analyzed, {failed_count} failed")
+            
+            return {
+                "success": True,
+                "message": f"Analyzed {analyzed_count} songs",
+                "songs_analyzed": analyzed_count,
+                "songs_failed": failed_count,
+                "total_songs": len(unique_song_ids)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Auto-analysis failed for user {user_id}: {e}")
+            return {"success": False, "error": str(e), "songs_queued": 0}
+
+    def get_analysis_progress(self, user_id):
+        """
+        Get the current analysis progress for a user.
+        Returns total songs, analyzed songs, and percentage complete.
+        """
+        try:
+            from ..models import Playlist, PlaylistSong
+            
+            # Get total songs for user
+            total_songs = db.session.query(func.count(Song.id.distinct())).join(
+                PlaylistSong
+            ).join(
+                Playlist
+            ).filter(
+                Playlist.owner_id == user_id
+            ).scalar() or 0
+            
+            # Get analyzed songs (completed analysis)
+            analyzed_songs = db.session.query(func.count(AnalysisResult.id.distinct())).join(
+                AnalysisResult.song
+            ).join(
+                Song.playlist_associations
+            ).join(
+                PlaylistSong.playlist
+            ).filter(
+                Playlist.owner_id == user_id,
+                AnalysisResult.status == 'completed'
+            ).scalar() or 0
+            
+            # Get failed songs
+            failed_songs = db.session.query(func.count(AnalysisResult.id.distinct())).join(
+                AnalysisResult.song
+            ).join(
+                Song.playlist_associations
+            ).join(
+                PlaylistSong.playlist
+            ).filter(
+                Playlist.owner_id == user_id,
+                AnalysisResult.error != None
+            ).scalar() or 0
+            
+            percentage = round((analyzed_songs / total_songs * 100) if total_songs > 0 else 0, 1)
+            remaining = total_songs - analyzed_songs - failed_songs
+            
+            return {
+                "success": True,
+                "total_songs": total_songs,
+                "analyzed_songs": analyzed_songs,
+                "failed_songs": failed_songs,
+                "remaining_songs": remaining,
+                "percentage": percentage,
+                "is_complete": remaining == 0
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get analysis progress for user {user_id}: {e}")
+            return {"success": False, "error": str(e)}
 
 
