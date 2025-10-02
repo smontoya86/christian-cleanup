@@ -124,10 +124,25 @@ def song_detail(song_id):
     # Get analysis result
     analysis_result = AnalysisResult.query.filter_by(song_id=song.id).first()
     
+    # Get lyrics
+    lyrics = song.lyrics if song.lyrics else None
+    
+    # Check if song is whitelisted
+    is_whitelisted = False
+    if current_user.is_authenticated:
+        from ..models import Whitelist
+        is_whitelisted = Whitelist.query.filter_by(
+            user_id=current_user.id,
+            spotify_id=song.spotify_id,
+            item_type='song'
+        ).first() is not None
+    
     return render_template(
         "song_detail.html",
         song=song,
         analysis=analysis_result,
+        lyrics=lyrics,
+        is_whitelisted=is_whitelisted,
         playlist=playlist
     )
 

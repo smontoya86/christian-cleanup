@@ -28,13 +28,25 @@
                         {% set score = analysis.score if analysis.score > 1 else (analysis.score * 100) %}
                         {% set concern_level = analysis.concern_level if analysis and analysis.concern_level and analysis.concern_level != 'unknown' else ('very_low' if score >= 90 else ('low' if score >= 75 else ('medium' if score >= 50 else 'high'))) %}
 
-                        <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
                             <div class="score-circle {% if score >= 85 %}score-good{% elif score >= 70 %}score-medium{% else %}score-poor{% endif %}">
                                 {{ "%.0f" | format(score) }}%
                             </div>
                             <div>
-                                <div class="fw-bold">
-                                    {% if concern_level in ['very_low', 'low'] %}
+                                <div class="fw-bold fs-5">
+                                    {% if analysis.verdict %}
+                                        {% if analysis.verdict == 'freely_listen' %}
+                                            ✅ Freely Listen
+                                        {% elif analysis.verdict == 'listen_with_discernment' %}
+                                            ⚠️ Listen with Discernment
+                                        {% elif analysis.verdict == 'context_required' %}
+                                            🤔 Context Required
+                                        {% elif analysis.verdict == 'avoid' %}
+                                            ❌ Consider Avoiding
+                                        {% else %}
+                                            {{ analysis.verdict | replace('_', ' ') | title }}
+                                        {% endif %}
+                                    {% elif concern_level in ['very_low', 'low'] %}
                                         ✅ Great Choice
                                     {% elif concern_level == 'medium' %}
                                         ⚠️ Use Discretion
@@ -42,7 +54,12 @@
                                         ❌ High Concern
                                     {% endif %}
                                 </div>
-                                <small class="text-muted">Purity Score</small>
+                                <small class="text-muted">
+                                    Purity Score: {{ "%.0f" | format(score) }}%
+                                    {% if analysis.confidence %}
+                                        • Confidence: {{ analysis.confidence | title }}
+                                    {% endif %}
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -192,6 +209,124 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- General Themes & Analysis Metadata -->
+                    {% if analysis.themes or analysis.formation_risk or analysis.doctrinal_clarity or analysis.narrative_voice %}
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-secondary text-white">
+                                <h6 class="mb-0"><i class="fas fa-tags me-2"></i>Additional Analysis Details</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <!-- General Themes -->
+                                    {% if analysis.themes %}
+                                        <div class="col-12">
+                                            <h6 class="text-secondary mb-2">Themes Identified:</h6>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                {% set themes_data = analysis.themes %}
+                                                {% if themes_data is string %}
+                                                    {% set themes_data = themes_data | from_json %}
+                                                {% endif %}
+                                                {% if themes_data and (themes_data | length > 0) %}
+                                                    {% for theme in themes_data %}
+                                                        <span class="badge bg-secondary">
+                                                            {{ (theme.theme if theme.theme else theme) | title }}
+                                                        </span>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Formation Risk -->
+                                    {% if analysis.formation_risk %}
+                                        <div class="col-md-6">
+                                            <div class="p-3 border rounded {% if analysis.formation_risk in ['high', 'extreme'] %}border-danger bg-danger bg-opacity-10{% elif analysis.formation_risk == 'medium' %}border-warning bg-warning bg-opacity-10{% else %}border-success bg-success bg-opacity-10{% endif %}">
+                                                <small class="text-muted d-block mb-1">Formation Risk:</small>
+                                                <strong class="{% if analysis.formation_risk in ['high', 'extreme'] %}text-danger{% elif analysis.formation_risk == 'medium' %}text-warning{% else %}text-success{% endif %}">
+                                                    {{ analysis.formation_risk | title }}
+                                                </strong>
+                                                <small class="d-block mt-1 text-muted">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    {% if analysis.formation_risk in ['high', 'extreme'] %}
+                                                        May negatively impact spiritual growth
+                                                    {% elif analysis.formation_risk == 'medium' %}
+                                                        Use discernment regarding spiritual impact
+                                                    {% else %}
+                                                        Minimal impact on spiritual formation
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Doctrinal Clarity -->
+                                    {% if analysis.doctrinal_clarity %}
+                                        <div class="col-md-6">
+                                            <div class="p-3 border rounded {% if analysis.doctrinal_clarity == 'high' %}border-success bg-success bg-opacity-10{% elif analysis.doctrinal_clarity == 'medium' %}border-warning bg-warning bg-opacity-10{% else %}border-info bg-info bg-opacity-10{% endif %}">
+                                                <small class="text-muted d-block mb-1">Doctrinal Clarity:</small>
+                                                <strong class="{% if analysis.doctrinal_clarity == 'high' %}text-success{% elif analysis.doctrinal_clarity == 'medium' %}text-warning{% else %}text-info{% endif %}">
+                                                    {{ analysis.doctrinal_clarity | title }}
+                                                </strong>
+                                                <small class="d-block mt-1 text-muted">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    {% if analysis.doctrinal_clarity == 'high' %}
+                                                        Clear biblical teaching
+                                                    {% elif analysis.doctrinal_clarity == 'medium' %}
+                                                        Some biblical principles present
+                                                    {% else %}
+                                                        Limited doctrinal content
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Narrative Voice -->
+                                    {% if analysis.narrative_voice %}
+                                        <div class="col-12">
+                                            <div class="p-3 border rounded border-info bg-info bg-opacity-10">
+                                                <small class="text-muted d-block mb-1">Narrative Perspective:</small>
+                                                <strong class="text-info">{{ analysis.narrative_voice | replace('_', ' ') | title }}</strong>
+                                                {% if analysis.lament_filter_applied %}
+                                                    <span class="badge bg-info ms-2">Lament Context</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Analysis Quality Indicator -->
+                                    {% if analysis.analysis_quality and analysis.analysis_quality != 'full' %}
+                                        <div class="col-12">
+                                            <div class="alert alert-info mb-0">
+                                                <small>
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    <strong>Analysis Note:</strong>
+                                                    {% if analysis.analysis_quality == 'degraded' %}
+                                                        This analysis was performed with limited data.
+                                                    {% elif analysis.analysis_quality == 'cached' %}
+                                                        This is a cached analysis result.
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Needs Review Flag -->
+                                    {% if analysis.needs_review %}
+                                        <div class="col-12">
+                                            <div class="alert alert-warning mb-0">
+                                                <small>
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    <strong>Review Recommended:</strong> This analysis has been flagged for additional human review due to complex content.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
 
                     <!-- Biblical Content (if any) -->
                     {% if analysis.biblical_themes or analysis.supporting_scripture %}
