@@ -3,48 +3,22 @@
 API Blueprint for JSON endpoints
 """
 
-import os
-import threading
-import time
-import uuid
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta
+from datetime import datetime
 
-import requests as _req
-from flask import Blueprint, Response, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify
 from flask_login import current_user, login_required
 from sqlalchemy import text
 
-from app.utils.analysis_starter import get_user_analysis_status
-
 from .. import db
-from ..models.models import AnalysisResult, Playlist, PlaylistSong, Song, User, Whitelist
+from ..models.models import AnalysisResult
 from ..services.framework_loader import get_rules
-from ..services.progress_tracker import JobType, get_progress_tracker
 from ..services.unified_analysis_service import UnifiedAnalysisService
-from ..utils.auth import admin_required
-from ..utils.correlation import get_request_id
 from ..utils.freemium import (
-    free_playlist_id_for_user,
     freemium_enabled,
-    is_playlist_unlocked,
-    mask_playlist_score_for_user,
     song_belongs_to_unlocked_playlist,
 )
-from ..utils.ga4 import send_event_async
-from ..utils.cache import cache_get_json, cache_set_json
 
 # Queue system removed - using direct analysis with worker parallelization
-from ..utils.health_monitor import health_monitor
-from ..utils.prometheus_metrics import get_metrics, metrics_collector
-from ..utils.request_validation import (
-    GA4CompletedSchema,
-    TestSemanticDetectionSchema,
-    WhitelistAddSchema,
-    WhitelistQuerySchema,
-    validate_json,
-    validate_query,
-)
 
 bp = Blueprint("api", __name__)
 

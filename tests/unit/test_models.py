@@ -2,9 +2,11 @@
 Unit tests for database models
 """
 
-import pytest
 from datetime import datetime, timezone
-from app.models.models import User, Song, Playlist, AnalysisResult, LyricsCache
+
+import pytest
+
+from app.models.models import AnalysisResult, LyricsCache, Playlist, Song, User
 
 
 class TestUserModel:
@@ -12,7 +14,7 @@ class TestUserModel:
     
     def test_create_user(self, db_session):
         """Test creating a user"""
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta, timezone
         
         user = User(
             spotify_id='user_test_create_123',

@@ -16,14 +16,14 @@ Usage:
         --concurrency 5
 """
 
+import argparse
+import json
 import os
 import sys
-import json
-import argparse
 import time
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 # Add app to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -283,7 +283,7 @@ def process_song(
     # Fetch lyrics
     lyrics = fetch_lyrics_from_app(title, artist, app)
     if not lyrics:
-        print(f"  ⚠️  No lyrics found - skipping")
+        print("  ⚠️  No lyrics found - skipping")
         return None
     
     print(f"  ✅ Lyrics fetched ({len(lyrics)} chars)")
@@ -438,7 +438,7 @@ def main():
     
     print()
     print("="*60)
-    print(f"✅ Training data generation complete!")
+    print("✅ Training data generation complete!")
     print(f"📊 Total songs labeled: {len(songs_to_process)}")
     print(f"💰 Total tokens: {total_tokens:,}")
     print(f"💵 Estimated cost: ${cost:.2f}")

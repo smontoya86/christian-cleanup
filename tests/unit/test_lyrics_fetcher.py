@@ -2,8 +2,10 @@
 Unit tests for LyricsFetcher
 """
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
+
 from app.utils.lyrics.lyrics_fetcher import LyricsFetcher
 
 

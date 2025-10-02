@@ -3,13 +3,14 @@ Unit tests for provider resolver and analyzer cache
 """
 
 import pytest
-from app.services.provider_resolver import get_analyzer
+
 from app.services.analyzer_cache import (
+    clear_analyzer_cache,
+    get_analyzer_info,
     get_shared_analyzer,
     is_analyzer_ready,
-    get_analyzer_info,
-    clear_analyzer_cache
 )
+from app.services.provider_resolver import get_analyzer
 
 
 class TestProviderResolver:
@@ -28,7 +29,7 @@ class TestProviderResolver:
         analyzer2 = get_analyzer()
         
         # Should return same type
-        assert type(analyzer1) == type(analyzer2)
+        assert isinstance(analyzer1, type(analyzer2))
 
 
 class TestAnalyzerCache:

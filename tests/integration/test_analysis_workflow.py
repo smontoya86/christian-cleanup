@@ -3,7 +3,8 @@ Integration tests for complete analysis workflow
 """
 
 import pytest
-from app.models.models import Song, AnalysisResult, LyricsCache
+
+from app.models.models import AnalysisResult, LyricsCache, Song
 
 
 class TestAnalysisWorkflow:
@@ -11,7 +12,9 @@ class TestAnalysisWorkflow:
     
     def test_full_analysis_pipeline(self, db_session, mock_analysis_service):
         """Test complete analysis pipeline"""
-        from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
+        from app.services.simplified_christian_analysis_service import (
+            SimplifiedChristianAnalysisService,
+        )
         
         # 1. Create a song
         song = Song(
@@ -57,8 +60,10 @@ class TestAnalysisWorkflow:
     
     def test_analysis_with_cached_lyrics(self, sample_lyrics_cache, mock_analysis_service):
         """Test analysis uses cached lyrics"""
+        from app.services.simplified_christian_analysis_service import (
+            SimplifiedChristianAnalysisService,
+        )
         from app.utils.lyrics.lyrics_fetcher import LyricsFetcher
-        from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
         
         # Fetch from cache
         fetcher = LyricsFetcher()
@@ -76,7 +81,9 @@ class TestAnalysisWorkflow:
     
     def test_reanalysis_updates_existing(self, db_session, sample_song, sample_analysis, mock_analysis_service):
         """Test re-analysis updates existing analysis"""
-        from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
+        from app.services.simplified_christian_analysis_service import (
+            SimplifiedChristianAnalysisService,
+        )
         
         original_score = sample_analysis.score
         
@@ -103,7 +110,9 @@ class TestBatchAnalysis:
     
     def test_multiple_songs_analysis(self, db_session, mock_analysis_service):
         """Test analyzing multiple songs"""
-        from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
+        from app.services.simplified_christian_analysis_service import (
+            SimplifiedChristianAnalysisService,
+        )
         
         songs = [
             ('Song 1', 'Artist 1', 'Lyrics 1'),

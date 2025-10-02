@@ -1,13 +1,10 @@
  
 import logging
-import time
-from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional
 
 from .. import db
-from ..models import AnalysisResult, Blacklist, Playlist, PlaylistSong, Song, User, Whitelist
-from .simplified_christian_analysis_service import SimplifiedChristianAnalysisService
+from ..models import AnalysisResult, Blacklist, Song, Whitelist
 from .analyzer_cache import get_shared_analyzer, is_analyzer_ready
+from .simplified_christian_analysis_service import SimplifiedChristianAnalysisService
 
 try:
     from ..utils.lyrics import LyricsFetcher
@@ -235,7 +232,7 @@ class UnifiedAnalysisService:
             is not None
         )
 
-        if song_whlisted:
+        if song_whitelisted:
             return True
 
         return False

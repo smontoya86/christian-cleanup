@@ -2,9 +2,11 @@
 Unit tests for RouterAnalyzer (OpenAI-powered)
 """
 
-import pytest
 import os
 from unittest.mock import Mock, patch
+
+import pytest
+
 from app.services.analyzers.router_analyzer import RouterAnalyzer
 
 

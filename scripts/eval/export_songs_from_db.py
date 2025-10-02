@@ -1,9 +1,9 @@
-import json
 import csv
+import json
 from typing import List
 
 from app import create_app
-from app.models.models import db, Song
+from app.models.models import Song, db
 
 
 def export_songs(limit: int = 10, out_jsonl: str = "scripts/eval/songs_eval_db.jsonl", out_csv: str = "scripts/eval/songs_eval_db.csv") -> None:

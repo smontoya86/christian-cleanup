@@ -16,11 +16,11 @@ TTL Strategy:
 import json
 import logging
 import os
-from typing import Optional, Dict, Any
-from datetime import timedelta
+from typing import Any, Dict, Optional
 
 import redis
-from redis.exceptions import RedisError, ConnectionError as RedisConnectionError
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import RedisError
 
 logger = logging.getLogger(__name__)
 

@@ -359,7 +359,7 @@ def main():
             f.write(json.dumps(song) + '\n')
     
     print(f"✅ Created {len(SONGS_300)} songs in {output_file}")
-    print(f"\nBreakdown by category:")
+    print("\nBreakdown by category:")
     
     from collections import Counter
     counts = Counter([s[3] for s in SONGS_300])

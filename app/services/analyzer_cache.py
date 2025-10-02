@@ -8,12 +8,9 @@ and reused across all song analyses, dramatically improving performance.
 import logging
 import os
 import threading
-from typing import Optional
+from typing import Optional, Tuple
 
 from app.services.analyzers.router_analyzer import RouterAnalyzer
-from typing import Tuple
-
-import requests
 
 logger = logging.getLogger(__name__)
 

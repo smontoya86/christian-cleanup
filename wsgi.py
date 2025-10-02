@@ -1,6 +1,8 @@
 # This file serves as an entry point for Gunicorn or other WSGI servers.
-import os
 import logging
+
+from app import create_app
+from app.utils.secrets_loader import inject_secrets_into_env
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -8,14 +10,10 @@ logger = logging.getLogger(__name__)
 
 # Load secrets from Docker secrets or environment variables
 try:
-    from app.utils.secrets_loader import inject_secrets_into_env
     inject_secrets_into_env()
 except Exception as e:
     logger.error(f"Failed to load secrets: {e}")
     # Continue anyway for development environments
-    pass
-
-from app import create_app
 
 app = create_app()
 

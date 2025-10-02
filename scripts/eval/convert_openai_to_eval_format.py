@@ -5,7 +5,7 @@ Convert OpenAI fine-tuning format back to eval format for testing.
 
 import json
 import re
-from pathlib import Path
+
 
 def extract_from_user_message(content: str):
     """Extract title, artist, and lyrics from user message."""
@@ -33,13 +33,13 @@ def convert_openai_to_eval(input_file: str, output_file: str):
             # Extract user message (contains title/artist/lyrics)
             user_msg = next((m for m in messages if m['role'] == 'user'), None)
             if not user_msg:
-                print(f"  ⚠️  Skipping entry without user message")
+                print("  ⚠️  Skipping entry without user message")
                 continue
             
             # Extract assistant message (contains label/expected output)
             assistant_msg = next((m for m in messages if m['role'] == 'assistant'), None)
             if not assistant_msg:
-                print(f"  ⚠️  Skipping entry without assistant message")
+                print("  ⚠️  Skipping entry without assistant message")
                 continue
             
             # Parse data
@@ -68,7 +68,7 @@ def convert_openai_to_eval(input_file: str, output_file: str):
             f.write(json.dumps(entry) + '\n')
     
     print(f"✅ Conversion complete! {len(converted)} songs converted.")
-    print(f"\nSample entry:")
+    print("\nSample entry:")
     print(f"  Title: {converted[0]['title']}")
     print(f"  Artist: {converted[0]['artist']}")
     print(f"  Label Score: {converted[0]['labels'].get('score')}")

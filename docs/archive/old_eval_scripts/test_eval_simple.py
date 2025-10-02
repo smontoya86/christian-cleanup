@@ -3,12 +3,11 @@
 Simple evaluation script with correct parsing logic for testing.
 """
 
-import os
-import sys
-import json
-import re
-import time
 import logging
+import os
+import re
+import sys
+import time
 from pathlib import Path
 
 # Add the app directory to the Python path
@@ -176,7 +175,7 @@ def main():
         avg_diff = sum(r['score_diff'] for r in results) / total
         accuracy = sum(1 for r in results if r['verdict_match']) / total * 100
         
-        print(f"\nTEST RESULTS SUMMARY")
+        print("\nTEST RESULTS SUMMARY")
         print(f"Songs Tested: {total}")
         print(f"Average Score Difference: {avg_diff:.2f}")
         print(f"Verdict Accuracy: {accuracy:.1f}%")

@@ -8,8 +8,8 @@ import sys
 import time
 import traceback
 
-from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
 from app.services.analyzers.router_analyzer import RouterAnalyzer
+from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
 
 
 def test_singleton_pattern():

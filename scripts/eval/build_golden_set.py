@@ -9,8 +9,7 @@ Usage:
 import argparse
 import json
 import re
-import sys
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from app import create_app
 from app.utils.lyrics.lyrics_fetcher import LyricsFetcher
@@ -63,7 +62,7 @@ def fetch_lyrics_for_songs(songs: List[Dict]) -> List[Dict]:
                     print(f"  ✅ Found lyrics ({len(lyrics)} chars)")
                 else:
                     song['lyrics'] = None
-                    print(f"  ⚠️  No lyrics found")
+                    print("  ⚠️  No lyrics found")
             except Exception as e:
                 print(f"  ❌ Error: {e}")
                 song['lyrics'] = None

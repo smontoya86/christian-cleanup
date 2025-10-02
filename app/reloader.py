@@ -1,5 +1,6 @@
 from werkzeug.debug import DebuggedApplication
 
+
 class Reloader:
     def __init__(self, app, watch_files):
         self.app = app

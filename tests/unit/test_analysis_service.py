@@ -3,6 +3,7 @@ Unit tests for SimplifiedChristianAnalysisService
 """
 
 import pytest
+
 from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
 
 

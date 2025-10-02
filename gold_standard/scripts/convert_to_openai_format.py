@@ -14,7 +14,7 @@ OpenAI fine-tuning format:
 import json
 import random
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Seed for reproducibility
 random.seed(42)

@@ -3,14 +3,12 @@
 Fixed evaluation script with corrected parsing logic.
 """
 
-import os
-import sys
-import json
-import re
-import time
 import logging
+import re
+import sys
+import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 # Add the app directory to the Python path
 sys.path.insert(0, '/app')

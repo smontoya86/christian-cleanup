@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import csv
 import json
 import os
 import time
@@ -8,7 +9,6 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 import numpy as np
-import csv
 
 
 @dataclass

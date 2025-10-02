@@ -3,12 +3,11 @@
 Final comprehensive evaluation script with all fixes applied.
 """
 
-import os
-import sys
 import json
-import re
-import time
 import logging
+import re
+import sys
+import time
 from pathlib import Path
 
 # Add the app directory to the Python path
@@ -242,24 +241,24 @@ def main():
         red_accuracy = (sum(1 for r in red_results if r['verdict_match']) / len(red_results) * 100) if red_results else 0
         
         print(f"\n{'='*60}")
-        print(f"COMPREHENSIVE EVALUATION RESULTS")
+        print("COMPREHENSIVE EVALUATION RESULTS")
         print(f"{'='*60}")
         print(f"Total Songs Evaluated: {total}")
         print(f"Average Score Difference: {avg_diff:.2f}")
         print(f"Overall Verdict Accuracy: {accuracy:.1f}%")
-        print(f"\nBreakdown by Category:")
+        print("\nBreakdown by Category:")
         print(f"  Green Songs ({len(green_results)}): {green_accuracy:.1f}% accuracy")
         print(f"  Purple Songs ({len(purple_results)}): {purple_accuracy:.1f}% accuracy") 
         print(f"  Red Songs ({len(red_results)}): {red_accuracy:.1f}% accuracy")
         
         if accuracy >= 70:
-            print(f"\n✅ EXCELLENT: Analysis system performing very well!")
+            print("\n✅ EXCELLENT: Analysis system performing very well!")
         elif accuracy >= 50:
-            print(f"\n✅ GOOD: Analysis system performing adequately.")
+            print("\n✅ GOOD: Analysis system performing adequately.")
         elif accuracy >= 30:
-            print(f"\n⚠️  FAIR: Analysis system needs improvement.")
+            print("\n⚠️  FAIR: Analysis system needs improvement.")
         else:
-            print(f"\n❌ POOR: Analysis system requires significant improvement.")
+            print("\n❌ POOR: Analysis system requires significant improvement.")
         
         # Save results to file
         with open('evaluation_results.json', 'w') as f:
@@ -275,7 +274,7 @@ def main():
                 'detailed_results': results
             }, f, indent=2)
         
-        print(f"\nDetailed results saved to: evaluation_results.json")
+        print("\nDetailed results saved to: evaluation_results.json")
         
         return results
     else:

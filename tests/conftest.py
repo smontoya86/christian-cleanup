@@ -3,8 +3,9 @@ Pytest configuration and shared fixtures
 """
 
 import os
-import pytest
 from datetime import datetime, timezone
+
+import pytest
 
 # Set test environment variables before importing app
 os.environ['FLASK_ENV'] = 'testing'
@@ -14,7 +15,7 @@ os.environ['OPENAI_API_KEY'] = os.environ.get('OPENAI_API_KEY', 'test-key-123')
 
 from app import create_app
 from app.extensions import db
-from app.models.models import User, Song, Playlist, AnalysisResult, LyricsCache
+from app.models.models import AnalysisResult, LyricsCache, Playlist, Song, User
 
 
 @pytest.fixture(scope='function')
@@ -62,7 +63,7 @@ def db_session(app):
 @pytest.fixture
 def sample_user(db_session):
     """Create a sample user"""
-    from datetime import datetime, timezone, timedelta
+    from datetime import datetime, timedelta, timezone
     
     user = User(
         spotify_id='test_user_123',
@@ -156,7 +157,9 @@ def mock_openai_response():
 @pytest.fixture
 def mock_analysis_service(monkeypatch, mock_openai_response):
     """Mock the analysis service to avoid real API calls"""
-    from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
+    from app.services.simplified_christian_analysis_service import (
+        SimplifiedChristianAnalysisService,
+    )
     
     def mock_analyze(*args, **kwargs):
         return {

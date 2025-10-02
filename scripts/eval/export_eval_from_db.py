@@ -1,10 +1,10 @@
 import argparse
-import json
 import csv
+import json
 from typing import Any, Dict, List
 
 from app import create_app
-from app.models.models import db, Song, AnalysisResult
+from app.models.models import AnalysisResult, Song, db
 
 
 def _extract_flags(concerns: Any) -> List[str]:

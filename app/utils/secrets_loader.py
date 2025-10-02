@@ -5,8 +5,8 @@ Loads secrets from Docker secret files (/run/secrets/*) or falls back to environ
 This provides backward compatibility with .env files while supporting Docker secrets.
 """
 
-import os
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 

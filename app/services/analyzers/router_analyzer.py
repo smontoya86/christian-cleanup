@@ -1,16 +1,17 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import logging
 import os
 import re
-import logging
 import time
-import hashlib
 from typing import Any, Dict
 
 import requests
+
+from app.utils.circuit_breaker import CircuitBreakerOpenError, get_openai_circuit_breaker
 from app.utils.openai_rate_limiter import get_rate_limiter
-from app.utils.circuit_breaker import get_openai_circuit_breaker, CircuitBreakerOpenError
 from app.utils.redis_cache import get_redis_cache
 
 logger = logging.getLogger(__name__)
@@ -91,8 +92,8 @@ class RouterAnalyzer:
         
         # 2. Check database cache (persistent)
         try:
-            from app.models.models import AnalysisCache
             from app import create_app
+            from app.models.models import AnalysisCache
             
             # Use app context for database operations
             app = create_app()
@@ -111,7 +112,7 @@ class RouterAnalyzer:
                     
                     return result
                 elif cached:
-                    logger.info(f"⚠️  Found cached analysis with different model version. Re-analyzing...")
+                    logger.info("⚠️  Found cached analysis with different model version. Re-analyzing...")
         except Exception as e:
             logger.warning(f"Cache lookup failed: {e}. Proceeding with API call...")
         
@@ -175,8 +176,8 @@ class RouterAnalyzer:
                     self.redis_cache.set_analysis(artist, title, lyrics_hash, self.model, normalized)
                     
                     # Cache in Database (persistent tier)
-                    from app.models.models import AnalysisCache
                     from app import create_app
+                    from app.models.models import AnalysisCache
                     
                     app = create_app()
                     with app.app_context():
@@ -197,7 +198,7 @@ class RouterAnalyzer:
             except requests.exceptions.HTTPError as e:
                 # Handle rate limit (429) with exponential backoff
                 if e.response.status_code == 429:
-                    logger.warning(f"⏳ Rate limited by OpenAI API")
+                    logger.warning("⏳ Rate limited by OpenAI API")
                     raise  # Let circuit breaker handle it
                 
                 # Other HTTP errors

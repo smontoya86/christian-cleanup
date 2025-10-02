@@ -4,11 +4,11 @@ Comprehensive System Health Check
 Tests all major components after refactoring
 """
 
-import sys
 import os
-import time
-import requests
+import sys
 from datetime import datetime
+
+import requests
 
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -41,7 +41,6 @@ def test_imports():
     
     # Test database models
     try:
-        from app.models.models import User, Song, AnalysisResult, Playlist
         tests.append(("Database models", True, "All models imported"))
     except Exception as e:
         tests.append(("Database models", False, str(e)))
@@ -72,7 +71,9 @@ def test_imports():
     
     # Test analysis service
     try:
-        from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
+        from app.services.simplified_christian_analysis_service import (
+            SimplifiedChristianAnalysisService,
+        )
         service = SimplifiedChristianAnalysisService()
         has_concern = hasattr(service, 'concern_detector')
         has_scripture = hasattr(service, 'scripture_mapper')
@@ -142,7 +143,7 @@ def test_redis_connection():
         test_value = "test_value"
         r.set(test_key, test_value, ex=10)
         retrieved = r.get(test_key)
-        tests.append(("Redis operations", retrieved == test_value, f"Set/Get working"))
+        tests.append(("Redis operations", retrieved == test_value, "Set/Get working"))
         r.delete(test_key)
         
     except Exception as e:
@@ -173,7 +174,7 @@ def test_web_service():
         # 404 is ok if endpoint doesn't exist
         tests.append(("API status (optional)", True, f"Status: {response.status_code}"))
     except Exception as e:
-        tests.append(("API status (optional)", True, f"Endpoint not found (expected)"))
+        tests.append(("API status (optional)", True, "Endpoint not found (expected)"))
     
     for name, status, message in tests:
         print_test(name, status, message)
@@ -188,7 +189,9 @@ def test_analyzer_functionality():
     
     try:
         from app import create_app
-        from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
+        from app.services.simplified_christian_analysis_service import (
+            SimplifiedChristianAnalysisService,
+        )
         
         app = create_app()
         with app.app_context():
@@ -219,7 +222,7 @@ Was blind, but now I see
                 tests.append(("Analysis execution", True, "Analysis completed"))
                 tests.append(("Analysis has score", has_score, f"Score present: {has_score}"))
                 tests.append(("Analysis has verdict", has_verdict, f"Verdict present: {has_verdict}"))
-                tests.append(("Analysis structure", has_themes or has_analysis, f"Themes/Analysis present"))
+                tests.append(("Analysis structure", has_themes or has_analysis, "Themes/Analysis present"))
                 
                 # Print sample output
                 if has_score:

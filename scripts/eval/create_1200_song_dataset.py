@@ -200,7 +200,7 @@ def create_full_dataset():
         })
     
     print(f"Total songs created: {len(all_songs)}")
-    print(f"Breakdown by category:")
+    print("Breakdown by category:")
     for cat in ["freely_listen", "context_required", "caution_limit", "avoid_formation"]:
         count = len([s for s in all_songs if s["category"] == cat])
         print(f"  {cat}: {count}")
@@ -231,7 +231,7 @@ def split_dataset(all_songs, train_pct=0.833, val_pct=0.083, test_pct=0.084):
         val_songs.extend(cat_songs[train_end:val_end])
         test_songs.extend(cat_songs[val_end:])
     
-    print(f"\nDataset split:")
+    print("\nDataset split:")
     print(f"  Training: {len(train_songs)}")
     print(f"  Validation: {len(val_songs)}")
     print(f"  Test/Holdout: {len(test_songs)}")

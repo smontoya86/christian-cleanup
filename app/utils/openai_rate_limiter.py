@@ -9,11 +9,10 @@ Implements intelligent rate limiting for OpenAI API calls with:
 """
 
 import logging
-import time
-import threading
-from typing import Optional
-from datetime import datetime, timezone
 import random
+import threading
+import time
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 

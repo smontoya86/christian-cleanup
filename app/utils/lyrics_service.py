@@ -1,7 +1,5 @@
-import requests
-import time
-from typing import Optional, Dict, Any
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +47,7 @@ class LyricsService:
             from azlyrics import lyrics
             result = lyrics.get_lyrics(artist, title)
             if result and len(result.strip()) > 50:  # Basic validation
-                logger.info(f"Successfully fetched lyrics from azlyrics")
+                logger.info("Successfully fetched lyrics from azlyrics")
                 return result.strip()
         except Exception as e:
             logger.debug(f"azlyrics failed: {e}")

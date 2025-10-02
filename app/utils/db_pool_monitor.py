@@ -5,7 +5,8 @@ Provides visibility into SQLAlchemy connection pool health and usage.
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict
+
 from app.extensions import db
 
 logger = logging.getLogger(__name__)

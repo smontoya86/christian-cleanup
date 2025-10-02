@@ -1,5 +1,6 @@
-from azlyrics import lyrics
 import sys
+
+from azlyrics import lyrics
 
 artist = sys.argv[1]
 title = sys.argv[2]

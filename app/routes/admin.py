@@ -10,18 +10,17 @@ Provides administrative interfaces for:
 
 import logging
 from datetime import datetime, timedelta, timezone
-from flask import Blueprint, render_template, jsonify, request
-from flask_login import login_required, current_user
 from functools import wraps
-from sqlalchemy import func, and_
 
-from app.models.models import (
-    User, Song, AnalysisResult, AnalysisCache, LyricsCache, Playlist
-)
+from flask import Blueprint, jsonify, render_template, request
+from flask_login import current_user, login_required
+from sqlalchemy import and_, func
+
 from app.extensions import db
+from app.models.models import AnalysisCache, AnalysisResult, LyricsCache, Song, User
+from app.utils.db_pool_monitor import get_pool_stats
 from app.utils.openai_rate_limiter import get_rate_limiter
 from app.utils.redis_cache import get_redis_cache
-from app.utils.db_pool_monitor import get_pool_stats
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +213,7 @@ def api_analytics():
             Song.title,
             Song.artist,
             func.count(AnalysisResult.id).label('analysis_count')
-        ).join(Analysis).group_by(
+        ).join(AnalysisResult).group_by(
             Song.id, Song.title, Song.artist
         ).order_by(
             func.count(AnalysisResult.id).desc()

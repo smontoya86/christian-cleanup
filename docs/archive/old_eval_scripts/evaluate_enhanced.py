@@ -3,14 +3,12 @@
 Enhanced evaluation script with dynamic lyrics fetching.
 """
 
-import os
-import sys
-import json
-import re
-import time
 import logging
+import re
+import sys
+import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 # Add the app directory to the Python path
 sys.path.insert(0, '/app')
@@ -109,7 +107,7 @@ class EnhancedEvaluator:
                     logger.info(f"Successfully fetched lyrics ({len(lyrics)} characters)")
                     return lyrics
                 
-                logger.warning(f"No lyrics found or lyrics too short")
+                logger.warning("No lyrics found or lyrics too short")
                 
             except Exception as e:
                 logger.error(f"Error fetching lyrics (attempt {attempt + 1}): {e}")

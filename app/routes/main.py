@@ -2,12 +2,12 @@
 Main application routes for Music Disciple
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_required, current_user
-from sqlalchemy import func, desc
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+from sqlalchemy import desc, func
 
 from .. import db
-from ..models import User, Playlist, Song, AnalysisResult
+from ..models import AnalysisResult, Playlist, Song
 
 main_bp = Blueprint("main", __name__)
 

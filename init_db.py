@@ -4,10 +4,12 @@ Database initialization script for Christian Music Curator
 """
 import os
 import sys
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app import create_app
 from app.extensions import db
+
 
 def init_database():
     """Initialize the database with proper tables"""

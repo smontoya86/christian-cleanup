@@ -9,14 +9,13 @@ Tests system performance under various load scenarios to:
 - Validate rate limiting
 """
 
+import logging
 import os
 import sys
 import time
-import asyncio
-import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 import requests
 
@@ -317,7 +316,7 @@ class LoadTester:
             report.append(f"   - Avg response time: {optimal['avg_response_time']}s")
             report.append(f"   - Failure rate: {round(optimal['failed']/optimal['total_requests']*100, 2)}%")
             report.append("")
-            report.append(f"📊 Recommended DB pool settings:")
+            report.append("📊 Recommended DB pool settings:")
             suggested_pool = max(5, optimal.get('concurrency', 10) // 2)
             suggested_overflow = max(10, optimal.get('concurrency', 10))
             report.append(f"   - DB_POOL_SIZE={suggested_pool}")

@@ -6,6 +6,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
+
 try:
     from unittest.mock import Mock as _Mock
 except Exception:

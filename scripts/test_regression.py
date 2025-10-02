@@ -4,8 +4,8 @@ Regression Test Suite
 Tests critical functionality to ensure refactoring hasn't broken anything
 """
 
-import sys
 import os
+import sys
 
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -23,10 +23,9 @@ def test_database_models():
     print("Testing Database Models")
     print("="*60 + "\n")
     
+
     from app import create_app
-    from app.extensions import db
-    from app.models.models import User, Song, AnalysisResult, Playlist, LyricsCache
-    from datetime import datetime, timezone
+    from app.models.models import AnalysisResult, LyricsCache, Song, User
     
     app = create_app()
     results = []
@@ -83,9 +82,9 @@ def test_analyzer_components():
     print("Testing Analyzer Components")
     print("="*60 + "\n")
     
+    from app.services.analyzer_cache import get_shared_analyzer, is_analyzer_ready
     from app.services.analyzers import RouterAnalyzer
     from app.services.provider_resolver import get_analyzer
-    from app.services.analyzer_cache import get_shared_analyzer, is_analyzer_ready
     
     results = []
     
@@ -143,7 +142,9 @@ def test_analysis_service():
     print("="*60 + "\n")
     
     from app import create_app
-    from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
+    from app.services.simplified_christian_analysis_service import (
+        SimplifiedChristianAnalysisService,
+    )
     
     app = create_app()
     results = []
@@ -268,8 +269,9 @@ def test_environment_validation():
     
     # Test that RouterAnalyzer validates API key
     try:
-        from app.services.analyzers import RouterAnalyzer
         import os
+
+        from app.services.analyzers import RouterAnalyzer
         
         # Save original
         original_key = os.environ.get('OPENAI_API_KEY')
@@ -308,7 +310,9 @@ def test_response_structures():
     print("="*60 + "\n")
     
     from app import create_app
-    from app.services.simplified_christian_analysis_service import SimplifiedChristianAnalysisService
+    from app.services.simplified_christian_analysis_service import (
+        SimplifiedChristianAnalysisService,
+    )
     
     app = create_app()
     results = []
@@ -328,13 +332,13 @@ def test_response_structures():
             results.append(print_test(
                 "Analysis response has score",
                 has_score,
-                f"Score field present"
+                "Score field present"
             ))
             
             results.append(print_test(
                 "Analysis response has verdict",
                 has_verdict,
-                f"Verdict field present"
+                "Verdict field present"
             ))
             
             # Check response is dict

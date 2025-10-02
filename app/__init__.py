@@ -1,8 +1,10 @@
-from flask import Flask
 import os
+
+from flask import Flask
 
 # Import extensions
 from .extensions import db, login_manager
+
 
 def create_app():
     app = Flask(__name__)
@@ -51,10 +53,10 @@ def create_app():
         return User.query.get(int(user_id))
     
     # Register blueprints
-    from .routes.main import main_bp
+    from .routes.admin import admin_bp
     from .routes.api import bp as api_bp
     from .routes.auth import bp as auth_bp
-    from .routes.admin import admin_bp
+    from .routes.main import main_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix='/api')

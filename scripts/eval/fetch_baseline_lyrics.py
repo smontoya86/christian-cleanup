@@ -7,12 +7,10 @@ Usage:
 """
 
 import json
-import sys
 from pathlib import Path
 
 from app import create_app
 from app.utils.lyrics.lyrics_fetcher import LyricsFetcher
-
 
 BASELINE_SONGS = [
     {"id": "baseline-01", "title": "Amazing Grace", "artist": "John Newton", 
@@ -58,7 +56,7 @@ def main():
                     results.append(song)
                     print(f"  ✅ Found ({len(lyrics)} chars)")
                 else:
-                    print(f"  ⚠️  No lyrics found - skipping")
+                    print("  ⚠️  No lyrics found - skipping")
             except Exception as e:
                 print(f"  ❌ Error: {e}")
         
@@ -69,8 +67,8 @@ def main():
                 f.write(json.dumps(song, ensure_ascii=False) + '\n')
         
         print(f"✅ Done! Created baseline eval set with {len(results)}/10 songs")
-        print(f"\nNext step: Run eval with:")
-        print(f"  LLM_MODEL=qwen3:8b scripts/eval/run_in_container.sh scripts/eval/baseline_10.jsonl")
+        print("\nNext step: Run eval with:")
+        print("  LLM_MODEL=qwen3:8b scripts/eval/run_in_container.sh scripts/eval/baseline_10.jsonl")
 
 
 if __name__ == '__main__':
