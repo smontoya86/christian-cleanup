@@ -14,6 +14,14 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@localhost/christian_cleanup')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
+    # Spotify OAuth Configuration
+    app.config['SPOTIFY_CLIENT_ID'] = os.environ.get('SPOTIFY_CLIENT_ID')
+    app.config['SPOTIFY_CLIENT_SECRET'] = os.environ.get('SPOTIFY_CLIENT_SECRET')
+    app.config['SPOTIFY_REDIRECT_URI'] = os.environ.get('SPOTIFY_REDIRECT_URI', 'http://127.0.0.1:5001/auth/callback')
+    
+    # Token Encryption
+    app.config['ENCRYPTION_KEY'] = os.environ.get('ENCRYPTION_KEY')
+    
     # Database Connection Pooling
     # Only apply pooling config for PostgreSQL (not SQLite/in-memory databases)
     database_url = app.config['SQLALCHEMY_DATABASE_URI']
