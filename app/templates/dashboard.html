@@ -484,27 +484,29 @@ Whitelist Playlist
                     🔄 Try Again
                 </button>
             {% else %}
-                <p class="text-muted mb-3">You're successfully logged in to Spotify! Click "Sync Playlists" above to load your music library and start analyzing your songs.</p>
+                <p class="text-muted mb-3">Your playlists will sync automatically. Check back soon to see your library!</p>
                 <div class="alert alert-info d-inline-block text-start" style="max-width: 500px;">
-                    <h6>ℹ️ What happens when you sync?</h6>
+                    <h6>ℹ️ What happens automatically?</h6>
                     <ul class="mb-0 small">
-                        <li>We'll fetch all your Spotify playlists</li>
+                        <li>We fetch all your Spotify playlists</li>
                         <li>Import song information (titles, artists, albums)</li>
-                        <li>You can then analyze songs for content</li>
-                        <li>Get recommendations for playlist cleanup</li>
+                        <li>Detect new songs and playlist changes</li>
+                        <li>Keep your library up to date</li>
                     </ul>
                 </div>
-                <div class="mt-4">
-                    <form action="{{ url_for('main.sync_playlists') }}" method="POST" class="d-inline" onsubmit="showSyncLoader()">
-                        <button type="submit" class="btn btn-success btn-lg" id="syncButtonLarge">
-                            <span id="syncButtonTextLarge">⬇️ Sync My Playlists</span>
-                            <span id="syncButtonLoaderLarge" class="d-none">
-                                <span class="spinner-border spinner-border-sm" role="status"></span>
-                                Syncing playlists...
-                            </span>
-                        </button>
-                    </form>
-                </div>
+                {% if current_user.is_admin %}
+                    <div class="mt-4">
+                        <form action="{{ url_for('main.sync_playlists') }}" method="POST" class="d-inline" onsubmit="showSyncLoader()">
+                            <button type="submit" class="btn btn-success btn-lg" id="syncButtonLarge">
+                                <span id="syncButtonTextLarge">⬇️ Sync My Playlists</span>
+                                <span id="syncButtonLoaderLarge" class="d-none">
+                                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                                    Syncing playlists...
+                                </span>
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
             {% endif %}
         </div>
     {% endif %}
