@@ -4,31 +4,51 @@
 
 {% block extra_css %}
 <style>
+/* Modern Design System */
+:root {
+    --primary-purple: #6b46c1;
+    --primary-color: #7c5cdb;
+    --primary-light: #9f7aea;
+    --dark-text: #1a202c;
+    --muted-text: #718096;
+    --light-bg: #fafbfc;
+    --card-bg: #ffffff;
+    --border-color: #e8eaed;
+    --border-radius-sm: 12px;
+    --border-radius: 16px;
+    --box-shadow-card: 0 4px 20px rgba(0, 0, 0, 0.06);
+    --box-shadow-hover: 0 8px 30px rgba(107, 70, 193, 0.12);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .metric-card {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    transition: transform 0.2s;
+    background: var(--card-bg);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: var(--border-radius);
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+    transition: var(--transition);
+    box-shadow: var(--box-shadow-card);
 }
 
 .metric-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-4px);
+    box-shadow: var(--box-shadow-hover);
+    border-color: rgba(107, 70, 193, 0.1);
 }
 
 .metric-value {
     font-size: 2rem;
-    font-weight: bold;
-    color: #007bff;
+    font-weight: 700;
+    color: var(--primary-purple);
 }
 
 .metric-label {
-    color: #6c757d;
-    font-size: 0.9rem;
+    color: var(--muted-text);
+    font-size: 0.875rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
+    font-weight: 500;
 }
 
 .status-good { color: #28a745; }
@@ -36,19 +56,22 @@
 .status-critical { color: #dc3545; }
 
 .dashboard-link {
-    background: linear-gradient(45deg, #007bff, #0056b3);
+    background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-color) 100%);
     color: white;
-    padding: 15px 25px;
-    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius-sm);
     text-decoration: none;
     display: inline-block;
     margin: 10px;
-    transition: all 0.3s;
+    transition: var(--transition);
+    box-shadow: 0 4px 12px rgba(107, 70, 193, 0.25);
+    font-weight: 500;
 }
 
 .dashboard-link:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+    box-shadow: 0 6px 20px rgba(107, 70, 193, 0.35);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
     color: white;
     text-decoration: none;
 }

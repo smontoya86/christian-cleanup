@@ -21,6 +21,24 @@ A production-ready Flask application that transforms Christian music curation fr
 
 **Status**: ✅ **Production Ready** - Enhanced analysis system fully operational
 
+## 📚 Documentation
+
+### Design & Architecture
+- **[Design Language](docs/DESIGN_LANGUAGE.md)** - Complete design system reference
+- **[Design Audit Report](docs/DESIGN_AUDIT_REPORT.md)** - UI/UX compliance analysis
+- **[System Architecture](docs/system_architecture.md)** - Technical architecture with diagrams
+- **[API Documentation](docs/api_docs.md)** - API endpoints and usage
+
+### Core Frameworks
+- **[Biblical Discernment Framework](docs/biblical_discernment_v2.md)** - Analysis methodology
+- **[Christian Framework](docs/christian_framework.md)** - Theological foundation
+- **[Security Practices](docs/SECURITY.md)** - Security guidelines
+
+### Setup & Operations
+- **[Configuration Guide](docs/configuration.md)** - Environment setup
+- **[Incident Response Plan](docs/INCIDENT_RESPONSE_PLAN.md)** - Operational procedures
+- **[Rollback Plan](docs/ROLLBACK_PLAN.md)** - Disaster recovery
+
 ## Key Features
 
 ### **Enhanced Educational Analysis**
