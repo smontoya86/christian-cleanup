@@ -194,31 +194,35 @@ class PlaylistSyncService:
                 playlist_songs_to_add = []
                 album_art_urls = []
 
+                # Track which songs we've already added to avoid duplicates
+                added_song_ids = set()
+                
                 for i, track_data in enumerate(spotify_tracks):
                     try:
                         song = self._sync_single_song_atomic(track_data)
                         if song:
-                            # Prepare playlist-song association for batch insert
-                            playlist_songs_to_add.append(
-                                {
-                                    "playlist_id": playlist.id,
-                                    "song_id": song.id,
-                                    "track_position": i,
-                                }
-                            )
-                            tracks_synced += 1
+                            # Only add first occurrence of each song (skip duplicates)
+                            if song.id not in added_song_ids:
+                                playlist_songs_to_add.append(
+                                    {
+                                        "playlist_id": playlist.id,
+                                        "song_id": song.id,
+                                        "track_position": i,
+                                    }
+                                )
+                                added_song_ids.add(song.id)
+                                tracks_synced += 1
 
-                            # Check if this is a new song
-                            if hasattr(song, "_is_new") and song._is_new:
-                                new_tracks += 1
+                                # Check if this is a new song
+                                if hasattr(song, "_is_new") and song._is_new:
+                                    new_tracks += 1
 
-                            # Collect album art URL for collage
-                            if song.album_art_url:
-                                album_art_urls.append(song.album_art_url)
+                                # Collect album art URL for collage
+                                if song.album_art_url:
+                                    album_art_urls.append(song.album_art_url)
 
                     except Exception as e:
                         self.logger.error(f"Error syncing track: {e}")
-                        # Continue with other tracks but track the error
                         continue
 
                 # Batch insert playlist-song associations
