@@ -525,7 +525,8 @@ Whitelist Playlist
 
 <script>
 // Show loading indicator when sync button clicked
-function showSyncLoader() {
+async function showSyncLoader() {
+    // Show spinner
     const btnText = document.getElementById('syncButtonText');
     const btnLoader = document.getElementById('syncButtonLoader');
     if (btnText) btnText.classList.add('d-none');
@@ -535,6 +536,34 @@ function showSyncLoader() {
     const btnLoaderLarge = document.getElementById('syncButtonLoaderLarge');
     if (btnTextLarge) btnTextLarge.classList.add('d-none');
     if (btnLoaderLarge) btnLoaderLarge.classList.remove('d-none');
+    
+    // Try to get playlist count for ETA
+    try {
+        const response = await fetch('/api/spotify/playlist-count', {credentials: 'same-origin'});
+        if (response.ok) {
+            const data = await response.json();
+            const count = data.playlist_count || 0;
+            const estimatedSeconds = count * 2; // ~2 seconds per playlist
+            const minutes = Math.floor(estimatedSeconds / 60);
+            const seconds = estimatedSeconds % 60;
+            const eta = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+            
+            // Show toast with ETA
+            const toastHtml = `
+                <div class="toast align-items-center text-bg-info border-0 show" role="alert" style="position: fixed; top: 80px; right: 20px; z-index: 9999;">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ⏱️ Syncing ${count} playlists... Estimated time: ${eta}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', toastHtml);
+        }
+    } catch (e) {
+        console.log('Could not fetch ETA:', e);
+    }
     
     return true;
 }

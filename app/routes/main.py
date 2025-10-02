@@ -70,6 +70,9 @@ def dashboard():
 @login_required
 def sync_playlists():
     """Sync user's Spotify playlists"""
+    import time
+    start_time = time.time()
+    
     try:
         from ..services.playlist_sync_service import PlaylistSyncService
         
@@ -78,10 +81,15 @@ def sync_playlists():
         sync_service = PlaylistSyncService()
         result = sync_service.sync_user_playlists(current_user)
         
+        elapsed_time = int(time.time() - start_time)
+        
         if result["status"] == "completed":
             playlists_count = result.get("playlists_synced", 0)
             tracks_count = result.get("total_tracks", 0)
-            flash(f"Successfully synced {playlists_count} playlists with {tracks_count} songs!", "success")
+            minutes = elapsed_time // 60
+            seconds = elapsed_time % 60
+            time_str = f"{minutes}m {seconds}s" if minutes > 0 else f"{seconds}s"
+            flash(f"✅ Successfully synced {playlists_count} playlists with {tracks_count} songs in {time_str}!", "success")
         else:
             error_msg = result.get("error", "Unknown error")
             flash(f"Sync failed: {error_msg}", "error")

@@ -23,6 +23,25 @@ from ..utils.freemium import (
 bp = Blueprint("api", __name__)
 
 
+@bp.route("/spotify/playlist-count")
+@login_required
+def spotify_playlist_count():
+    """Get user's Spotify playlist count for ETA calculation"""
+    try:
+        from ..services.spotify_service import SpotifyService
+        
+        spotify_service = SpotifyService(current_user)
+        playlists = spotify_service.get_user_playlists()
+        
+        return jsonify({
+            "success": True,
+            "playlist_count": len(playlists) if playlists else 0
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error getting playlist count: {e}")
+        return jsonify({"success": False, "error": str(e), "playlist_count": 0}), 500
+
+
 @bp.route("/health")
 def health():
     """Basic health check endpoint"""
