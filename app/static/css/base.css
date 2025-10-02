@@ -1,26 +1,27 @@
 /* Base CSS - Core variables, typography, and layout */
 
-/* CSS Custom Properties (Variables) - Dark Theme */
+/* CSS Custom Properties (Variables) - Faith Theme */
 :root {
-    /* Colors */
-    --primary-purple: #8b5cf6;
-    --primary-color: #6366f1;
-    --light-purple: #312e81;
+    /* Primary Faith Colors - Deep Purple */
+    --primary-purple: #270a47;  /* Deep purple from live site */
+    --primary-color: #8b5cf6;   /* Lighter purple accent */
+    --light-purple: #1f2a44;    /* Dark blue-purple */
     --success-color: #10b981;
     --warning-color: #f59e0b;
     --danger-color: #ef4444;
     --info-color: #06b6d4;
+    --mint-accent: #f4faf7;     /* Light mint from live site */
 
     /* Text Colors */
-    --dark-text: #f8fafc;
-    --light-text: #f8fafc;
-    --muted-text: #94a3b8;
+    --dark-text: #1f2a44;       /* Dark blue-gray for readability */
+    --light-text: #ffffff;
+    --muted-text: #6b7280;
 
-    /* Background Colors */
-    --body-bg: #0f172a;
-    --card-bg: #1e293b;
-    --light-bg: #334155;
-    --footer-bg: #1e293b;
+    /* Background Colors - Light Theme */
+    --body-bg: #ffffff;
+    --card-bg: #ffffff;
+    --light-bg: #f9fafb;
+    --footer-bg: #f4faf7;       /* Light mint footer */
 
     /* Concern Level Colors */
     --concern-extreme: #dc3545;
@@ -51,7 +52,7 @@
 
 /* Base Typography and Layout */
 body {
-    font-family: var(--font-sans-serif);
+    font-family: 'Rubik', var(--font-sans-serif);
     background-color: var(--body-bg);
     color: var(--dark-text);
     display: flex;
@@ -67,14 +68,20 @@ main {
 /* Header Styles */
 .site-header {
     background-color: var(--body-bg);
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .site-header .site-title {
     font-size: 1.5rem;
-    font-weight: bold;
+    font-weight: 700;
     color: var(--primary-purple);
     text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+.site-header .site-title:hover {
+    color: var(--primary-color);
 }
 
 .site-header .site-title i {
@@ -93,14 +100,15 @@ main {
 
 /* Footer Styles */
 .site-footer {
-    background-color: var(--footer-bg);
+    background: linear-gradient(180deg, #ffffff 0%, var(--footer-bg) 100%);
     color: var(--muted-text);
     font-size: 0.9rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .site-footer h5 {
-    color: var(--dark-text);
-    font-weight: bold;
+    color: var(--primary-purple);
+    font-weight: 700;
     margin-bottom: 1rem;
 }
 
@@ -117,65 +125,8 @@ main {
     font-size: 1.25rem;
 }
 
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --dark-text: #fff;
-        --light-text: #000;
-        --body-bg: #1a1a1a;
-        --card-bg: #2d2d2d;
-        --light-bg: #333;
-        --footer-bg: #2d2d2d;
-        --border-color: #404040;
-        --muted-text: #ccc;
-        --hover-bg: rgb(255 255 255 / 5%);
-    }
-
-    body {
-        background-color: var(--body-bg);
-        color: var(--dark-text);
-    }
-}
-
-/* Manual Dark Mode Support via data-theme attribute */
-[data-theme="dark"] {
-    --dark-text: #fff;
-    --light-text: #000;
-    --body-bg: #1a1a1a;
-    --card-bg: #2d2d2d;
-    --light-bg: #333;
-    --footer-bg: #2d2d2d;
-    --border-color: #404040;
-    --muted-text: #ccc;
-    --hover-bg: rgb(255 255 255 / 5%);
-}
-
-[data-theme="dark"] body {
-    background-color: var(--body-bg);
-    color: var(--dark-text);
-}
-
-/* Ensure dark theme overrides system preference when manually set */
-[data-theme="dark"] .site-header {
-    background-color: var(--body-bg);
-    border-bottom-color: var(--border-color);
-}
-
-[data-theme="dark"] .site-footer {
-    background-color: var(--footer-bg);
-}
-
-[data-theme="dark"] .nav-link-custom {
-    color: var(--dark-text) !important;
-}
-
-[data-theme="dark"] .nav-link-custom:hover {
-    color: var(--primary-purple) !important;
-}
-
-[data-theme="dark"] .site-footer h5 {
-    color: var(--dark-text);
-}
+/* Faith Theme - Always Light, Clean, Welcoming */
+/* Removed dark mode support - consistent light theme for clarity and accessibility */
 
 /* Print Styles */
 @media print {

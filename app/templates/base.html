@@ -51,11 +51,12 @@
     <link href="{{ url_for('static', filename='css/components.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/utilities.css') }}" rel="stylesheet">
 
-    <!-- Load web fonts asynchronously -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"></noscript>
+    <!-- Load web fonts asynchronously - Rubik for faith theme -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap"></noscript>
 
-    <!-- Font Awesome removed - no icons needed -->
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
 
 
 
@@ -63,7 +64,7 @@
     {% block styles %}{% endblock %}
 
     <!-- Performance and SEO meta tags -->
-    <meta name="description" content="Christian Music Curator - Analyze your Spotify playlists for alignment with Christian values">
+    <meta name="description" content="Music Disciple - Analyze your Spotify playlists for biblical alignment. Built on the Word. Powered by AI.">
     <meta name="keywords" content="Christian music, Spotify, playlist analyzer, faith-based music, Christian values">
     <meta name="author" content="Christian Music Curator">
     {% if not (config and (config.ENV == 'production' or config.FLASK_ENV == 'production')) %}
@@ -99,7 +100,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url }}">
     <meta property="og:image" content="{{ url_for('static', filename='images/og-image.png', _external=True) }}">
-    <meta property="og:site_name" content="Christian Music Curator">
+    <meta property="og:site_name" content="Music Disciple">
 
     <!-- Twitter Card meta tags -->
     <meta name="twitter:card" content="summary_large_image">
@@ -137,7 +138,7 @@
             <a class="py-2 site-title d-flex align-items-center" href="{{ url_for('main.index') }}" aria-label="Music Disciple - Home">
                 <img src="{{ url_for('static', filename='images/music-disciple-logo-nav.png') }}" alt="Music Disciple" class="me-2" style="height: 32px; width: auto;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
                 <span class="d-inline d-md-none" style="display: none;">🎵</span>
-                <span class="d-none d-md-inline">Music Disciple</span>
+                <span>Music Disciple</span>
             </a>
             <div class="d-flex align-items-center">
                 <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.index') }}">Home</a>
@@ -191,8 +192,8 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-4 mb-3">
-                    <h5><i class="fas fa-music me-2" aria-hidden="true"></i>Christian Music Curator</h5>
-                    <p class="text-muted small">Empowering Christians to enjoy music that aligns with their faith and values.</p>
+                    <h5><i class="fas fa-music me-2" aria-hidden="true"></i>Music Disciple</h5>
+                    <p class="text-muted small">Built on the Word. Powered by AI.</p>
                     <div>
                         <a href="#" class="text-muted me-2" aria-label="Follow us on Facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i></a>
                         <a href="#" class="text-muted me-2" aria-label="Follow us on Instagram"><i class="fab fa-instagram" aria-hidden="true"></i></a>
@@ -225,7 +226,7 @@
             </div>
             <div class="row mt-4">
                 <div class="col text-center text-muted small">
-                    <p>&copy; {{ current_year or 2025 }} Music Disciple. All rights reserved.</p>
+                    <p>&copy; {{ current_year or 2025 }} Music Disciple. All rights reserved. Built on the Word. Powered by AI.</p>
                 </div>
             </div>
         </div>

@@ -1,12 +1,239 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Christian Music Analysis</title>
-</head>
-<body>
-    <h1>Christian Music Analysis</h1>
-</body>
-</html>	<p>Welcome to the Christian Music Analysis application.</p>
-</body>
-</html>
+{% extends "base.html" %}
 
+{% block title %}Music Disciple - Does Your Spotify Playlist Honor Your Faith?{% endblock %}
+
+{% block og_title %}Music Disciple - Biblical Music Analysis{% endblock %}
+{% block og_description %}Discover how your Spotify playlists align with your Christian faith. Get Scripture-backed analysis of song lyrics and make confident music choices.{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center min-vh-75">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <h1 class="display-3 fw-bold mb-4" style="color: var(--dark-text);">
+                    Does Your Spotify Playlist Honor Your Faith?
+                </h1>
+                <p class="lead mb-4" style="color: var(--muted-text); font-size: 1.25rem;">
+                    Discover how to align your music choices with your faith through AI-powered biblical analysis.
+                </p>
+                <p class="mb-4" style="color: var(--muted-text);">
+                    <strong>Built on the Word. Powered by AI.</strong>
+                </p>
+                <div class="d-flex flex-column flex-sm-row gap-3">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg px-5 py-3">
+                        🎵 Connect to Spotify
+                    </a>
+                    <a href="#how-it-works" class="btn btn-outline-secondary btn-lg px-5 py-3">
+                        Learn More
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-image-wrapper">
+                    <img src="{{ url_for('static', filename='images/hero-placeholder.png') }}" 
+                         alt="Person listening to music with Bible" 
+                         class="img-fluid rounded-3 shadow-lg"
+                         onerror="this.src='https://images.unsplash.com/photo-1499652848871-1527a310b13a?auto=format&fit=crop&w=800&h=600'">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section py-5" id="features">
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h2 class="display-4 fw-bold mb-3">Is This For You?</h2>
+        </div>
+        
+        <div class="row g-4">
+            <!-- Feature 1 -->
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm feature-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3" style="font-size: 3rem;">📖</div>
+                        <h5 class="card-title fw-bold mb-3">See Clear Reasons</h5>
+                        <p class="card-text text-muted">
+                            Simple verdicts with Scripture for context.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Feature 2 -->
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm feature-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3" style="font-size: 3rem;">🎯</div>
+                        <h5 class="card-title fw-bold mb-3">Clear Guidance</h5>
+                        <p class="card-text text-muted">
+                            Get clear reasons tied to verses, no vague warnings.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Feature 3 -->
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm feature-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3" style="font-size: 3rem;">✝️</div>
+                        <h5 class="card-title fw-bold mb-3">Built For Believers</h5>
+                        <p class="card-text text-muted">
+                            Lead yourself with confidence in every song choice.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="how-it-works-section py-5 bg-light" id="how-it-works">
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h2 class="display-4 fw-bold mb-3">How It Works</h2>
+        </div>
+        
+        <div class="row align-items-center mb-5">
+            <div class="col-lg-6 order-lg-2 mb-4 mb-lg-0">
+                <img src="https://images.unsplash.com/photo-1578574577315-3fbeb0cecdc2?auto=format&fit=crop&w=600&h=400" 
+                     alt="People discussing faith" 
+                     class="img-fluid rounded-3 shadow">
+            </div>
+            <div class="col-lg-6 order-lg-1">
+                <div class="pe-lg-5">
+                    <h3 class="fw-bold mb-3">1. Connect Spotify</h3>
+                    <p class="text-muted mb-4">
+                        Securely connect your Spotify account. We scan your playlists.
+                    </p>
+                    
+                    <h3 class="fw-bold mb-3">2. See Clear Reasons</h3>
+                    <p class="text-muted mb-4">
+                        Get simple verdicts backed by Scripture references for every song.
+                    </p>
+                    
+                    <h3 class="fw-bold mb-3">3. Enjoy Music</h3>
+                    <p class="text-muted">
+                        Keep music in your life while growing in your faith.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section py-5" style="background: linear-gradient(135deg, var(--primary-purple) 0%, var(--light-purple) 100%);">
+    <div class="container py-5 text-center">
+        <h2 class="display-4 fw-bold text-white mb-4">
+            Scan Your Playlist.<br>See the Truth.
+        </h2>
+        <p class="lead text-white mb-4" style="opacity: 0.9;">
+            Discover how to align your music choices with your faith and grow spiritually through guided lyric analysis and discernment.
+        </p>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-light btn-lg px-5 py-3">
+            🎵 Get Started Free
+        </a>
+    </div>
+</section>
+
+<!-- Social Proof / Stats Section (Optional) -->
+<section class="stats-section py-5">
+    <div class="container py-4">
+        <div class="row text-center">
+            <div class="col-md-4 mb-4 mb-md-0">
+                <div class="stat-card">
+                    <h3 class="display-4 fw-bold" style="color: var(--primary-purple);">1000+</h3>
+                    <p class="text-muted">Songs Analyzed</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4 mb-md-0">
+                <div class="stat-card">
+                    <h3 class="display-4 fw-bold" style="color: var(--primary-purple);">100%</h3>
+                    <p class="text-muted">Scripture-Backed</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <h3 class="display-4 fw-bold" style="color: var(--primary-purple);">24/7</h3>
+                    <p class="text-muted">Available</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block styles %}
+<style>
+.hero-section {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(49, 46, 129, 0.05) 100%);
+    padding: 4rem 0 3rem;
+}
+
+.min-vh-75 {
+    min-height: 75vh;
+}
+
+.hero-image-wrapper {
+    position: relative;
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+.feature-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background-color: var(--card-bg);
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+.feature-icon {
+    filter: grayscale(0%);
+}
+
+.stat-card h3 {
+    margin-bottom: 0.5rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-color) 100%);
+    border: none;
+    font-weight: 600;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+}
+
+.btn-outline-secondary {
+    border: 2px solid var(--border-color);
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--light-bg);
+    border-color: var(--primary-purple);
+    color: var(--primary-purple);
+}
+
+/* Smooth scroll */
+html {
+    scroll-behavior: smooth;
+}
+</style>
+{% endblock %}
