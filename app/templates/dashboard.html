@@ -7,20 +7,22 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h2">Dashboard</h1>
         <div class="btn-group" role="group">
-            {% if sync_status and sync_status.has_active_sync %}
-                <button class="btn btn-outline-secondary" disabled id="syncButton">
-                    Syncing...
-                </button>
-            {% else %}
-                <form action="{{ url_for('main.sync_playlists') }}" method="POST" class="d-inline" onsubmit="showSyncLoader()">
-                    <button type="submit" class="btn btn-outline-primary" id="syncButton" data-analytics="sync_playlists_click">
-                        <span id="syncButtonText">🔄 Sync Playlists</span>
-                        <span id="syncButtonLoader" class="d-none">
-                            <span class="spinner-border spinner-border-sm" role="status"></span>
-                            Syncing...
-                        </span>
+            {% if current_user.is_admin %}
+                {% if sync_status and sync_status.has_active_sync %}
+                    <button class="btn btn-outline-secondary" disabled id="syncButton">
+                        Syncing...
                     </button>
-                </form>
+                {% else %}
+                    <form action="{{ url_for('main.sync_playlists') }}" method="POST" class="d-inline" onsubmit="showSyncLoader()">
+                        <button type="submit" class="btn btn-outline-primary" id="syncButton" data-analytics="sync_playlists_click">
+                            <span id="syncButtonText">🔄 Sync Playlists</span>
+                            <span id="syncButtonLoader" class="d-none">
+                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                                Syncing...
+                            </span>
+                        </button>
+                    </form>
+                {% endif %}
             {% endif %}
             <button class="btn btn-outline-secondary" onclick="location.reload()">
                 🔄 Refresh
