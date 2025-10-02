@@ -382,7 +382,7 @@ class UnifiedAnalysisService:
             
             # Get analyzed songs (completed analysis)
             analyzed_songs = db.session.query(func.count(AnalysisResult.id.distinct())).join(
-                AnalysisResult.song
+                AnalysisResult.song_rel
             ).join(
                 Song.playlist_associations
             ).join(
@@ -394,7 +394,7 @@ class UnifiedAnalysisService:
             
             # Get failed songs
             failed_songs = db.session.query(func.count(AnalysisResult.id.distinct())).join(
-                AnalysisResult.song
+                AnalysisResult.song_rel
             ).join(
                 Song.playlist_associations
             ).join(
@@ -439,7 +439,7 @@ class UnifiedAnalysisService:
             
             # Get analyzed songs
             analyzed_songs = db.session.query(func.count(AnalysisResult.id.distinct())).join(
-                AnalysisResult.song
+                AnalysisResult.song_rel
             ).join(
                 Song.playlist_associations
             ).join(
