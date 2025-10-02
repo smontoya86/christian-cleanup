@@ -337,13 +337,15 @@ class PlaylistSyncService:
                 db.session.add(song)
 
             # Update song data
-            song.title = track["name"]
-            song.artist = ", ".join([artist["name"] for artist in track["artists"]])
-            song.album = track["album"]["name"]
+            song.title = track["name"] or "Unknown Title"
+            # Filter out None/empty artist names and provide fallback
+            artist_names = [a["name"] for a in track.get("artists", []) if a.get("name")]
+            song.artist = ", ".join(artist_names) if artist_names else "Unknown Artist"
+            song.album = track.get("album", {}).get("name") or "Unknown Album"
             song.duration_ms = track.get("duration_ms", 0)
 
             # Handle album art
-            album_images = track["album"].get("images", [])
+            album_images = track.get("album", {}).get("images", [])
             if album_images:
                 song.album_art_url = album_images[0]["url"]
 
@@ -376,13 +378,15 @@ class PlaylistSyncService:
                 db.session.add(song)
 
             # Update song data
-            song.title = track["name"]
-            song.artist = ", ".join([artist["name"] for artist in track["artists"]])
-            song.album = track["album"]["name"]
+            song.title = track["name"] or "Unknown Title"
+            # Filter out None/empty artist names and provide fallback
+            artist_names = [a["name"] for a in track.get("artists", []) if a.get("name")]
+            song.artist = ", ".join(artist_names) if artist_names else "Unknown Artist"
+            song.album = track.get("album", {}).get("name") or "Unknown Album"
             song.duration_ms = track.get("duration_ms", 0)
 
             # Handle album art
-            album_images = track["album"].get("images", [])
+            album_images = track.get("album", {}).get("images", [])
             if album_images:
                 song.album_art_url = album_images[0]["url"]
 

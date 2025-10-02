@@ -12,9 +12,13 @@
                     Syncing...
                 </button>
             {% else %}
-                <form action="{{ url_for('main.sync_playlists') }}" method="POST" class="d-inline">
+                <form action="{{ url_for('main.sync_playlists') }}" method="POST" class="d-inline" onsubmit="showSyncLoader()">
                     <button type="submit" class="btn btn-outline-primary" id="syncButton" data-analytics="sync_playlists_click">
-                        🔄 Sync Playlists
+                        <span id="syncButtonText">🔄 Sync Playlists</span>
+                        <span id="syncButtonLoader" class="d-none">
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                            Syncing...
+                        </span>
                     </button>
                 </form>
             {% endif %}
@@ -489,9 +493,13 @@ Whitelist Playlist
                     </ul>
                 </div>
                 <div class="mt-4">
-                    <form action="{{ url_for('main.sync_playlists') }}" method="POST" class="d-inline">
-                        <button type="submit" class="btn btn-success btn-lg">
-                            ⬇️ Sync My Playlists
+                    <form action="{{ url_for('main.sync_playlists') }}" method="POST" class="d-inline" onsubmit="showSyncLoader()">
+                        <button type="submit" class="btn btn-success btn-lg" id="syncButtonLarge">
+                            <span id="syncButtonTextLarge">⬇️ Sync My Playlists</span>
+                            <span id="syncButtonLoaderLarge" class="d-none">
+                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                                Syncing playlists...
+                            </span>
                         </button>
                     </form>
                 </div>
@@ -516,6 +524,21 @@ Whitelist Playlist
 </div>
 
 <script>
+// Show loading indicator when sync button clicked
+function showSyncLoader() {
+    const btnText = document.getElementById('syncButtonText');
+    const btnLoader = document.getElementById('syncButtonLoader');
+    if (btnText) btnText.classList.add('d-none');
+    if (btnLoader) btnLoader.classList.remove('d-none');
+    
+    const btnTextLarge = document.getElementById('syncButtonTextLarge');
+    const btnLoaderLarge = document.getElementById('syncButtonLoaderLarge');
+    if (btnTextLarge) btnTextLarge.classList.add('d-none');
+    if (btnLoaderLarge) btnLoaderLarge.classList.remove('d-none');
+    
+    return true;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     // Async populate dashboard stats
     try {
