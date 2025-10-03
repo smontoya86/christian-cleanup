@@ -131,14 +131,11 @@
 
     <header class="site-header sticky-top py-1" role="banner">
         <nav class="container d-flex flex-column flex-md-row justify-content-between align-items-center" role="navigation" aria-label="Main navigation">
-            <a class="py-2 site-title d-flex align-items-center" href="{{ url_for('main.index') }}" aria-label="Music Disciple - Home">
+            <a class="py-2 site-title d-flex align-items-center" href="{{ url_for('main.dashboard' if (current_user and current_user.is_authenticated) else 'main.index') }}" aria-label="Music Disciple - Home">
                 <img src="{{ url_for('static', filename='images/music-disciple-logo-nav.svg') }}" alt="Music Disciple" class="me-2" style="height: 32px; width: auto;" loading="eager">
                 <span>Music Disciple</span>
             </a>
             <div class="d-flex align-items-center">
-                <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.index') }}">Home</a>
-                <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="#features">Features</a>
-                <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="#how-it-works">How It Works</a>
                 {% if current_user and current_user.is_authenticated %}
                     <!-- Authenticated User Navigation -->
                     <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.dashboard') }}">Dashboard</a>
@@ -149,6 +146,9 @@
                     </a>
                 {% else %}
                     <!-- Non-Authenticated User Navigation -->
+                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('main.index') }}">Home</a>
+                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="#features">Features</a>
+                    <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="#how-it-works">How It Works</a>
                     <a class="py-2 px-3 d-none d-md-inline-block nav-link-custom" href="{{ url_for('auth.login') }}">Login</a>
                     <a class="btn btn-spotify btn-connect-spotify ms-3" href="{{ url_for('auth.login') }}" data-analytics="connect_spotify_header">🎵 Connect to Spotify</a>
                 {% endif %}
