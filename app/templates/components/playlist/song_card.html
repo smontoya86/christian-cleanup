@@ -93,8 +93,10 @@ Expected vars: item (with song, analysis or analysis_result, is_whitelisted), pl
                 <!-- Remove from Playlist (always available) -->
                 <form method="post" action="{{ url_for('main.remove_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                    <button type="submit" class="btn btn-sm btn-outline-danger text-danger w-100 fas fa-trash"
-                            onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">Remove from Playlist</button>
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100"
+                            onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">
+                        <i class="fas fa-trash me-2"></i>Remove from Playlist
+                    </button>
                 </form>
             </div>
         </div>
