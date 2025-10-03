@@ -45,13 +45,16 @@ Expected vars: item (with song, analysis or analysis_result, is_whitelisted), pl
             {% endif %}
 
             <div class="mt-auto d-grid gap-2">
+                {% set is_admin = current_user.is_authenticated and (current_user.is_admin if current_user.is_admin is defined else False) %}
                 {% if not analysis %}
+                    {% if is_admin %}
                     <button class="btn btn-sm btn-primary fw-bold analyze-song-btn w-100"
                             data-song-id="{{ item.song.id }}"
                             data-song-title="{{ item.song.title }}"
                             data-song-artist="{{ item.song.artist }}">
                         Analyze
                     </button>
+                    {% endif %}
                 {% else %}
                     {% set s = analysis.score|float if analysis.score is not none else None %}
                     {% if item.is_whitelisted %}
@@ -62,24 +65,30 @@ Expected vars: item (with song, analysis or analysis_result, is_whitelisted), pl
                         {% if s is not none and s < 75 %}
                         <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}" class="btn btn-sm btn-outline-warning w-100">Review</a>
                         {% endif %}
+                        {% if is_admin %}
                         <button class="btn btn-sm btn-outline-secondary analyze-song-btn w-100"
                                 data-song-id="{{ item.song.id }}"
                                 data-song-title="{{ item.song.title }}"
                                 data-song-artist="{{ item.song.artist }}">Re-analyze</button>
+                        {% endif %}
                     {% else %}
                         {% if s is not none and s < 75 %}
                             <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}" class="btn btn-sm btn-warning fw-bold w-100">Review</a>
                             <button class="btn btn-sm btn-success fw-bold w-100" disabled>Whitelist (Coming Soon)</button>
+                            {% if is_admin %}
                             <button class="btn btn-sm btn-outline-secondary analyze-song-btn w-100"
                                     data-song-id="{{ item.song.id }}"
                                     data-song-title="{{ item.song.title }}"
                                     data-song-artist="{{ item.song.artist }}">Re-analyze</button>
+                            {% endif %}
                         {% else %}
                             <button class="btn btn-sm btn-success fw-bold w-100" disabled>Whitelist (Coming Soon)</button>
+                            {% if is_admin %}
                             <button class="btn btn-sm btn-outline-secondary analyze-song-btn w-100"
                                     data-song-id="{{ item.song.id }}"
                                     data-song-title="{{ item.song.title }}"
                                     data-song-artist="{{ item.song.artist }}">Re-analyze</button>
+                            {% endif %}
                         {% endif %}
                     {% endif %}
                 {% endif %}
