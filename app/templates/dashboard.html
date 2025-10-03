@@ -277,29 +277,8 @@
                      data-tracks="{{ playlist.track_count or 0 }}">
                     {% set is_unlocked = (not unlocked_playlist_id) or (playlist.id == unlocked_playlist_id) or current_user.is_admin %}
                     <div class="card h-100 shadow-sm playlist-card-custom position-relative">
-                        {# Use ONLY cover_collage_urls (pre-computed in backend) for consistent rendering #}
-                        {% if playlist.cover_collage_urls and playlist.cover_collage_urls|length > 0 %}
-                            {% set collage_urls = playlist.cover_collage_urls %}
-                            <div class="card-img-top overflow-hidden" style="height: 200px;">
-                                {% if collage_urls|length <= 2 %}
-                                    <div class="w-100 h-100" style="display: grid; grid-template-columns: 1fr 1fr;">
-                                        {% for i in range(0, 2) %}
-                                            {% set url = collage_urls[i] if i < collage_urls|length else url_for('static', filename='images/default_album_art.png') %}
-                                            <img src="{{ url }}" alt="Album art" style="width:100%; height:100%; object-fit: cover;" referrerpolicy="no-referrer" loading="lazy" onerror="this.src='{{ url_for('static', filename='images/default_album_art.png') }}'">
-                                        {% endfor %}
-                                    </div>
-                                {% else %}
-                                    <div class="w-100 h-100" style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1px; height: 200px;">
-                                        {% for i in range(0, 4) %}
-                                            {% set url = collage_urls[i] if i < collage_urls|length else url_for('static', filename='images/default_album_art.png') %}
-                                            <div style="width: 100%; height: 99px; overflow: hidden;">
-                                                <img src="{{ url }}" alt="Album art" style="width: 100%; height: 100%; object-fit: cover; display: block;" referrerpolicy="no-referrer" loading="lazy" onerror="this.src='{{ url_for('static', filename='images/default_album_art.png') }}'">
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% elif playlist.image_url %}
+                        {# Simplified: Use single playlist image or fallback icon #}
+                        {% if playlist.image_url %}
                             <img src="{{ playlist.image_url }}" class="card-img-top" alt="{{ playlist.name }} cover" style="height: 200px; object-fit: cover;" referrerpolicy="no-referrer" loading="lazy" onerror="this.src='{{ url_for('static', filename='images/default_album_art.png') }}'">
                         {% else %}
                             <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
