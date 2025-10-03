@@ -88,7 +88,7 @@ def login():
         "redirect_uri": redirect_uri,
         "state": state,
         "scope": "user-read-private user-read-email playlist-read-private playlist-modify-private playlist-modify-public",
-        "show_dialog": "false",
+        "show_dialog": "true",  # Always show auth dialog to ensure user consent
     }
 
     spotify_url = "https://accounts.spotify.com/authorize?" + urlencode(params)
