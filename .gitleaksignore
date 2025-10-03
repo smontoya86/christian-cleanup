@@ -21,3 +21,11 @@ environments/env.*.example
 deploy/production.env.example
 env.runpod.example
 
+# Browser testing artifacts
+cookies.txt
+*.cookies
+
+# Session tokens (temporary testing files)
+**/session*
+**/token*
+
