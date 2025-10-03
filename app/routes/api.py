@@ -108,6 +108,71 @@ def get_song_analysis_status(id):
 
 
 
+@bp.route("/analyze_playlist/<int:playlist_id>", methods=["POST"])
+@login_required
+def analyze_playlist(playlist_id):
+    """Analyze all unanalyzed songs in a specific playlist (admin only)"""
+    from sqlalchemy import func
+    
+    from ..models import AnalysisResult, Playlist, PlaylistSong, Song
+    
+    # Admin-only check
+    if not current_user.is_admin:
+        return jsonify({"success": False, "error": "Admin access required"}), 403
+    
+    try:
+        # Verify playlist exists and belongs to user
+        playlist = Playlist.query.get_or_404(playlist_id)
+        if playlist.owner_id != current_user.id:
+            return jsonify({"success": False, "error": "Playlist not found"}), 404
+        
+        # Get all unanalyzed songs in this playlist using existing query pattern
+        unanalyzed_songs = db.session.query(Song).join(
+            PlaylistSong
+        ).outerjoin(
+            AnalysisResult, Song.id == AnalysisResult.song_id
+        ).filter(
+            PlaylistSong.playlist_id == playlist_id,
+            db.or_(
+                AnalysisResult.id.is_(None),
+                AnalysisResult.status != 'completed'
+            )
+        ).all()
+        
+        if not unanalyzed_songs:
+            return jsonify({
+                "success": True,
+                "message": "All songs already analyzed",
+                "total_songs": 0,
+                "analyzed": 0
+            })
+        
+        # Use the existing UnifiedAnalysisService to analyze each song
+        svc = UnifiedAnalysisService()
+        analyzed_count = 0
+        failed_count = 0
+        
+        for song in unanalyzed_songs:
+            try:
+                svc.analyze_song(song.id)
+                analyzed_count += 1
+            except Exception as e:
+                current_app.logger.error(f"Failed to analyze song {song.id}: {e}")
+                failed_count += 1
+        
+        return jsonify({
+            "success": True,
+            "message": f"Analyzed {analyzed_count} songs",
+            "total_songs": len(unanalyzed_songs),
+            "analyzed": analyzed_count,
+            "failed": failed_count
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error analyzing playlist {playlist_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @bp.route("/dashboard/stats")
 @login_required
 def get_dashboard_stats():
