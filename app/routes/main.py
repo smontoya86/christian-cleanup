@@ -26,9 +26,29 @@ def dashboard():
     page = request.args.get('page', 1, type=int)
     per_page = 30  # Limit to 30 playlists per page
     
-    # Get user's playlists with pagination
+    # Sort parameter
+    sort_by = request.args.get('sort', 'updated-desc')  # Default: Recently Updated
+    
+    # Map sort options to SQLAlchemy order_by clauses
+    sort_options = {
+        'name-asc': Playlist.name.asc(),
+        'name-desc': Playlist.name.desc(),
+        'updated-desc': desc(Playlist.updated_at),  # Recently Updated (default)
+        'updated-asc': Playlist.updated_at.asc(),
+        'tracks-desc': desc(Playlist.track_count),  # Most Songs
+        'tracks-asc': Playlist.track_count.asc(),
+        'score-desc': desc(Playlist.overall_alignment_score),  # Highest Score
+        'score-asc': Playlist.overall_alignment_score.asc(),
+        'analyzed-desc': desc(Playlist.last_analyzed),  # Recently Analyzed
+        'analyzed-asc': Playlist.last_analyzed.asc(),
+    }
+    
+    # Get the appropriate order_by clause (default to updated-desc if invalid)
+    order_by_clause = sort_options.get(sort_by, desc(Playlist.updated_at))
+    
+    # Get user's playlists with pagination and sorting
     playlists_query = Playlist.query.filter_by(owner_id=current_user.id).order_by(
-        desc(Playlist.updated_at)
+        order_by_clause
     )
     
     # Get total count
@@ -66,6 +86,7 @@ def dashboard():
         playlists=playlists.items,
         stats=stats,
         pagination=pagination,
+        current_sort=sort_by,
         sync_status=None,
         last_sync_info=None,
         unlocked_playlist_id=None

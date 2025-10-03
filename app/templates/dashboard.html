@@ -254,13 +254,15 @@
             </select>
         </div>
         <div class="col-md-3">
-            <select class="form-select" id="sortSelect">
-                <option value="name-asc">Sort: Name (A-Z)</option>
-                <option value="name-desc">Sort: Name (Z-A)</option>
-                <option value="score-desc">Sort: Score (High to Low)</option>
-                <option value="score-asc">Sort: Score (Low to High)</option>
-                <option value="tracks-desc">Sort: Most Songs</option>
-                <option value="tracks-asc">Sort: Fewest Songs</option>
+            <select class="form-select" id="sortSelect" onchange="window.location.href = this.value;">
+                <option value="{{ url_for('main.dashboard', sort='updated-desc') }}" {% if current_sort == 'updated-desc' %}selected{% endif %}>Sort: Recently Updated</option>
+                <option value="{{ url_for('main.dashboard', sort='name-asc') }}" {% if current_sort == 'name-asc' %}selected{% endif %}>Sort: Name (A-Z)</option>
+                <option value="{{ url_for('main.dashboard', sort='name-desc') }}" {% if current_sort == 'name-desc' %}selected{% endif %}>Sort: Name (Z-A)</option>
+                <option value="{{ url_for('main.dashboard', sort='score-desc') }}" {% if current_sort == 'score-desc' %}selected{% endif %}>Sort: Score (High to Low)</option>
+                <option value="{{ url_for('main.dashboard', sort='score-asc') }}" {% if current_sort == 'score-asc' %}selected{% endif %}>Sort: Score (Low to High)</option>
+                <option value="{{ url_for('main.dashboard', sort='tracks-desc') }}" {% if current_sort == 'tracks-desc' %}selected{% endif %}>Sort: Most Songs</option>
+                <option value="{{ url_for('main.dashboard', sort='tracks-asc') }}" {% if current_sort == 'tracks-asc' %}selected{% endif %}>Sort: Fewest Songs</option>
+                <option value="{{ url_for('main.dashboard', sort='analyzed-desc') }}" {% if current_sort == 'analyzed-desc' %}selected{% endif %}>Sort: Recently Analyzed</option>
             </select>
         </div>
     </div>
