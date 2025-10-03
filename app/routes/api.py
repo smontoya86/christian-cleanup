@@ -112,8 +112,56 @@ def get_song_analysis_status(id):
 @login_required
 def get_dashboard_stats():
     """Get dashboard stats"""
-    # Implement logic to get dashboard stats
-    return jsonify({"success": True, "stats": {}})
+    from ..models import Playlist, Song, AnalysisResult, PlaylistSong
+    from sqlalchemy import func
+    
+    try:
+        # Get total playlists
+        total_playlists = Playlist.query.filter_by(owner_id=current_user.id).count()
+        
+        # Get total songs (distinct across all playlists)
+        total_songs = db.session.query(func.count(func.distinct(Song.id))).join(
+            PlaylistSong
+        ).join(
+            Playlist
+        ).filter(
+            Playlist.owner_id == current_user.id
+        ).scalar() or 0
+        
+        # Get analyzed songs count
+        analyzed_songs = db.session.query(func.count(func.distinct(AnalysisResult.song_id))).join(
+            AnalysisResult.song_rel
+        ).join(
+            Song.playlist_associations
+        ).join(
+            PlaylistSong.playlist
+        ).filter(
+            Playlist.owner_id == current_user.id,
+            AnalysisResult.status == 'completed'
+        ).scalar() or 0
+        
+        # Calculate analysis progress percentage
+        analysis_progress = (analyzed_songs / total_songs * 100) if total_songs > 0 else 0
+        
+        # Get clean playlists (score >= 75%)
+        clean_playlists = Playlist.query.filter(
+            Playlist.owner_id == current_user.id,
+            Playlist.overall_alignment_score >= 0.75
+        ).count()
+        
+        return jsonify({
+            "success": True,
+            "totals": {
+                "total_playlists": total_playlists,
+                "total_songs": total_songs,
+                "analyzed_songs": analyzed_songs,
+                "analysis_progress": round(analysis_progress, 1),
+                "clean_playlists": clean_playlists
+            }
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error getting dashboard stats: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @bp.route("/analysis/start-all", methods=["POST"])
