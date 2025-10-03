@@ -132,7 +132,7 @@
     <header class="site-header sticky-top py-1" role="banner">
         <nav class="container d-flex flex-column flex-md-row justify-content-between align-items-center" role="navigation" aria-label="Main navigation">
             <a class="py-2 site-title d-flex align-items-center" href="{{ url_for('main.dashboard' if (current_user and current_user.is_authenticated) else 'main.index') }}" aria-label="Music Disciple - Home">
-                <img src="{{ url_for('static', filename='images/music_disciple_logo.png') }}" alt="Music Disciple" class="me-2" style="height: 40px; width: auto;" loading="eager">
+                <img src="{{ url_for('static', filename='images/music_disciple_logo.png') }}" alt="Music Disciple" style="height: 50px; width: auto; max-width: 280px;" loading="eager">
             </a>
             <div class="d-flex align-items-center">
                 {% if current_user and current_user.is_authenticated %}
