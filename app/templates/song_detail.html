@@ -509,8 +509,9 @@
                             <h6 class="mb-0">Actions</h6>
                     </div>
                     <div class="card-body">
-                        <!-- Re-analyze button -->
-                        {% if analysis %}
+                        <!-- Re-analyze button (admin only) -->
+                        {% set is_admin = current_user.is_authenticated and (current_user.is_admin if current_user.is_admin is defined else False) %}
+                        {% if analysis and is_admin %}
                             <div class="d-grid mb-3">
                                 <button id="reanalyzeSongBtn" class="btn btn-outline-primary analyze-song-btn" data-analytics="reanalyze_song_click"
                                         data-song-id="{{ song.id }}"
@@ -526,8 +527,10 @@
                             <div class="d-grid mb-3">
                                 <form action="{{ url_for('main.remove_from_playlist', playlist_id=playlist.id, song_id=song.id) }}" method="POST">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                    <button type="submit" class="btn btn-outline-danger w-100 fas fa-trash" data-analytics="remove_song_click"
-                                            onclick="return confirm('Remove this song from {{ playlist.name }}? This action cannot be undone.')">Remove from Playlist</button>
+                                    <button type="submit" class="btn btn-outline-danger w-100" data-analytics="remove_song_click"
+                                            onclick="return confirm('Remove this song from {{ playlist.name }}? This action cannot be undone.')">
+                                        <i class="fas fa-trash me-2"></i>Remove from Playlist
+                                    </button>
                                 </form>
                             </div>
                         {% endif %}
