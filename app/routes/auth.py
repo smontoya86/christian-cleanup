@@ -49,8 +49,10 @@ def check_user_needs_reauth():
 @bp.route("/login")
 def login():
     """Initiate Spotify OAuth login"""
+    # Force logout if user is already authenticated to ensure fresh OAuth flow
     if current_user.is_authenticated:
-        return redirect(url_for("main.dashboard"))
+        logout_user()
+        session.clear()
 
     # Validate required config before proceeding
     client_id = current_app.config.get("SPOTIFY_CLIENT_ID")
