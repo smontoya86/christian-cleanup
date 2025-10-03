@@ -539,14 +539,14 @@ def _revoke_spotify_tokens(user):
             "client_secret": current_app.config["SPOTIFY_CLIENT_SECRET"],
         }
         
-        revoke_response = requests.post(
+        requests.post(
             "https://accounts.spotify.com/api/token/revoke",
             data=revoke_data,
             timeout=10,
         )
         
         # Note: Spotify's revoke endpoint may return 200 even if token is already invalid
-        # This is expected behavior
+        # This is expected behavior - we don't need to check the response
         current_app.logger.info(f"Revoked Spotify tokens for user {user.id}")
         
     except Exception as e:

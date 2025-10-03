@@ -515,7 +515,7 @@ class UnifiedAnalysisService:
         Returns count of songs analyzed.
         """
         try:
-            from ..models import Playlist, PlaylistSong
+            from ..models import PlaylistSong
             
             analyzed_count = 0
             

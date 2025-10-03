@@ -112,8 +112,9 @@ def get_song_analysis_status(id):
 @login_required
 def get_dashboard_stats():
     """Get dashboard stats"""
-    from ..models import Playlist, Song, AnalysisResult, PlaylistSong
     from sqlalchemy import func
+    
+    from ..models import AnalysisResult, Playlist, PlaylistSong, Song
     
     try:
         # Get total playlists
