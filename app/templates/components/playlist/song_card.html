@@ -69,19 +69,13 @@ Expected vars: item (with song, analysis or analysis_result, is_whitelisted), pl
                     {% else %}
                         {% if s is not none and s < 75 %}
                             <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}" class="btn btn-sm btn-warning fw-bold w-100">Review</a>
-                            <form method="post" action="{{ url_for('main.add_to_whitelist', spotify_id=item.song.spotify_id, item_type='song') }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                <button type="submit" class="btn btn-sm btn-success fw-bold w-100">Whitelist</button>
-                            </form>
+                            <button class="btn btn-sm btn-success fw-bold w-100" disabled>Whitelist (Coming Soon)</button>
                             <button class="btn btn-sm btn-outline-secondary analyze-song-btn w-100"
                                     data-song-id="{{ item.song.id }}"
                                     data-song-title="{{ item.song.title }}"
                                     data-song-artist="{{ item.song.artist }}">Re-analyze</button>
                         {% else %}
-                            <form method="post" action="{{ url_for('main.add_to_whitelist', spotify_id=item.song.spotify_id, item_type='song') }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                <button type="submit" class="btn btn-sm btn-success fw-bold w-100">Whitelist</button>
-                            </form>
+                            <button class="btn btn-sm btn-success fw-bold w-100" disabled>Whitelist (Coming Soon)</button>
                             <button class="btn btn-sm btn-outline-secondary analyze-song-btn w-100"
                                     data-song-id="{{ item.song.id }}"
                                     data-song-title="{{ item.song.title }}"

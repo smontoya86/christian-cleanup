@@ -22,13 +22,24 @@ def index():
 @login_required
 def dashboard():
     """User dashboard - shows playlists and analysis status"""
-    # Get user's playlists - limit to recent 50 for faster load
-    playlists = Playlist.query.filter_by(owner_id=current_user.id).order_by(
-        desc(Playlist.updated_at)
-    ).limit(50).all()
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 30  # Limit to 30 playlists per page
     
-    # Quick count for total playlists
-    total_playlists = Playlist.query.filter_by(owner_id=current_user.id).count()
+    # Get user's playlists with pagination
+    playlists_query = Playlist.query.filter_by(owner_id=current_user.id).order_by(
+        desc(Playlist.updated_at)
+    )
+    
+    # Get total count
+    total_playlists = playlists_query.count()
+    
+    # Paginate
+    playlists = playlists_query.paginate(
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
     
     # Simplified stats - just counts, no complex joins
     stats = {
@@ -38,11 +49,23 @@ def dashboard():
         'clean_playlists': 0
     }
     
+    # Pagination info
+    pagination = {
+        'page': page,
+        'per_page': per_page,
+        'total_items': total_playlists,
+        'total_pages': (total_playlists + per_page - 1) // per_page,
+        'has_prev': playlists.has_prev,
+        'has_next': playlists.has_next,
+        'prev_num': playlists.prev_num,
+        'next_num': playlists.next_num
+    }
+    
     return render_template(
         "dashboard.html",
-        playlists=playlists,
+        playlists=playlists.items,
         stats=stats,
-        pagination=None,
+        pagination=pagination,
         sync_status=None,
         last_sync_info=None,
         unlocked_playlist_id=None
