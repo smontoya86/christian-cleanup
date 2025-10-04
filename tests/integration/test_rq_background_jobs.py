@@ -8,6 +8,8 @@ import json
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timezone
 
+pytestmark = pytest.mark.integration
+
 
 class TestQueueConfiguration:
     """Test Redis Queue setup and configuration"""
