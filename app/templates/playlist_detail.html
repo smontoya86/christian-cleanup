@@ -122,5 +122,7 @@
 {% endblock %}
 
 {% block scripts %}
+{# Progress modal for background analysis jobs #}
+<script src="{{ url_for('static', filename='js/progress-modal.js') }}"></script>
 {# Legacy song-analyzer.js removed; handled by module scripts in base main.js #}
 {% endblock %}

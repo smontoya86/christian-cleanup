@@ -35,9 +35,8 @@ def admin_required(f):
         if not current_user.is_authenticated:
             return jsonify({'error': 'Authentication required'}), 401
         
-        # TODO: Add proper admin role check when implemented
-        # For now, check if user has admin flag or is first user
-        if not getattr(current_user, 'is_admin', False) and current_user.id != 1:
+        # Admin role check using is_admin field from User model
+        if not getattr(current_user, 'is_admin', False):
             return jsonify({'error': 'Admin access required'}), 403
         
         return f(*args, **kwargs)

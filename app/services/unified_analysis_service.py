@@ -555,3 +555,116 @@ class UnifiedAnalysisService:
             return {"success": False, "error": str(e), "analyzed_songs": 0}
 
 
+# Background job function for RQ workers
+def analyze_playlist_async(playlist_id: int, user_id: int):
+    """
+    Background job to analyze all unanalyzed songs in a playlist.
+    
+    This function runs in an RQ worker process and automatically tracks
+    progress via RQ's built-in job metadata.
+    
+    Args:
+        playlist_id: ID of the playlist to analyze
+        user_id: ID of the user who owns the playlist
+        
+    Returns:
+        dict: Results summary with counts of analyzed/failed songs
+    """
+    from flask import current_app
+    from rq import get_current_job
+    from ..models import Playlist, PlaylistSong
+    
+    # Get current RQ job for progress tracking
+    job = get_current_job()
+    
+    # Create app context for database access in worker
+    app = current_app._get_current_object()
+    with app.app_context():
+        logger = logging.getLogger(__name__)
+        logger.info(f"🚀 Background job started for playlist {playlist_id}")
+        
+        try:
+            # Verify playlist exists and belongs to user
+            playlist = Playlist.query.get(playlist_id)
+            if not playlist:
+                raise ValueError(f"Playlist {playlist_id} not found")
+            
+            if playlist.owner_id != user_id:
+                raise ValueError(f"Playlist {playlist_id} does not belong to user {user_id}")
+            
+            # Get all unanalyzed songs in this playlist
+            unanalyzed_songs = db.session.query(Song).join(
+                PlaylistSong
+            ).outerjoin(
+                AnalysisResult, Song.id == AnalysisResult.song_id
+            ).filter(
+                PlaylistSong.playlist_id == playlist_id,
+                db.or_(
+                    AnalysisResult.id.is_(None),
+                    AnalysisResult.status != 'completed'
+                )
+            ).all()
+            
+            total = len(unanalyzed_songs)
+            logger.info(f"📊 Found {total} unanalyzed songs in playlist {playlist_id}")
+            
+            if total == 0:
+                return {
+                    'playlist_id': playlist_id,
+                    'playlist_name': playlist.name,
+                    'total': 0,
+                    'analyzed': 0,
+                    'failed': 0,
+                    'message': 'All songs already analyzed'
+                }
+            
+            # Initialize analysis service
+            service = UnifiedAnalysisService()
+            results = {
+                'playlist_id': playlist_id,
+                'playlist_name': playlist.name,
+                'total': total,
+                'analyzed': 0,
+                'failed': 0,
+                'failed_songs': []
+            }
+            
+            # Analyze each song with progress tracking
+            for i, song in enumerate(unanalyzed_songs, 1):
+                try:
+                    # Update job metadata for progress tracking
+                    if job:
+                        job.meta['progress'] = {
+                            'current': i,
+                            'total': total,
+                            'percentage': round((i / total) * 100, 1),
+                            'current_song': f"{song.artist} - {song.title}"
+                        }
+                        job.save_meta()
+                    
+                    # Analyze the song
+                    service.analyze_song(song.id, user_id)
+                    results['analyzed'] += 1
+                    
+                    logger.info(f"✅ [{i}/{total}] Analyzed: {song.artist} - {song.title}")
+                    
+                except Exception as e:
+                    results['failed'] += 1
+                    results['failed_songs'].append({
+                        'id': song.id,
+                        'title': song.title,
+                        'artist': song.artist,
+                        'error': str(e)
+                    })
+                    logger.error(f"❌ [{i}/{total}] Failed to analyze {song.id}: {e}")
+            
+            logger.info(
+                f"🎉 Playlist {playlist_id} analysis complete: "
+                f"{results['analyzed']} succeeded, {results['failed']} failed"
+            )
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"💥 Fatal error analyzing playlist {playlist_id}: {e}")
+            raise

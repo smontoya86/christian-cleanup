@@ -3,7 +3,7 @@ services:
     build:
       context: .
       network: host
-    command: gunicorn --bind 0.0.0.0:5001 --workers 1 --timeout 1800 --worker-connections 100 run:app
+    command: gunicorn --bind 0.0.0.0:5001 --workers 4 --timeout 300 --worker-connections 100 run:app
     ports:
       - "5001:5001"
     volumes:
@@ -53,6 +53,29 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+
+  worker:
+    build:
+      context: .
+      network: host
+    command: rq worker analysis --url redis://redis:6379
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    restart: unless-stopped
+    environment:
+      - OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+      - DEBUG=false
+    healthcheck:
+      test: ["CMD-SHELL", "rq info --url redis://redis:6379 | grep -q 'analysis'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
   postgres_data:

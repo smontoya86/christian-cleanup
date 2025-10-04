@@ -30,6 +30,14 @@ def create_app():
     # Token Encryption
     app.config['ENCRYPTION_KEY'] = os.environ.get('ENCRYPTION_KEY')
     
+    # CRITICAL: Validate encryption key in production
+    if os.environ.get('FLASK_ENV') == 'production':
+        if not os.environ.get('ENCRYPTION_KEY'):
+            raise RuntimeError(
+                "ENCRYPTION_KEY environment variable is required in production. "
+                "Generate with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+            )
+    
     # Database Connection Pooling
     # Only apply pooling config for PostgreSQL (not SQLite/in-memory databases)
     database_url = app.config['SQLALCHEMY_DATABASE_URI']

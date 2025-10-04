@@ -16,6 +16,7 @@ gunicorn
 
 # Caching & Queue
 redis
+rq>=1.15.0
 
 # OpenAI API
 openai>=1.0.0

@@ -184,3 +184,65 @@ def mock_analysis_service(monkeypatch, mock_openai_response):
     
     return mock_openai_response
 
+
+@pytest.fixture
+def admin_user(db_session):
+    """Create an admin user"""
+    from datetime import datetime, timedelta, timezone
+    
+    user = User(
+        spotify_id='admin_user_123',
+        display_name='Admin User',
+        email='admin@example.com',
+        access_token='admin_access_token',
+        refresh_token='admin_refresh_token',
+        token_expiry=datetime.now(timezone.utc) + timedelta(hours=1),
+        is_admin=True
+    )
+    db_session.add(user)
+    db_session.commit()
+    return user
+
+
+class AuthActions:
+    """Helper class for authentication actions in tests"""
+    
+    def __init__(self, client, db_session):
+        self._client = client
+        self._db_session = db_session
+    
+    def login(self, is_admin=True, user=None):
+        """Log in a user (creates one if not provided)"""
+        if user is None:
+            # Create user
+            from datetime import datetime, timedelta, timezone
+            user = User(
+                spotify_id=f'test_user_{datetime.now().timestamp()}',
+                display_name='Test User',
+                email=f'test_{datetime.now().timestamp()}@example.com',
+                access_token='test_token',
+                refresh_token='test_refresh',
+                token_expiry=datetime.now(timezone.utc) + timedelta(hours=1),
+                is_admin=is_admin
+            )
+            self._db_session.add(user)
+            self._db_session.commit()
+        
+        # Simulate login by setting session
+        with self._client.session_transaction() as sess:
+            sess['_user_id'] = str(user.id)
+            sess['_fresh'] = True
+        
+        return user
+    
+    def logout(self):
+        """Log out current user"""
+        with self._client.session_transaction() as sess:
+            sess.clear()
+
+
+@pytest.fixture
+def auth(client, db_session):
+    """Authentication helper fixture"""
+    return AuthActions(client, db_session)
+

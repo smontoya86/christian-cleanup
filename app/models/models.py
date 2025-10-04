@@ -429,6 +429,8 @@ class AnalysisResult(db.Model):
         db.Index("idx_analysis_song_id", "song_id"),
         db.Index("idx_analysis_concern_level", "concern_level"),
         db.Index("idx_analysis_song_created", "song_id", "created_at"),
+        db.Index("idx_analysis_status", "status"),
+        db.Index("idx_analysis_score", "score"),
     )
     status = db.Column(db.String(50), default='pending', nullable=False)
     error = db.Column(db.Text, nullable=True)

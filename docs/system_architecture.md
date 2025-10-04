@@ -1,7 +1,7 @@
 # Music Disciple System Architecture
 
-**Last Updated:** October 2, 2025  
-**Version:** 2.0
+**Last Updated:** January 4, 2026  
+**Version:** 2.1
 
 ---
 
@@ -45,8 +45,8 @@ graph TB
         end
 
         subgraph "Background Jobs"
-            CeleryWorker["Celery Workers<br/>Async Analysis"]
-            Redis["Redis Queue<br/>Job Management"]
+            RQWorker["RQ Workers<br/>Async Analysis"]
+            RedisQueue["Redis Queue<br/>Job Management"]
         end
     end
 
@@ -100,9 +100,9 @@ graph TB
     RAGService --> FAISS
 
     %% Connections - Background Jobs
-    AnalysisService -.-> CeleryWorker
-    CeleryWorker --> Redis
-    CeleryWorker --> AnalysisService
+    AnalysisService -.-> RQWorker
+    RQWorker --> RedisQueue
+    RQWorker --> AnalysisService
 
     %% Connections - Session Management
     Auth --> RedisSession
@@ -120,7 +120,7 @@ graph TB
     class Browser,Mobile client
     class Auth,Main,API,Admin,SpotifyService,LyricsService,AnalysisService,RAGService app
     class Users,Songs,Playlists,Analysis,Cache,FAISS,RedisSession data
-    class CeleryWorker,Redis queue
+    class RQWorker,RedisQueue queue
 ```
 
 ---
@@ -162,7 +162,9 @@ graph TB
 - **Containerization**: Docker + Docker Compose
 - **Reverse Proxy**: Nginx
 - **Monitoring**: Prometheus + Grafana
-- **Task Queue**: Celery (planned)
+- **Task Queue**: RQ (Redis Queue) - Active
+- **Background Workers**: 1+ RQ workers
+- **Web Workers**: 4 Gunicorn workers
 - **Deployment**: RunPod / Self-hosted
 
 ---
@@ -241,14 +243,16 @@ graph TB
 **Purpose**: Core biblical discernment analysis
 
 **Key Features**:
-- Fine-tuned LLM (GPT-4o-mini)
+- Fine-tuned LLM (GPT-4o-mini) with optimized prompt (~350 tokens)
 - RAG with scripture embeddings
+- Asynchronous processing via RQ for large playlists
+- Real-time progress tracking
 - Multi-stage analysis:
   1. **Content Analysis**: Themes, concerns, sentiment
   2. **Biblical Alignment**: Scripture matching
   3. **Purity Scoring**: 0-100 scale
-  4. **Verdict**: Freely listen / Discernment / Avoid
-- Caching for efficiency
+  4. **Verdict**: Freely listen / Context required / Caution / Avoid
+- Multi-layer caching for efficiency
 
 **Analysis Output**:
 ```json
@@ -267,8 +271,10 @@ graph TB
 ```
 
 **Files**:
-- `app/services/unified_analysis_service.py` - Main analysis logic
+- `app/services/unified_analysis_service.py` - Main analysis logic (sync + async)
+- `app/services/analyzers/router_analyzer.py` - Optimized LLM prompts
 - `app/services/rag_service.py` - Scripture retrieval
+- `app/queue.py` - RQ job management
 - `docs/biblical_discernment_v2.md` - Framework documentation
 
 ---
@@ -386,7 +392,28 @@ AnalysisResult
       - Store/update song record
       - Link via PlaylistSong
 5. Flask → Return sync status
-6. Optional: Queue batch analysis
+```
+
+### Playlist Analysis (Background Job)
+
+```
+1. Admin clicks "Analyze Playlist"
+2. Browser → POST /api/analyze_playlist/{id}
+3. Flask → Validate auth & ownership
+4. Flask → Enqueue RQ job
+5. Flask → Return job_id immediately
+6. Browser → Opens progress modal
+7. Browser → Poll GET /api/analysis/status/{job_id} (every 3s)
+8. RQ Worker:
+   a. Fetches unanalyzed songs
+   b. For each song:
+      - Fetch lyrics
+      - Analyze with LLM
+      - Store results
+      - Update job progress metadata
+9. Browser ← Progress updates (current/total/percentage)
+10. Job completes → Browser shows summary
+11. Browser → User clicks "Refresh Page"
 ```
 
 ---
@@ -425,13 +452,16 @@ AnalysisResult
 3. **Browser**: Service Worker caching, localStorage
 
 ### Database Optimizations
-- Indexed columns: `spotify_id`, `user_id`, `song_id`
+- Indexed columns: `spotify_id`, `user_id`, `song_id`, `status`, `score`
 - Composite indexes on common queries
 - Connection pooling (SQLAlchemy)
+- Query optimization for large datasets
 
 ### API Efficiency
 - Batch Spotify API calls
-- Parallel analysis (planned: Celery)
+- **Asynchronous analysis with RQ** (active)
+- Background job processing prevents timeouts
+- Progress tracking for user feedback
 - Lazy loading for large playlists
 
 ### Frontend
@@ -444,15 +474,22 @@ AnalysisResult
 
 ## Deployment Architecture
 
-### Docker Compose (Development)
+### Docker Compose (Development & Production)
 
 ```yaml
 services:
-  web:      # Flask app (Gunicorn)
-  db:       # PostgreSQL
-  redis:    # Session & cache
+  web:      # Flask app (Gunicorn, 4 workers, 300s timeout)
+  worker:   # RQ worker for background jobs
+  db:       # PostgreSQL 14
+  redis:    # Session, cache, and queue
   nginx:    # Reverse proxy (production)
 ```
+
+**Configuration Highlights:**
+- Web service: 4 Gunicorn workers, 300s timeout
+- Worker service: RQ worker monitoring 'analysis' queue
+- Redis: Optimized for queue + sessions (512MB maxmemory, LRU eviction)
+- All services have healthchecks
 
 ### Production (RunPod/Self-Hosted)
 
@@ -461,11 +498,16 @@ Internet
   ↓
 Nginx (SSL, reverse proxy)
   ↓
-Gunicorn (WSGI, workers)
+Gunicorn (4 workers, 300s timeout)
   ↓
 Flask App
-  ↓
-PostgreSQL + Redis
+  ├─→ PostgreSQL (primary data)
+  ├─→ Redis (sessions + cache)
+  └─→ Redis Queue (job management)
+       ↓
+  RQ Worker(s) (background processing)
+       ↓
+  Flask App Context (for analysis)
 ```
 
 ---
@@ -492,10 +534,19 @@ PostgreSQL + Redis
 
 ---
 
-## Future Enhancements
+## Recent Enhancements (v2.1)
+
+### ✅ Completed (January 2026)
+- [x] **RQ task queue for async analysis** (replaces Celery plan)
+- [x] **Real-time progress tracking** for long-running jobs
+- [x] **Optimized LLM prompts** (85% token reduction)
+- [x] **Database indexes** for improved query performance
+- [x] **Security enhancements** (ENCRYPTION_KEY validation)
+- [x] **Admin authentication cleanup** (role-based, not ID-based)
+- [x] **Comprehensive test suite** (100+ tests)
+- [x] **Production-ready deployment** configuration
 
 ### Planned Features
-- [ ] Celery task queue for async analysis
 - [ ] Webhook-based Spotify sync
 - [ ] Artist/album-level analysis
 - [ ] User feedback loop for fine-tuning
@@ -503,6 +554,7 @@ PostgreSQL + Redis
 - [ ] Mobile native apps (React Native)
 - [ ] Collaborative playlists
 - [ ] Analysis history & trends
+- [ ] Smart prioritization for analysis queue
 
 ### Technical Improvements
 - [ ] GraphQL API
@@ -515,12 +567,20 @@ PostgreSQL + Redis
 
 ## Related Documentation
 
+### Core Documentation
 - [Biblical Discernment Framework](biblical_discernment_v2.md)
 - [Christian Framework](christian_framework.md)
 - [Design Language](DESIGN_LANGUAGE.md)
 - [API Documentation](api_docs.md)
 - [Configuration Guide](configuration.md)
 - [Security Practices](SECURITY.md)
+
+### Recent Updates (v2.1)
+- [RQ Implementation](RQ_IMPLEMENTATION_COMPLETE.md)
+- [Testing Strategy](TESTING_STRATEGY.md)
+- [Prompt Optimization](PROMPT_OPTIMIZATION.md)
+- [Scale Strategy (1000 Users)](SCALE_STRATEGY_1000_USERS.md)
+- [Quick Fixes Applied](QUICK_FIXES_APPLIED.md)
 
 ---
 
@@ -533,4 +593,9 @@ PostgreSQL + Redis
 ---
 
 **Maintained by**: Music Disciple Team  
-**Last Architecture Review**: October 2, 2025
+**Last Architecture Review**: January 4, 2026
+
+### Version History
+- **v2.1** (Jan 2026): RQ implementation, progress tracking, prompt optimization
+- **v2.0** (Oct 2025): RAG integration, fine-tuned LLM
+- **v1.0** (Initial): Basic analysis system

@@ -231,13 +231,50 @@ export class PlaylistAnalysis {
 
   /**
    * Back-compat handler bound in some listeners
+   * Now uses RQ queue for background processing
    */
-  analyzePlaylist () {
+  async analyzePlaylist () {
     if (this.isAnalysisInProgress) {
       UIHelpers.showError('Analysis is already in progress');
       return;
     }
-    this.startAnalysis('all');
+
+    const playlistId = this.playlistId;
+    const playlistName = document.querySelector('h1')?.textContent || 'this playlist';
+
+    if (!confirm(`This will analyze all songs in "${playlistName}". Continue?`)) {
+      return;
+    }
+
+    try {
+      // Start the background job
+      const response = await fetch(`/api/analyze_playlist/${playlistId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to start analysis');
+      }
+
+      // Show progress modal
+      const modal = new window.ProgressModal();
+      modal.show(
+        data.job_id,
+        `Analyzing: ${data.playlist_name}`,
+        (result) => {
+          console.log('✅ Analysis complete:', result);
+        }
+      );
+
+    } catch (error) {
+      console.error('❌ Error starting analysis:', error);
+      UIHelpers.showError(`Failed to start analysis: ${error.message}`);
+    }
   }
 
 
