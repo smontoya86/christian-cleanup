@@ -229,8 +229,9 @@ class PlaylistSyncService:
                 if playlist_songs_to_add:
                     db.session.bulk_insert_mappings(PlaylistSong, playlist_songs_to_add)
 
-                # Update playlist track count
+                # Update playlist track count and timestamp
                 playlist.track_count = tracks_synced
+                playlist.updated_at = datetime.now(timezone.utc)
 
                 # Compute up to 4 deduplicated collage URLs in-order of appearance
                 if album_art_urls:
@@ -295,10 +296,11 @@ class PlaylistSyncService:
                 playlist = Playlist(owner_id=user.id, spotify_id=spotify_id)
                 db.session.add(playlist)
 
-            # Update playlist data
+            # Update playlist data and timestamp
             playlist.name = spotify_playlist["name"]
             playlist.description = spotify_playlist.get("description", "")
             playlist.public = spotify_playlist.get("public", False)
+            playlist.updated_at = datetime.now(timezone.utc)
 
             # Handle image URL
             images = spotify_playlist.get("images", [])
