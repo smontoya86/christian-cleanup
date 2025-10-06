@@ -40,151 +40,119 @@ def load_jsonl(path: str) -> List[EvalItem]:
 
 
 def build_messages(title: str, artist: str, lyrics: str) -> List[Dict[str, str]]:
-    # System prompt adapted to Framework v3.1 with strict JSON schema
+    # System prompt matching fine-tuned model's training schema
     system = (
         "You are a theological music analyst using the Christian Framework v3.1.\n"
-        "Return ONLY valid JSON (no prose) with this schema: {\n"
+        "Return ONLY valid JSON (no prose) with this exact schema: {\n"
         "  \"score\": number (0-100),\n"
-        "  \"concern_level\": string (Very Low|Low|Medium|High|Critical),\n"
-        "  \"biblical_themes\": array of objects (optionally include {name, reference?}),\n"
-        "  \"supporting_scripture\": array of objects with {reference: string},\n"
-        "  \"concerns\": array of objects with {category: string, severity: low|medium|high|critical, explanation?: string},\n"
+        "  \"verdict\": string (freely_listen|context_required|caution_limit|avoid_formation),\n"
+        "  \"formation_risk\": string (very_low|low|high|critical),\n"
         "  \"narrative_voice\": string (artist|character|ambiguous),\n"
         "  \"lament_filter_applied\": boolean,\n"
-        "  \"doctrinal_clarity\": string (sound|thin|confused|null),\n"
-        "  \"confidence\": string (high|medium|low),\n"
-        "  \"needs_review\": boolean,\n"
-        "  \"verdict\": {\"summary\": string (freely_listen|context_required|caution_limit|avoid_formation)}\n"
+        "  \"themes_positive\": array of strings with points (e.g., \"Worship (+10)\"),\n"
+        "  \"themes_negative\": array of strings with penalties (e.g., \"Profanity (-15)\"),\n"
+        "  \"concerns\": array of strings with severity (e.g., \"Profanity (high)\"),\n"
+        "  \"scripture_references\": array of strings (e.g., \"Eph 5:3\"),\n"
+        "  \"analysis\": string (1-2 sentence summary)\n"
         "}.\n\n"
-        "## Core Rules:\n"
-        "1. **MANDATORY Scripture**: EVERY song must include supporting_scripture (1-4 refs) justifying the score/verdict:\n"
-        "   - Positive themes: cite scripture showing alignment (e.g., 'Psalm 103:1' for worship)\n"
-        "   - Negative/problematic content: cite scripture explaining WHY it's concerning (e.g., 'Eph 5:3' for sexual content, '1 John 2:15-17' for idolatry)\n"
-        "   - Neutral/ambiguous: cite scripture for theological framing (e.g., 'Prov 4:23' for guarding hearts)\n\n"
-        "2. **Sentiment & Nuance Analysis**:\n"
+        "## Scoring Guidelines:\n"
+        "1. **Use Full 0-100 Scale**: Avoid clustering at boundaries (40, 45, 60, 85)\n"
+        "   - **85-100** (freely_listen): Biblically sound, edifying\n"
+        "   - **60-84** (context_required): Some helpful content, needs discernment\n"
+        "   - **50-59** (borderline): Mixed messages - significant concerns BUT redeeming themes\n"
+        "   - **40-49** (caution_limit): More concerns than positive content\n"
+        "   - **0-39** (avoid_formation): Harmful to spiritual formation\n\n"
+        "2. **MANDATORY Scripture**: Include scripture_references (1-4 refs) justifying the score:\n"
+        "   - Positive themes: cite scripture showing alignment\n"
+        "   - Negative content: cite scripture explaining WHY it's concerning\n"
+        "   - Neutral/ambiguous: cite scripture for theological framing\n\n"
+        "3. **Sentiment & Nuance Analysis**:\n"
         "   - Analyze tone, emotional trajectory, and underlying worldview\n"
         "   - Consider narrative voice (artist vs character portrayal vs storytelling)\n"
-        "   - Examine context: is this celebration, confession, lament, or warning?\n"
+        "   - Examine context: celebration, confession, lament, or warning?\n"
         "   - Distinguish genuine lament (Psalms) from glorifying sin\n\n"
-        "3. **Discerning False vs Biblical Themes**:\n"
-        "   - **Love**: Biblical agape (1 Cor 13) vs romantic obsession (idolatry) vs lust (Gal 5:19)\n"
-        "   - **Hope**: Hope in Christ (Rom 15:13) vs humanistic self-empowerment (Prov 14:12)\n"
-        "   - **Freedom**: Freedom in Christ (Gal 5:1) vs rebellion/licentiousness (Jude 1:4)\n"
-        "   - **Spirituality**: Biblical worship vs vague/universalist spirituality (John 4:24)\n"
-        "   - ERR ON CAUTION: When in doubt about theological alignment, score lower and flag concerns\n\n"
-        "4. **Concern Categories** (choose from): Idolatry, False Worship, Vague Spirituality, Self-Salvation, Relativism, Profanity, Sexual Purity, Violence and Aggression, Substance Use, Rebellion Against Authority, Despair and Mental Health, Occult and Spiritual Darkness, Materialism and Greed, Language and Expression, Pride and Self-Focus\n\n"
-        "5. **JSON Format**: Valid, compact JSON only. No prose, comments, or extra text.\n"
+        "4. **Edge Cases**:\n"
+        "   - **Common Grace**: Secular songs with biblical values (kindness, community) score 60-75\n"
+        "   - **Vague Spirituality Cap**: Spiritual language with unclear theology = MAX 45\n"
+        "   - **Lament Filter**: Biblical lament reduces despair penalties by 50%\n"
+        "   - **Character Voice**: Story songs get 30% penalty reduction\n\n"
+        "5. **Concern Categories**: Idolatry, False Worship, Vague Spirituality, Self-Salvation, Relativism, Profanity, Sexual Purity, Violence and Aggression, Substance Use, Rebellion Against Authority, Despair and Mental Health, Occult and Spiritual Darkness, Materialism and Greed, Language and Expression, Pride and Self-Focus\n\n"
+        "Return valid JSON only. No prose, comments, or extra text.\n"
     )
 
-    # Few-shot examples to anchor structure and tiers
+    # Few-shot examples matching fine-tuned model's training format
     example_fl = (
         "{\n"
         "  \"score\": 93,\n"
-        "  \"concern_level\": \"Low\",\n"
-        "  \"biblical_themes\": [{\"name\": \"Worship of God\"},{\"name\": \"Hope\"}],\n"
-        "  \"supporting_scripture\": [{\"reference\": \"Psalm 29:2\"},{\"reference\": \"Romans 15:13\"}],\n"
-        "  \"concerns\": [],\n"
+        "  \"verdict\": \"freely_listen\",\n"
+        "  \"formation_risk\": \"low\",\n"
         "  \"narrative_voice\": \"artist\",\n"
         "  \"lament_filter_applied\": false,\n"
-        "  \"doctrinal_clarity\": \"sound\",\n"
-        "  \"confidence\": \"high\",\n"
-        "  \"needs_review\": false,\n"
-        "  \"verdict\": {\"summary\": \"freely_listen\"}\n"
+        "  \"themes_positive\": [\"Worship of God (+10)\", \"Hope in Christ (+8)\"],\n"
+        "  \"themes_negative\": [],\n"
+        "  \"concerns\": [],\n"
+        "  \"scripture_references\": [\"Psalm 29:2\", \"Romans 15:13\"],\n"
+        "  \"analysis\": \"Biblically sound worship song celebrating God's character and faithfulness.\"\n"
         "}"
     )
 
     example_cr = (
         "{\n"
-        "  \"score\": 78,\n"
-        "  \"concern_level\": \"Medium\",\n"
-        "  \"biblical_themes\": [{\"name\": \"Hope\"}],\n"
-        "  \"supporting_scripture\": [{\"reference\": \"Romans 15:13\"}],\n"
-        "  \"concerns\": [{\"category\": \"Vague Spirituality\", \"severity\": \"medium\"}],\n"
+        "  \"score\": 68,\n"
+        "  \"verdict\": \"context_required\",\n"
+        "  \"formation_risk\": \"low\",\n"
         "  \"narrative_voice\": \"artist\",\n"
         "  \"lament_filter_applied\": false,\n"
-        "  \"doctrinal_clarity\": \"thin\",\n"
-        "  \"confidence\": \"medium\",\n"
-        "  \"needs_review\": false,\n"
-        "  \"verdict\": {\"summary\": \"context_required\"}\n"
+        "  \"themes_positive\": [\"Hope (+6)\"],\n"
+        "  \"themes_negative\": [],\n"
+        "  \"concerns\": [\"Vague Spirituality (medium)\"],\n"
+        "  \"scripture_references\": [\"Romans 15:13\", \"John 4:24\"],\n"
+        "  \"analysis\": \"Hopeful message but lacks clear theological grounding; requires discernment.\"\n"
         "}"
     )
 
     example_cl = (
         "{\n"
         "  \"score\": 52,\n"
-        "  \"concern_level\": \"High\",\n"
-        "  \"biblical_themes\": [],\n"
-        "  \"supporting_scripture\": [{\"reference\": \"1 Corinthians 6:19-20\"}],\n"
-        "  \"concerns\": [\n"
-        "    {\"category\": \"Substance Use\", \"severity\": \"high\"},\n"
-        "    {\"category\": \"Pride and Self-Focus\", \"severity\": \"medium\"}\n"
-        "  ],\n"
+        "  \"verdict\": \"caution_limit\",\n"
+        "  \"formation_risk\": \"high\",\n"
         "  \"narrative_voice\": \"artist\",\n"
         "  \"lament_filter_applied\": false,\n"
-        "  \"doctrinal_clarity\": \"null\",\n"
-        "  \"confidence\": \"medium\",\n"
-        "  \"needs_review\": false,\n"
-        "  \"verdict\": {\"summary\": \"caution_limit\"}\n"
+        "  \"themes_positive\": [\"Community (+5)\"],\n"
+        "  \"themes_negative\": [\"Substance Use (-15)\", \"Pride (-10)\"],\n"
+        "  \"concerns\": [\"Substance Use (high)\", \"Pride and Self-Focus (medium)\"],\n"
+        "  \"scripture_references\": [\"1 Corinthians 6:19-20\", \"Proverbs 16:18\"],\n"
+        "  \"analysis\": \"Mixed messages: positive community themes undermined by glorification of substance use and pride.\"\n"
         "}"
     )
 
     example_af = (
         "{\n"
-        "  \"score\": 28,\n"
-        "  \"concern_level\": \"Critical\",\n"
-        "  \"biblical_themes\": [],\n"
-        "  \"supporting_scripture\": [{\"reference\": \"Ephesians 4:29\"}],\n"
-        "  \"concerns\": [\n"
-        "    {\"category\": \"Profanity\", \"severity\": \"high\"},\n"
-        "    {\"category\": \"Violence and Aggression\", \"severity\": \"high\"}\n"
-        "  ],\n"
+        "  \"score\": 18,\n"
+        "  \"verdict\": \"avoid_formation\",\n"
+        "  \"formation_risk\": \"critical\",\n"
         "  \"narrative_voice\": \"artist\",\n"
         "  \"lament_filter_applied\": false,\n"
-        "  \"doctrinal_clarity\": \"null\",\n"
-        "  \"confidence\": \"high\",\n"
-        "  \"needs_review\": false,\n"
-        "  \"verdict\": {\"summary\": \"avoid_formation\"}\n"
+        "  \"themes_positive\": [],\n"
+        "  \"themes_negative\": [\"Profanity (-20)\", \"Violence (-18)\"],\n"
+        "  \"concerns\": [\"Profanity (high)\", \"Violence and Aggression (high)\"],\n"
+        "  \"scripture_references\": [\"Ephesians 4:29\", \"Matthew 5:22\"],\n"
+        "  \"analysis\": \"Explicit language and violent themes contrary to biblical teaching; harmful to spiritual formation.\"\n"
         "}"
     )
 
-    example_flags_scripture_heavy = (
-        "{\n"
-        "  \"score\": 41,\n"
-        "  \"concern_level\": \"High\",\n"
-        "  \"biblical_themes\": [{\"name\": \"Truth\"}],\n"
-        "  \"supporting_scripture\": [\n"
-        "    {\"reference\": \"1 Corinthians 6:18-20\"},\n"
-        "    {\"reference\": \"Proverbs 20:1\"}\n"
-        "  ],\n"
-        "  \"concerns\": [\n"
-        "    {\"category\": \"Sexual Purity\", \"severity\": \"high\"},\n"
-        "    {\"category\": \"Substance Use\", \"severity\": \"medium\"}\n"
-        "  ],\n"
-        "  \"narrative_voice\": \"artist\",\n"
-        "  \"lament_filter_applied\": false,\n"
-        "  \"doctrinal_clarity\": \"null\",\n"
-        "  \"confidence\": \"medium\",\n"
-        "  \"needs_review\": false,\n"
-        "  \"verdict\": {\"summary\": \"caution_limit\"}\n"
-        "}"
-    )
-
-    example_concerns_listed = (
+    example_borderline = (
         "{\n"
         "  \"score\": 55,\n"
-        "  \"concern_level\": \"High\",\n"
-        "  \"biblical_themes\": [],\n"
-        "  \"supporting_scripture\": [{\"reference\": \"Ephesians 4:29\"}],\n"
-        "  \"concerns\": [\n"
-        "    {\"category\": \"Language and Expression\", \"severity\": \"medium\", \"explanation\": \"repeated crude phrasing\"},\n"
-        "    {\"category\": \"Materialism and Greed\", \"severity\": \"low\", \"explanation\": \"boasting in wealth\"}\n"
-        "  ],\n"
+        "  \"verdict\": \"caution_limit\",\n"
+        "  \"formation_risk\": \"high\",\n"
         "  \"narrative_voice\": \"artist\",\n"
         "  \"lament_filter_applied\": false,\n"
-        "  \"doctrinal_clarity\": \"null\",\n"
-        "  \"confidence\": \"medium\",\n"
-        "  \"needs_review\": false,\n"
-        "  \"verdict\": {\"summary\": \"caution_limit\"}\n"
+        "  \"themes_positive\": [\"Perseverance (+8)\"],\n"
+        "  \"themes_negative\": [\"Self-reliance (-12)\", \"Crude Language (-8)\"],\n"
+        "  \"concerns\": [\"Language and Expression (medium)\", \"Pride and Self-Focus (medium)\"],\n"
+        "  \"scripture_references\": [\"Ephesians 4:29\", \"Proverbs 3:5-6\"],\n"
+        "  \"analysis\": \"Borderline case: perseverance theme has merit but self-reliance and crude expression create formation concerns.\"\n"
         "}"
     )
 
@@ -195,8 +163,7 @@ def build_messages(title: str, artist: str, lyrics: str) -> List[Dict[str, str]]
         {"role": "assistant", "content": example_cr},
         {"role": "assistant", "content": example_cl},
         {"role": "assistant", "content": example_af},
-        {"role": "assistant", "content": example_flags_scripture_heavy},
-        {"role": "assistant", "content": example_concerns_listed},
+        {"role": "assistant", "content": example_borderline},
         {"role": "user", "content": user},
     ]
 
@@ -393,27 +360,55 @@ async def run_eval(input_path: str, out_dir: str, local: bool = False) -> None:
 
     elapsed = time.time() - t0
     for it, res in zip(items, results):
+        # Handle verdict as string or object (for backwards compatibility)
         verdict_p = (res.get("verdict") or {}).get("summary") if isinstance(res.get("verdict"), dict) else res.get("verdict")
         score_p = float(res.get("score", 50))
-        # Normalize predicted flag categories to allowed set
-        raw_flags_p = [
-            (
-                f if isinstance(f, str) else ((f or {}).get("category") or (f or {}).get("type", ""))
-            )
-            for f in (res.get("concerns") or [])
-        ]
+        
+        # Parse concerns from flat string array (e.g., "Profanity (high)" or "Vague Spirituality (medium)")
+        raw_flags_p = []
+        for f in (res.get("concerns") or []):
+            if isinstance(f, str):
+                # Extract category from "Category (severity)" format
+                import re
+                match = re.match(r'^(.+?)\s*\(', f)
+                category = match.group(1).strip() if match else f.strip()
+                raw_flags_p.append(category)
+            else:
+                # Handle object format for backwards compatibility
+                raw_flags_p.append((f or {}).get("category") or (f or {}).get("type", ""))
+        
+        # Normalize to allowed concern categories
         norm_flags = []
         for name in raw_flags_p:
             cat = normalize_category(name)
             if cat:
                 norm_flags.append(cat)
         flags_p = set(norm_flags)
-        scriptures_p = [s if isinstance(s, str) else (s or {}).get("reference", "") for s in (res.get("supporting_scripture") or [])]
+        
+        # Parse scripture references (try both field names for compatibility)
+        scriptures_p = res.get("scripture_references") or res.get("supporting_scripture") or []
+        scriptures_p = [s if isinstance(s, str) else (s or {}).get("reference", "") for s in scriptures_p]
 
         verdict_t = str(it.labels.get("verdict", ""))
         score_t = float(it.labels.get("score", 50))
-        flags_t = set([str(x) for x in (it.labels.get("concern_flags") or [])])
-        scriptures_t = [str(x) for x in (it.labels.get("scripture_refs") or [])]
+        
+        # Parse expected concerns (try both field names for compatibility)
+        expected_concerns = it.labels.get("concerns") or it.labels.get("concern_flags") or []
+        flags_t_raw = []
+        for c in expected_concerns:
+            if isinstance(c, str):
+                # Extract category from "Category (severity)" format
+                import re
+                match = re.match(r'^(.+?)\s*\(', c)
+                category = match.group(1).strip() if match else c.strip()
+                flags_t_raw.append(category)
+            else:
+                flags_t_raw.append(str(c))
+        flags_t = set(flags_t_raw)
+        
+        # Parse expected scripture (try both field names for compatibility)
+        scriptures_t = it.labels.get("scripture_references") or it.labels.get("scripture_refs") or []
+        scriptures_t = [str(x) for x in scriptures_t]
 
         preds.append({"id": it.id, "pred": res})
         y_true_verdict.append(verdict_t)

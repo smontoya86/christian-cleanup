@@ -247,18 +247,38 @@ class RouterAnalyzer:
 
 Apply your trained analysis patterns to evaluate this song. Remember:
 
-## Key Edge Cases:
+## Critical Distinctions (Watch for Subtle Issues):
+
+**Under-detected Concerns:**
+- **Humanistic Philosophy**: Self-empowerment, "I can do anything," bootstrap mentality WITHOUT God
+  * Flag when success/strength is attributed to self rather than God (Prov 3:5-6)
+- **Idolatry**: Elevating ANYTHING above God (romance, success, self, relationships)
+  * Flag when ultimate hope/meaning is in created things vs Creator (1 John 2:15-17)
+  
+**Over-detected (Apply Lament Filter):**
+- **Despair/Mental Health**: DON'T flag authentic lament directed toward God (Psalms)
+  * Only flag when despair has NO hope or is disconnected from God
+- **Pride**: DON'T flag confidence in God's promises or biblical boldness
+  * Only flag self-exaltation, boasting in self, arrogance
+
+**Other Edge Cases:**
 - **Common Grace**: Secular songs with biblical values (kindness, community, integrity) score 60-75
 - **Vague Spirituality Cap**: God/spiritual language with unclear theology = MAX 45 score
-- **Lament Filter**: Biblical lament (honest grief directed to God) reduces despair penalties by 50%
 - **Character Voice**: Story songs/cautionary tales get 30% penalty reduction
 - **Scripture Required**: EVERY analysis needs 1-4 scripture references
 
-## Verdicts (0-100):
-- **freely_listen** (85-100): Biblically sound, edifying
-- **context_required** (60-84): Some helpful content, needs discernment
-- **caution_limit** (40-59): Mixed messages, significant concerns
-- **avoid_formation** (0-39): Harmful to spiritual formation
+## Scoring Guidelines (Use Full 0-100 Scale):
+**Avoid clustering at exact boundaries (40, 45, 60, 85). Use the full range:**
+
+- **85-100** (freely_listen): Biblically sound, theologically clear, spiritually edifying
+- **70-84** (context_required): Helpful themes with minor theological gaps or ambiguity
+- **60-69** (context_required): Mixed content with redeemable elements but requiring careful discernment
+- **50-59** (caution_limit): **BORDERLINE** - Significant concerns BUT meaningful positive themes
+  * Use 50-59 for songs with BOTH problems AND redeeming value
+  * Example: Self-reliance message BUT genuine perseverance theme
+  * Example: Vague spirituality BUT authentic hope and community
+- **40-49** (caution_limit): More concerns than positive content, limited spiritual value
+- **0-39** (avoid_formation): Harmful to spiritual formation, contrary to biblical teaching
 
 ## Formation Risk:
 - **very_low**: Minimal spiritual concerns
