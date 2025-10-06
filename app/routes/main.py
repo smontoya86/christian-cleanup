@@ -180,7 +180,7 @@ def playlist_detail(playlist_id):
 @main_bp.route("/playlist/<int:playlist_id>/remove/<int:song_id>", methods=["POST"])
 @login_required
 def remove_from_playlist(playlist_id, song_id):
-    """Remove a song from a playlist"""
+    """Remove a song from a playlist (syncs with Spotify)"""
     try:
         # Get the playlist and verify ownership
         playlist = Playlist.query.get_or_404(playlist_id)
@@ -189,13 +189,27 @@ def remove_from_playlist(playlist_id, song_id):
             flash("You don't have permission to modify this playlist.", "error")
             return redirect(url_for("main.dashboard"))
         
-        # Remove the playlist-song association
+        # Remove the playlist-song association from local database
         playlist_song = PlaylistSong.query.filter_by(
             playlist_id=playlist_id,
             song_id=song_id
         ).first()
         
         if playlist_song:
+            # First, sync removal to Spotify
+            if playlist.spotify_id:
+                try:
+                    from ..services.spotify_service import SpotifyService
+                    spotify_service = SpotifyService(current_user)
+                    success = spotify_service.remove_song_from_playlist(playlist.spotify_id, song_id)
+                    
+                    if not success:
+                        current_app.logger.warning(f"Failed to remove song {song_id} from Spotify playlist {playlist.spotify_id}, but continuing with local removal")
+                except Exception as spotify_error:
+                    current_app.logger.error(f"Error syncing removal to Spotify: {spotify_error}")
+                    flash("Song removed locally, but failed to sync with Spotify. Try syncing your playlists again.", "warning")
+            
+            # Remove from local database
             db.session.delete(playlist_song)
             db.session.commit()
             flash("Song removed from playlist.", "success")
