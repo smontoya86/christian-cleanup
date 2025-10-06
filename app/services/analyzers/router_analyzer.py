@@ -80,6 +80,12 @@ class RouterAnalyzer:
         Returns:
             Dictionary containing analysis results with Christian Framework v3.1 schema
         """
+        # Handle instrumental/no-lyrics songs FIRST (before any processing)
+        has_meaningful_lyrics = lyrics and len(str(lyrics).strip()) > 10
+        if not has_meaningful_lyrics:
+            logger.info(f"🎵 '{title}' has no lyrics - returning instrumental response")
+            return self._create_instrumental_response(title, artist)
+        
         # Cache hierarchy: Redis → Database → API
         lyrics_hash = hashlib.sha256(lyrics.encode('utf-8')).hexdigest()
         
@@ -130,7 +136,7 @@ class RouterAnalyzer:
         logger.info(f"🎵 Analyzing '{title}' by {artist} with {self.model}")
 
         system = self._get_comprehensive_system_prompt()
-        user = f"Song: {title} — {artist}\n\nLyrics:\n{lyrics or ''}"
+        user = f"Song: {title} — {artist}\n\nLyrics:\n{lyrics}"
         
         payload = {
             "model": self.model,
@@ -334,6 +340,47 @@ Return ONLY this JSON (no prose, no markdown):
             "analysis": data.get("analysis", ""),
         }
         return out
+
+    def _create_instrumental_response(self, title: str, artist: str) -> Dict[str, Any]:
+        """Return appropriate response for instrumental/no-lyrics songs"""
+        # Detect if likely instrumental based on title
+        title_lower = title.lower()
+        instrumental_indicators = [
+            "instrumental", "interlude", "intro", "outro", "bridge",
+            "prelude", "postlude", "overture", "theme", "score",
+            "ambient", "meditation", "prayer music"
+        ]
+        
+        is_likely_instrumental = any(indicator in title_lower for indicator in instrumental_indicators)
+        
+        if is_likely_instrumental:
+            return {
+                "score": 85,
+                "verdict": "freely_listen",
+                "formation_risk": "very_low",
+                "narrative_voice": "artist",
+                "lament_filter_applied": False,
+                "themes_positive": ["Instrumental Worship (+10)"],
+                "themes_negative": [],
+                "concerns": [],
+                "scripture_references": ["Psalm 150:3-5"],
+                "analysis": f"Instrumental track - music can glorify God without words (Psalm 150:3-5). Consider using for prayer, meditation, or worship reflection.",
+                "instrumental": True
+            }
+        else:
+            return {
+                "score": 50,
+                "verdict": "context_required",
+                "formation_risk": "low",
+                "narrative_voice": "artist",
+                "lament_filter_applied": False,
+                "themes_positive": [],
+                "themes_negative": [],
+                "concerns": [],
+                "scripture_references": [],
+                "analysis": f"Lyrics unavailable for '{title}' by {artist}. Unable to provide biblical analysis without lyrics. Manual review recommended.",
+                "no_lyrics": True
+            }
 
     def _degraded_output(self, title: str, artist: str, reason: str = "Service temporarily unavailable") -> Dict[str, Any]:
         """
