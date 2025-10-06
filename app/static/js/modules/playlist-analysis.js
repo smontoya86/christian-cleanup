@@ -268,6 +268,10 @@ export class PlaylistAnalysis {
         `Analyzing: ${data.playlist_name}`,
         (result) => {
           console.log('✅ Analysis complete:', result);
+          // Auto-refresh page after 1 second to show updated results
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
         }
       );
 

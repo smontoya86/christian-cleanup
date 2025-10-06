@@ -13,9 +13,10 @@ from rq import Queue
 logger = logging.getLogger(__name__)
 
 # Use existing Redis connection from environment
+# Note: decode_responses=False is required for RQ to work with pickled job data
 redis_conn = Redis.from_url(
     os.environ.get('REDIS_URL', 'redis://redis:6379'),
-    decode_responses=True
+    decode_responses=False
 )
 
 # Create queue for analysis jobs

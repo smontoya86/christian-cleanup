@@ -488,6 +488,9 @@ class AnalysisResult(db.Model):
         self.narrative_voice = narrative_voice
         self.lament_filter_applied = lament_filter_applied
         self.framework_data = framework_data
+        
+        # BUG FIX: Mark status as completed
+        self.status = 'completed'
 
 class Whitelist(db.Model):
     __tablename__ = "whitelist"

@@ -100,7 +100,13 @@ def get_song_analysis_status(id):
             "result": {
                 "score": analysis.score,
                 "explanation": analysis.explanation,
-                "concerns": analysis.concerns if analysis.concerns else []
+                "concerns": analysis.concerns if analysis.concerns else [],
+                "verdict": analysis.verdict,
+                "formation_risk": analysis.formation_risk,
+                "narrative_voice": analysis.narrative_voice,
+                "lament_filter_applied": analysis.lament_filter_applied,
+                "biblical_themes": analysis.biblical_themes if analysis.biblical_themes else [],
+                "supporting_scripture": analysis.supporting_scripture if analysis.supporting_scripture else []
             }
         })
     else:

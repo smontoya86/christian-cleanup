@@ -44,6 +44,10 @@ class UnifiedAnalysisService:
             positive_themes_identified=analysis_data.get("positive_themes", []),
             biblical_themes=analysis_data.get("biblical_themes", []),
             supporting_scripture=analysis_data.get("supporting_scripture", []),
+            verdict=analysis_data.get("verdict"),
+            formation_risk=analysis_data.get("formation_risk"),
+            narrative_voice=analysis_data.get("narrative_voice"),
+            lament_filter_applied=analysis_data.get("lament_filter_applied"),
         )
         db.session.commit()
 
@@ -129,20 +133,67 @@ class UnifiedAnalysisService:
         if use_router and isinstance(router_payload, dict):
             self.logger.info("Router analysis successful.")
             detailed_concerns = router_payload.get("concerns") or []
-            biblical_themes = router_payload.get("biblical_themes") or []
-            theme_names = [
-                (t.get("theme") if isinstance(t, dict) else str(t)) for t in biblical_themes
-            ]
+            
+            # Extract themes with scripture mappings
+            themes_positive = router_payload.get("themes_positive") or []
+            themes_negative = router_payload.get("themes_negative") or []
+            
+            # Build biblical themes from both positive and negative
+            biblical_themes = []
+            for theme in themes_positive:
+                if isinstance(theme, dict):
+                    biblical_themes.append({
+                        "theme": theme.get("theme", ""),
+                        "points": theme.get("points", 0),
+                        "scripture": theme.get("scripture", "")
+                    })
+            
+            theme_names = [t.get("theme") for t in biblical_themes if t.get("theme")]
+            
+            # Build enriched scripture references with theme context
+            supporting_scripture = []
+            
+            # Add scriptures from positive themes
+            for theme in themes_positive:
+                if isinstance(theme, dict) and theme.get("scripture"):
+                    supporting_scripture.append({
+                        "reference": theme.get("scripture"),
+                        "theme": theme.get("theme"),
+                        "type": "positive",
+                        "relevance": f"Supports the positive theme of {theme.get('theme', 'biblical values')}"
+                    })
+            
+            # Add scriptures from negative themes (concerns)
+            for theme in themes_negative:
+                if isinstance(theme, dict) and theme.get("scripture"):
+                    supporting_scripture.append({
+                        "reference": theme.get("scripture"),
+                        "theme": theme.get("theme"),
+                        "type": "concern",
+                        "relevance": f"Addresses the concern of {theme.get('theme', 'spiritual formation')}"
+                    })
+            
+            # Add any standalone scripture references not already included
+            scripture_refs = router_payload.get("scripture_references") or []
+            existing_refs = {s["reference"] for s in supporting_scripture if isinstance(s, dict)}
+            for ref in scripture_refs:
+                if ref not in existing_refs:
+                    supporting_scripture.append(ref)
+            
             return {
                 "score": router_payload.get("score", 50),
                 "concern_level": self._map_concern_level(router_payload.get("concern_level", "Unknown")),
-                "themes": [t for t in theme_names if t],
+                "themes": theme_names,
                 "status": "completed",
-                "explanation": "Router analysis completed",
+                "explanation": router_payload.get("analysis", "Analysis completed"),
                 "detailed_concerns": detailed_concerns,
-                "positive_themes": [],
+                "positive_themes": [{"theme": t.get("theme"), "description": f"+{t.get('points', 0)} points"} for t in themes_positive if isinstance(t, dict)],
                 "biblical_themes": biblical_themes,
-                "supporting_scripture": router_payload.get("supporting_scripture") or [],
+                "supporting_scripture": supporting_scripture,
+                "verdict": router_payload.get("verdict", "context_required"),
+                "formation_risk": router_payload.get("formation_risk", "low"),
+                "narrative_voice": router_payload.get("narrative_voice", "artist"),
+                "lament_filter_applied": router_payload.get("lament_filter_applied", False),
             }
 
         self.logger.info("Performing simplified analysis...")
@@ -197,8 +248,24 @@ class UnifiedAnalysisService:
                     )
 
         self.logger.info("Simplified analysis successful.")
+        
+        # Map score to verdict
+        score = analysis_result.scoring_results["final_score"]
+        if score >= 85:
+            verdict = "freely_listen"
+            formation_risk = "very_low"
+        elif score >= 60:
+            verdict = "context_required"
+            formation_risk = "low"
+        elif score >= 40:
+            verdict = "caution_limit"
+            formation_risk = "high"
+        else:
+            verdict = "avoid_formation"
+            formation_risk = "high"
+        
         return {
-            "score": analysis_result.scoring_results["final_score"],
+            "score": score,
             "concern_level": self._map_concern_level(
                 analysis_result.scoring_results.get("quality_level", "Unknown")
             ),
@@ -211,6 +278,10 @@ class UnifiedAnalysisService:
             "positive_themes": positive_themes,
             "biblical_themes": biblical_themes,
             "supporting_scripture": supporting_scripture,
+            "verdict": verdict,
+            "formation_risk": formation_risk,
+            "narrative_voice": "artist",  # Default for simplified analysis
+            "lament_filter_applied": False,  # Not supported in simplified path
         }
 
     def _is_blacklisted(self, song, user_id):
@@ -250,6 +321,10 @@ class UnifiedAnalysisService:
             "positive_themes": [],
             "biblical_themes": [],
             "supporting_scripture": [],
+            "verdict": "avoid_formation",
+            "formation_risk": "critical",
+            "narrative_voice": "artist",
+            "lament_filter_applied": False,
         }
 
     def _create_whitelisted_result(self, song, user_id):
@@ -263,6 +338,10 @@ class UnifiedAnalysisService:
             "positive_themes": [{"theme": "Whitelisted", "description": "This song is on your whitelist."}],
             "biblical_themes": [],
             "supporting_scripture": [],
+            "verdict": "freely_listen",
+            "formation_risk": "very_low",
+            "narrative_voice": "artist",
+            "lament_filter_applied": False,
         }
 
     def _map_concern_level(self, level_str):
@@ -570,15 +649,16 @@ def analyze_playlist_async(playlist_id: int, user_id: int):
     Returns:
         dict: Results summary with counts of analyzed/failed songs
     """
-    from flask import current_app
     from rq import get_current_job
-    from ..models import Playlist, PlaylistSong
+    from ..models import Playlist, PlaylistSong, Song, AnalysisResult
+    from .. import create_app
     
     # Get current RQ job for progress tracking
     job = get_current_job()
     
     # Create app context for database access in worker
-    app = current_app._get_current_object()
+    # RQ workers run in separate processes, so we need to create our own app instance
+    app = create_app()
     with app.app_context():
         logger = logging.getLogger(__name__)
         logger.info(f"🚀 Background job started for playlist {playlist_id}")

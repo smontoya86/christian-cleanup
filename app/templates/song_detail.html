@@ -29,20 +29,21 @@
                         {% set concern_level = analysis.concern_level if analysis and analysis.concern_level and analysis.concern_level != 'unknown' else ('very_low' if score >= 90 else ('low' if score >= 75 else ('medium' if score >= 50 else 'high'))) %}
 
                         <div class="d-flex align-items-center gap-3 flex-wrap">
-                            <div class="score-circle {% if score >= 85 %}score-good{% elif score >= 70 %}score-medium{% else %}score-poor{% endif %}">
-                                {{ "%.0f" | format(score) }}%
+                            <!-- Score Circle - Always visible -->
+                            <div class="score-circle {% if score >= 85 %}score-good{% elif score >= 60 %}score-medium{% elif score >= 40 %}score-caution{% else %}score-avoid{% endif %}">
+                                {{ "%.0f" | format(score) }}
                             </div>
                             <div>
                                 <div class="fw-bold fs-5">
                                     {% if analysis.verdict %}
                                         {% if analysis.verdict == 'freely_listen' %}
                                             ✅ Freely Listen
-                                        {% elif analysis.verdict == 'listen_with_discernment' %}
-                                            ⚠️ Listen with Discernment
                                         {% elif analysis.verdict == 'context_required' %}
                                             🤔 Context Required
-                                        {% elif analysis.verdict == 'avoid' %}
-                                            ❌ Consider Avoiding
+                                        {% elif analysis.verdict == 'caution_limit' %}
+                                            ⚠️ Caution Limit
+                                        {% elif analysis.verdict == 'avoid_formation' %}
+                                            ❌ Avoid Formation
                                         {% else %}
                                             {{ analysis.verdict | replace('_', ' ') | title }}
                                         {% endif %}
@@ -141,7 +142,18 @@
                         <div class="col-md-6">
                             <div class="card h-100">
                                 <div class="card-header bg-warning text-dark">
-                                    <h6 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Concerns Found</h6>
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-exclamation-circle me-2"></i>Concerns Found
+                                        {% if analysis.concerns %}
+                                            {% set concerns_data = analysis.concerns %}
+                                            {% if concerns_data is string %}
+                                                {% set concerns_data = concerns_data | from_json %}
+                                            {% endif %}
+                                            {% if concerns_data and (concerns_data | length > 0) %}
+                                                <span class="badge bg-dark ms-2">{{ concerns_data | length }}</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </h6>
                                 </div>
                                 <div class="card-body">
                                     {% if analysis.concerns %}
@@ -151,12 +163,17 @@
                                         {% endif %}
                                         {% if concerns_data and (concerns_data | length > 0) %}
                                             {% for concern in concerns_data %}
-                                                <div class="mb-2">
-                                                    <span class="badge bg-warning text-dark me-2">
-                                                        {{ (concern.type if concern.type else 'Content Issue') | replace('_', ' ') | title }}
-                                                    </span>
-                                                    {% if concern.severity %}
-                                                        <small class="text-muted">{{ concern.severity.title() }} Level</small>
+                                                <div class="mb-2 p-2 border-start border-warning border-3 bg-light">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <span class="badge bg-warning text-dark">
+                                                            {{ (concern.category if concern.category else (concern.type if concern.type else 'Content Issue')) | replace('_', ' ') | title }}
+                                                        </span>
+                                                        {% if concern.severity %}
+                                                            <small class="badge bg-secondary">{{ concern.severity.title() }}</small>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% if concern.explanation %}
+                                                        <p class="mb-0 mt-1 small text-muted">{{ concern.explanation }}</p>
                                                     {% endif %}
                                                 </div>
                                             {% endfor %}
@@ -180,23 +197,36 @@
                         <div class="col-md-6">
                             <div class="card h-100">
                                 <div class="card-header bg-success text-white">
-                                    <h6 class="mb-0"><i class="fas fa-heart me-2"></i>Positive Themes</h6>
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-heart me-2"></i>Positive Themes
+                                        {% if (analysis.positive_themes_identified and (analysis.positive_themes_identified | length > 0)) or (analysis.biblical_themes and (analysis.biblical_themes | length > 0)) %}
+                                            <span class="badge bg-dark ms-2">
+                                                {{ (analysis.positive_themes_identified | length) if analysis.positive_themes_identified else (analysis.biblical_themes | length) }}
+                                            </span>
+                                        {% endif %}
+                                    </h6>
                                 </div>
                                 <div class="card-body">
                                     {% if analysis.positive_themes_identified and (analysis.positive_themes_identified | length > 0) %}
                                         {% for theme in analysis.positive_themes_identified %}
-                                            <div class="mb-2">
-                                                <span class="badge bg-success me-2">
+                                            <div class="mb-2 p-2 border-start border-success border-3 bg-light">
+                                                <span class="badge bg-success">
                                                     {{ (theme.theme if theme.theme else 'Positive Content') | title }}
                                                 </span>
+                                                {% if theme.description %}
+                                                    <p class="mb-0 mt-1 small text-muted">{{ theme.description }}</p>
+                                                {% endif %}
                                             </div>
                                         {% endfor %}
                                     {% elif analysis.biblical_themes and (analysis.biblical_themes | length > 0) %}
                                         {% for theme in analysis.biblical_themes %}
-                                            <div class="mb-2">
-                                                <span class="badge bg-success me-2">
+                                            <div class="mb-2 p-2 border-start border-success border-3 bg-light">
+                                                <span class="badge bg-success">
                                                     {{ (theme.theme if theme.theme else 'Biblical Theme') | title }}
                                                 </span>
+                                                {% if theme.points %}
+                                                    <small class="text-muted ms-2">+{{ theme.points }} points</small>
+                                                {% endif %}
                                             </div>
                                         {% endfor %}
                                     {% else %}
@@ -331,127 +361,150 @@
                     <!-- Biblical Content (if any) -->
                     {% if analysis.biblical_themes or analysis.supporting_scripture %}
                         <div class="card shadow-sm mb-4">
-                            <div class="card-header bg-info text-white">
-                                <h5 class="mb-0"><i class="fas fa-cross me-2"></i>Biblical Content</h5>
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-bible me-2"></i>Biblical Analysis</h5>
                             </div>
                             <div class="card-body">
-                                {% if analysis.biblical_themes and (analysis.biblical_themes | length > 0) %}
-                                    <h6 class="text-primary mb-3">Themes Found:</h6>
-                                    <div class="row g-2 mb-4">
-                                        {% for theme in analysis.biblical_themes %}
-                                            <div class="col-auto">
-                                                <span class="badge bg-primary">
-                                                    {{ (theme.theme if theme.theme else 'Biblical Theme') | title }}
-                                                </span>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
 
-                                                {% if analysis.supporting_scripture %}
-                    <!-- Enhanced Biblical Content with Categorized Scripture References -->
+                                {% if analysis.supporting_scripture %}
+                    <!-- Categorized Scripture References -->
                     {% if analysis.supporting_scripture is iterable and analysis.supporting_scripture is not string %}
                         {% set positive_scriptures = [] %}
                         {% set concern_scriptures = [] %}
+                        {% set general_scriptures = [] %}
 
                         {% for scripture in analysis.supporting_scripture %}
                             {% if scripture is mapping %}
-                                {% if scripture.get('concern_type') or scripture.get('concern_category') %}
+                                {% if scripture.get('type') == 'positive' %}
+                                    {% set _ = positive_scriptures.append(scripture) %}
+                                {% elif scripture.get('type') == 'concern' %}
                                     {% set _ = concern_scriptures.append(scripture) %}
                                 {% else %}
-                                    {% set _ = positive_scriptures.append(scripture) %}
+                                    {% set _ = general_scriptures.append(scripture) %}
                                 {% endif %}
+                            {% else %}
+                                {% set _ = general_scriptures.append(scripture) %}
                             {% endif %}
                         {% endfor %}
 
-                        <!-- Section for Positive Theme Scriptures -->
+                        <!-- Positive Theme Scriptures -->
                         {% if positive_scriptures %}
                             <div class="mb-4">
                                 <h6 class="text-success mb-3">
-                                    <i class="fas fa-heart me-2"></i>Supporting Positive Themes
+                                    <i class="fas fa-heart me-2"></i>Positive Biblical Themes
                                     <span class="badge bg-success ms-2">{{ positive_scriptures|length }}</span>
                                 </h6>
                                 <div class="scripture-references">
                                     {% for scripture in positive_scriptures %}
-                                        <div class="mb-3 p-3 border rounded bg-light border-success">
+                                        <div class="mb-3 p-3 border-start border-success border-4 bg-light scripture-card" data-ref="{{ scripture.get('reference', '') }}">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <strong class="text-success">{{ scripture.get('reference', 'Scripture') }}</strong>
+                                                <strong class="text-success fs-6">{{ scripture.get('reference', 'Scripture') }}</strong>
                                                 {% if scripture.get('theme') %}
-                                                    <span class="badge bg-success">{{ scripture.get('theme') }}</span>
+                                                    <span class="badge bg-success">{{ scripture.get('theme') | title }}</span>
                                                 {% endif %}
                                             </div>
-                                            {% if scripture.get('text') %}
-                                                <blockquote class="blockquote-sm mt-2 mb-2">
-                                                    <em>"{{ scripture.get('text') }}"</em>
-                                                </blockquote>
+                                            <blockquote class="border-start border-success ps-3 py-2 mb-2 scripture-text">
+                                                <em class="text-muted"><i class="fas fa-spinner fa-spin me-1"></i>Loading verse...</em>
+                                            </blockquote>
+                                            {% if scripture.get('relevance') %}
+                                                <p class="mb-2 small text-success">
+                                                    <i class="fas fa-check-circle me-1"></i>
+                                                    <strong>Why this matters:</strong> {{ scripture.get('relevance') }}
+                                                </p>
                                             {% endif %}
-                                            {% if scripture.get('application') %}
-                                                <small class="text-muted d-block mt-2">
-                                                    <i class="fas fa-lightbulb me-1"></i>{{ scripture.get('application') }}
-                                                </small>
-                                            {% endif %}
+                                            <div class="mt-2">
+                                                <a href="https://www.biblegateway.com/passage/?search={{ scripture.get('reference', '')|urlencode }}&version=ESV" 
+                                                   target="_blank" rel="noopener" class="btn btn-sm btn-outline-success">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Read on Bible Gateway
+                                                </a>
+                                            </div>
                                         </div>
                                     {% endfor %}
                                 </div>
                             </div>
                         {% endif %}
 
-                                <!-- Section for Concern-Based Scriptures -->
-        {% if concern_scriptures %}
-            <div class="mb-4">
-                <h6 class="text-warning mb-3">
-                    <i class="fas fa-shield-alt me-2"></i>Biblical Foundation for Concerns
-                    <span class="badge bg-warning text-dark ms-2">{{ concern_scriptures|length }}</span>
-                </h6>
-                                <div class="alert alert-warning p-3 mb-3">
+                        <!-- Concern-Based Scriptures -->
+                        {% if concern_scriptures %}
+                            <div class="mb-4">
+                                <h6 class="text-warning mb-3">
+                                    <i class="fas fa-shield-alt me-2"></i>Biblical Basis for Concerns
+                                    <span class="badge bg-warning text-dark ms-2">{{ concern_scriptures|length }}</span>
+                                </h6>
+                                <div class="alert alert-warning p-2 mb-3">
                                     <small>
                                         <i class="fas fa-info-circle me-2"></i>
-                                        <strong>Understanding Biblical Discernment:</strong> These scriptures help explain why certain content may be concerning from a biblical perspective, supporting your growth in spiritual discernment.
+                                        <strong>Learn to discern:</strong> These scriptures explain why certain content may be spiritually concerning.
                                     </small>
                                 </div>
                                 <div class="scripture-references">
                                     {% for scripture in concern_scriptures %}
-                                        <div class="mb-3 p-3 border rounded bg-light border-warning">
+                                        <div class="mb-3 p-3 border-start border-warning border-4 bg-light scripture-card" data-ref="{{ scripture.get('reference', '') }}">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <strong class="text-warning">{{ scripture.get('reference', 'Scripture') }}</strong>
-                                                {% if scripture.get('concern_type') %}
-                                                    <span class="badge bg-warning text-dark">{{ scripture.get('concern_type').replace('_', ' ').title() }}</span>
+                                                <strong class="text-warning fs-6">{{ scripture.get('reference', 'Scripture') }}</strong>
+                                                {% if scripture.get('theme') %}
+                                                    <span class="badge bg-warning text-dark">{{ scripture.get('theme') | title }}</span>
                                                 {% endif %}
                                             </div>
-                                            {% if scripture.get('text') %}
-                                                <blockquote class="blockquote-sm mt-2 mb-2">
-                                                    <em>"{{ scripture.get('text') }}"</em>
-                                                </blockquote>
+                                            <blockquote class="border-start border-warning ps-3 py-2 mb-2 scripture-text">
+                                                <em class="text-muted"><i class="fas fa-spinner fa-spin me-1"></i>Loading verse...</em>
+                                            </blockquote>
+                                            {% if scripture.get('relevance') %}
+                                                <p class="mb-2 small text-dark">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                                    <strong>Why this is concerning:</strong> {{ scripture.get('relevance') }}
+                                                </p>
                                             {% endif %}
-                                            {% if scripture.get('educational_value') %}
-                                                <small class="text-muted d-block mt-2">
-                                                    <i class="fas fa-graduation-cap me-1"></i>{{ scripture.get('educational_value') }}
-                                                </small>
-                                            {% endif %}
+                                            <div class="mt-2">
+                                                <a href="https://www.biblegateway.com/passage/?search={{ scripture.get('reference', '')|urlencode }}&version=ESV" 
+                                                   target="_blank" rel="noopener" class="btn btn-sm btn-outline-warning">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Read on Bible Gateway
+                                                </a>
+                                            </div>
                                         </div>
                                     {% endfor %}
                                 </div>
                             </div>
                         {% endif %}
 
-                        <!-- Fallback for non-categorized scriptures -->
-                        {% if not positive_scriptures and not concern_scriptures %}
-                            <h6 class="text-primary mb-3">Related Scripture:</h6>
-                            <div class="scripture-references">
-                                {% for scripture in analysis.supporting_scripture %}
-                                    <div class="mb-3 p-3 border rounded bg-light">
-                                        {% if scripture is mapping %}
-                                            <strong class="text-primary">{{ scripture.get('reference', 'Scripture') }}</strong>
-                                            {% if scripture.get('text') %}
-                                                <blockquote class="blockquote-sm mt-2 mb-0">
-                                                    <em>"{{ scripture.get('text') }}"</em>
-                                                </blockquote>
+                        <!-- General/Fallback Scriptures -->
+                        {% if general_scriptures %}
+                            <div class="mb-4">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-bible me-2"></i>Supporting Scripture
+                                    <span class="badge bg-primary ms-2">{{ general_scriptures|length }}</span>
+                                </h6>
+                                <div class="scripture-references">
+                                    {% for scripture in general_scriptures %}
+                                        <div class="mb-3 p-3 border-start border-primary border-4 bg-light scripture-card" data-ref="{{ scripture.get('reference') if scripture is mapping else scripture }}">
+                                            {% if scripture is mapping %}
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <strong class="text-primary fs-6">{{ scripture.get('reference', 'Scripture') }}</strong>
+                                                    {% if scripture.get('theme') %}
+                                                        <span class="badge bg-primary">{{ scripture.get('theme') | title }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            {% else %}
+                                                <strong class="text-primary fs-6 d-block mb-2">{{ scripture }}</strong>
                                             {% endif %}
-                                        {% else %}
-                                            <p class="mb-0">{{ scripture }}</p>
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
+                                            <blockquote class="border-start border-primary ps-3 py-2 mb-2 scripture-text">
+                                                <em class="text-muted"><i class="fas fa-spinner fa-spin me-1"></i>Loading verse...</em>
+                                            </blockquote>
+                                            {% if scripture is mapping and scripture.get('relevance') %}
+                                                <p class="mb-2 small">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    <strong>Context:</strong> {{ scripture.get('relevance') }}
+                                                </p>
+                                            {% endif %}
+                                            <div class="mt-2">
+                                                <a href="https://www.biblegateway.com/passage/?search={{ (scripture.get('reference') if scripture is mapping else scripture)|urlencode }}&version=ESV" 
+                                                   target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Read on Bible Gateway
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
                             </div>
                         {% endif %}
 
@@ -513,7 +566,7 @@
                         {% set is_admin = current_user.is_authenticated and (current_user.is_admin if current_user.is_admin is defined else False) %}
                         {% if analysis and is_admin %}
                             <div class="d-grid mb-3">
-                                <button id="reanalyzeSongBtn" class="btn btn-outline-primary analyze-song-btn" data-analytics="reanalyze_song_click"
+                                <button class="btn btn-outline-primary analyze-song-btn" 
                                         data-song-id="{{ song.id }}"
                                         data-song-title="{{ song.title }}"
                                         data-song-artist="{{ song.artist }}">
@@ -632,8 +685,16 @@
     background: linear-gradient(135deg, #17a2b8, #20c997);
 }
 
+.score-medium {
+    background: linear-gradient(135deg, #17a2b8, #6c757d);
+}
+
 .score-caution {
     background: linear-gradient(135deg, #ffc107, #fd7e14);
+}
+
+.score-poor {
+    background: linear-gradient(135deg, #dc3545, #e74c3c);
 }
 
 .score-avoid {
@@ -688,4 +749,61 @@
 </style>
 
 {# Legacy song-analyzer.js removed; handled by module scripts in base main.js #}
+
+<script>
+// Fetch Bible verses for all scripture cards
+document.addEventListener('DOMContentLoaded', function() {
+    const scriptureCards = document.querySelectorAll('.scripture-card');
+    
+    scriptureCards.forEach(card => {
+        const reference = card.dataset.ref;
+        if (!reference) return;
+        
+        const textElement = card.querySelector('.scripture-text');
+        
+        // Fetch verse from Bible API
+        fetchBibleVerse(reference)
+            .then(text => {
+                if (text) {
+                    textElement.innerHTML = `"${text}"`;
+                } else {
+                    textElement.innerHTML = '<em class="text-muted">Click "Read on Bible Gateway" to see the full text</em>';
+                }
+            })
+            .catch(err => {
+                console.error('Failed to load verse:', reference, err);
+                textElement.innerHTML = '<em class="text-muted">Click "Read on Bible Gateway" to see the full text</em>';
+            });
+    });
+});
+
+async function fetchBibleVerse(reference) {
+    try {
+        // Use bible-api.com (free, no auth required)
+        const url = `https://bible-api.com/${encodeURIComponent(reference)}?translation=web`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.text) {
+            // Clean up the text (remove verse numbers, extra spaces)
+            let text = data.text.trim();
+            // Remove verse numbers like "[1]", "[2]", etc.
+            text = text.replace(/\[\d+\]/g, '').trim();
+            // Remove multiple spaces
+            text = text.replace(/\s+/g, ' ');
+            return text;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error fetching verse:', error);
+        return null;
+    }
+}
+</script>
 {% endblock %}

@@ -140,13 +140,26 @@ def playlist_detail(playlist_id):
         flash("You don't have permission to view this playlist.", "error")
         return redirect(url_for("main.dashboard"))
     
-    # Get songs in playlist with analysis results
+    # Get songs in playlist with analysis results (optimized with single query)
+    from sqlalchemy.orm import joinedload
+    
+    # Get all song IDs in this playlist
+    song_ids = [s.id for s in playlist.songs]
+    
+    # Fetch all analysis results in one query
+    analysis_map = {}
+    if song_ids:
+        analyses = AnalysisResult.query.filter(
+            AnalysisResult.song_id.in_(song_ids)
+        ).all()
+        analysis_map = {a.song_id: a for a in analyses}
+    
+    # Build songs list with cached analysis results
     songs = []
     for song in playlist.songs:
-        analysis_result = AnalysisResult.query.filter_by(song_id=song.id).first()
         songs.append({
             'song': song,
-            'analysis_result': analysis_result
+            'analysis_result': analysis_map.get(song.id)
         })
     
     analysis_state = {

@@ -334,10 +334,13 @@ class ChristianMusicCuratorApp {
             btn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const songId = btn.dataset.songId;
-                const songTitle = btn.dataset.songTitle;
+                const songTitle = btn.dataset.songTitle || 'this song';
+
+                const originalHTML = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analyzing...';
 
                 try {
-                    this.modules.get('uiHelpers')?.toggleButtonLoading(btn, true, 'Analyzing...');
                     await this.modules.get('apiService').analyzeSong(songId);
 
                     // Poll briefly for completion
@@ -347,13 +350,25 @@ class ChristianMusicCuratorApp {
                     );
 
                     if (status?.completed || status?.has_analysis) {
-                        // Refresh to reflect updated analysis
-                        window.location.reload();
+                        // Update button to show completion
+                        btn.innerHTML = '<i class="fas fa-check me-2"></i>Complete! Refreshing...';
+                        btn.classList.remove('btn-primary', 'btn-outline-primary');
+                        btn.classList.add('btn-success');
+                        
+                        // Refresh after short delay
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        // Analysis didn't complete in time
+                        btn.innerHTML = '<i class="fas fa-sync me-2"></i>Refresh to see results';
+                        btn.classList.add('btn-warning');
+                        btn.disabled = false;
+                        btn.onclick = () => window.location.reload();
                     }
                 } catch (err) {
                     console.error('Analyze song failed:', err);
-                } finally {
-                    this.modules.get('uiHelpers')?.toggleButtonLoading(btn, false);
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                    alert('Analysis failed. Please try again.');
                 }
             });
         });
