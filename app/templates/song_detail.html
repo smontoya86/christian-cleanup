@@ -562,8 +562,9 @@
                             <h6 class="mb-0">Actions</h6>
                     </div>
                     <div class="card-body">
-                        <!-- Re-analyze button (available to all users) -->
-                        {% if analysis %}
+                        <!-- Re-analyze button (admin only) -->
+                        {% set is_admin = current_user.is_authenticated and (current_user.is_admin if current_user.is_admin is defined else False) %}
+                        {% if analysis and is_admin %}
                             <div class="d-grid mb-3">
                                 <button class="btn btn-outline-primary analyze-song-btn" 
                                         data-song-id="{{ song.id }}"

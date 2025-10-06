@@ -229,9 +229,10 @@ class PlaylistSyncService:
                 if playlist_songs_to_add:
                     db.session.bulk_insert_mappings(PlaylistSong, playlist_songs_to_add)
 
-                # Update playlist track count and timestamp
+                # Update playlist track count
+                # Note: updated_at is only updated when snapshot_id changes in _sync_single_playlist
+                # This ensures the timestamp reflects when Spotify actually modified the playlist
                 playlist.track_count = tracks_synced
-                playlist.updated_at = datetime.now(timezone.utc)
 
                 # Compute up to 4 deduplicated collage URLs in-order of appearance
                 if album_art_urls:
@@ -296,11 +297,21 @@ class PlaylistSyncService:
                 playlist = Playlist(owner_id=user.id, spotify_id=spotify_id)
                 db.session.add(playlist)
 
-            # Update playlist data and timestamp
+            # Track if playlist content actually changed on Spotify
+            old_snapshot_id = playlist.spotify_snapshot_id
+            new_snapshot_id = spotify_playlist.get("snapshot_id")
+            playlist_modified_on_spotify = (old_snapshot_id != new_snapshot_id)
+            
+            # Update playlist data
             playlist.name = spotify_playlist["name"]
             playlist.description = spotify_playlist.get("description", "")
             playlist.public = spotify_playlist.get("public", False)
-            playlist.updated_at = datetime.now(timezone.utc)
+            playlist.spotify_snapshot_id = new_snapshot_id
+            
+            # Only update timestamp if Spotify actually modified the playlist
+            if playlist_modified_on_spotify:
+                playlist.updated_at = datetime.now(timezone.utc)
+                self.logger.info(f"Playlist '{playlist.name}' modified on Spotify (snapshot changed)")
 
             # Handle image URL
             images = spotify_playlist.get("images", [])
