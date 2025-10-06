@@ -22,7 +22,7 @@ rq>=1.15.0
 openai>=1.0.0
 
 # Lyrics & External APIs
-lyricsgenius<3.0
+lyricsgenius<4.0
 
 # Utilities
 python-dotenv
