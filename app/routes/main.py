@@ -129,6 +129,69 @@ def sync_playlists():
     return redirect(url_for("main.dashboard"))
 
 
+@main_bp.route("/playlist/<int:playlist_id>/sync", methods=["POST"])
+@login_required
+def sync_single_playlist(playlist_id):
+    """Sync a single playlist from Spotify"""
+    import time
+    start_time = time.time()
+    
+    try:
+        # Get the playlist and verify ownership
+        playlist = Playlist.query.get_or_404(playlist_id)
+        
+        if playlist.owner_id != current_user.id:
+            flash("You don't have permission to sync this playlist.", "error")
+            return redirect(url_for("main.dashboard"))
+        
+        from ..services.playlist_sync_service import PlaylistSyncService
+        from ..services.spotify_service import SpotifyService
+        
+        current_app.logger.info(f"Starting single playlist sync for playlist {playlist_id}, user {current_user.id}")
+        
+        sync_service = PlaylistSyncService()
+        spotify_service = SpotifyService(current_user)
+        
+        # Get the playlist from Spotify
+        spotify_playlists = spotify_service.get_user_playlists()
+        spotify_playlist = next((p for p in spotify_playlists if p['id'] == playlist.spotify_id), None)
+        
+        if not spotify_playlist:
+            flash(f"Playlist '{playlist.name}' not found on Spotify.", "error")
+            return redirect(url_for("main.playlist_detail", playlist_id=playlist_id))
+        
+        # Sync the playlist
+        result = sync_service.sync_playlist_tracks(current_user, playlist)
+        
+        elapsed_time = int(time.time() - start_time)
+        minutes = elapsed_time // 60
+        seconds = elapsed_time % 60
+        time_str = f"{minutes}m {seconds}s" if minutes > 0 else f"{seconds}s"
+        
+        if result.get("status") == "completed":
+            tracks_count = result.get("tracks_synced", 0)
+            flash(f"✅ Successfully synced '{playlist.name}' with {tracks_count} songs in {time_str}!", "success")
+        else:
+            error_msg = result.get("error", "Unknown error")
+            flash(f"Sync failed: {error_msg}", "error")
+            current_app.logger.error(f"Sync failed for playlist {playlist_id}: {error_msg}")
+            
+    except ValueError as e:
+        # Handle token errors specifically
+        error_msg = str(e)
+        if "access token" in error_msg.lower() or "decrypt" in error_msg.lower():
+            flash("⚠️ Spotify connection expired. Please log out and log back in to re-authenticate.", "error")
+            current_app.logger.error(f"Token error for user {current_user.id}: {e}")
+        else:
+            flash(f"An error occurred: {error_msg}", "error")
+            current_app.logger.error(f"Error syncing playlist {playlist_id}: {e}")
+    except Exception as e:
+        current_app.logger.error(f"Error syncing playlist {playlist_id}: {e}")
+        flash(f"An error occurred while syncing the playlist: {str(e)}", "error")
+    
+    return redirect(url_for("main.playlist_detail", playlist_id=playlist_id))
+
+
 @main_bp.route("/playlist/<int:playlist_id>")
 @login_required
 def playlist_detail(playlist_id):
