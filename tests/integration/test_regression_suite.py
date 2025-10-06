@@ -23,14 +23,17 @@ class TestPromptOptimization:
     """Regression tests for prompt optimization"""
     
     def test_prompt_is_optimized_length(self):
-        """Verify production prompt is shorter than training prompt"""
+        """Verify production prompt is comprehensive but not excessively long"""
         from app.services.analyzers.router_analyzer import RouterAnalyzer
         
         analyzer = RouterAnalyzer()
         prompt = analyzer._get_comprehensive_system_prompt()
         
-        # Optimized prompt should be significantly shorter (< 2500 chars)
-        assert len(prompt) < 2500, f"Prompt too long: {len(prompt)} chars"
+        # Comprehensive prompt for fine-tuned model (< 3500 chars allows for guidance)
+        # Note: Prompt was intentionally expanded from 2500 to ~3000 chars to improve
+        # detection of subtle issues (Humanistic Philosophy, Idolatry) and provide
+        # clearer scoring guidance for the 50-59 range
+        assert len(prompt) < 3500, f"Prompt too long: {len(prompt)} chars"
         
         # Should be at least 100 chars (not empty)
         assert len(prompt) > 100, "Prompt suspiciously short"
