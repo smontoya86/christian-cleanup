@@ -1,9 +1,9 @@
 {#
 Song Row Component - SIMPLIFIED
-Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
+Expected: item with 'song', 'analysis', 'position'
 #}
 
-<tr class="song-row {{ 'table-info' if item.is_whitelisted else '' }}" data-song-id="{{ item.song.id }}">
+<tr class="song-row" data-song-id="{{ item.song.id }}">
     <!-- Position -->
     <td class="text-center">{{ item.position }}</td>
 
@@ -45,64 +45,19 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
 
     <!-- Actions -->
     <td class="actions-cell">
-        {% if item.is_whitelisted %}
-            <!-- Whitelisted State: Status + Actions Menu -->
+        {% set is_admin = current_user.is_authenticated and (current_user.is_admin if current_user.is_admin is defined else False) %}
+        {% if item.analysis and item.analysis.score is not none %}
+            <!-- Analyzed State -->
             <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-success d-flex align-items-center gap-1">
-                    <i class="fas fa-check"></i> Whitelisted
-                </span>
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                            data-bs-toggle="dropdown" aria-expanded="false" title="More actions">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <a class="dropdown-item" href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}">
-                                View Details
-                            </a>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <form method="post" action="{{ url_for('main.remove_whitelist', song_id=item.song.id) }}" class="d-inline w-100">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                <button type="submit" class="dropdown-item text-danger"
-                                        onclick="return confirm('Remove this song from whitelist?')">
-                                    Remove from Whitelist
-                                </button>
-                            </form>
-                        </li>
-                        <li>
-                            <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                <button type="submit" class="dropdown-item text-danger fas fa-trash"
-                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">Remove from Playlist</button>
-                            </form>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        {% elif item.analysis and item.analysis.score is not none %}
-            <!-- Analyzed State: Primary Action + Overflow Menu -->
-            <div class="d-flex align-items-center gap-2">
-                {% if item.analysis.concern_level|lower in ['high', 'extreme'] %}
-                    <!-- High Concern: Review Primary -->
+                {% set s = item.analysis.score|float %}
+                {% if s < 75 %}
                     <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}"
                        class="btn btn-sm btn-warning fw-bold">
                         Review
                     </a>
-                {% else %}
-                    <!-- Low/Medium Concern: Whitelist Primary -->
-                    <form method="post" action="{{ url_for('main.whitelist_song', song_id=item.song.id) }}" class="d-inline">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                        <button type="submit" class="btn btn-sm btn-success fw-bold"
-                                title="Add to Whitelist">
-                            Whitelist
-                        </button>
-                    </form>
                 {% endif %}
 
-                <!-- Overflow Menu for Secondary Actions -->
+                <!-- Actions Menu -->
                 <div class="dropdown">
                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
                             data-bs-toggle="dropdown" aria-expanded="false" title="More actions">
@@ -114,6 +69,7 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                                 View Details
                             </a>
                         </li>
+                        {% if is_admin %}
                         <li>
                             <button type="button" class="dropdown-item analyze-song-btn"
                                     data-song-id="{{ item.song.id }}"
@@ -122,31 +78,24 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                                 Re-analyze
                             </button>
                         </li>
-                        {% if item.analysis.concern_level|lower in ['high', 'extreme'] %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <form method="post" action="{{ url_for('main.whitelist_song', song_id=item.song.id) }}" class="d-inline w-100">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                <button type="submit" class="dropdown-item text-warning">
-                                    Whitelist Anyway
-                                </button>
-                            </form>
-                        </li>
                         {% endif %}
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                            <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
+                            <form method="post" action="{{ url_for('main.remove_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                <button type="submit" class="dropdown-item text-danger fas fa-trash"
-                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">Remove from Playlist</button>
+                                <button type="submit" class="dropdown-item text-danger"
+                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">
+                                    <i class="fas fa-trash me-2"></i>Remove from Playlist
+                                </button>
                             </form>
                         </li>
                     </ul>
                 </div>
             </div>
         {% else %}
-            <!-- Unanalyzed State: Primary Action + Menu -->
+            <!-- Unanalyzed State -->
             <div class="d-flex align-items-center gap-2">
+                {% if is_admin %}
                 <button type="button" class="btn btn-sm btn-primary fw-bold analyze-song-btn"
                         data-song-id="{{ item.song.id }}"
                         data-song-title="{{ item.song.title }}"
@@ -154,8 +103,9 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                         title="Analyze Song Content">
                     Analyze
                 </button>
+                {% endif %}
 
-                <!-- Overflow Menu -->
+                <!-- Actions Menu -->
                 <div class="dropdown">
                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
                             data-bs-toggle="dropdown" aria-expanded="false" title="More actions">
@@ -169,9 +119,12 @@ Expected: item with 'song', 'analysis', 'position', 'is_whitelisted'
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                            <form method="post" action="{{ url_for('main.remove_song_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
-                                <button type="submit" class="dropdown-item text-danger fas fa-trash"
-                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">Remove from Playlist</button>
+                            <form method="post" action="{{ url_for('main.remove_from_playlist', playlist_id=playlist['id'], song_id=item.song.id) }}" class="d-inline w-100">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                                <button type="submit" class="dropdown-item text-danger"
+                                        onclick="return confirm('Remove this song from the playlist? This action cannot be undone.')">
+                                    <i class="fas fa-trash me-2"></i>Remove from Playlist
+                                </button>
                             </form>
                         </li>
                     </ul>

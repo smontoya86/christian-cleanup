@@ -1,1 +1,1 @@
-from .models import AnalysisResult, Playlist, Song, User, Whitelist, PlaylistSong, LyricsCache, BibleVerse, Blacklist
+from .models import AnalysisResult, Playlist, Song, User, PlaylistSong, LyricsCache, BibleVerse

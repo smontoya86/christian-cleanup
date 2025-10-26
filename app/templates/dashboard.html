@@ -316,17 +316,6 @@
 View Details
                                 </a>
 
-                                {% if playlist.score is not none %}
-                                    {% set score_percent = playlist.score * 100 %}
-                                    {% if score_percent >= 75 %}
-                                        <form method="post" action="{{ url_for('main.whitelist_playlist', playlist_id=playlist.id) }}" class="d-inline w-100">
-                                            <button type="submit" class="btn btn-success btn-sm w-100" data-analytics="whitelist_playlist_click">
-Whitelist Playlist
-                                            </button>
-                                        </form>
-                                    {% endif %}
-                                {% endif %}
-
                             </div>
                         </div>
                         {% if not is_unlocked %}

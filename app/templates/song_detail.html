@@ -587,47 +587,6 @@
                                 </form>
                             </div>
                         {% endif %}
-
-                        <!-- Whitelist Actions -->
-                        {% set calculated_concern = analysis.concern_level.lower() if analysis and analysis.concern_level else None %}
-                        {% if not is_whitelisted and analysis %}
-                            {% if calculated_concern in ['high', 'extreme'] %}
-                                <div class="alert alert-warning p-2 mb-3">
-                                    <small><strong>⚠️ High Concern:</strong> Review carefully before whitelisting</small>
-                                </div>
-                                <div class="d-grid">
-                                    <form action="{{ url_for('main.add_to_whitelist', item_type='song', spotify_id=song.spotify_id, item_name=song.title, artist_name=song.artist, artist_spotify_id=song.artist_spotify_id, album_name=song.album, album_spotify_id=song.album_spotify_id, album_art_url=song.album_art_url, release_date=song.release_date, track_number=song.track_number, duration_ms=song.duration_ms, popularity=song.popularity, explicit=song.explicit, disc_number=song.disc_number, is_local=song.is_local, is_playable=song.is_playable, preview_url=song.preview_url, track_uri=song.track_uri, song_id=song.id, user_id=current_user.id, playlist_id=playlist.id if playlist else None, context='song_detail') }}" method="POST">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                        <button type="submit" class="btn btn-warning w-100" data-analytics="whitelist_song_click"
-                                                onclick="return confirm('This song has high concern level. Are you sure?')">
-                                            <i class="fas fa-check me-2"></i>Whitelist Anyway
-                                        </button>
-                                    </form>
-                                </div>
-                            {% elif calculated_concern in ['very_low', 'low', 'medium'] %}
-                                <div class="d-grid">
-                                    <form action="{{ url_for('main.add_to_whitelist', item_type='song', spotify_id=song.spotify_id, item_name=song.title, artist_name=song.artist, artist_spotify_id=song.artist_spotify_id, album_name=song.album, album_spotify_id=song.album_spotify_id, album_art_url=song.album_art_url, release_date=song.release_date, track_number=song.track_number, duration_ms=song.duration_ms, popularity=song.popularity, explicit=song.explicit, disc_number=song.disc_number, is_local=song.is_local, is_playable=song.is_playable, preview_url=song.preview_url, track_uri=song.track_uri, song_id=song.id, user_id=current_user.id, playlist_id=playlist.id if playlist else None, context='song_detail') }}" method="POST">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                        <button type="submit" class="btn btn-success w-100" data-analytics="whitelist_song_click">
-                                            <i class="fas fa-check me-2"></i>Add to Whitelist
-                                        </button>
-                                    </form>
-                                </div>
-                            {% endif %}
-                        {% elif is_whitelisted %}
-                            <div class="alert alert-success p-2 mb-3">
-                                <small><strong>✅ Whitelisted:</strong> This song is approved</small>
-                            </div>
-                            <div class="d-grid">
-                                <form action="{{ url_for('main.remove_whitelist', song_id=song.id) }}" method="POST">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                                    <button type="submit" class="btn btn-outline-secondary w-100" data-analytics="remove_whitelist_click"
-                                            onclick="return confirm('Remove from whitelist?')">
-                                        <i class="fas fa-times me-2"></i>Remove from Whitelist
-                                    </button>
-                                </form>
-                            </div>
-                        {% endif %}
                     </div>
                 </div>
 

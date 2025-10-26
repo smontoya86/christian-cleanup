@@ -7,7 +7,6 @@ This module defines the SQLAlchemy models for the application, including:
 - Song: Individual tracks with lyrics and analysis
 - PlaylistSong: Association table for playlist-song relationships
 - AnalysisResult: Christian content analysis results
-- Whitelist/Blacklist: User-defined content filters
 - LyricsCache: Cached lyrics from external APIs
 - BibleVerse: Biblical references for theme analysis
 """
@@ -43,20 +42,6 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     playlists = db.relationship(
         "Playlist", back_populates="owner", lazy="dynamic", cascade="all, delete-orphan"
-    )
-    whitelisted_artists = db.relationship(
-        "Whitelist",
-        backref="user",
-        lazy="dynamic",
-        foreign_keys="Whitelist.user_id",
-        cascade="all, delete-orphan",
-    )
-    blacklisted_items = db.relationship(
-        "Blacklist",
-        backref="user_blacklisting",
-        lazy="dynamic",
-        foreign_keys="Blacklist.user_id",
-        cascade="all, delete-orphan",
     )
 
     def __repr__(self):
@@ -492,33 +477,6 @@ class AnalysisResult(db.Model):
         # BUG FIX: Mark status as completed
         self.status = 'completed'
 
-class Whitelist(db.Model):
-    __tablename__ = "whitelist"
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    spotify_id = db.Column(db.String(255), nullable=False)
-    item_type = db.Column(db.String(50), nullable=False)  # 'artist' or 'song'
-    item_name = db.Column(db.String(255), nullable=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    __table_args__ = (
-        db.UniqueConstraint(
-            "user_id", "spotify_id", "item_type", name="uq_whitelist_user_item"
-        ),
-        {'extend_existing': True}
-    )
-
-class Blacklist(db.Model):
-    __tablename__ = "blacklist"
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    spotify_id = db.Column(db.String(255), nullable=False)
-    item_type = db.Column(db.String(50), nullable=False)  # 'artist' or 'song'
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    __table_args__ = (
-        db.UniqueConstraint(
-            "user_id", "spotify_id", "item_type", name="uq_blacklist_user_item"
-        ),
-    )
 
 class PlaylistSnapshot(db.Model):
     __tablename__ = "playlist_snapshots"

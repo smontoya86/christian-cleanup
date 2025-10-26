@@ -4,7 +4,7 @@ import logging
 from sqlalchemy import func
 
 from .. import db
-from ..models import AnalysisResult, Blacklist, Song, Whitelist
+from ..models import AnalysisResult, Song
 from .analyzer_cache import get_shared_analyzer, is_analyzer_ready
 from .simplified_christian_analysis_service import SimplifiedChristianAnalysisService
 
@@ -74,15 +74,6 @@ class UnifiedAnalysisService:
                     "biblical_themes": existing.biblical_themes or [],
                     "supporting_scripture": existing.supporting_scripture or [],
                 }
-        if user_id:
-            self.logger.info("Checking blacklist...")
-            if self._is_blacklisted(song, user_id):
-                self.logger.info("Song is blacklisted.")
-                return self._create_blacklisted_result(song, user_id)
-            self.logger.info("Checking whitelist...")
-            if self._is_whitelisted(song, user_id):
-                self.logger.info("Song is whitelisted.")
-                return self._create_whitelisted_result(song, user_id)
 
         self.logger.info("Fetching lyrics...")
         lyrics = song.lyrics
@@ -282,66 +273,6 @@ class UnifiedAnalysisService:
             "formation_risk": formation_risk,
             "narrative_voice": "artist",  # Default for simplified analysis
             "lament_filter_applied": False,  # Not supported in simplified path
-        }
-
-    def _is_blacklisted(self, song, user_id):
-        song_blacklisted = (
-            Blacklist.query.filter_by(
-                user_id=user_id, spotify_id=song.spotify_id, item_type="song"
-            ).first()
-            is not None
-        )
-
-        if song_blacklisted:
-            return True
-
-        return False
-
-    def _is_whitelisted(self, song, user_id):
-        song_whitelisted = (
-            Whitelist.query.filter_by(
-                user_id=user_id, spotify_id=song.spotify_id, item_type="song"
-            ).first()
-            is not None
-        )
-
-        if song_whitelisted:
-            return True
-
-        return False
-
-    def _create_blacklisted_result(self, song, user_id):
-        return {
-            "score": 0,
-            "concern_level": "high",
-            "themes": ["Blacklisted"],
-            "status": "completed",
-            "explanation": f"Song '{song.title}' is blacklisted by the user.",
-            "detailed_concerns": [{"concern": "Blacklisted", "details": "This song is on your blacklist."}],
-            "positive_themes": [],
-            "biblical_themes": [],
-            "supporting_scripture": [],
-            "verdict": "avoid_formation",
-            "formation_risk": "critical",
-            "narrative_voice": "artist",
-            "lament_filter_applied": False,
-        }
-
-    def _create_whitelisted_result(self, song, user_id):
-        return {
-            "score": 100,
-            "concern_level": "none",
-            "themes": ["Whitelisted"],
-            "status": "completed",
-            "explanation": f"Song '{song.title}' is whitelisted by the user.",
-            "detailed_concerns": [],
-            "positive_themes": [{"theme": "Whitelisted", "description": "This song is on your whitelist."}],
-            "biblical_themes": [],
-            "supporting_scripture": [],
-            "verdict": "freely_listen",
-            "formation_risk": "very_low",
-            "narrative_voice": "artist",
-            "lament_filter_applied": False,
         }
 
     def _map_concern_level(self, level_str):
