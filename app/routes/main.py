@@ -268,14 +268,23 @@ def remove_from_playlist(playlist_id, song_id):
                     
                     if not success:
                         current_app.logger.warning(f"Failed to remove song {song_id} from Spotify playlist {playlist.spotify_id}, but continuing with local removal")
+                        flash("Song removed locally, but failed to sync with Spotify. Try re-syncing this playlist to retry.", "warning")
+                        # Remove from local database
+                        db.session.delete(playlist_song)
+                        db.session.commit()
+                        return redirect(url_for("main.playlist_detail", playlist_id=playlist_id))
                 except Exception as spotify_error:
                     current_app.logger.error(f"Error syncing removal to Spotify: {spotify_error}")
-                    flash("Song removed locally, but failed to sync with Spotify. Try syncing your playlists again.", "warning")
+                    flash("Song removed locally, but failed to sync with Spotify. Try re-syncing this playlist to retry.", "warning")
+                    # Remove from local database
+                    db.session.delete(playlist_song)
+                    db.session.commit()
+                    return redirect(url_for("main.playlist_detail", playlist_id=playlist_id))
             
             # Remove from local database
             db.session.delete(playlist_song)
             db.session.commit()
-            flash("Song removed from playlist.", "success")
+            flash("✅ Song removed from playlist. Note: Changes may take 1-2 minutes to appear in your Spotify app due to caching.", "success")
         else:
             flash("Song not found in playlist.", "warning")
             
