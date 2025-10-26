@@ -50,7 +50,12 @@ Expected: item with 'song', 'analysis', 'position'
             <!-- Analyzed State -->
             <div class="d-flex align-items-center gap-2">
                 {% set s = item.analysis.score|float %}
-                {% if s < 75 %}
+                {% if s >= 75 %}
+                    <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}"
+                       class="btn btn-sm btn-outline-success fw-bold">
+                        View Details
+                    </a>
+                {% else %}
                     <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}"
                        class="btn btn-sm btn-warning fw-bold">
                         Review

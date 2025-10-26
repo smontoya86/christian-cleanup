@@ -51,8 +51,12 @@ Expected vars: item (with song, analysis or analysis_result), playlist
                     {% endif %}
                 {% else %}
                     {% set s = analysis.score|float if analysis.score is not none else None %}
-                    {% if s is not none and s < 75 %}
-                        <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}" class="btn btn-sm btn-warning fw-bold w-100">Review</a>
+                    {% if s is not none %}
+                        {% if s >= 75 %}
+                            <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}" class="btn btn-sm btn-outline-success fw-bold w-100">View Details</a>
+                        {% else %}
+                            <a href="{{ url_for('main.song_detail', song_id=item.song.id, playlist_id=playlist['id']) }}" class="btn btn-sm btn-warning fw-bold w-100">Review</a>
+                        {% endif %}
                     {% endif %}
                     {% if is_admin %}
                     <button class="btn btn-sm btn-outline-secondary analyze-song-btn w-100"
