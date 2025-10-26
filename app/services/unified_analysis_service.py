@@ -1,5 +1,7 @@
  
 import logging
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from sqlalchemy import func
 
@@ -641,9 +643,6 @@ def analyze_playlist_async(playlist_id: int, user_id: int):
             }
             
             # Analyze songs concurrently for 7-10x speed improvement
-            from concurrent.futures import ThreadPoolExecutor, as_completed
-            import threading
-            
             # Use 10 concurrent workers (matches rate limiter max_concurrent)
             max_workers = 10
             completed_count = threading.Lock()
