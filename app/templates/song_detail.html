@@ -30,33 +30,36 @@
 
                         <div class="d-flex align-items-center gap-3 flex-wrap">
                             <!-- Score Circle - Always visible -->
-                            <div class="score-circle {% if score >= 85 %}score-good{% elif score >= 60 %}score-medium{% elif score >= 40 %}score-caution{% else %}score-avoid{% endif %}">
+                            <div class="score-circle {% if score >= 85 %}score-good{% elif score >= 60 %}score-medium{% elif score >= 40 %}score-caution{% else %}score-avoid{% endif %}"
+                                 data-bs-toggle="tooltip" 
+                                 data-bs-placement="top"
+                                 title="Biblical alignment score (0-100). Higher scores indicate stronger spiritual formation alignment.">
                                 {{ "%.0f" | format(score) }}
                             </div>
                             <div>
                                 <div class="fw-bold fs-5">
                                     {% if analysis.verdict %}
                                         {% if analysis.verdict == 'freely_listen' %}
-                                            ✅ Freely Listen
+                                            <span data-bs-toggle="tooltip" title="85-100: Biblically sound, theologically clear, spiritually edifying">✅ Freely Listen</span>
                                         {% elif analysis.verdict == 'context_required' %}
-                                            🤔 Context Required
+                                            <span data-bs-toggle="tooltip" title="60-84: Helpful content with some discernment needed. Consider context and maturity.">🤔 Context Required</span>
                                         {% elif analysis.verdict == 'caution_limit' %}
-                                            ⚠️ Caution Limit
+                                            <span data-bs-toggle="tooltip" title="40-59: More concerns than positive content. Use with strong discernment.">⚠️ Caution Limit</span>
                                         {% elif analysis.verdict == 'avoid_formation' %}
-                                            ❌ Avoid Formation
+                                            <span data-bs-toggle="tooltip" title="0-39: Harmful to spiritual formation. May undermine biblical principles.">❌ Avoid Formation</span>
                                         {% else %}
                                             {{ analysis.verdict | replace('_', ' ') | title }}
                                         {% endif %}
                                     {% elif concern_level in ['very_low', 'low'] %}
-                                        ✅ Great Choice
+                                        <span data-bs-toggle="tooltip" title="Minimal spiritual concerns detected">✅ Great Choice</span>
                                     {% elif concern_level == 'medium' %}
-                                        ⚠️ Use Discretion
+                                        <span data-bs-toggle="tooltip" title="Some spiritual concerns present. Use discernment.">⚠️ Use Discretion</span>
                                     {% else %}
-                                        ❌ High Concern
+                                        <span data-bs-toggle="tooltip" title="Significant spiritual concerns detected">❌ High Concern</span>
                                     {% endif %}
                                 </div>
                                 <small class="text-muted">
-                                    Purity Score: {{ "%.0f" | format(score) }}%
+                                    <span data-bs-toggle="tooltip" title="Based on Christian Framework v3.1 using GPT-4o-mini fine-tuned model">Purity Score: {{ "%.0f" | format(score) }}%</span>
                                     {% if analysis.confidence %}
                                         • Confidence: {{ analysis.confidence | title }}
                                     {% endif %}
@@ -562,18 +565,65 @@
                             <h6 class="mb-0">Actions</h6>
                     </div>
                     <div class="card-body">
-                        <!-- Re-analyze button (admin only) -->
-                        {% set is_admin = current_user.is_authenticated and (current_user.is_admin if current_user.is_admin is defined else False) %}
-                        {% if analysis and is_admin %}
-                            <div class="d-grid mb-3">
-                                <button class="btn btn-outline-primary analyze-song-btn" 
-                                        data-song-id="{{ song.id }}"
-                                        data-song-title="{{ song.title }}"
-                                        data-song-artist="{{ song.artist }}">
-                                    <i class="fas fa-redo me-2"></i>Re-analyze Song
-                                </button>
-                            </div>
-                        {% endif %}
+        <!-- Re-analyze button (admin only) -->
+        {% set is_admin = current_user.is_authenticated and (current_user.is_admin if current_user.is_admin is defined else False) %}
+        {% if analysis and is_admin %}
+            <div class="d-grid mb-3">
+                <button class="btn btn-outline-primary analyze-song-btn" 
+                        data-song-id="{{ song.id }}"
+                        data-song-title="{{ song.title }}"
+                        data-song-artist="{{ song.artist }}">
+                    <i class="fas fa-redo me-2"></i>Re-analyze Song
+                </button>
+            </div>
+        {% endif %}
+
+        <!-- User Feedback Hooks (Hidden for now, ready for future implementation) -->
+        {% if analysis %}
+            <div class="feedback-container d-none" 
+                 data-song-id="{{ song.id }}"
+                 data-analysis-id="{{ analysis.id }}"
+                 data-verdict="{{ analysis.verdict }}"
+                 data-score="{{ analysis.score }}">
+                <!-- Future: "Was this helpful?" Y/N buttons -->
+                <!-- Future: "Report incorrect analysis" button -->
+                <!-- Future: Feedback modal for detailed input -->
+                <div class="card">
+                    <div class="card-body text-center">
+                        <p class="mb-3"><strong>Was this analysis helpful?</strong></p>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-success feedback-btn" data-feedback="helpful">
+                                <i class="fas fa-thumbs-up me-1"></i>Yes
+                            </button>
+                            <button type="button" class="btn btn-outline-danger feedback-btn" data-feedback="not-helpful">
+                                <i class="fas fa-thumbs-down me-1"></i>No
+                            </button>
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-link text-muted btn-sm report-incorrect-btn">
+                                <i class="fas fa-flag me-1"></i>Report incorrect analysis
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Feedback Data Attributes (for future JS implementation) -->
+            <script type="application/json" id="feedback-config">
+            {
+                "enabled": false,
+                "endpoints": {
+                    "submit": "/api/feedback/submit",
+                    "report": "/api/feedback/report"
+                },
+                "metadata": {
+                    "song_id": {{ song.id }},
+                    "analysis_id": {{ analysis.id }},
+                    "user_id": {{ current_user.id if current_user.is_authenticated else 'null' }}
+                }
+            }
+            </script>
+        {% endif %}
 
                         <!-- Remove from Playlist button (only when accessed from playlist context) -->
                         {% if playlist %}
@@ -764,5 +814,13 @@ async function fetchBibleVerse(reference) {
         return null;
     }
 }
+
+// Initialize Bootstrap tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
 </script>
 {% endblock %}

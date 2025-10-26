@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block title %}Frequently Asked Questions — Music Disciple{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <h1 class="display-5 fw-bold mb-2">Frequently Asked Questions</h1>
+            <p class="lead text-muted mb-5">Everything you need to know about Music Disciple and biblical music discernment</p>
+
+            <!-- Quick Links -->
+            <div class="card bg-light mb-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Jump to section:</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="#scoring" class="btn btn-sm btn-outline-primary">Scoring System</a>
+                        <a href="#biblical-framework" class="btn btn-sm btn-outline-primary">Biblical Framework</a>
+                        <a href="#using-app" class="btn btn-sm btn-outline-primary">Using the App</a>
+                        <a href="#technical" class="btn btn-sm btn-outline-primary">Technical</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scoring System -->
+            <section id="scoring" class="mb-5">
+                <h2 class="h3 fw-bold mb-4">📊 Understanding the Scoring System</h2>
+
+                <div class="accordion" id="scoringAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#score-ranges">
+                                What do the score ranges mean?
+                            </button>
+                        </h2>
+                        <div id="score-ranges" class="accordion-collapse collapse show" data-bs-parent="#scoringAccordion">
+                            <div class="accordion-body">
+                                <p>Music Disciple uses a 0-100 scale based on biblical alignment:</p>
+                                <ul>
+                                    <li><strong>85-100 (✅ Freely Listen)</strong>: Biblically sound, theologically clear, spiritually edifying. These songs strengthen your faith and align with biblical principles.</li>
+                                    <li><strong>60-84 (🤔 Context Required)</strong>: Helpful content with some discernment needed. Consider the context, your maturity in faith, and potential influence on younger believers.</li>
+                                    <li><strong>40-59 (⚠️ Caution Limit)</strong>: More concerns than positive content. These songs may contain mixed messages or worldly perspectives that require strong biblical discernment.</li>
+                                    <li><strong>0-39 (❌ Avoid Formation)</strong>: Harmful to spiritual formation. Content may undermine biblical principles, promote sin, or lead you away from Christ.</li>
+                                </ul>
+                                <p class="mb-0"><em>"Test everything; hold fast what is good." — 1 Thessalonians 5:21</em></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#why-low-score">
+                                Why is my favorite Christian band scoring low?
+                            </button>
+                        </h2>
+                        <div id="why-low-score" class="accordion-collapse collapse" data-bs-parent="#scoringAccordion">
+                            <div class="accordion-body">
+                                <p>Music Disciple analyzes lyrics at face value, focusing on what your brain absorbs when listening. Even if a Christian artist writes about spiritual struggle or uses confrontational language to critique legalism, the surface-level message may contain:</p>
+                                <ul>
+                                    <li><strong>Relativism</strong> — Questioning absolute truth without clear biblical resolution</li>
+                                    <li><strong>Rebellion</strong> — Confrontational tone that lacks grace or submission to God</li>
+                                    <li><strong>Despair</strong> — Emotional darkness without hope in Christ</li>
+                                </ul>
+                                <p>Our approach is intentionally conservative: <em>"It's better to flee sin than to confront and try to persevere."</em> We prioritize spiritual formation over contextual interpretation because background listening doesn't engage critical thinking—it shapes your heart through repeated exposure.</p>
+                                <p class="mb-0"><strong>Scripture Reference:</strong> "Flee from sexual immorality... flee youthful passions" (1 Cor 6:18, 2 Tim 2:22). The Bible consistently teaches fleeing temptation rather than engaging it.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#how-calculated">
+                                How is the score calculated?
+                            </button>
+                        </h2>
+                        <div id="how-calculated" class="accordion-collapse collapse" data-bs-parent="#scoringAccordion">
+                            <div class="accordion-body">
+                                <p>Our analysis uses a <strong>fine-tuned GPT-4o-mini model</strong> trained on the <strong>Christian Framework v3.1</strong>, which evaluates:</p>
+                                <ol>
+                                    <li><strong>Positive Themes</strong>: Worship, faith, hope, love, grace, redemption, sanctification, etc. (<em>+5 to +15 points each</em>)</li>
+                                    <li><strong>Negative Themes</strong>: Profanity, sexual immorality, violence, rebellion, occult references, relativism, etc. (<em>-5 to -25 points each</em>)</li>
+                                    <li><strong>Concerns</strong>: Specific spiritual formation risks categorized by severity (low, medium, high, critical)</li>
+                                    <li><strong>Scripture References</strong>: Bible verses that support the analysis (1-4 references per song)</li>
+                                    <li><strong>Narrative Voice</strong>: Is the artist speaking personally, portraying a character, or telling a story?</li>
+                                    <li><strong>Lament Filter</strong>: Authentic biblical lament (like Psalms) receives reduced penalties for expressions of despair</li>
+                                </ol>
+                                <p class="mb-0">The final score is an aggregate of these factors, with each point justified by specific scripture.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#instrumental-songs">
+                                How are instrumental songs scored?
+                            </button>
+                        </h2>
+                        <div id="instrumental-songs" class="accordion-collapse collapse" data-bs-parent="#scoringAccordion">
+                            <div class="accordion-body">
+                                <p>Instrumental tracks without lyrics are handled specially:</p>
+                                <ul>
+                                    <li><strong>Known Instrumentals</strong> (titled "Interlude," "Instrumental," etc.): Automatically score <strong>85 (Freely Listen)</strong> with reference to Psalm 150:3-5 about worship through instruments.</li>
+                                    <li><strong>Songs Without Lyrics</strong>: Score <strong>50 (Context Required)</strong> since we can't analyze content without words. Manual review recommended.</li>
+                                </ul>
+                                <p class="mb-0"><em>"Praise him with trumpet sound; praise him with lute and harp!" — Psalm 150:3</em></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Biblical Framework -->
+            <section id="biblical-framework" class="mb-5">
+                <h2 class="h3 fw-bold mb-4">📖 Biblical Framework & Theology</h2>
+
+                <div class="accordion" id="biblicalAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#framework-basis">
+                                What is the Christian Framework v3.1?
+                            </button>
+                        </h2>
+                        <div id="framework-basis" class="accordion-collapse collapse show" data-bs-parent="#biblicalAccordion">
+                            <div class="accordion-body">
+                                <p>The <strong>Christian Framework v3.1</strong> is our biblical analysis methodology that evaluates music through the lens of spiritual formation. It's based on:</p>
+                                <ul>
+                                    <li><strong>Scripture-First Approach</strong>: Every analysis includes 1-4 Bible verses justifying the verdict</li>
+                                    <li><strong>Berean Standard Bible (BSB)</strong>: Used for doctrinal consistency and accuracy</li>
+                                    <li><strong>15 Concern Categories</strong>: Idolatry, false worship, profanity, sexual purity, violence, substance use, rebellion, despair, occult, materialism, relativism, etc.</li>
+                                    <li><strong>Conservative Interpretation</strong>: Prioritizes spiritual safety and formation over artistic context</li>
+                                    <li><strong>Common Grace Recognition</strong>: Acknowledges biblical values in secular music (kindness, integrity, community)</li>
+                                </ul>
+                                <p class="mb-0">The framework was developed through extensive biblical study and refined through evaluation against gold-standard test cases.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#scripture-selection">
+                                How are scripture references chosen?
+                            </button>
+                        </h2>
+                        <div id="scripture-selection" class="accordion-collapse collapse" data-bs-parent="#biblicalAccordion">
+                            <div class="accordion-body">
+                                <p>Scripture references are selected to:</p>
+                                <ol>
+                                    <li><strong>Justify Positive Themes</strong>: Cite verses showing biblical alignment (e.g., worship → Psalm 95:6, grace → Ephesians 2:8)</li>
+                                    <li><strong>Explain Concerns</strong>: Cite verses explaining WHY content is spiritually concerning (e.g., profanity → Ephesians 5:3-4)</li>
+                                    <li><strong>Provide Theological Framing</strong>: Offer biblical wisdom for neutral or ambiguous content</li>
+                                </ol>
+                                <p>Our AI model was fine-tuned on hundreds of examples pairing song lyrics with relevant scripture, ensuring contextually appropriate and doctrinally sound references.</p>
+                                <p class="mb-0"><em>"All Scripture is breathed out by God and profitable for teaching, for reproof, for correction, and for training in righteousness." — 2 Timothy 3:16</em></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#theological-stance">
+                                What is Music Disciple's theological stance?
+                            </button>
+                        </h2>
+                        <div id="theological-stance" class="accordion-collapse collapse" data-bs-parent="#biblicalAccordion">
+                            <div class="accordion-body">
+                                <p>Music Disciple is committed to:</p>
+                                <ul>
+                                    <li><strong>Biblical Authority</strong>: Scripture is the ultimate authority for faith and practice</li>
+                                    <li><strong>Gospel Centrality</strong>: Jesus Christ is the way, the truth, and the life</li>
+                                    <li><strong>Spiritual Formation</strong>: Music shapes our hearts and should align with biblical discipleship</li>
+                                    <li><strong>Brotherly Love</strong>: Pursuing holiness while extending grace to fellow believers</li>
+                                </ul>
+                                <p>We are <strong>theologically conservative</strong> but <strong>denominationally neutral</strong>, focusing on core biblical principles shared across orthodox Christianity rather than specific doctrinal distinctives.</p>
+                                <p class="mb-0"><strong>Our Mission:</strong> Help Christians discern music that strengthens faith, flee content that harms spiritual formation, and develop biblical wisdom in media consumption.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Using the App -->
+            <section id="using-app" class="mb-5">
+                <h2 class="h3 fw-bold mb-4">🎵 Using Music Disciple</h2>
+
+                <div class="accordion" id="appAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#how-it-works">
+                                How does Music Disciple work?
+                            </button>
+                        </h2>
+                        <div id="how-it-works" class="accordion-collapse collapse show" data-bs-parent="#appAccordion">
+                            <div class="accordion-body">
+                                <ol>
+                                    <li><strong>Connect Your Spotify</strong>: Log in with your Spotify account (we never access your password)</li>
+                                    <li><strong>Automatic Sync</strong>: Your playlists automatically sync from Spotify</li>
+                                    <li><strong>Analyze Playlists</strong>: Click "Analyze All Songs" to evaluate each track's lyrics</li>
+                                    <li><strong>Review Results</strong>: See scores, verdicts, concerns, positive themes, and supporting scripture for each song</li>
+                                    <li><strong>Make Informed Decisions</strong>: Decide which songs align with your values and spiritual goals</li>
+                                </ol>
+                                <p class="mb-0">Analysis typically takes 1-2 seconds per song, with progress updates in real-time.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#privacy-safety">
+                                Is my data safe and private?
+                            </button>
+                        </h2>
+                        <div id="privacy-safety" class="accordion-collapse collapse" data-bs-parent="#appAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Yes!</strong> Music Disciple takes your privacy seriously:</p>
+                                <ul>
+                                    <li>✅ <strong>No Passwords Stored</strong>: We use Spotify OAuth (you log in directly through Spotify)</li>
+                                    <li>✅ <strong>Encrypted Tokens</strong>: Your Spotify access tokens are encrypted in our database</li>
+                                    <li>✅ <strong>No Data Selling</strong>: We never sell your data to third parties</li>
+                                    <li>✅ <strong>Minimal Collection</strong>: We only access playlist and song data needed for analysis</li>
+                                    <li>✅ <strong>HTTPS Everywhere</strong>: All connections are encrypted</li>
+                                    <li>✅ <strong>You Control Your Data</strong>: Delete your account anytime to remove all data</li>
+                                </ul>
+                                <p class="mb-0">Read our full <a href="{{ url_for('main.privacy') }}">Privacy Policy</a> for details.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#analysis-time">
+                                How long does analysis take?
+                            </button>
+                        </h2>
+                        <div id="analysis-time" class="accordion-collapse collapse" data-bs-parent="#appAccordion">
+                            <div class="accordion-body">
+                                <p>Analysis speed depends on playlist size:</p>
+                                <ul>
+                                    <li><strong>Small Playlists (10-50 songs)</strong>: 1-2 minutes</li>
+                                    <li><strong>Medium Playlists (50-200 songs)</strong>: 2-5 minutes</li>
+                                    <li><strong>Large Playlists (200-500 songs)</strong>: 5-10 minutes</li>
+                                    <li><strong>Full Library (1000+ songs)</strong>: 15-30 minutes</li>
+                                </ul>
+                                <p>Our system analyzes up to 10 songs simultaneously, with smart caching to avoid re-analyzing songs you've already evaluated.</p>
+                                <p class="mb-0"><strong>Pro Tip:</strong> Analysis runs in the background—you can close the page and come back later!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cost">
+                                How much does it cost?
+                            </button>
+                        </h2>
+                        <div id="cost" class="accordion-collapse collapse" data-bs-parent="#appAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Music Disciple is currently FREE during beta!</strong></p>
+                                <p>We're actively gathering feedback from our first 1,000 users to improve the platform. Your participation helps us build a better tool for the Christian community.</p>
+                                <p class="mb-0">Have feedback or suggestions? <a href="{{ url_for('main.contact') }}">Contact us</a> — we'd love to hear from you!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Technical -->
+            <section id="technical" class="mb-5">
+                <h2 class="h3 fw-bold mb-4">⚙️ Technical Questions</h2>
+
+                <div class="accordion" id="technicalAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#ai-model">
+                                What AI model powers the analysis?
+                            </button>
+                        </h2>
+                        <div id="ai-model" class="accordion-collapse collapse show" data-bs-parent="#technicalAccordion">
+                            <div class="accordion-body">
+                                <p>Music Disciple uses a <strong>fine-tuned GPT-4o-mini model</strong> from OpenAI, specifically trained on:</p>
+                                <ul>
+                                    <li>200+ hand-annotated song examples spanning worship, Christian rock, CCM, secular pop, metal, rap, and more</li>
+                                    <li>Christian Framework v3.1 scoring methodology</li>
+                                    <li>Scripture-backed verdicts and concern detection</li>
+                                    <li>Evaluation metrics: 85% verdict accuracy, 90%+ score correlation, 80% F1 score for concern detection</li>
+                                </ul>
+                                <p>The model was iteratively refined through multiple evaluation cycles, achieving state-of-the-art performance on biblical music discernment.</p>
+                                <p class="mb-0"><strong>Why fine-tuned?</strong> Fine-tuning ensures consistent biblical alignment and accurate scripture pairing, far exceeding generic AI models.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#lyrics-source">
+                                Where do you get lyrics from?
+                            </button>
+                        </h2>
+                        <div id="lyrics-source" class="accordion-collapse collapse" data-bs-parent="#technicalAccordion">
+                            <div class="accordion-body">
+                                <p>We use a multi-provider lyrics system with automatic fallback:</p>
+                                <ol>
+                                    <li><strong>Primary</strong>: Genius API (highest quality, most accurate)</li>
+                                    <li><strong>Fallback</strong>: Additional providers with rate-limiting and quality checks</li>
+                                </ol>
+                                <p>If lyrics aren't available, the song is marked for manual review and scored 50 (Context Required) by default.</p>
+                                <p class="mb-0"><strong>Note:</strong> We respect copyright and use lyrics solely for analysis, not display or redistribution.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accuracy">
+                                How accurate is the analysis?
+                            </button>
+                        </h2>
+                        <div id="accuracy" class="accordion-collapse collapse" data-bs-parent="#technicalAccordion">
+                            <div class="accordion-body">
+                                <p>Based on our evaluation against a gold-standard test set:</p>
+                                <ul>
+                                    <li><strong>Verdict Accuracy</strong>: 85% (Freely Listen vs Avoid Formation)</li>
+                                    <li><strong>Score Correlation</strong>: 0.90+ Pearson correlation with human reviewers</li>
+                                    <li><strong>Concern Detection</strong>: 80% F1 score (precision & recall)</li>
+                                    <li><strong>Scripture Relevance</strong>: 75%+ Jaccard similarity for scripture references</li>
+                                </ul>
+                                <p>However, <strong>AI is not infallible</strong>. We encourage you to:</p>
+                                <ul>
+                                    <li>Read the full analysis, not just the score</li>
+                                    <li>Review scripture references and concerns</li>
+                                    <li>Pray for discernment and wisdom</li>
+                                    <li>Consider your own spiritual maturity and context</li>
+                                </ul>
+                                <p class="mb-0"><em>"The spiritual person judges all things, but is himself to be judged by no one." — 1 Corinthians 2:15</em></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mobile-support">
+                                Does it work on mobile?
+                            </button>
+                        </h2>
+                        <div id="mobile-support" class="accordion-collapse collapse" data-bs-parent="#technicalAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Yes!</strong> Music Disciple is fully responsive and works on:</p>
+                                <ul>
+                                    <li>📱 iOS (Safari, Chrome)</li>
+                                    <li>🤖 Android (Chrome, Firefox, Samsung Internet)</li>
+                                    <li>💻 Desktop (All modern browsers)</li>
+                                    <li>📲 Tablets (iPad, Android tablets)</li>
+                                </ul>
+                                <p>We're a Progressive Web App (PWA), which means you can add Music Disciple to your home screen for an app-like experience!</p>
+                                <p class="mb-0"><strong>Note:</strong> A native iOS/Android app is not currently planned, as the web app provides full functionality.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Still Have Questions? -->
+            <div class="text-center py-5">
+                <h3 class="fw-bold mb-3">Still have questions?</h3>
+                <p class="text-muted mb-4">We're here to help! Reach out to our support team.</p>
+                <a href="{{ url_for('main.contact') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-envelope me-2"></i>Contact Us
+                </a>
+            </div>
+
+            <!-- Back to Home -->
+            <div class="text-center mt-4">
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

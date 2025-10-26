@@ -344,6 +344,12 @@ def terms():
     return render_template("legal/terms.html")
 
 
+@main_bp.route("/faq")
+def faq():
+    """Frequently asked questions page"""
+    return render_template("faq.html")
+
+
 @main_bp.route("/settings")
 @login_required
 def user_settings():
