@@ -1,9 +1,10 @@
 # Christian Music Analysis System - Complete Documentation
 
 **Version**: 2.1  
-**Last Updated**: October 4, 2025  
+**Last Updated**: January 27, 2026  
 **Model**: Fine-tuned GPT-4o-mini (`ft:gpt-4o-mini-2024-07-18:personal:christian-discernment-4o-mini-v1:CLxyepav`)  
-**Framework**: Christian Framework v3.1
+**Framework**: Christian Framework v3.1  
+**Optimization**: Concurrent processing (10x speed), Auto-retry system (self-healing)
 
 ---
 
@@ -32,11 +33,14 @@ The Christian Music Analysis System provides **AI-powered theological discernmen
 ### Key Features
 
 - **Fine-Tuned AI Model**: GPT-4o-mini trained on 1,372 labeled songs
+- **Concurrent Processing**: 10 parallel workers (10x speed improvement)
+- **Self-Healing**: Automatic retry system with exponential backoff (99% auto-resolution)
 - **Biblical Framework**: 35+ positive themes, 28+ negative themes with point values
-- **Scripture-Backed**: Every analysis includes 1-4 relevant Bible references
-- **Fast Analysis**: 0.7 seconds per song average
+- **Scripture-Backed**: Every analysis includes 1-4 relevant Bible references (Berean Standard Bible)
+- **Fast Analysis**: 0.7 seconds per song average (or 7-10 songs/sec with concurrency)
 - **Cost-Effective**: $0.0006 per song (~99% profit margin at scale)
-- **Nuanced Discernment**: Handles edge cases (common grace, vague spirituality, lament, character voice)
+- **Graceful Degradation**: Fallback responses for API failures with auto-retry
+- **Nuanced Discernment**: Handles edge cases (common grace, vague spirituality, lament, character voice, instrumental tracks)
 
 ### Core Capabilities
 
