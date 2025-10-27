@@ -115,26 +115,30 @@ class TestPromptOptimization:
         with app.app_context():
             service = UnifiedAnalysisService()
             
-            with patch.object(service, '_get_or_fetch_lyrics', return_value='Amazing grace how sweet the sound'):
-                with patch('app.services.analyzers.router_analyzer.RouterAnalyzer.analyze') as mock_analyze:
-                    # Mock response matching expected structure
-                    mock_analyze.return_value = {
-                        'score': 95,
-                        'verdict': 'freely_listen',
-                        'formation_risk': 'very_low',
-                        'themes_positive': [{'theme': 'Worship', 'points': 15, 'scripture': 'Psalm 95:1'}],
-                        'themes_negative': [],
-                        'concerns': [],
-                        'scripture_references': ['Ephesians 2:8'],
-                        'analysis': 'Classic Christian hymn about grace'
-                    }
-                    
-                    result = service.analyze_song(sample_song.id, user_id=1)
-                    
-                    # Verify result exists and has correct structure
-                    assert result is not None
-                    assert hasattr(result, 'score')
-                    assert hasattr(result, 'verdict')
+            # Set lyrics directly on the song object
+            sample_song.lyrics = 'Amazing grace how sweet the sound that saved a wretch like me'
+            
+            with patch('app.services.analyzers.router_analyzer.RouterAnalyzer.analyze_song') as mock_analyze:
+                # Mock response matching expected structure
+                mock_analyze.return_value = {
+                    'score': 95,
+                    'verdict': 'freely_listen',
+                    'formation_risk': 'very_low',
+                    'themes_positive': [{'theme': 'Worship', 'points': 15, 'scripture': 'Psalm 95:1'}],
+                    'themes_negative': [],
+                    'concerns': [],
+                    'scripture_references': ['Ephesians 2:8'],
+                    'analysis': 'Classic Christian hymn about grace',
+                    'analysis_quality': 'full',
+                    'cache_hit': False
+                }
+                
+                result = service.analyze_song(sample_song.id, user_id=1)
+                
+                # Verify result exists and has correct structure
+                assert result is not None
+                assert hasattr(result, 'score')
+                assert hasattr(result, 'verdict')
 
 
 class TestDatabaseIndexes:
