@@ -204,8 +204,6 @@ def playlist_detail(playlist_id):
         return redirect(url_for("main.dashboard"))
     
     # Get songs in playlist with analysis results (optimized with single query)
-    from sqlalchemy.orm import joinedload
-    
     # Get all song IDs in this playlist
     song_ids = [s.id for s in playlist.songs]
     

@@ -5,8 +5,9 @@ This module provides a simple interface for queuing playlist analysis jobs
 that run in the background, preventing request timeouts and providing
 progress tracking capabilities.
 """
-import os
 import logging
+import os
+
 from redis import Redis
 from rq import Queue
 

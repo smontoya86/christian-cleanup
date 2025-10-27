@@ -364,7 +364,7 @@ Return ONLY this JSON (no prose, no markdown):
                 "themes_negative": [],
                 "concerns": [],
                 "scripture_references": ["Psalm 150:3-5"],
-                "analysis": f"Instrumental track - music can glorify God without words (Psalm 150:3-5). Consider using for prayer, meditation, or worship reflection.",
+                "analysis": "Instrumental track - music can glorify God without words (Psalm 150:3-5). Consider using for prayer, meditation, or worship reflection.",
                 "instrumental": True
             }
         else:

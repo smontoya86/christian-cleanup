@@ -32,8 +32,9 @@ class UnifiedAnalysisService:
             delay_seconds: Delay before retry (default 5 minutes)
         """
         try:
-            from ..queue import analysis_queue
             from datetime import timedelta
+
+            from ..queue import analysis_queue
             
             # Queue retry job with delay
             job = analysis_queue.enqueue_in(
@@ -618,8 +619,9 @@ def analyze_playlist_async(playlist_id: int, user_id: int):
         dict: Results summary with counts of analyzed/failed songs
     """
     from rq import get_current_job
-    from ..models import Playlist, PlaylistSong, Song, AnalysisResult
+
     from .. import create_app
+    from ..models import AnalysisResult, Playlist, PlaylistSong, Song
     
     # Get current RQ job for progress tracking
     job = get_current_job()
@@ -751,9 +753,10 @@ def retry_degraded_analysis(song_id: int, retry_attempt: int = 1, max_retries: i
     Returns:
         dict: Status of retry operation
     """
+    import logging
+
     from .. import create_app
     from ..models import AnalysisResult, Song
-    import logging
     
     logger = logging.getLogger(__name__)
     
@@ -783,7 +786,7 @@ def retry_degraded_analysis(song_id: int, retry_attempt: int = 1, max_retries: i
             
             # Retry analysis
             service = UnifiedAnalysisService()
-            result = service.analyze_song(song_id, user_id=None)
+            service.analyze_song(song_id, user_id=None)
             
             # Check if retry was successful
             new_analysis = AnalysisResult.query.filter_by(song_id=song_id).first()
@@ -808,8 +811,9 @@ def retry_degraded_analysis(song_id: int, retry_attempt: int = 1, max_retries: i
                     )
                     
                     try:
-                        from ..queue import analysis_queue
                         from datetime import timedelta
+
+                        from ..queue import analysis_queue
                         
                         analysis_queue.enqueue_in(
                             timedelta(seconds=next_delay),
@@ -849,8 +853,9 @@ def retry_degraded_analysis(song_id: int, retry_attempt: int = 1, max_retries: i
                 next_delay = delays[min(retry_attempt, len(delays) - 1)]
                 
                 try:
-                    from ..queue import analysis_queue
                     from datetime import timedelta
+
+                    from ..queue import analysis_queue
                     
                     analysis_queue.enqueue_in(
                         timedelta(seconds=next_delay),

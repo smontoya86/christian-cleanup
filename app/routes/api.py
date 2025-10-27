@@ -153,6 +153,7 @@ def analyze_playlist(playlist_id):
 def get_analysis_status(job_id):
     """Get the status of a background analysis job"""
     from rq.job import Job
+
     from ..queue import analysis_queue
     
     try:
