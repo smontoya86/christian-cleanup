@@ -23,6 +23,34 @@ class UnifiedAnalysisService:
         self.analysis_service = SimplifiedChristianAnalysisService()
         self.lyrics_fetcher = LyricsFetcher()
 
+    def _schedule_degraded_retry(self, song_id: int, delay_seconds: int = 300):
+        """
+        Schedule automatic retry for degraded analyses.
+        
+        Args:
+            song_id: ID of song to retry
+            delay_seconds: Delay before retry (default 5 minutes)
+        """
+        try:
+            from ..queue import analysis_queue
+            from datetime import timedelta
+            
+            # Queue retry job with delay
+            job = analysis_queue.enqueue_in(
+                timedelta(seconds=delay_seconds),
+                'app.services.unified_analysis_service.retry_degraded_analysis',
+                song_id=song_id,
+                job_timeout='10m',
+                description=f'Retry degraded analysis for song {song_id}'
+            )
+            
+            self.logger.info(f"⏰ Scheduled automatic retry for song {song_id} in {delay_seconds}s (Job ID: {job.id})")
+            return job.id
+            
+        except Exception as e:
+            self.logger.error(f"Failed to schedule retry for song {song_id}: {e}")
+            return None
+
     def analyze_song(self, song_id, user_id=None):
         self.logger.info(f"Analyzing song with ID: {song_id}")
         song = db.session.get(Song, song_id)
@@ -125,6 +153,13 @@ class UnifiedAnalysisService:
 
         if use_router and isinstance(router_payload, dict):
             self.logger.info("Router analysis successful.")
+            
+            # Check if this is a degraded analysis and schedule auto-retry
+            analysis_quality = router_payload.get("analysis_quality", "full")
+            if analysis_quality == "degraded":
+                self.logger.warning(f"⚠️  Degraded analysis detected for '{title}' by {artist}. Scheduling auto-retry...")
+                self._schedule_degraded_retry(song.id, delay_seconds=300)  # Retry in 5 minutes
+            
             detailed_concerns = router_payload.get("concerns") or []
             
             # Extract themes with scripture mappings
@@ -699,3 +734,143 @@ def analyze_playlist_async(playlist_id: int, user_id: int):
         except Exception as e:
             logger.error(f"💥 Fatal error analyzing playlist {playlist_id}: {e}")
             raise
+
+
+def retry_degraded_analysis(song_id: int, retry_attempt: int = 1, max_retries: int = 3):
+    """
+    Background job to automatically retry degraded analyses.
+    
+    This function is called by RQ workers to retry songs that received
+    degraded/fallback responses due to API failures.
+    
+    Args:
+        song_id: ID of song to retry
+        retry_attempt: Current retry attempt (1-indexed)
+        max_retries: Maximum number of retry attempts
+        
+    Returns:
+        dict: Status of retry operation
+    """
+    from .. import create_app
+    from ..models import AnalysisResult, Song
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Create app context for worker
+    app = create_app()
+    with app.app_context():
+        logger.info(f"🔄 Retry attempt {retry_attempt}/{max_retries} for song {song_id}")
+        
+        try:
+            # Get song
+            song = db.session.get(Song, song_id)
+            if not song:
+                logger.error(f"Song {song_id} not found")
+                return {'success': False, 'reason': 'Song not found'}
+            
+            # Check if current analysis is still degraded
+            current_analysis = AnalysisResult.query.filter_by(song_id=song_id).first()
+            if current_analysis and 'temporarily unavailable' not in (current_analysis.explanation or ''):
+                logger.info(f"✅ Song {song_id} already has proper analysis - skipping retry")
+                return {'success': True, 'reason': 'Already properly analyzed', 'skipped': True}
+            
+            # Delete old degraded analysis
+            if current_analysis:
+                db.session.delete(current_analysis)
+                db.session.commit()
+                logger.info(f"🗑️  Deleted degraded analysis for song {song_id}")
+            
+            # Retry analysis
+            service = UnifiedAnalysisService()
+            result = service.analyze_song(song_id, user_id=None)
+            
+            # Check if retry was successful
+            new_analysis = AnalysisResult.query.filter_by(song_id=song_id).first()
+            if new_analysis and 'temporarily unavailable' not in (new_analysis.explanation or ''):
+                logger.info(f"✅ Retry successful for '{song.title}' by {song.artist}! Score: {new_analysis.score}")
+                return {
+                    'success': True,
+                    'reason': 'Analysis successful',
+                    'score': new_analysis.score,
+                    'verdict': new_analysis.verdict
+                }
+            else:
+                # Still degraded - schedule another retry if attempts remain
+                if retry_attempt < max_retries:
+                    # Exponential backoff: 5min, 1hr, 6hr
+                    delays = [300, 3600, 21600]  # seconds
+                    next_delay = delays[min(retry_attempt, len(delays) - 1)]
+                    
+                    logger.warning(
+                        f"⚠️  Retry {retry_attempt} still degraded for song {song_id}. "
+                        f"Scheduling retry {retry_attempt + 1} in {next_delay}s"
+                    )
+                    
+                    try:
+                        from ..queue import analysis_queue
+                        from datetime import timedelta
+                        
+                        analysis_queue.enqueue_in(
+                            timedelta(seconds=next_delay),
+                            'app.services.unified_analysis_service.retry_degraded_analysis',
+                            song_id=song_id,
+                            retry_attempt=retry_attempt + 1,
+                            max_retries=max_retries,
+                            job_timeout='10m',
+                            description=f'Retry #{retry_attempt + 1} degraded analysis for song {song_id}'
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to schedule next retry: {e}")
+                    
+                    return {
+                        'success': False,
+                        'reason': f'Still degraded after retry {retry_attempt}',
+                        'next_retry_scheduled': True
+                    }
+                else:
+                    logger.error(
+                        f"❌ Max retries ({max_retries}) exhausted for song {song_id}. "
+                        f"Manual intervention required."
+                    )
+                    return {
+                        'success': False,
+                        'reason': f'Max retries ({max_retries}) exhausted',
+                        'manual_review_needed': True
+                    }
+                    
+        except Exception as e:
+            logger.error(f"❌ Error during retry for song {song_id}: {e}")
+            db.session.rollback()
+            
+            # Schedule next retry if attempts remain
+            if retry_attempt < max_retries:
+                delays = [300, 3600, 21600]
+                next_delay = delays[min(retry_attempt, len(delays) - 1)]
+                
+                try:
+                    from ..queue import analysis_queue
+                    from datetime import timedelta
+                    
+                    analysis_queue.enqueue_in(
+                        timedelta(seconds=next_delay),
+                        'app.services.unified_analysis_service.retry_degraded_analysis',
+                        song_id=song_id,
+                        retry_attempt=retry_attempt + 1,
+                        max_retries=max_retries,
+                        job_timeout='10m',
+                        description=f'Retry #{retry_attempt + 1} degraded analysis for song {song_id} (after error)'
+                    )
+                    
+                    return {
+                        'success': False,
+                        'reason': f'Error during retry: {e}',
+                        'next_retry_scheduled': True
+                    }
+                except Exception as schedule_error:
+                    logger.error(f"Failed to schedule retry after error: {schedule_error}")
+            
+            return {
+                'success': False,
+                'reason': f'Error during retry: {e}'
+            }
